@@ -2191,6 +2191,9 @@ plot_metric_pca <- function(
     ggplot2::scale_color_manual(values = method_cols, name = "method") +
     ggplot2::scale_fill_manual(values = method_cols, name = "method") +
     ggplot2::labs(
+      title    = "Simulator Performance Biplot (PC1 vs. PC2)",
+      subtitle = sprintf("Variance Explained: PC1 = %s%%, PC2 = %s%% (Cumulative = %s%%)",
+                         pca_var[1], pca_var[2], round(pca_var[1] + pca_var[2], 1)),
       x = sprintf("PC1 (%s%%)", pca_var[1]),
       y = sprintf("PC2 (%s%%)", pca_var[2])
     ) +
@@ -2199,6 +2202,8 @@ plot_metric_pca <- function(
       panel.grid.major = ggplot2::element_line(color = "#EFEFEF", linewidth = 0.5),
       panel.grid.minor = ggplot2::element_blank(),
       panel.border     = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8),
+      plot.title       = ggplot2::element_text(face = "bold", size = base_size * 1.05),
+      plot.subtitle    = ggplot2::element_text(size = base_size * 0.85, color = "#475569"),
       axis.title       = ggplot2::element_text(face = "bold", size = base_size * 0.95),
       axis.text        = ggplot2::element_text(size = base_size * 0.85, color = "black"),
       legend.title     = ggplot2::element_text(face = "bold", size = base_size * 0.90),
@@ -2273,6 +2278,8 @@ plot_metric_pca <- function(
   p_b <- p_b +
     ggplot2::scale_color_manual(values = type_colors[present_types], name = "summary type", drop = TRUE) +
     ggplot2::labs(
+      title    = sprintf("Metric Loadings Vectors (Top %d Discriminating Metrics)", nrow(loadings_df)),
+      subtitle = "Vector length and direction indicate metric influence on PC1 and PC2 separation",
       x = sprintf("PC1 (%s%%)", pca_var[1]),
       y = sprintf("PC2 (%s%%)", pca_var[2])
     ) +
@@ -2281,6 +2288,8 @@ plot_metric_pca <- function(
       panel.grid.major = ggplot2::element_line(color = "#EFEFEF", linewidth = 0.5),
       panel.grid.minor = ggplot2::element_blank(),
       panel.border     = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8),
+      plot.title       = ggplot2::element_text(face = "bold", size = base_size * 1.05),
+      plot.subtitle    = ggplot2::element_text(size = base_size * 0.85, color = "#475569"),
       axis.title       = ggplot2::element_text(face = "bold", size = base_size * 0.95),
       axis.text        = ggplot2::element_text(size = base_size * 0.85, color = "black"),
       legend.title     = ggplot2::element_text(face = "bold", size = base_size * 0.90),

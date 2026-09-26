@@ -618,14 +618,17 @@ ui <- page_navbar(
           card_header("Metric Correlation & Performance Heatmap (plot_metric_heatmap)"),
           card_body(
             fluidRow(
-              column(8, p("Heatmap showing relative performance across all 62 curated metrics and simulation methods.", style = "font-size: 0.9rem; color: #555;")),
+              column(8, p("Heatmap showing relative performance across all 62 curated metrics and simulation methods. Centered with increased vertical height and optimized width for clear row-level label legibility.", style = "font-size: 0.9rem; color: #555;")),
               column(4,
                      downloadButton("download_heat_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2"),
                      downloadButton("download_heat_pdf", "Download PDF", class = "btn btn-sm btn-outline-secondary")
               )
             ),
             hr(),
-            plotOutput("plot_metric_heat", height = "950px")
+            div(
+              style = "max-width: 950px; margin: 0 auto;",
+              plotOutput("plot_metric_heat", height = "1250px")
+            )
           )
         )
       ),
@@ -652,14 +655,25 @@ ui <- page_navbar(
                        selected = "all"
                      )
               ),
-              column(4, selectInput("sel_pca_panel", "Panel View:", choices = c("Both (Biplot + Loadings)" = "both", "Simulators Only" = "methods", "Loadings Only" = "loadings"), selected = "both")),
-              column(4,
+              column(3, selectInput("sel_pca_panel", "Panel View:", choices = c("Both (Biplot + Loadings)" = "both", "Simulators Only" = "methods", "Loadings Only" = "loadings"), selected = "both")),
+              column(2,
+                     numericInput("num_pca_top_metrics", "Top Metrics (Loadings):", value = 14, min = 4, max = 50, step = 1)
+              ),
+              column(3,
                      downloadButton("download_pca_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2"),
                      downloadButton("download_pca_pdf", "Download PDF", class = "btn btn-sm btn-outline-secondary")
               )
             ),
+            fluidRow(
+              column(12,
+                     p(strong("Note on Metrics: "), "For ", em("All Categories Combined"),
+                       ", the figure highlights the ", strong("top 14 most discriminating metrics"),
+                       " ranked by vector loading magnitude (\\(\\sqrt{\\text{PC1}^2 + \\text{PC2}^2}\\)) in ordination space to prevent clutter while capturing key performance drivers.",
+                       style = "font-size: 0.86rem; color: #475569; margin-bottom: 8px;")
+              )
+            ),
             hr(),
-            plotOutput("plot_metric_pca_out", height = "560px")
+            uiOutput("ui_plot_metric_pca")
           )
         )
       ),
@@ -1457,45 +1471,61 @@ server <- function(input, output, session) {
     content = function(file) { grDevices::pdf(file, width = 13, height = 8); print(metric_box_reactive()); grDevices::dev.off() }
   )
   
-  # 5. Metric Correlation Heatmap (Increased height, no clustering options)
+  # 5. Metric Correlation Heatmap (Increased height, decreased width, optimized layout)
   metric_heat_reactive <- reactive({
     req(rv$benchmark_df)
     plot_metric_heatmap(
       benchmark_data = rv$benchmark_df,
       cluster_rows = FALSE,
       cluster_cols = FALSE,
-      base_size = 12
+      base_size = 11
     )
   })
   output$plot_metric_heat <- renderPlot({ metric_heat_reactive() })
   output$download_heat_jpeg <- downloadHandler(
     filename = function() { paste0("scSimEval_metric_heatmap_", Sys.Date(), ".jpeg") },
-    content = function(file) { export_single_jpeg(file, metric_heat_reactive(), width = 14, height = 12, dpi = 600) }
+    content = function(file) { export_single_jpeg(file, metric_heat_reactive(), width = 9.5, height = 15, dpi = 600) }
   )
   output$download_heat_pdf <- downloadHandler(
     filename = function() { paste0("scSimEval_metric_heatmap_", Sys.Date(), ".pdf") },
-    content = function(file) { grDevices::pdf(file, width = 14, height = 12); print(metric_heat_reactive()); grDevices::dev.off() }
+    content = function(file) { grDevices::pdf(file, width = 9.5, height = 15); print(metric_heat_reactive()); grDevices::dev.off() }
   )
   
-  # 6. PCA Ordination (6 Category-wise options)
+  # 6. PCA Ordination (6 Category-wise options & All Categories Combined)
   metric_pca_reactive <- reactive({
     req(rv$benchmark_df)
     cat_sel <- if (identical(input$sel_pca_cat, "all")) NULL else input$sel_pca_cat
+    n_top <- if (!is.null(input$num_pca_top_metrics) && is.finite(input$num_pca_top_metrics)) input$num_pca_top_metrics else 14
     plot_metric_pca(
       benchmark_data = rv$benchmark_df,
       category = cat_sel,
       panel = input$sel_pca_panel,
-      base_size = 13
+      top_n_loadings = n_top,
+      base_size = 12
     )
+  })
+  output$ui_plot_metric_pca <- renderUI({
+    h <- if (identical(input$sel_pca_panel, "both")) "950px" else "580px"
+    plotOutput("plot_metric_pca_out", height = h)
   })
   output$plot_metric_pca_out <- renderPlot({ metric_pca_reactive() })
   output$download_pca_jpeg <- downloadHandler(
     filename = function() { paste0("scSimEval_metric_pca_", Sys.Date(), ".jpeg") },
-    content = function(file) { export_single_jpeg(file, metric_pca_reactive(), width = 13, height = 7.5, dpi = 600) }
+    content = function(file) {
+      w <- if (identical(input$sel_pca_panel, "both")) 10.5 else 11
+      h <- if (identical(input$sel_pca_panel, "both")) 12 else 7.5
+      export_single_jpeg(file, metric_pca_reactive(), width = w, height = h, dpi = 600)
+    }
   )
   output$download_pca_pdf <- downloadHandler(
     filename = function() { paste0("scSimEval_metric_pca_", Sys.Date(), ".pdf") },
-    content = function(file) { grDevices::pdf(file, width = 13, height = 7.5); print(metric_pca_reactive()); grDevices::dev.off() }
+    content = function(file) {
+      w <- if (identical(input$sel_pca_panel, "both")) 10.5 else 11
+      h <- if (identical(input$sel_pca_panel, "both")) 12 else 7.5
+      grDevices::pdf(file, width = w, height = h)
+      print(metric_pca_reactive())
+      grDevices::dev.off()
+    }
   )
   
   # 7. MDS Metric Space (6 Category-wise options)
