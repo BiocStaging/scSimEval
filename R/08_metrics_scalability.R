@@ -4,6 +4,8 @@
 #'
 #' @param expr Expression or function to benchmark.
 #' @return A list with elapsed seconds and peak memory allocated (MB).
+#' @examples
+#' benchmark_resource_usage({ Sys.sleep(0.01); 1 + 1 })
 #' @export
 benchmark_resource_usage <- function(expr) {
   gc(verbose = FALSE, reset = TRUE)

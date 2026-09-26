@@ -57,6 +57,8 @@ color-filled density curves, and simple understated titles.
 \if{html}{\figure{comparative_distribution_qc.png}{options: width="100\%" alt="Comparative Single-Cell Distribution QC"}}
 }
 \examples{
+data(example_scrna, package = "scSimEval")
+res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
 data(example_scrna)
 p <- plot_distribution_qc(example_scrna$ref, example_scrna$sim)
 if (requireNamespace("ggplot2", quietly = TRUE)) print(p)

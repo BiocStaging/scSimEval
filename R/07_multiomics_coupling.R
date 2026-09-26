@@ -14,6 +14,11 @@
 #'
 #' @return A named list of the 7 univariate accuracy metrics comparing the reference vs.
 #'   simulated cross-modality correlation distributions.
+#' @examples
+#' data(example_multiomics, package = "scSimEval")
+#' r_rna <- example_multiomics$ref_multi$rna
+#' r_atac <- example_multiomics$ref_multi$atac
+#' calc_cross_modality_correlation(r_rna, r_atac)
 #' @export
 calc_cross_modality_correlation <- function(
   ref_mod1,
@@ -73,6 +78,11 @@ calc_cross_modality_correlation <- function(
 #' @param mod1_data Matrix for Modality 1 (features x cells).
 #' @param cell_types Ground truth cell-type vector from Modality 2.
 #' @return A list with cross-modal classification accuracy and macro F1 score.
+#' @examples
+#' data(example_multiomics, package = "scSimEval")
+#' r_rna <- example_multiomics$ref_multi$rna
+#' r_atac <- example_multiomics$ref_multi$atac
+#' evaluate_cross_modal_prediction(r_rna, example_multiomics$cell_types)
 #' @export
 evaluate_cross_modal_prediction <- function(mod1_data, cell_types) {
   cell_types <- as.factor(cell_types)
@@ -136,6 +146,11 @@ evaluate_cross_modal_prediction <- function(mod1_data, cell_types) {
 #'   \item{match_at_1}{Top-1 match rate (proportion of cells where the true match is rank 1).}
 #'   \item{match_at_5}{Top-5 match rate (proportion of cells where the true match is in top 5).}
 #'   \item{cell_foscttm}{Vector of bidirectional FOSCTTM scores for individual cells.}
+#' @examples
+#' data(example_multiomics, package = "scSimEval")
+#' r_rna <- example_multiomics$ref_multi$rna
+#' r_atac <- example_multiomics$ref_multi$atac
+#' calc_foscttm(r_rna, r_atac)
 #' @export
 calc_foscttm <- function(x, y, metric = c("euclidean", "cosine")) {
   metric <- match.arg(metric)
@@ -210,6 +225,11 @@ calc_foscttm <- function(x, y, metric = c("euclidean", "cosine")) {
 #' @param pred_data Matrix or data.frame of in-silico generated / predicted features (features x cells).
 #'
 #' @return A list containing cell-wise and feature-wise correlation, cosine similarity, RMSE, and MAE.
+#' @examples
+#' data(example_multiomics, package = "scSimEval")
+#' r_rna <- example_multiomics$ref_multi$rna
+#' r_atac <- example_multiomics$ref_multi$atac
+#' calc_cross_modal_generation(r_rna, r_atac)
 #' @export
 calc_cross_modal_generation <- function(true_data, pred_data) {
   true_data <- as.matrix(true_data)
@@ -301,6 +321,11 @@ calc_cross_modal_generation <- function(true_data, pred_data) {
 #' @param k Number of nearest neighbors for neighborhood connectivity calculation (default 15).
 #'
 #' @return A list containing modality_asw, modality_mixing_score, and mean_cross_modality_neighbor_frac.
+#' @examples
+#' data(example_multiomics, package = "scSimEval")
+#' r_rna <- example_multiomics$ref_multi$rna
+#' r_atac <- example_multiomics$ref_multi$atac
+#' calc_modality_alignment(rbind(t(r_rna[1:10,]), t(r_atac[1:10,])), rep(c("RNA","ATAC"), each=ncol(r_rna)))
 #' @export
 calc_modality_alignment <- function(embedding, modalities, cell_types = NULL, k = 15) {
   embedding <- as.matrix(embedding)
@@ -400,6 +425,11 @@ standardize_edges <- function(edges, directed = TRUE) {
 #' @param directed Logical, whether edges are directed (default TRUE) or undirected (FALSE).
 #'
 #' @return Jaccard similarity index in [0, 1] (|E1 cap E2| / |E1 cup E2|).
+#' @examples
+#' data(example_multiomics, package = "scSimEval")
+#' r_rna <- example_multiomics$ref_multi$rna
+#' r_atac <- example_multiomics$ref_multi$atac
+#' calc_network_jaccard(matrix(c(1,2, 2,3), ncol=2), matrix(c(1,2, 2,3), ncol=2))
 #' @export
 calc_network_jaccard <- function(edges1, edges2, k = NULL, directed = TRUE) {
   std1 <- standardize_edges(edges1, directed = directed)
@@ -434,6 +464,11 @@ calc_network_jaccard <- function(edges1, edges2, k = NULL, directed = TRUE) {
 #'   If NULL, assumes 1-to-1 matching by row index.
 #'
 #' @return A list containing mean coupling correlation, positive coupling ratio, and mean R-squared.
+#' @examples
+#' data(example_multiomics, package = "scSimEval")
+#' r_rna <- example_multiomics$ref_multi$rna
+#' r_atac <- example_multiomics$ref_multi$atac
+#' calc_atac_rna_coupling(r_rna, r_atac)
 #' @export
 calc_atac_rna_coupling <- function(atac_data, rna_data, linked_pairs = NULL) {
   atac_data <- as.matrix(atac_data)
@@ -488,6 +523,9 @@ calc_atac_rna_coupling <- function(atac_data, rna_data, linked_pairs = NULL) {
 #' @param method Correlation method: "pearson" (default) or "spearman".
 #'
 #' @return A list containing module correlation r, RMSE, MAE, and modularity fidelity.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_coregulation_fidelity(example_scrna$ref, example_scrna$sim)
 #' @export
 calc_coregulation_fidelity <- function(
   ref_data,
@@ -579,6 +617,9 @@ calc_coregulation_fidelity <- function(
 #' @param method Correlation method: "spearman" (default) or "pearson".
 #'
 #' @return A list containing RV coefficient, matrix correlation, Frobenius distance, and MAE.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_peak_coaccessibility_fidelity(example_scrna$ref, example_scrna$sim)
 #' @export
 calc_peak_coaccessibility_fidelity <- function(
   ref_atac,
@@ -643,6 +684,9 @@ calc_peak_coaccessibility_fidelity <- function(
 #' @param top_genes Number of top variable genes to consider for clustering (default 200).
 #'
 #' @return A list summarizing module correlation preservation, RMSE, and modularity ratio fidelity.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_coexpression_module_fidelity(example_scrna$ref, example_scrna$sim)
 #' @export
 calc_coexpression_module_fidelity <- function(
   ref_mat,
@@ -692,6 +736,11 @@ calc_coexpression_module_fidelity <- function(
 #'
 #' @return A list containing global PCC, global SCC, per-cell-type mean PCC/SCC,
 #'   and mean accessibility KL divergence.
+#' @examples
+#' data(example_multiomics, package = "scSimEval")
+#' r_rna <- example_multiomics$ref_multi$rna
+#' r_atac <- example_multiomics$ref_multi$atac
+#' calc_accessibility_profile_concordance(r_rna, r_atac)
 #' @export
 calc_accessibility_profile_concordance <- function(
   ref_data,

@@ -31,8 +31,6 @@ Automatically discovers or evaluates co-expression modules and measures
 the preservation of intra-module vs. inter-module correlation structure.
 }
 \examples{
-data(example_multiomics, package = "scSimEval")
-r_rna <- example_multiomics$ref_multi$rna
-r_atac <- example_multiomics$ref_multi$atac
-calc_coexpression_module_fidelity(r_rna, r_atac)
+data(example_scrna, package = "scSimEval")
+calc_coexpression_module_fidelity(example_scrna$ref, example_scrna$sim)
 }

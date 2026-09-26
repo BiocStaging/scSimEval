@@ -55,6 +55,10 @@ align_distributions <- function(ref, sim, method = c("quantile", "resample"), n_
 #'
 #' @param x Numeric vector.
 #' @return Outlier proportion (between 0 and 1).
+#' @examples
+#' ref <- stats::rnorm(50)
+#' sim <- stats::rnorm(50)
+#' calc_outlier_proportion(ref)
 #' @export
 calc_outlier_proportion <- function(x) {
   x <- stats::na.omit(as.numeric(x))

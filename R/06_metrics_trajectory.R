@@ -8,6 +8,9 @@
 #' @param data Expression or count matrix (genes x cells).
 #' @param n_top Number of top variable genes to use (default 500).
 #' @return Numeric vector of pseudotime values in [0, 1] for each cell.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' infer_scrna_pseudotime(example_scrna$ref)
 #' @export
 infer_scrna_pseudotime <- function(data, n_top = 500) {
   mat <- as.matrix(data)
@@ -44,6 +47,9 @@ infer_scrna_pseudotime <- function(data, n_top = 500) {
 #' @param cell_types Factor or vector of cell-type annotations for each cell.
 #' @param method Linkage method for hierarchical clustering (default "ward.D2").
 #' @return An \code{hclust} tree object representing the cell-type lineage tree.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' infer_scrna_lineage_tree(example_scrna$ref, example_scrna$cell_types)
 #' @export
 infer_scrna_lineage_tree <- function(data, cell_types, method = "ward.D2") {
   mat <- as.matrix(data)
@@ -82,6 +88,9 @@ infer_scrna_lineage_tree <- function(data, cell_types, method = "ward.D2") {
 #' @param method Correlation method: "spearman" (default) or "pearson".
 #'
 #' @return Correlation coefficient between reference and simulated pseudotime trajectories.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_pseudotime_correlation(example_scrna$ref, example_scrna$sim)
 #' @export
 calc_pseudotime_correlation <- function(ref_pseudotime, sim_pseudotime, method = c("spearman", "pearson")) {
   method <- match.arg(method)
@@ -112,6 +121,9 @@ calc_pseudotime_correlation <- function(ref_pseudotime, sim_pseudotime, method =
 #' @param cell_types_sim Optional cell type labels for simulation (if count matrix provided).
 #'
 #' @return Root mean squared error between branch heights.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_tree_height_discrepancy(example_scrna$ref, example_scrna$sim)
 #' @export
 calc_tree_height_discrepancy <- function(
   ref_tree,
@@ -147,6 +159,9 @@ calc_tree_height_discrepancy <- function(
 #' @param cell_types_sim Optional vector of simulated cell types (for lineage tree inference).
 #'
 #' @return A named list of trajectory accuracy metrics.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' evaluate_trajectory_metrics(example_scrna$ref, example_scrna$sim)
 #' @export
 evaluate_trajectory_metrics <- function(
   ref_data,

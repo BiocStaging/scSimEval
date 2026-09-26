@@ -462,6 +462,9 @@ utils::globalVariables(c(
 #' @param base_size Numeric. Base font size. Default \code{9}.
 #'
 #' @return A \code{ggplot} or \code{patchwork} composite object containing the comparative panels.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
 #' @export
 #' @examples
 #' data(example_scrna)
@@ -857,6 +860,9 @@ MNO#
 #' @param base_size Numeric. Base font size. Default \code{11}.
 #'
 #' @return A \code{ggplot} object.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
 #' @export
 plot_metric_boxplots <- function(
   benchmark_data,
@@ -989,6 +995,9 @@ plot_metric_boxplots <- function(
 #' @param base_size Numeric. Base font size. Default \code{12}.
 #'
 #' @return A \code{ggplot} object.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
 #' @export
 plot_individual_metric_bar <- function(
   benchmark_data,
@@ -1102,7 +1111,7 @@ plot_individual_metric_bar <- function(
   p <- ggplot2::ggplot(df_sub, ggplot2::aes(x = Method, y = .data[[y_var]], fill = Method)) +
     ggplot2::geom_col(width = 0.58, color = "#1E293B", linewidth = 0.5, alpha = 0.90) +
     ggplot2::geom_text(
-      ggplot2::aes(label = Value_Label),
+      ggplot2::aes(label = .data[["Value_Label"]]),
       vjust = ifelse(df_sub[[y_var]] >= 0, -0.45, 1.2),
       fontface = "bold", size = base_size * 0.32, color = "#0F172A"
     ) +
@@ -1170,6 +1179,9 @@ plot_individual_metric_bar <- function(
 #' @param base_size Numeric. Base font size. Default \code{11}.
 #'
 #' @return A \code{ggplot} or \code{patchwork} object.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
 #' @export
 plot_scalability_benchmark <- function(
   benchmark_data,
@@ -1525,6 +1537,9 @@ plot_benchmark_summary <- function(
 #' @param metric_name Optional legacy alias for \code{metrics}.
 #'
 #' @return A \code{ggplot} object.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
 #' @export
 plot_metric_heatmap <- function(
   benchmark_data,
@@ -1690,6 +1705,7 @@ plot_metric_heatmap <- function(
 #' @param by_category Logical. If \code{TRUE} and \code{ordination_by = "summaries"}, generates
 #'   a multi-panel grid displaying an MDS ordination for each evaluation category separately
 #'   (skipping categories with fewer than 3 measures). Default is \code{FALSE}.
+#' @param as_list Logical. If \code{TRUE} and \code{by_category = TRUE}, returns a named list of ggplot objects. Default \code{FALSE}.
 #' @param category Optional character vector to filter by evaluation category (e.g. \code{"(I) Distributional Properties"}).
 #' @param exclude_categories Character vector of categories to exclude from the ordination.
 #'   Default is \code{c("(VI) Trajectory & Lineage Dynamics", "(VIII) Computational Scalability")}
@@ -1704,6 +1720,9 @@ plot_metric_heatmap <- function(
 #' @param ncol Integer. Number of columns when \code{by_category = TRUE}. Default \code{2}.
 #'
 #' @return A \code{ggplot} or \code{patchwork} object.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
 #' @export
 plot_metric_mds <- function(
   benchmark_data,
@@ -2042,6 +2061,8 @@ plot_metric_mds <- function(
 #' @param benchmark_data Benchmark summary data.frame, matrix, or list.
 #' @param panel Character. Which panel(s) to render: \code{"both"} (default; 2-panel stacked layout),
 #'   \code{"methods"} (panel a only), or \code{"loadings"} (panel b only).
+#' @param by_category Logical. If \code{TRUE}, perform separate PCA ordinations per evaluation category. Default \code{FALSE}.
+#' @param as_list Logical. If \code{TRUE} and \code{by_category = TRUE}, returns a named list of ggplot objects. Default \code{FALSE}.
 #' @param category Optional character vector to filter by evaluation category.
 #' @param exclude_categories Optional character vector of categories to exclude (e.g. scalability).
 #' @param metrics Optional character vector of specific metrics to include.
@@ -2052,6 +2073,9 @@ plot_metric_mds <- function(
 #' @param base_size Numeric. Base font size. Default \code{11}.
 #'
 #' @return A \code{ggplot} or \code{patchwork} object representing the ordination figure.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
 #' @export
 plot_metric_pca <- function(
   benchmark_data,
@@ -2787,7 +2811,7 @@ plot_bubble_matrix <- plot_benchmark_bubble_matrix
 #' \if{html}{\figure{evaluation_summary_bars.png}{options: width="100\%" alt="Single-Cell Simulator Evaluation Summary"}}
 #'
 #' @param data A benchmark summary data frame, a list containing \code{benchmark_summary_table},
-#'   or the output of \code{\link{run_benchmark_suite}}.
+#'   or the output of \code{\link{evaluate_simulation_accuracy}}.
 #' @param method_classes Optional named vector mapping method names to class/category labels
 #'   (e.g., \code{c("Splatter" = "Class 1", "scDesign3" = "Class 2")}). If provided, rows are
 #'   grouped into class panels.
@@ -2800,6 +2824,9 @@ plot_bubble_matrix <- plot_benchmark_bubble_matrix
 #' @param base_size Numeric base font size (default 11).
 #'
 #' @return A \code{ggplot} object representing the multi-panel evaluation summary.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
 #' @export
 #' @aliases plot_benchmark_summary_bars plot_summary_bars
 #' @examples
@@ -3018,9 +3045,15 @@ plot_evaluation_summary <- function(
 }
 
 #' @rdname plot_evaluation_summary
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
 #' @export
 plot_benchmark_summary_bars <- plot_evaluation_summary
 
 #' @rdname plot_evaluation_summary
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
 #' @export
 plot_summary_bars <- plot_evaluation_summary

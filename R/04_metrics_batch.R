@@ -18,6 +18,10 @@
 #'   \item{cms_scores}{Numeric vector of CMS p-values for each cell (higher means better mixed)}
 #'   \item{mean_cms}{Mean CMS score across cells}
 #'   \item{median_cms}{Median CMS score across cells}
+#' @examples
+#' coords <- matrix(stats::rnorm(100), 50, 2)
+#' batch <- factor(rep(c("B1", "B2"), length.out = 50))
+#' calc_cms(coords, batch)
 #' @export
 calc_cms <- function(
   data = NULL,
@@ -126,6 +130,10 @@ calc_cms <- function(
 #' @return A named list:
 #'   \item{lde}{Local density estimate for each cell}
 #'   \item{ldf}{Local density factor for each cell}
+#' @examples
+#' coords <- matrix(stats::rnorm(100), 50, 2)
+#' batch <- factor(rep(c("B1", "B2"), length.out = 50))
+#' calc_ldf(coords)
 #' @export
 calc_ldf <- function(coords, k = 15, h = 1, c = 1) {
   coords <- as.matrix(coords)
@@ -180,6 +188,10 @@ calc_ldf <- function(coords, k = 15, h = 1, c = 1) {
 #'   \item{median_ldf_diff}{Median absolute LDF difference}
 #'   \item{ldf_pre}{LDF in pre-integration / reference space}
 #'   \item{ldf_post}{LDF in post-integration / simulated space}
+#' @examples
+#' coords <- matrix(stats::rnorm(100), 50, 2)
+#' batch <- factor(rep(c("B1", "B2"), length.out = 50))
+#' calc_ldf_diff(coords, coords)
 #' @export
 calc_ldf_diff <- function(coords_pre, coords_post, k = 15, h = 1, c = 1) {
   res_pre <- calc_ldf(coords_pre, k = k, h = h, c = c)
@@ -211,6 +223,10 @@ calc_ldf_diff <- function(coords_pre, coords_post, k = 15, h = 1, c = 1) {
 #'   \item{mixing_metrics}{Numeric vector of median ranks per cell}
 #'   \item{mean_mixing_metric}{Mean mixing rank (lower indicates better mixing)}
 #'   \item{median_mixing_metric}{Median mixing rank}
+#' @examples
+#' coords <- matrix(stats::rnorm(100), 50, 2)
+#' batch <- factor(rep(c("B1", "B2"), length.out = 50))
+#' calc_seurat_mixing_metric(coords, batch)
 #' @export
 calc_seurat_mixing_metric <- function(coords, batch_info, k = 300, k_pos = 5) {
   batch_info <- as.factor(batch_info)
@@ -259,6 +275,10 @@ calc_seurat_mixing_metric <- function(coords, batch_info, k = 300, k_pos = 5) {
 #'   \item{cell_overlaps}{Numeric vector of overlap fractions per cell}
 #'   \item{mean_local_structure}{Mean overlap fraction across cells (higher indicates better preservation)}
 #'   \item{median_local_structure}{Median overlap fraction}
+#' @examples
+#' coords <- matrix(stats::rnorm(100), 50, 2)
+#' batch <- factor(rep(c("B1", "B2"), length.out = 50))
+#' calc_local_structure_metric(coords, coords)
 #' @export
 calc_local_structure_metric <- function(coords_pre, coords_post, k = 30) {
   coords_pre <- as.matrix(coords_pre)
@@ -299,6 +319,10 @@ calc_local_structure_metric <- function(coords_pre, coords_post, k = 30) {
 #'   \item{isi_scores}{Numeric vector of cell-level ISI values}
 #'   \item{mean_isi}{Mean ISI score (ranges from 1 to number of batches; higher indicates better mixing)}
 #'   \item{median_isi}{Median ISI score}
+#' @examples
+#' coords <- matrix(stats::rnorm(100), 50, 2)
+#' batch <- factor(rep(c("B1", "B2"), length.out = 50))
+#' calc_isi(coords, batch)
 #' @export
 calc_isi <- function(coords, batch_info, k = 30, weighted = TRUE) {
   batch_info <- as.factor(batch_info)
@@ -366,6 +390,11 @@ calc_isi <- function(coords, batch_info, k = 30, weighted = TRUE) {
 #'   \item{lisi_batch}{Average batch LISI (if lisi installed)}
 #'   \item{cross_batch_accuracy}{Mean cross-batch cell type transfer accuracy (if cell_types supplied)}
 #'   \item{cross_batch_F1}{Mean cross-batch cell type transfer macro F1 (if cell_types supplied)}
+#' @examples
+#' coords <- matrix(stats::rnorm(100), 50, 2)
+#' batch <- factor(rep(c("B1", "B2"), length.out = 50))
+#' ct <- factor(rep(c("TypeA", "TypeB"), length.out = 50))
+#' evaluate_batch_metrics(coords, batch, ct)
 #' @export
 evaluate_batch_metrics <- function(
   data,
@@ -545,6 +574,11 @@ evaluate_batch_metrics <- function(
 #' @return A list containing:
 #'   \item{mean_cross_batch_accuracy}{Overall mean classification accuracy across all directed batch pairs}
 #'   \item{mean_cross_batch_F1}{Overall mean macro-averaged F1 score across all directed batch pairs}
+#' @examples
+#' coords <- matrix(stats::rnorm(100), 50, 2)
+#' batch <- factor(rep(c("B1", "B2"), length.out = 50))
+#' ct <- factor(rep(c("TypeA", "TypeB"), length.out = 50))
+#' evaluate_cross_batch_prediction(coords, ct, batch)
 #' @export
 evaluate_cross_batch_prediction <- function(coords, cell_types, batch_info, k = 5) {
   cell_types <- as.factor(cell_types)
@@ -607,6 +641,9 @@ evaluate_cross_batch_prediction <- function(coords, cell_types, batch_info, k = 
 #' @param n_genes Number of top variable genes to analyze (default 200).
 #'
 #' @return A list of mean percentage of variance explained by cell-type, donor, and residual noise.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_variance_decomposition(example_scrna$ref, example_scrna$sim)
 #' @export
 calc_variance_decomposition <- function(
   counts,
@@ -684,6 +721,9 @@ calc_variance_decomposition <- function(
 #' @param n_genes Number of top variable genes to evaluate (default 200).
 #'
 #' @return A list with median ICC, mean ICC, and vector of per-gene ICC values.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_intraclass_correlation(example_scrna$ref, example_scrna$sim)
 #' @export
 calc_intraclass_correlation <- function(counts, donor_labels, n_genes = 200) {
   if (inherits(counts, "SingleCellExperiment")) {

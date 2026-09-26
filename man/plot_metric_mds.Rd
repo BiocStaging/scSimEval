@@ -31,6 +31,8 @@ candidate simulators).}
 a multi-panel grid displaying an MDS ordination for each evaluation category separately
 (skipping categories with fewer than 3 measures). Default is \code{FALSE}.}
 
+\item{as_list}{Logical. If \code{TRUE} and \code{by_category = TRUE}, returns a named list of ggplot objects. Default \code{FALSE}.}
+
 \item{category}{Optional character vector to filter by evaluation category (e.g. \code{"(I) Distributional Properties"}).}
 
 \item{exclude_categories}{Character vector of categories to exclude from the ordination.

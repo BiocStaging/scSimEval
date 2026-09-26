@@ -7,6 +7,10 @@
 #' @param sim Numeric vector of simulated distribution.
 #' @param align Logical, whether to sort and quantile-align vectors. Default TRUE.
 #' @return Numeric MAD value.
+#' @examples
+#' ref <- stats::rnorm(50)
+#' sim <- stats::rnorm(50)
+#' calc_mad(ref, sim)
 #' @export
 calc_mad <- function(ref, sim, align = TRUE) {
   if (align) {
@@ -21,6 +25,10 @@ calc_mad <- function(ref, sim, align = TRUE) {
 #' @param ref Numeric vector of reference values.
 #' @param sim Numeric vector of simulated values.
 #' @return Maximum vertical distance between empirical CDFs (between 0 and 1).
+#' @examples
+#' ref <- stats::rnorm(50)
+#' sim <- stats::rnorm(50)
+#' calc_ks(ref, sim)
 #' @export
 calc_ks <- function(ref, sim) {
   ref <- stats::na.omit(as.numeric(ref))
@@ -39,6 +47,10 @@ calc_ks <- function(ref, sim) {
 #' @param sim Numeric vector of simulated values.
 #' @param align Logical, whether to sort and quantile-align vectors. Default TRUE.
 #' @return Mean absolute difference.
+#' @examples
+#' ref <- stats::rnorm(50)
+#' sim <- stats::rnorm(50)
+#' calc_mae(ref, sim)
 #' @export
 calc_mae <- function(ref, sim, align = TRUE) {
   if (align) {
@@ -58,6 +70,10 @@ calc_mae <- function(ref, sim, align = TRUE) {
 #' @param sim Numeric vector of simulated values.
 #' @param align Logical, whether to sort and quantile-align vectors. Default TRUE.
 #' @return Quadratic error penalizing large discrepancies.
+#' @examples
+#' ref <- stats::rnorm(50)
+#' sim <- stats::rnorm(50)
+#' calc_rmse(ref, sim)
 #' @export
 calc_rmse <- function(ref, sim, align = TRUE) {
   if (align) {
@@ -76,6 +92,10 @@ calc_rmse <- function(ref, sim, align = TRUE) {
 #' @param ref Numeric vector of reference values.
 #' @param sim Numeric vector of simulated values.
 #' @return Area of overlap under probability densities (0 to 1).
+#' @examples
+#' ref <- stats::rnorm(50)
+#' sim <- stats::rnorm(50)
+#' calc_overlap(ref, sim)
 #' @export
 calc_overlap <- function(ref, sim) {
   ref <- stats::na.omit(as.numeric(ref))
@@ -103,6 +123,10 @@ calc_overlap <- function(ref, sim) {
 #' @param sim Numeric vector of simulated values.
 #' @param align Logical, whether to align lengths. Default TRUE.
 #' @return Statistical divergence between discrete probability measures.
+#' @examples
+#' ref <- stats::rnorm(50)
+#' sim <- stats::rnorm(50)
+#' calc_bhattacharyya(ref, sim)
 #' @export
 calc_bhattacharyya <- function(ref, sim, align = TRUE) {
   if (align) {
@@ -149,6 +173,10 @@ calc_bhattacharyya <- function(ref, sim, align = TRUE) {
 #' @param sim Numeric vector of simulated values.
 #' @param p Power of the Wasserstein metric (default 1 for standard earth mover's distance).
 #' @return The 1D Wasserstein distance between the two empirical distributions.
+#' @examples
+#' ref <- stats::rnorm(50)
+#' sim <- stats::rnorm(50)
+#' calc_wasserstein_1d(ref, sim)
 #' @export
 calc_wasserstein_1d <- function(ref, sim, p = 1) {
   ref <- stats::na.omit(as.numeric(ref))
@@ -175,6 +203,10 @@ calc_wasserstein_1d <- function(ref, sim, p = 1) {
 #' @param sim_mat 2-column numeric matrix for simulation.
 #' @param threads CPU threads. Default 1.
 #' @return Estimated 2D KS statistic.
+#' @examples
+#' ref <- matrix(stats::rnorm(100), 50, 2)
+#' sim <- matrix(stats::rnorm(100), 50, 2)
+#' calc_fasano_franceschini(ref, sim)
 #' @export
 calc_fasano_franceschini <- function(ref_mat, sim_mat, threads = 1) {
   ref_mat <- as.matrix(stats::na.omit(ref_mat))
@@ -197,6 +229,10 @@ calc_fasano_franceschini <- function(ref_mat, sim_mat, threads = 1) {
 #' @param ref_mat 2-column numeric matrix for reference.
 #' @param sim_mat 2-column numeric matrix for simulation.
 #' @return Peacock test statistic.
+#' @examples
+#' ref <- matrix(stats::rnorm(100), 50, 2)
+#' sim <- matrix(stats::rnorm(100), 50, 2)
+#' calc_peacock_2d(ref, sim)
 #' @export
 calc_peacock_2d <- function(ref_mat, sim_mat) {
   ref_mat <- as.matrix(stats::na.omit(ref_mat))
@@ -219,6 +255,10 @@ calc_peacock_2d <- function(ref_mat, sim_mat) {
 #' @param ref_mat 2-column numeric matrix for reference.
 #' @param sim_mat 2-column numeric matrix for simulation.
 #' @return z-statistic testing discrepancy between bivariate kernel density estimates.
+#' @examples
+#' ref <- matrix(stats::rnorm(100), 50, 2)
+#' sim <- matrix(stats::rnorm(100), 50, 2)
+#' calc_kde_test(ref, sim)
 #' @export
 calc_kde_test <- function(ref_mat, sim_mat) {
   ref_mat <- as.matrix(stats::na.omit(ref_mat))
@@ -245,6 +285,10 @@ calc_kde_test <- function(ref_mat, sim_mat) {
 #' @param sim_mat 2-column numeric matrix for simulation.
 #' @param n Grid resolution for 2D density estimation. Default is 25.
 #' @return Normalized 2D Earth Mover's Distance.
+#' @examples
+#' ref <- matrix(stats::rnorm(100), 50, 2)
+#' sim <- matrix(stats::rnorm(100), 50, 2)
+#' calc_emd_2d(ref, sim)
 #' @export
 calc_emd_2d <- function(ref_mat, sim_mat, n = 25) {
   ref_mat <- as.matrix(stats::na.omit(ref_mat))
@@ -278,6 +322,10 @@ calc_emd_2d <- function(ref_mat, sim_mat, n = 25) {
 #' @param ref Numeric vector of reference values.
 #' @param sim Numeric vector of simulated values.
 #' @return Normalized area between the two eCDFs.
+#' @examples
+#' ref <- stats::rnorm(50)
+#' sim <- stats::rnorm(50)
+#' calc_ecdf_diffarea(ref, sim)
 #' @export
 calc_ecdf_diffarea <- function(ref, sim) {
   ref <- stats::na.omit(as.numeric(ref))
@@ -310,6 +358,10 @@ calc_ecdf_diffarea <- function(ref, sim) {
 #' @param sim Numeric vector of simulated values.
 #' @param alternative Alternative hypothesis: "left.sided" (default in countsimQC) or "two.sided".
 #' @return A named list with the runs test statistic and p-value.
+#' @examples
+#' ref <- stats::rnorm(50)
+#' sim <- stats::rnorm(50)
+#' calc_runs_test(ref, sim)
 #' @export
 calc_runs_test <- function(ref, sim, alternative = c("left.sided", "two.sided")) {
   alternative <- match.arg(alternative)
@@ -369,6 +421,10 @@ calc_runs_test <- function(ref, sim, alternative = c("left.sided", "two.sided"))
 #' @param k Number of nearest neighbors (default max(5, 0.05 * N)).
 #' @param subsample_size Number of subsampled points to test (default 300).
 #' @return Fraction of points with significant neighbor composition mismatch (p <= 0.05).
+#' @examples
+#' ref <- stats::rnorm(50)
+#' sim <- stats::rnorm(50)
+#' calc_nn_mismatch(ref, sim)
 #' @export
 calc_nn_mismatch <- function(ref, sim, k = NULL, subsample_size = 300) {
   # Handle 1D or 2D
@@ -425,6 +481,10 @@ calc_nn_mismatch <- function(ref, sim, k = NULL, subsample_size = 300) {
 #' @param sim Vector or matrix for simulated dataset.
 #' @param subsample_size Number of subsampled points to evaluate (default 300).
 #' @return A named list with global and local between-dataset silhouette widths.
+#' @examples
+#' ref <- stats::rnorm(50)
+#' sim <- stats::rnorm(50)
+#' calc_between_dataset_silhouette(ref, sim)
 #' @export
 calc_between_dataset_silhouette <- function(ref, sim, subsample_size = 300) {
   if (is.matrix(ref) || is.data.frame(ref)) {
@@ -482,6 +542,10 @@ calc_between_dataset_silhouette <- function(ref, sim, subsample_size = 300) {
 #' @param sim Numeric vector of simulated values.
 #' @param metric_prefix Optional prefix string for metric names.
 #' @return Named list of univariate distance metrics.
+#' @examples
+#' ref <- stats::rnorm(50)
+#' sim <- stats::rnorm(50)
+#' calc_all_univariate_metrics(ref, sim)
 #' @export
 calc_all_univariate_metrics <- function(ref, sim, metric_prefix = "") {
   prefix <- if (nchar(metric_prefix) > 0) paste0(metric_prefix, "_") else ""
@@ -519,6 +583,10 @@ calc_all_univariate_metrics <- function(ref, sim, metric_prefix = "") {
 #' @param metric_prefix Optional prefix string for metric names.
 #' @param threads CPU threads.
 #' @return Named list of bivariate metrics.
+#' @examples
+#' ref <- matrix(stats::rnorm(100), 50, 2)
+#' sim <- matrix(stats::rnorm(100), 50, 2)
+#' calc_all_bivariate_metrics(ref, sim)
 #' @export
 calc_all_bivariate_metrics <- function(ref_mat, sim_mat, metric_prefix = "", threads = 1) {
   prefix <- if (nchar(metric_prefix) > 0) paste0(metric_prefix, "_") else ""
@@ -557,6 +625,8 @@ calc_all_bivariate_metrics <- function(ref_mat, sim_mat, metric_prefix = "", thr
 #' @param n_obs Total number of independent observations (cells or cell-gene pairs).
 #'
 #' @return A named vector or data.frame containing loglik, n_params, n_obs, AIC, and BIC.
+#' @examples
+#' calc_model_aic_bic(-100, 5, 100)
 #' @export
 calc_model_aic_bic <- function(loglik, n_params, n_obs) {
   if (length(loglik) != length(n_params)) {
@@ -601,6 +671,8 @@ calc_model_aic_bic <- function(loglik, n_params, n_obs) {
 #'   \item{gene_loglik}{Vector of log-likelihoods per gene.}
 #'   \item{gene_aic}{Vector of AIC per gene.}
 #'   \item{gene_bic}{Vector of BIC per gene.}
+#' @examples
+#' calc_marginal_aic_bic(stats::rnorm(50), stats::rnorm(50))
 #' @export
 calc_marginal_aic_bic <- function(counts, fitted_means, dispersions = NULL, 
                                   distribution = c("poisson", "nb", "gaussian"),
@@ -704,6 +776,8 @@ calc_marginal_aic_bic <- function(counts, fitted_means, dispersions = NULL,
 #'   \item{LR_statistic}{Likelihood ratio statistic (-2 * (LL_null - LL_alter)).}
 #'   \item{delta_df}{Difference in degrees of freedom (df_alter - df_null).}
 #'   \item{p_value}{P-value from chi-squared test with delta_df degrees of freedom.}
+#' @examples
+#' calc_likelihood_ratio_test(stats::rnorm(50), stats::rnorm(50))
 #' @export
 calc_likelihood_ratio_test <- function(alter_model, null_model, df_alter = NULL, df_null = NULL) {
   # Mode 1: Numeric log-likelihoods passed directly
@@ -803,6 +877,10 @@ calc_likelihood_ratio_test <- function(alter_model, null_model, df_alter = NULL,
 #' @param max_cells Maximum number of cells to subsample for speed (default 500).
 #'
 #' @return A list with MMD, squared MMD, and the kernel bandwidth sigma used.
+#' @examples
+#' ref <- matrix(stats::rnorm(100), 50, 2)
+#' sim <- matrix(stats::rnorm(100), 50, 2)
+#' calc_mmd(ref, sim)
 #' @export
 calc_mmd <- function(
   ref_mat,
@@ -880,6 +958,10 @@ calc_mmd <- function(
 #' @param n_pcs Number of principal components to evaluate (default 15).
 #'
 #' @return A list with Fréchet distance (FSD), mean discrepancy, and covariance trace discrepancy.
+#' @examples
+#' ref <- matrix(stats::rnorm(100), 50, 2)
+#' sim <- matrix(stats::rnorm(100), 50, 2)
+#' calc_frechet_singlecell_distance(ref, sim)
 #' @export
 calc_frechet_singlecell_distance <- function(
   ref_mat,

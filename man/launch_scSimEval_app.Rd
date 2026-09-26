@@ -32,7 +32,8 @@ Launches the Shiny web application embedded in the \pkg{scSimEval} package.
 \donttest{
 library(scSimEval)
 # Launch the interactive studio
-launch_scSimEval_app()
-
+if (interactive()) {
+  launch_scSimEval_app()
+}
 }
 }

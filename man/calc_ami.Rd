@@ -27,13 +27,13 @@ or cell-type label assignments, correcting for chance expected mutual informatio
 under the hypergeometric model with fixed marginals (Vinh et al., JMLR 2010),
 as used in scMoMtF (Lan et al., PLOS Comput Biol 2024).
 }
-\references{
-Vinh, N. X., Epps, J., & Bailey, J. (2010). Information theoretic measures for clusterings comparison: Variants, properties, normalization and correction for chance. Journal of Machine Learning Research, 11, 2837-2854.
-
-Lan, W., Ling, T., Chen, Q. et al. scMoMtF: An interpretable multitask learning framework for single-cell multi-omics data analysis. PLOS Comput Biol 20(12): e1012679 (2024).
-}
 \examples{
 pred <- factor(rep(c("A", "B"), each = 20))
 truth <- factor(rep(c("A", "B"), each = 20))
 calc_ami(pred, truth)
+}
+\references{
+Vinh, N. X., Epps, J., & Bailey, J. (2010). Information theoretic measures for clusterings comparison: Variants, properties, normalization and correction for chance. Journal of Machine Learning Research, 11, 2837-2854.
+
+Lan, W., Ling, T., Chen, Q. et al. scMoMtF: An interpretable multitask learning framework for single-cell multi-omics data analysis. PLOS Comput Biol 20(12): e1012679 (2024).
 }

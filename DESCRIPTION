@@ -82,7 +82,5 @@ Suggests:
     limma,
     RANN,
     bluster,
-    SingleCellExperiment,
-    SummarizedExperiment,
     Seurat
 Config/roxygen2/version: 8.1.0

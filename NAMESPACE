@@ -123,8 +123,11 @@ export(plot_bubble_matrix)
 # 11_shiny_app
 export(launch_scSimEval_app)
 
-importFrom(stats, median, sd, var, quantile, IQR, ks.test, cor, dist, prcomp, lm, t.test, chisq.test, p.adjust, model.matrix)
+importFrom(stats, median, sd, var, quantile, IQR, ks.test, cor, dist, prcomp, lm, t.test, chisq.test, p.adjust, model.matrix, setNames)
 importFrom(utils, head, tail)
+importFrom(RColorBrewer, brewer.pal)
+importFrom(SingleCellExperiment, counts)
+importFrom(SummarizedExperiment, assay)
 
 export(evaluate_multiple_datasets)
 S3method(print, scSimEval_consolidated)

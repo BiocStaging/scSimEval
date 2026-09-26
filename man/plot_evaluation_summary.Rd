@@ -47,7 +47,7 @@ plot_summary_bars(
 }
 \arguments{
 \item{data}{A benchmark summary data frame, a list containing \code{benchmark_summary_table},
-or the output of \code{\link{run_benchmark_suite}}.}
+or the output of \code{\link{evaluate_simulation_accuracy}}.}
 
 \item{method_classes}{Optional named vector mapping method names to class/category labels
 (e.g., \code{c("Splatter" = "Class 1", "scDesign3" = "Class 2")}). If provided, rows are
@@ -78,9 +78,15 @@ across the 8 canonical evaluation categories and overall composite performance.
 \if{html}{\figure{evaluation_summary_bars.png}{options: width="100\%" alt="Single-Cell Simulator Evaluation Summary"}}
 }
 \examples{
+data(example_scrna, package = "scSimEval")
+res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
 \donttest{
 demo <- readRDS(system.file("shiny/scSimEvalApp/data/demo_benchmark_data.rds", package = "scSimEval"))
 p <- plot_evaluation_summary(demo$benchmark_summary_table)
 print(p)
 }
+data(example_scrna, package = "scSimEval")
+res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+data(example_scrna, package = "scSimEval")
+res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
 }

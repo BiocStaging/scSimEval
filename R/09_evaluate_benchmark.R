@@ -16,6 +16,9 @@
 #' @param verbose Logical, whether to print execution messages. Default is TRUE.
 #'
 #' @return A list containing tidy summary tables and detailed metric lists.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
 #' @export
 evaluate_simulation_accuracy <- function(
   ref_data,
@@ -281,6 +284,9 @@ evaluate_simulation_accuracy <- function(
 #' @param verbose Logical, whether to print execution progress. Default is TRUE.
 #'
 #' @return A list containing detailed results and a unified tidy master summary table.
+#' @examples
+#' data(example_multiomics, package = "scSimEval")
+#' evaluate_multiomics_accuracy(example_multiomics$ref_multi, example_multiomics$sim_multi)
 #' @export
 evaluate_multiomics_accuracy <- function(
   ref_multi,
@@ -733,6 +739,9 @@ evaluate_multiomics_accuracy <- function(
 #'     \item \code{dataset_overview}: Aggregate summary table with total metrics and mean scores per dataset.
 #'     \item \code{dataset_results}: Named list containing detailed evaluation results for each individual dataset.
 #'   }
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
 #' @export
 evaluate_multiple_datasets <- function(
   datasets,

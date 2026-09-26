@@ -23,6 +23,10 @@ plot_metric_pca(
 \item{panel}{Character. Which panel(s) to render: \code{"both"} (default; 2-panel stacked layout),
 \code{"methods"} (panel a only), or \code{"loadings"} (panel b only).}
 
+\item{by_category}{Logical. If \code{TRUE}, perform separate PCA ordinations per evaluation category. Default \code{FALSE}.}
+
+\item{as_list}{Logical. If \code{TRUE} and \code{by_category = TRUE}, returns a named list of ggplot objects. Default \code{FALSE}.}
+
 \item{category}{Optional character vector to filter by evaluation category.}
 
 \item{exclude_categories}{Optional character vector of categories to exclude (e.g. scalability).}

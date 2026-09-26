@@ -10,6 +10,9 @@
 #' @param verbose Logical, whether to print progress messages.
 #'
 #' @return A named list of cell-level summary vectors.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' extract_cell_properties(example_scrna$ref)
 #' @export
 extract_cell_properties <- function(data, max_cells_cor = 1000, n_top_hvgs = 500, verbose = FALSE) {
   if (inherits(data, "SingleCellExperiment")) {
@@ -118,6 +121,9 @@ extract_cell_properties <- function(data, max_cells_cor = 1000, n_top_hvgs = 500
 #' @param verbose Logical, whether to print progress messages.
 #'
 #' @return A named list of feature-level summary vectors.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' extract_feature_properties(example_scrna$ref)
 #' @export
 extract_feature_properties <- function(data, n_top_cor = 400, verbose = FALSE) {
   if (inherits(data, "SingleCellExperiment")) {
@@ -200,6 +206,9 @@ extract_feature_properties <- function(data, n_top_cor = 400, verbose = FALSE) {
 #'
 #' @param counts Count matrix (genes x cells) or SingleCellExperiment.
 #' @return A list containing intercept, slope, midpoint (inflection point), and R-squared.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_zero_probability_curve(example_scrna$ref)
 #' @export
 calc_zero_probability_curve <- function(counts) {
   if (inherits(counts, "SingleCellExperiment")) {
@@ -248,6 +257,9 @@ calc_zero_probability_curve <- function(counts) {
 #' @param ref_counts Reference count matrix.
 #' @param sim_counts Simulated count matrix.
 #' @return Named numeric vector of curve parameter differences.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' evaluate_zero_probability_curve(example_scrna$ref, example_scrna$sim)
 #' @export
 evaluate_zero_probability_curve <- function(ref_counts, sim_counts) {
   c_ref <- calc_zero_probability_curve(ref_counts)
@@ -267,6 +279,9 @@ evaluate_zero_probability_curve <- function(ref_counts, sim_counts) {
 #'
 #' @param counts Count matrix (genes x cells).
 #' @return A list with mean excess zero weight, gene-level weights, and estimated zero-inflation rate.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_excess_zero_weights(example_scrna$ref)
 #' @export
 calc_excess_zero_weights <- function(counts) {
   if (inherits(counts, "SingleCellExperiment")) {
@@ -316,6 +331,9 @@ calc_excess_zero_weights <- function(counts) {
 #'   If NULL, intrinsic noise is estimated via Poisson shot-noise expectation (1 / mean).
 #'
 #' @return A list containing mean intrinsic noise, mean extrinsic noise, noise ratio, and gene-level vectors.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_kinetic_noise_decomposition(example_scrna$ref)
 #' @export
 calc_kinetic_noise_decomposition <- function(counts, cell_states = NULL) {
   if (inherits(counts, "SingleCellExperiment")) {
@@ -389,6 +407,9 @@ calc_kinetic_noise_decomposition <- function(counts, cell_states = NULL) {
 #'
 #' @return A list with estimated coefficients (c0, c1, c2), R-squared, Spearman/Pearson
 #'   correlations, and model fit summary.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_accessibility_sparsity_curve(example_scrna$ref)
 #' @export
 calc_accessibility_sparsity_curve <- function(data, poly_degree = 2) {
   if (is.matrix(data) || inherits(data, "Matrix")) {
@@ -450,6 +471,9 @@ calc_accessibility_sparsity_curve <- function(data, poly_degree = 2) {
 #'
 #' @return A list of reference and simulated curve parameters, absolute discrepancies,
 #'   and curve prediction RMSE.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' evaluate_accessibility_sparsity_curve(example_scrna$ref, example_scrna$sim)
 #' @export
 evaluate_accessibility_sparsity_curve <- function(ref_data, sim_data, poly_degree = 2) {
   ref_res <- calc_accessibility_sparsity_curve(ref_data, poly_degree = poly_degree)

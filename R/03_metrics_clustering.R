@@ -2,6 +2,11 @@
 #' @param dist_mat Distance matrix among cells or numeric matrix (features x cells).
 #' @param cluster_labels Vector of cluster or cell-type labels.
 #' @return Mean silhouette width.
+#' @examples
+#' data <- matrix(stats::rnorm(200), 20, 10)
+#' cl <- factor(rep(c("A", "B"), each = 10))
+#' dist_mat <- stats::dist(data)
+#' calc_silhouette(dist_mat, cl)
 #' @export
 calc_silhouette <- function(dist_mat, cluster_labels) {
   if (!inherits(dist_mat, "dist")) {
@@ -20,6 +25,11 @@ calc_silhouette <- function(dist_mat, cluster_labels) {
 #' @param dist_mat Distance matrix or numeric matrix.
 #' @param cluster_labels Cluster assignments.
 #' @return Dunn index (ratio of smallest inter-cluster to largest intra-cluster distance).
+#' @examples
+#' data <- matrix(stats::rnorm(200), 20, 10)
+#' cl <- factor(rep(c("A", "B"), each = 10))
+#' dist_mat <- stats::dist(data)
+#' calc_dunn(dist_mat, cl)
 #' @export
 calc_dunn <- function(dist_mat, cluster_labels) {
   if (!inherits(dist_mat, "dist")) {
@@ -37,6 +47,11 @@ calc_dunn <- function(dist_mat, cluster_labels) {
 #' @param dist_mat Distance matrix or numeric matrix.
 #' @param cluster_labels Cluster assignments.
 #' @return Connectivity metric.
+#' @examples
+#' data <- matrix(stats::rnorm(200), 20, 10)
+#' cl <- factor(rep(c("A", "B"), each = 10))
+#' dist_mat <- stats::dist(data)
+#' calc_connectivity(dist_mat, cl)
 #' @export
 calc_connectivity <- function(dist_mat, cluster_labels) {
   if (!inherits(dist_mat, "dist")) {
@@ -54,6 +69,11 @@ calc_connectivity <- function(dist_mat, cluster_labels) {
 #' @param data Matrix with features in rows, cells in columns.
 #' @param cluster_labels Cluster assignments.
 #' @return Davies-Bouldin index (lower is better).
+#' @examples
+#' data <- matrix(stats::rnorm(200), 20, 10)
+#' cl <- factor(rep(c("A", "B"), each = 10))
+#' dist_mat <- stats::dist(data)
+#' calc_davies_bouldin(data, cl)
 #' @export
 calc_davies_bouldin <- function(data, cluster_labels) {
   cluster_labels <- as.numeric(as.factor(cluster_labels))
@@ -68,6 +88,11 @@ calc_davies_bouldin <- function(data, cluster_labels) {
 #' @param data Matrix with features in rows, cells in columns.
 #' @param cluster_labels Cluster assignments.
 #' @return Calinski-Harabasz index.
+#' @examples
+#' data <- matrix(stats::rnorm(200), 20, 10)
+#' cl <- factor(rep(c("A", "B"), each = 10))
+#' dist_mat <- stats::dist(data)
+#' calc_calinski_harabasz(data, cl)
 #' @export
 calc_calinski_harabasz <- function(data, cluster_labels) {
   cluster_labels <- as.numeric(as.factor(cluster_labels))
@@ -82,6 +107,10 @@ calc_calinski_harabasz <- function(data, cluster_labels) {
 #' @param pred Predicted cluster labels.
 #' @param truth Ground truth cell type labels.
 #' @return ARI value between -1 and 1.
+#' @examples
+#' pred <- factor(rep(c("A", "B"), each = 20))
+#' truth <- factor(rep(c("A", "B"), each = 20))
+#' calc_ari(pred, truth)
 #' @export
 calc_ari <- function(pred, truth) {
   if (requireNamespace("mclust", quietly = TRUE)) {
@@ -103,6 +132,10 @@ calc_ari <- function(pred, truth) {
 #' @param pred Predicted cluster labels.
 #' @param truth Ground truth cell type labels.
 #' @return NMI value between 0 and 1.
+#' @examples
+#' pred <- factor(rep(c("A", "B"), each = 20))
+#' truth <- factor(rep(c("A", "B"), each = 20))
+#' calc_nmi(pred, truth)
 #' @export
 calc_nmi <- function(pred, truth) {
   tab <- table(pred, truth)
@@ -138,6 +171,8 @@ calc_nmi <- function(pred, truth) {
 #' @param N Total number of items / cells.
 #' @return Expected mutual information in nats.
 #' @keywords internal
+#' @examples
+#' calc_expected_mi(c(10, 10), c(10, 10), 20)
 calc_expected_mi <- function(a, b, N) {
   emi <- 0
   for (i in seq_along(a)) {
@@ -173,6 +208,10 @@ calc_expected_mi <- function(a, b, N) {
 #' @return AMI score in [0, 1] (adjusted for chance).
 #' @references Vinh, N. X., Epps, J., & Bailey, J. (2010). Information theoretic measures for clusterings comparison: Variants, properties, normalization and correction for chance. Journal of Machine Learning Research, 11, 2837-2854.
 #' @references Lan, W., Ling, T., Chen, Q. et al. scMoMtF: An interpretable multitask learning framework for single-cell multi-omics data analysis. PLOS Comput Biol 20(12): e1012679 (2024).
+#' @examples
+#' pred <- factor(rep(c("A", "B"), each = 20))
+#' truth <- factor(rep(c("A", "B"), each = 20))
+#' calc_ami(pred, truth)
 #' @export
 calc_ami <- function(pred, truth, average_method = c("arithmetic", "max", "min", "geometric")) {
   average_method <- match.arg(average_method)
@@ -234,6 +273,10 @@ calc_ami <- function(pred, truth, average_method = c("arithmetic", "max", "min",
 #' @param pred Vector of predicted cluster labels.
 #' @param truth Vector of ground truth cell type labels.
 #' @return Clustering accuracy between 0 and 1.
+#' @examples
+#' pred <- factor(rep(c("A", "B"), each = 20))
+#' truth <- factor(rep(c("A", "B"), each = 20))
+#' calc_clustering_accuracy(pred, truth)
 #' @export
 calc_clustering_accuracy <- function(pred, truth) {
   match_res <- hungarian_match(pred, truth)
@@ -248,6 +291,10 @@ calc_clustering_accuracy <- function(pred, truth) {
 #' @param pred Vector of predicted cluster labels.
 #' @param truth Vector of ground truth cell type labels.
 #' @return FMI score between 0 and 1.
+#' @examples
+#' pred <- factor(rep(c("A", "B"), each = 20))
+#' truth <- factor(rep(c("A", "B"), each = 20))
+#' calc_fmi(pred, truth)
 #' @export
 calc_fmi <- function(pred, truth) {
   valid <- !is.na(pred) & !is.na(truth)
@@ -271,6 +318,10 @@ calc_fmi <- function(pred, truth) {
 #' @param truth Vector of ground truth cell type labels.
 #' @param beta Weight of completeness vs. homogeneity (default 1).
 #' @return A named list containing homogeneity, completeness, and v_measure.
+#' @examples
+#' pred <- factor(rep(c("A", "B"), each = 20))
+#' truth <- factor(rep(c("A", "B"), each = 20))
+#' calc_homogeneity_completeness_v_measure(pred, truth)
 #' @export
 calc_homogeneity_completeness_v_measure <- function(pred, truth, beta = 1) {
   valid <- !is.na(pred) & !is.na(truth)
@@ -327,6 +378,10 @@ calc_homogeneity_completeness_v_measure <- function(pred, truth, beta = 1) {
 #' @param pred Vector of predicted cluster labels.
 #' @param truth Vector of ground truth cell type labels.
 #' @return Homogeneity score between 0 and 1.
+#' @examples
+#' pred <- factor(rep(c("A", "B"), each = 20))
+#' truth <- factor(rep(c("A", "B"), each = 20))
+#' calc_homogeneity(pred, truth)
 #' @export
 calc_homogeneity <- function(pred, truth) {
   calc_homogeneity_completeness_v_measure(pred, truth)$homogeneity
@@ -336,6 +391,10 @@ calc_homogeneity <- function(pred, truth) {
 #' @param pred Vector of predicted cluster labels.
 #' @param truth Vector of ground truth cell type labels.
 #' @return Completeness score between 0 and 1.
+#' @examples
+#' pred <- factor(rep(c("A", "B"), each = 20))
+#' truth <- factor(rep(c("A", "B"), each = 20))
+#' calc_completeness(pred, truth)
 #' @export
 calc_completeness <- function(pred, truth) {
   calc_homogeneity_completeness_v_measure(pred, truth)$completeness
@@ -346,6 +405,10 @@ calc_completeness <- function(pred, truth) {
 #' @param truth Vector of ground truth cell type labels.
 #' @param beta Weight parameter (default 1).
 #' @return V-measure score between 0 and 1.
+#' @examples
+#' pred <- factor(rep(c("A", "B"), each = 20))
+#' truth <- factor(rep(c("A", "B"), each = 20))
+#' calc_v_measure(pred, truth)
 #' @export
 calc_v_measure <- function(pred, truth, beta = 1) {
   calc_homogeneity_completeness_v_measure(pred, truth, beta = beta)$v_measure
@@ -364,6 +427,11 @@ calc_v_measure <- function(pred, truth, beta = 1) {
 #'
 #' @return A numeric vector of neighborhood purity scores (values from 0 to 1),
 #'   with an attribute "mean_purity" containing the overall average.
+#' @examples
+#' data <- matrix(stats::rnorm(200), 20, 10)
+#' cl <- factor(rep(c("A", "B"), each = 10))
+#' dist_mat <- stats::dist(data)
+#' calc_neighborhood_purity(data, cl)
 #' @export
 calc_neighborhood_purity <- function(data, cluster_labels, k = NULL, is_distance = FALSE) {
   cluster_labels <- as.character(cluster_labels)
@@ -436,6 +504,11 @@ calc_neighborhood_purity <- function(data, cluster_labels, k = NULL, is_distance
 #'   \item{deviance}{Model deviance relative to saturated count model.}
 #'   \item{n_clusters}{Number of clusters evaluated.}
 #'   \item{n_params}{Number of free parameters in the clustering model.}
+#' @examples
+#' data <- matrix(stats::rnorm(200), 20, 10)
+#' cl <- factor(rep(c("A", "B"), each = 10))
+#' dist_mat <- stats::dist(data)
+#' calc_cdi(data, cl)
 #' @export
 calc_cdi <- function(counts, cluster_labels, size_factors = NULL, 
                      model = c("poisson", "nb"), top_features = NULL) {
@@ -547,6 +620,11 @@ calc_cdi <- function(counts, cluster_labels, size_factors = NULL,
 #' @param ref_data Optional reference data to compute reference clustering quality.
 #'
 #' @return A named list of all clustering metrics.
+#' @examples
+#' data <- matrix(stats::rnorm(200), 20, 10)
+#' cl <- factor(rep(c("A", "B"), each = 10))
+#' dist_mat <- stats::dist(data)
+#' evaluate_clustering_metrics(data, cl)
 #' @export
 evaluate_clustering_metrics <- function(
   data,
@@ -650,6 +728,11 @@ evaluate_clustering_metrics <- function(
 #' @param max_cells Maximum number of cells to subsample (default 500).
 #'
 #' @return A list containing Generative Precision, Generative Recall, and Generative F1.
+#' @examples
+#' data <- matrix(stats::rnorm(200), 20, 10)
+#' cl <- factor(rep(c("A", "B"), each = 10))
+#' dist_mat <- stats::dist(data)
+#' calc_generative_precision_recall(data, cl)
 #' @export
 calc_generative_precision_recall <- function(
   ref_mat,
@@ -746,6 +829,11 @@ calc_generative_precision_recall <- function(
 #'
 #' @return A list containing overall accuracy, balanced accuracy, macro F1, macro precision,
 #'   macro recall, Cohen's kappa, and per-class performance metrics.
+#' @examples
+#' data <- matrix(stats::rnorm(200), 20, 10)
+#' cl <- factor(rep(c("A", "B"), each = 10))
+#' dist_mat <- stats::dist(data)
+#' evaluate_epigenomic_annotation(data, cl)
 #' @export
 evaluate_epigenomic_annotation <- function(
   ref_data,

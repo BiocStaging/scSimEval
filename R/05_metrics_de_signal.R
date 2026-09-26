@@ -8,6 +8,9 @@
 #' @param cell_types Factor or binary vector of 2 cell types.
 #' @param p_sig Significance threshold (default 0.05).
 #' @return Vector of adjusted p-values.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_signal_de(example_scrna$ref, example_scrna$cell_types)
 #' @export
 calc_signal_de <- function(exprs_mat, cell_types, p_sig = 0.05) {
   cell_types <- droplevels(as.factor(cell_types))
@@ -36,6 +39,9 @@ calc_signal_de <- function(exprs_mat, cell_types, p_sig = 0.05) {
 #' @param exprs_mat Log-normalized matrix (genes x cells).
 #' @param cell_types Factor of 2 cell types.
 #' @return Vector of adjusted p-values.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_signal_dv(example_scrna$ref, example_scrna$cell_types)
 #' @export
 calc_signal_dv <- function(exprs_mat, cell_types) {
   cell_types <- droplevels(as.factor(cell_types))
@@ -53,6 +59,9 @@ calc_signal_dv <- function(exprs_mat, cell_types) {
 #' @param exprs_mat Log-normalized matrix (genes x cells).
 #' @param cell_types Factor of 2 cell types.
 #' @return Vector of adjusted p-values.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_signal_dd(example_scrna$ref, example_scrna$cell_types)
 #' @export
 calc_signal_dd <- function(exprs_mat, cell_types) {
   cell_types <- droplevels(as.factor(cell_types))
@@ -75,6 +84,9 @@ calc_signal_dd <- function(exprs_mat, cell_types) {
 #' @param cell_types Factor of 2 cell types.
 #' @param threshold Value threshold for zero/detection status (default 0).
 #' @return Vector of adjusted p-values.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_signal_dp(example_scrna$ref, example_scrna$cell_types)
 #' @export
 calc_signal_dp <- function(exprs_mat, cell_types, threshold = 0) {
   cell_types <- droplevels(as.factor(cell_types))
@@ -96,6 +108,9 @@ calc_signal_dp <- function(exprs_mat, cell_types, threshold = 0) {
 #' @param exprs_mat Matrix (genes x cells).
 #' @param cell_types Factor of 2 cell types.
 #' @return Numeric vector of Bimodality Index values.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_signal_bd(example_scrna$ref, example_scrna$cell_types)
 #' @export
 calc_signal_bd <- function(exprs_mat, cell_types) {
   cell_types <- droplevels(as.factor(cell_types))
@@ -129,6 +144,9 @@ calc_signal_bd <- function(exprs_mat, cell_types) {
 #' @param bi_cutoff Bimodal index cutoff (default 0.3).
 #'
 #' @return A tidy data.frame comparing biological signal proportions.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' evaluate_simbench_signals(example_scrna$ref, example_scrna$cell_types)
 #' @export
 evaluate_simbench_signals <- function(
   ref_mat,
@@ -191,6 +209,9 @@ evaluate_simbench_signals <- function(
 #' @param method Classifier: "knn" (default), "rf", or "svm".
 #'
 #' @return A list containing Accuracy, Macro Precision, Macro Recall, and Macro F1 score.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' evaluate_predictive_de_model(example_scrna$ref, example_scrna$sim)
 #' @export
 evaluate_predictive_de_model <- function(
   data,
@@ -328,6 +349,9 @@ to_pseudobulk <- function(
 #'   \item{delta_variance}{Numeric vector of gene-level delta variance values}
 #'   \item{mean_delta_variance}{Mean delta variance across all genes}
 #'   \item{median_delta_variance}{Median delta variance across all genes}
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_delta_variance(example_scrna$ref, example_scrna$sim)
 #' @export
 calc_delta_variance <- function(
   counts,
@@ -380,6 +404,9 @@ calc_delta_variance <- function(
 #' @param sim_phases Factor or character vector of cell cycle phase assignments in simulation.
 #'
 #' @return A list with phase proportions, Jensen-Shannon divergence, and chi-squared test p-value.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_cell_cycle_phase_fidelity(example_scrna$cell_types, example_scrna$cell_types)
 #' @export
 calc_cell_cycle_phase_fidelity <- function(ref_phases, sim_phases) {
   all_phases <- union(unique(ref_phases), unique(sim_phases))
@@ -437,6 +464,9 @@ calc_cell_cycle_phase_fidelity <- function(ref_phases, sim_phases) {
 #'
 #' @return A list containing RMSE, MAE, Pearson correlation (r), Spearman correlation (rho),
 #'   Jensen-Shannon Divergence (JSD), and Total Variation Distance (TVD).
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' calc_deconvolution_accuracy(example_scrna$ref, example_scrna$sim)
 #' @export
 calc_deconvolution_accuracy <- function(
   true_proportions,
@@ -591,6 +621,9 @@ calc_deconvolution_accuracy <- function(
 #'   \item \code{ml_classification}: Detailed classifier performance metrics.
 #'   \item \code{pvalue_uniformity}: Chi-square goodness-of-fit test results.
 #' }
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' evaluate_deg_fidelity(example_scrna$ref, example_scrna$sim)
 #' @export
 evaluate_deg_fidelity <- function(
   ref_data,

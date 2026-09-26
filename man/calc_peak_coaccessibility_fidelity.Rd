@@ -28,8 +28,6 @@ Evaluates the preservation of chromatin peak-to-peak co-accessibility correlatio
 matrices (cis-regulatory interactions) between reference and simulated scATAC-seq datasets.
 }
 \examples{
-data(example_multiomics, package = "scSimEval")
-r_rna <- example_multiomics$ref_multi$rna
-r_atac <- example_multiomics$ref_multi$atac
-calc_peak_coaccessibility_fidelity(r_rna, r_atac)
+data(example_scrna, package = "scSimEval")
+calc_peak_coaccessibility_fidelity(example_scrna$ref, example_scrna$sim)
 }
