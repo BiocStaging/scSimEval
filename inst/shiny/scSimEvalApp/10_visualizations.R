@@ -1556,7 +1556,7 @@ plot_metric_heatmap <- function(
   } else df$Metric
 
   is_hib <- df$Metric %in% .HIGHER_IS_BETTER_METRICS
-  df$Display_Metric <- paste0(df$Display_Metric, ifelse(is_hib, " (\u2191)", " (\u2193)"))
+  df$Display_Metric <- paste0(df$Display_Metric, ifelse(is_hib, " (+)", " (-)"))
 
   # Normalize per metric for relative color scaling
   df <- .normalize_bubble_scores(df)
@@ -1648,7 +1648,7 @@ plot_metric_heatmap <- function(
       subtitle = "Cell text displays exact unnormalized raw scores; cell fill color indicates relative performance",
       x        = "Simulator Framework",
       y        = "Evaluated Biological & Computational Metric",
-      caption  = "Values displayed inside cells are original unnormalized scores. White borders separate discrete measures."
+      caption  = "Values displayed inside cells are original unnormalized scores. Fill indicates standardized fidelity [0, 1] (1.0 = best). (+) Higher is better, (-) Lower is better."
     ) +
     .pub_theme(base_size = base_size) +
     ggplot2::theme(

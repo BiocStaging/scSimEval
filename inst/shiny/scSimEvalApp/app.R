@@ -615,19 +615,43 @@ ui <- page_navbar(
       nav_panel(
         "5. Metric Heatmap",
         card(
-          card_header("Metric Correlation & Performance Heatmap (plot_metric_heatmap)"),
+          fill = FALSE,
+          card_header("Metric Performance Heatmap (plot_metric_heatmap)"),
           card_body(
             fluidRow(
-              column(8, p("Heatmap showing relative performance across all 62 curated metrics and simulation methods. Centered with increased vertical height and optimized width for clear row-level label legibility.", style = "font-size: 0.9rem; color: #555;")),
-              column(4,
+              column(3,
+                     selectInput(
+                       "sel_heat_cat", "Category Filter:",
+                       choices = c(
+                         "All 8 Categories Combined" = "all",
+                         "(I) Distributional Properties",
+                         "(II) Correlations & Zero-Inflation",
+                         "(III) Cellular Structure & Concordance",
+                         "(IV) Batch Effects & Confounder Mixing",
+                         "(V) Biological Signal & Downstream Fidelity",
+                         "(VI) Trajectory & Lineage Dynamics",
+                         "(VII) Cross-Modal Coupling & Modularity",
+                         "(VIII) Computational Scalability"
+                       ),
+                       selected = "all"
+                     )
+              ),
+              column(3,
+                     sliderInput("sld_heat_height", "Heatmap Height (px):", min = 400, max = 1500, value = 1100, step = 50)
+              ),
+              column(3,
+                     sliderInput("sld_heat_width", "Heatmap Width (px):", min = 600, max = 1300, value = 880, step = 20)
+              ),
+              column(3,
                      downloadButton("download_heat_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2"),
                      downloadButton("download_heat_pdf", "Download PDF", class = "btn btn-sm btn-outline-secondary")
               )
             ),
             hr(),
             div(
-              style = "max-width: 950px; margin: 0 auto;",
-              plotOutput("plot_metric_heat", height = "1250px")
+              class = "bubble-scroll-container",
+              style = "text-align: center; overflow-x: auto; padding: 10px;",
+              uiOutput("ui_plot_metric_heat")
             )
           )
         )
@@ -1471,24 +1495,61 @@ server <- function(input, output, session) {
     content = function(file) { grDevices::pdf(file, width = 13, height = 8); print(metric_box_reactive()); grDevices::dev.off() }
   )
   
-  # 5. Metric Correlation Heatmap (Increased height, decreased width, optimized layout)
+  # 5. Metric Performance Heatmap (Interactive dimensions & Category filtering)
+  observeEvent(input$sel_heat_cat, {
+    if (identical(input$sel_heat_cat, "all")) {
+      updateSliderInput(session, "sld_heat_height", value = 1100)
+      updateSliderInput(session, "sld_heat_width", value = 880)
+    } else {
+      updateSliderInput(session, "sld_heat_height", value = 520)
+      updateSliderInput(session, "sld_heat_width", value = 850)
+    }
+  }, ignoreInit = TRUE)
+
+  output$ui_plot_metric_heat <- renderUI({
+    w <- if (!is.null(input$sld_heat_width)) input$sld_heat_width else 880
+    h <- if (!is.null(input$sld_heat_height)) input$sld_heat_height else 1100
+    plotOutput("plot_metric_heat", width = paste0(w, "px"), height = paste0(h, "px"))
+  })
+
   metric_heat_reactive <- reactive({
     req(rv$benchmark_df)
+    cat_sel <- if (identical(input$sel_heat_cat, "all")) NULL else input$sel_heat_cat
+    b_size <- if (is.null(cat_sel)) 9.5 else 11
     plot_metric_heatmap(
       benchmark_data = rv$benchmark_df,
+      category = cat_sel,
       cluster_rows = FALSE,
       cluster_cols = FALSE,
-      base_size = 11
+      base_size = b_size
     )
   })
   output$plot_metric_heat <- renderPlot({ metric_heat_reactive() })
   output$download_heat_jpeg <- downloadHandler(
-    filename = function() { paste0("scSimEval_metric_heatmap_", Sys.Date(), ".jpeg") },
-    content = function(file) { export_single_jpeg(file, metric_heat_reactive(), width = 9.5, height = 15, dpi = 600) }
+    filename = function() {
+      cat_suffix <- if (identical(input$sel_heat_cat, "all")) "all_categories" else gsub("[^A-Za-z0-9_-]", "_", input$sel_heat_cat)
+      paste0("scSimEval_metric_heatmap_", cat_suffix, "_", Sys.Date(), ".jpeg")
+    },
+    content = function(file) {
+      is_all <- is.null(input$sel_heat_cat) || identical(input$sel_heat_cat, "all")
+      w <- if (is_all) 9.5 else 9.0
+      h <- if (is_all) 15.0 else 7.5
+      export_single_jpeg(file, metric_heat_reactive(), width = w, height = h, dpi = 600)
+    }
   )
   output$download_heat_pdf <- downloadHandler(
-    filename = function() { paste0("scSimEval_metric_heatmap_", Sys.Date(), ".pdf") },
-    content = function(file) { grDevices::pdf(file, width = 9.5, height = 15); print(metric_heat_reactive()); grDevices::dev.off() }
+    filename = function() {
+      cat_suffix <- if (identical(input$sel_heat_cat, "all")) "all_categories" else gsub("[^A-Za-z0-9_-]", "_", input$sel_heat_cat)
+      paste0("scSimEval_metric_heatmap_", cat_suffix, "_", Sys.Date(), ".pdf")
+    },
+    content = function(file) {
+      is_all <- is.null(input$sel_heat_cat) || identical(input$sel_heat_cat, "all")
+      w <- if (is_all) 9.5 else 9.0
+      h <- if (is_all) 15.0 else 7.5
+      grDevices::pdf(file, width = w, height = h)
+      print(metric_heat_reactive())
+      grDevices::dev.off()
+    }
   )
   
   # 6. PCA Ordination (6 Category-wise options & All Categories Combined)
