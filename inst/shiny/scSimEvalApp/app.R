@@ -700,8 +700,7 @@ ui <- page_navbar(
             fluidRow(
               column(12,
                      p(strong("Note on Metrics: "), "For ", em("All Categories Combined"),
-                       ", the figure highlights the most discriminating metrics",
-                       " ranked by vector loading magnitude (\\(\\sqrt{\\text{PC1}^2 + \\text{PC2}^2}\\)) in ordination space to prevent clutter while capturing key performance drivers.",
+                       HTML(", the figure highlights the most discriminating metrics ranked by vector loading magnitude [&radic;(PC1<sup>2</sup> + PC2<sup>2</sup>)] in ordination space to prevent visual clutter while capturing key performance drivers."),
                        style = "font-size: 0.86rem; color: #475569; margin-bottom: 8px;")
               )
             ),
