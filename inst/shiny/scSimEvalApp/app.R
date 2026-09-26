@@ -861,7 +861,6 @@ ui <- page_navbar(
       column(
         12,
         card(
-          card_header("scSimEval Studio: Scientific User Guide & Benchmarking Manual"),
           card_body(
             # Introduction Hero Callout
             div(
@@ -885,16 +884,16 @@ ui <- page_navbar(
             p("The benchmarking process follows a standardized four-step scientific pipeline operating directly on empirical reference and simulated matrices:"),
             
             div(
-              style = "text-align: center; margin: 24px 0 16px 0;",
+              style = "text-align: center; margin: 20px auto 16px auto; max-width: 820px;",
               tags$img(
                 src = "scfigures/workflow_diagram.png",
                 alt = "scSimEval Benchmarking Workflow Architecture",
-                style = "max-width: 100%; height: auto; border: 1.5px solid #0F172A; border-radius: 6px; padding: 4px; background-color: #FFFFFF; box-shadow: 0 4px 10px rgba(0,0,0,0.08);"
+                style = "width: 100%; max-width: 800px; height: auto; max-height: 480px; object-fit: contain; border: 1.5px solid #0F172A; border-radius: 6px; padding: 4px; background-color: #FFFFFF; box-shadow: 0 4px 10px rgba(0,0,0,0.08);"
               ),
               p(
                 tags$b("Figure 1 | The scSimEval Benchmarking Workflow Architecture. "),
                 "Step 1: Input empirical reference and simulated count matrices alongside metadata. Step 2: Compute 62 quantitative fidelity metrics across 8 core evaluation categories. Step 3: Execute the consolidated benchmarking engine. Step 4: Interactively explore standardized scores, simulator rankings, and 600 DPI diagnostic figures.",
-                style = "font-size: 0.88rem; color: #475569; margin-top: 10px; max-width: 950px; margin-left: auto; margin-right: auto;"
+                style = "font-size: 0.88rem; color: #475569; margin-top: 10px; max-width: 800px; margin-left: auto; margin-right: auto;"
               )
             ),
             
@@ -950,57 +949,57 @@ ui <- page_navbar(
                   style = "background-color: #F1F5F9; color: #0F172A;",
                   tags$tr(
                     tags$th("Category", style = "width: 26%;"),
-                    tags$th("Measures", style = "width: 10%; text-align: center;"),
-                    tags$th("Scientific Purpose & Scope", style = "width: 32%;"),
-                    tags$th("Key Quantitative Measures Included", style = "width: 32%;")
+                    tags$th("Measures", style = "width: 12%; text-align: center;"),
+                    tags$th("Scientific Purpose & Scope", style = "width: 31%;"),
+                    tags$th("Key Quantitative Measures Included", style = "width: 31%;")
                   )
                 ),
                 tags$tbody(
                   tags$tr(
                     tags$td(tags$b("(I) Distributional Properties")),
-                    tags$td(style = "text-align: center;", tags$span(class = "badge bg-primary", "14 metrics")),
+                    tags$td(style = "text-align: center;", tags$span(style = "background-color: #1D4ED8; color: #FFFFFF; font-weight: 700; font-size: 0.84rem; padding: 5px 12px; border-radius: 14px; display: inline-block; white-space: nowrap;", "14 metrics")),
                     tags$td("Compares single-cell count distributions (library size, mean expression, variance, zero fraction) and data manifolds between empirical reference and synthetic data."),
                     tags$td("Kolmogorov-Smirnov (KS), Wasserstein distance, MAD, MAE, RMSE, Bhattacharyya distance, ECDF area, Runs test, Maximum Mean Discrepancy (MMD), Fr\u00e9chet SC distance, 2D KDE z-stat, Peacock 2D, Fasano-Franceschini 2D")
                   ),
                   tags$tr(
                     tags$td(tags$b("(II) Correlations & Zero-Inflation")),
-                    tags$td(style = "text-align: center;", tags$span(class = "badge bg-success", "8 metrics")),
+                    tags$td(style = "text-align: center;", tags$span(style = "background-color: #047857; color: #FFFFFF; font-weight: 700; font-size: 0.84rem; padding: 5px 12px; border-radius: 14px; display: inline-block; white-space: nowrap;", "8 metrics")),
                     tags$td("Evaluates biological variation, technical dropout kinetics, cell-to-cell correlations, and gene co-expression dependencies."),
                     tags$td("Biological CV (BCV), Dropout midpoint (x0), Dropout slope (k), Mean-variance R\u00b2, Cell Pearson correlation, Feature Pearson correlation, Zero fraction divergence")
                   ),
                   tags$tr(
                     tags$td(tags$b("(III) Cellular Structure & Concordance")),
-                    tags$td(style = "text-align: center;", tags$span(class = "badge bg-info text-dark", "9 metrics")),
+                    tags$td(style = "text-align: center;", tags$span(style = "background-color: #7C3AED; color: #FFFFFF; font-weight: 700; font-size: 0.84rem; padding: 5px 12px; border-radius: 14px; display: inline-block; white-space: nowrap;", "9 metrics")),
                     tags$td("Assesses whether synthetic data preserves distinct cell types, cluster separation boundaries, and underlying manifold geometry."),
                     tags$td("Silhouette width (ASW), Dunn index, Davies-Bouldin, Calinski-Harabasz, Adjusted Rand Index (ARI), Normalized Mutual Information (NMI), Adjusted Mutual Information (AMI), V-Measure, Neighborhood Purity, Generative Precision")
                   ),
                   tags$tr(
                     tags$td(tags$b("(IV) Batch Effects & Confounder Mixing")),
-                    tags$td(style = "text-align: center;", tags$span(class = "badge bg-warning text-dark", "6 metrics")),
+                    tags$td(style = "text-align: center;", tags$span(style = "background-color: #D97706; color: #FFFFFF; font-weight: 700; font-size: 0.84rem; padding: 5px 12px; border-radius: 14px; display: inline-block; white-space: nowrap;", "6 metrics")),
                     tags$td("Tests whether technical batch confounders are realistically represented and properly mixed without erasing genuine biological signal."),
                     tags$td("Batch Silhouette width, Shannon entropy of batch mixing, Principal Component Regression R\u00b2, Cell-Specific Mixing Score (CMS), Local Inverse Simpson's Index (LISI/iLISI), Seurat mixing metric, Local Density Difference (ldfDiff)")
                   ),
                   tags$tr(
                     tags$td(tags$b("(V) Biological Signal & Downstream Fidelity")),
-                    tags$td(style = "text-align: center;", tags$span(class = "badge bg-danger", "15 metrics")),
+                    tags$td(style = "text-align: center;", tags$span(style = "background-color: #DC2626; color: #FFFFFF; font-weight: 700; font-size: 0.84rem; padding: 5px 12px; border-radius: 14px; display: inline-block; white-space: nowrap;", "15 metrics")),
                     tags$td("Assesses differentially expressed gene (DEG) preservation and biological identity across Simpipe, SimBench, and Shaky Foundations benchmarking frameworks."),
                     tags$td("SimBench SMAPE, DEG fidelity (1-SMAPE), log2FC Pearson correlation, log2FC Spearman correlation, Top DEG Jaccard overlap, DEG ratio (sim/real), P-value uniform distribution Chisq, Distribution Score, Classifier Accuracy, Classifier Macro-F1, Classifier Macro-Recall, Group Silhouette, Silhouette Discrepancy, Group PVE, Group PVE Discrepancy")
                   ),
                   tags$tr(
                     tags$td(tags$b("(VI) Trajectory & Lineage Dynamics")),
-                    tags$td(style = "text-align: center;", tags$span(class = "badge bg-secondary", "2 metrics")),
+                    tags$td(style = "text-align: center;", tags$span(style = "background-color: #0D9488; color: #FFFFFF; font-weight: 700; font-size: 0.84rem; padding: 5px 12px; border-radius: 14px; display: inline-block; white-space: nowrap;", "2 metrics")),
                     tags$td("Evaluates continuous developmental timelines and branching differentiation topologies inferred directly from scRNA-seq expression."),
                     tags$td("Pseudotime Spearman rank correlation (rho), Lineage tree branch height RMSE")
                   ),
                   tags$tr(
                     tags$td(tags$b("(VII) Cross-Modal Coupling & Modularity")),
-                    tags$td(style = "text-align: center;", tags$span(class = "badge bg-primary", "6 metrics")),
+                    tags$td(style = "text-align: center;", tags$span(style = "background-color: #4F46E5; color: #FFFFFF; font-weight: 700; font-size: 0.84rem; padding: 5px 12px; border-radius: 14px; display: inline-block; white-space: nowrap;", "6 metrics")),
                     tags$td("Evaluates paired multiomics coordination between single-cell chromatin accessibility (scATAC-seq) and gene expression (scRNA-seq)."),
                     tags$td("Cross-modal cell type transfer accuracy, Cross-modal Macro-F1, Fraction of Samples Closer than True Match (FOSCTTM), Match@1 exact pairing, Matrix correlation (RV coefficient), Module co-accessibility correlation")
                   ),
                   tags$tr(
                     tags$td(tags$b("(VIII) Computational Scalability")),
-                    tags$td(style = "text-align: center;", tags$span(class = "badge bg-dark", "2 metrics")),
+                    tags$td(style = "text-align: center;", tags$span(style = "background-color: #475569; color: #FFFFFF; font-weight: 700; font-size: 0.84rem; padding: 5px 12px; border-radius: 14px; display: inline-block; white-space: nowrap;", "2 metrics")),
                     tags$td("Measures computational footprint, execution throughput, and hardware feasibility across simulator implementations."),
                     tags$td("Total execution time (wall-clock seconds), Peak resident memory consumption (MiB)")
                   )
@@ -1016,16 +1015,16 @@ ui <- page_navbar(
             p("In single-cell simulation benchmarking, evaluated metrics span diverse units and optimization polarities (e.g., KS distance near 0.0, runtime in seconds, memory in MiB, clustering ARI between -1 and 1). To enable equitable comparison across criteria, scSimEval applies an automated, rigorous two-step score normalization pipeline:"),
             
             div(
-              style = "text-align: center; margin: 24px 0 16px 0;",
+              style = "text-align: center; margin: 20px auto 16px auto; max-width: 820px;",
               tags$img(
                 src = "scfigures/score_normalization_workflow.png",
                 alt = "Score Normalization & Visual Mapping Workflow",
-                style = "max-width: 100%; height: auto; border: 1.5px solid #0F172A; border-radius: 6px; padding: 4px; background-color: #FFFFFF; box-shadow: 0 4px 10px rgba(0,0,0,0.08);"
+                style = "width: 100%; max-width: 800px; height: auto; max-height: 480px; object-fit: contain; border: 1.5px solid #0F172A; border-radius: 6px; padding: 4px; background-color: #FFFFFF; box-shadow: 0 4px 10px rgba(0,0,0,0.08);"
               ),
               p(
                 tags$b("Figure 2 | Two-Step Score Normalization & Visual Mapping Pipeline. "),
                 "Direction inversion of lower-is-better measures followed by min-max scaling [0.00, 1.00] standardizes heterogeneous metrics into a uniform quality scale, directly controlling visual mappings in the Comparative Bubble Matrix and executive summary rankings.",
-                style = "font-size: 0.88rem; color: #475569; margin-top: 10px; max-width: 950px; margin-left: auto; margin-right: auto;"
+                style = "font-size: 0.88rem; color: #475569; margin-top: 10px; max-width: 800px; margin-left: auto; margin-right: auto;"
               )
             ),
             
@@ -1195,29 +1194,6 @@ ui <- page_navbar(
                   )
                 )
               )
-            ),
-            hr(style = "margin: 28px 0;"),
-            
-            # ------------------------------------------------------------------
-            # Section 5: Authorship & Institutional Affiliations
-            # ------------------------------------------------------------------
-            h4("5. Authorship & Institutional Affiliations", style = "font-weight: 700; color: #1B4F72;"),
-            p("scSimEval was developed as part of Ph.D. research in Agricultural Bioinformatics at the Division of Agricultural Bioinformatics, ICAR - Indian Agricultural Statistics Research Institute (IASRI), New Delhi, India:"),
-            tags$ul(
-              style = "font-size: 0.90rem; color: #334155;",
-              tags$li(tags$b("Kabilan S "), "(Ph.D. Scholar and Maintainer, ICAR-IASRI) \u2014 ", tags$code("kabilan151414@gmail.com")),
-              tags$li(tags$b("Dr. Dwijesh Chandra Mishra "), "(Principal Scientist & Thesis Guide, ICAR-IASRI) \u2014 ", tags$code("dwij.mishra@gmail.com")),
-              tags$li(tags$b("Dr. Shashi Bhushan Lal "), "(Principal Scientist, ICAR-IASRI) \u2014 ", tags$code("sblall16@gmail.com")),
-              tags$li(tags$b("Dr. Sudhir Srivastava "), "(Principal Scientist, ICAR-IASRI) \u2014 ", tags$code("sudhir0401bm@gmail.com")),
-              tags$li(tags$b("Dr. Krishna Kumar Chaturvedi "), "(Principal Scientist, ICAR-IASRI) \u2014 ", tags$code("kkcchaturvedi@gmail.com")),
-              tags$li(tags$b("Dr. Sharanbasappa "), "(Scientist, ICAR-IASRI) \u2014 ", tags$code("smadival509@gmail.com"))
-            ),
-            p(
-              "GitHub Source & Documentation: ",
-              tags$a(href = "https://github.com/kabilanbio/scSimEval", target = "_blank", "https://github.com/kabilanbio/scSimEval"),
-              " | Issue Tracker: ",
-              tags$a(href = "https://github.com/kabilanbio/scSimEval/issues", target = "_blank", "https://github.com/kabilanbio/scSimEval/issues"),
-              style = "font-size: 0.88rem; color: #64748B;"
             )
           )
         )
