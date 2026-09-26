@@ -26,3 +26,8 @@ Calculates the mixing metric originally proposed in Seurat (Stuart et al., Cell 
 and adapted by CellMixS. For each cell, finds the rank of the k_pos-th neighbor
 from each batch in the sorted neighborhood, and computes the median rank across batches.
 }
+\examples{
+coords <- matrix(stats::rnorm(100), 50, 2)
+batch <- factor(rep(c("B1", "B2"), length.out = 50))
+calc_seurat_mixing_metric(coords, batch)
+}

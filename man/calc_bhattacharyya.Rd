@@ -19,3 +19,8 @@ Statistical divergence between discrete probability measures.
 \description{
 Calculate Bhattacharyya Distance (BH)
 }
+\examples{
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_bhattacharyya(ref, sim)
+}

@@ -17,3 +17,7 @@ Vector of adjusted p-values.
 \description{
 Detect Differential Distribution (DD) Genes (Kolmogorov-Smirnov Test)
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+calc_signal_dd(example_scrna$ref, example_scrna$cell_types)
+}

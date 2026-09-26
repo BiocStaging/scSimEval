@@ -42,3 +42,8 @@ Computes cell-specific p-values via Anderson-Darling tests (if kSamples
 installed) or two-sample Kolmogorov-Smirnov / Kruskal-Wallis tests, with
 optional delegation to CellMixS::cms.
 }
+\examples{
+coords <- matrix(stats::rnorm(100), 50, 2)
+batch <- factor(rep(c("B1", "B2"), length.out = 50))
+calc_cms(coords, batch)
+}

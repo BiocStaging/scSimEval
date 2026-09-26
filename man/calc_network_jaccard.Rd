@@ -22,3 +22,9 @@ Jaccard similarity index in [0, 1] (|E1 cap E2| / |E1 cup E2|).
 Computes the Jaccard similarity index of top-k edge predictions between two networks
 or top correlated feature pairs between reference and simulated datasets.
 }
+\examples{
+data(example_multiomics, package = "scSimEval")
+r_rna <- example_multiomics$ref_multi$rna
+r_atac <- example_multiomics$ref_multi$atac
+calc_network_jaccard(matrix(c(1,2, 2,3), ncol=2), matrix(c(1,2, 2,3), ncol=2))
+}

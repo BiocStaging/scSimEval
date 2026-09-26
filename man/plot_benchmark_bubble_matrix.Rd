@@ -102,7 +102,7 @@ so that 1 always means best performance, while concordance/correlation metrics a
 directly (higher = better).
 }
 \examples{
-\dontrun{
+\donttest{
 # Load benchmark summary across simulators
 demo_file <- system.file("shiny/scSimEvalApp/data/demo_benchmark_data.rds", package = "scSimEval")
 if (file.exists(demo_file)) {

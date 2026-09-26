@@ -48,3 +48,7 @@ memory consumption in MiB).
 
 \if{html}{\figure{scalability_benchmark.png}{options: width="100\%" alt="Computational Scalability and Resource Footprint"}}
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+}

@@ -41,3 +41,9 @@ from raw or normalized count matrices without requiring ground-truth cell-type l
 CDI calculates the penalized log-likelihood (CDI-AIC and CDI-BIC) of count data
 under a cluster-specific Poisson or Negative Binomial GLM with cell size factors.
 }
+\examples{
+data <- matrix(stats::rnorm(200), 20, 10)
+cl <- factor(rep(c("A", "B"), each = 10))
+dist_mat <- stats::dist(data)
+calc_cdi(data, cl)
+}

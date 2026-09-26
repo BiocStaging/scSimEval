@@ -19,3 +19,8 @@ Named list of univariate distance metrics.
 \description{
 Compute All Univariate Distance & Accuracy Metrics for a Feature
 }
+\examples{
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_all_univariate_metrics(ref, sim)
+}

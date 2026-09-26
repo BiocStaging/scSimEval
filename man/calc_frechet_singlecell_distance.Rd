@@ -27,3 +27,8 @@ A list with Fréchet distance (FSD), mean discrepancy, and covariance trace disc
 Computes the single-cell analogue of Fréchet Inception Distance (FID) on
 low-dimensional PCA embeddings between reference and simulated cell populations.
 }
+\examples{
+ref <- matrix(stats::rnorm(100), 50, 2)
+sim <- matrix(stats::rnorm(100), 50, 2)
+calc_frechet_singlecell_distance(ref, sim)
+}

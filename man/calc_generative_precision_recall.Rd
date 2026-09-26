@@ -30,3 +30,9 @@ A list containing Generative Precision, Generative Recall, and Generative F1.
 Evaluates the realism (Precision) and coverage/diversity (Recall) of generated
 single-cell distributions relative to empirical reference data using k-NN hyperspheres.
 }
+\examples{
+data <- matrix(stats::rnorm(200), 20, 10)
+cl <- factor(rep(c("A", "B"), each = 10))
+dist_mat <- stats::dist(data)
+calc_generative_precision_recall(data, cl)
+}

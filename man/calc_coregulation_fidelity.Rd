@@ -28,3 +28,9 @@ A list containing module correlation r, RMSE, MAE, and modularity fidelity.
 Evaluates the preservation of co-regulated gene/feature modules between reference
 and simulated multi-omics datasets (Monzo et al., 2025; Arzalluz-Luque et al., 2022).
 }
+\examples{
+data(example_multiomics, package = "scSimEval")
+r_rna <- example_multiomics$ref_multi$rna
+r_atac <- example_multiomics$ref_multi$atac
+calc_coregulation_fidelity(r_rna, r_atac)
+}

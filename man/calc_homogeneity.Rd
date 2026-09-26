@@ -17,3 +17,8 @@ Homogeneity score between 0 and 1.
 \description{
 Calculate Homogeneity Score
 }
+\examples{
+pred <- factor(rep(c("A", "B"), each = 20))
+truth <- factor(rep(c("A", "B"), each = 20))
+calc_homogeneity(pred, truth)
+}

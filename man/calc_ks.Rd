@@ -17,3 +17,8 @@ Maximum vertical distance between empirical CDFs (between 0 and 1).
 \description{
 Calculate Kolmogorov-Smirnov Distance (1D KS)
 }
+\examples{
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_ks(ref, sim)
+}

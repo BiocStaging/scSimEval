@@ -24,3 +24,8 @@ dataset label composition in k-NN neighborhoods departs significantly from
 the overall global dataset proportion using Chi-squared tests.
 Works for both 1D numeric vectors and 2D matrices.
 }
+\examples{
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_nn_mismatch(ref, sim)
+}

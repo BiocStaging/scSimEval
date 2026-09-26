@@ -17,3 +17,8 @@ Area of overlap under probability densities (0 to 1).
 \description{
 Calculate Distribution Overlapping Index (OV)
 }
+\examples{
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_overlap(ref, sim)
+}

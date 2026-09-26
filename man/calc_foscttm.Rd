@@ -30,3 +30,9 @@ or integrated space (Zhai et al., Genome Biology 2024; Liu et al., Nat Biotechno
 A score of 0 represents perfect alignment (where the true paired cell is the nearest neighbor),
 while 0.5 corresponds to random chance.
 }
+\examples{
+data(example_multiomics, package = "scSimEval")
+r_rna <- example_multiomics$ref_multi$rna
+r_atac <- example_multiomics$ref_multi$atac
+calc_foscttm(r_rna, r_atac)
+}

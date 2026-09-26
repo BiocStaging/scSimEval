@@ -19,3 +19,7 @@ Vector of adjusted p-values.
 \description{
 Detect Differential Proportion / Zero-Inflation (DP) Genes (Chisq Test)
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+calc_signal_dp(example_scrna$ref, example_scrna$cell_types)
+}

@@ -17,3 +17,7 @@ Named numeric vector of curve parameter differences.
 \description{
 Compares empirical dropout trends between reference and simulated datasets.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+evaluate_zero_probability_curve(example_scrna$ref, example_scrna$sim)
+}

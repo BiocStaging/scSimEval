@@ -41,3 +41,6 @@ Evaluates gene-wise and aggregate marginal goodness-of-fit (Poisson, Negative Bi
 for simulated or fitted single-cell count matrices, computing total and mean AIC and BIC
 across genes (scDesign3; Song et al., 2024).
 }
+\examples{
+calc_marginal_aic_bic(stats::rnorm(50), stats::rnorm(50))
+}

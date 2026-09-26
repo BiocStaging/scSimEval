@@ -18,3 +18,9 @@ A list with cross-modal classification accuracy and macro F1 score.
 Trains a model using ONLY Modality 1 (e.g., scATAC-seq) and predicts cell-type
 identities defined in Modality 2 (e.g., scRNA-seq) to test cross-modal biological coherence.
 }
+\examples{
+data(example_multiomics, package = "scSimEval")
+r_rna <- example_multiomics$ref_multi$rna
+r_atac <- example_multiomics$ref_multi$atac
+evaluate_cross_modal_prediction(r_rna, example_multiomics$cell_types)
+}

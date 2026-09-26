@@ -22,3 +22,9 @@ Evaluates whether simulated paired scATAC-seq and scRNA-seq profiles capture the
 regulatory coupling where regional chromatin opening gates target gene transcription
 (scMultiSim; Li et al., Nat Methods 2023).
 }
+\examples{
+data(example_multiomics, package = "scSimEval")
+r_rna <- example_multiomics$ref_multi$rna
+r_atac <- example_multiomics$ref_multi$atac
+calc_atac_rna_coupling(r_rna, r_atac)
+}

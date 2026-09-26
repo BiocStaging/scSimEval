@@ -33,3 +33,7 @@ A tidy data.frame comparing biological signal proportions.
 Compares proportions of genes exhibiting DE, DV, DD, DP, and BD between
 empirical reference and simulated datasets.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+evaluate_simbench_signals(example_scrna$ref, example_scrna$cell_types)
+}

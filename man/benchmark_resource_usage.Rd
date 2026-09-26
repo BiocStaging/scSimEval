@@ -15,3 +15,6 @@ A list with elapsed seconds and peak memory allocated (MB).
 \description{
 Times an expression and measures change in memory allocation.
 }
+\examples{
+benchmark_resource_usage({ Sys.sleep(0.01); 1 + 1 })
+}

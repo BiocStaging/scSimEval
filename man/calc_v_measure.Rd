@@ -19,3 +19,8 @@ V-measure score between 0 and 1.
 \description{
 Calculate V-Measure
 }
+\examples{
+pred <- factor(rep(c("A", "B"), each = 20))
+truth <- factor(rep(c("A", "B"), each = 20))
+calc_v_measure(pred, truth)
+}

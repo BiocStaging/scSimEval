@@ -70,3 +70,7 @@ benchmarking frameworks:
         silhouette discrepancy, and Percent Variance Explained (PVE) by group assignment.
 }
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+evaluate_deg_fidelity(example_scrna$ref, example_scrna$sim)
+}

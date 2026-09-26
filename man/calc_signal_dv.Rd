@@ -17,3 +17,7 @@ Vector of adjusted p-values.
 \description{
 Detect Differential Variability (DV) Genes (Bartlett Test)
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+calc_signal_dv(example_scrna$ref, example_scrna$cell_types)
+}

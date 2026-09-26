@@ -21,3 +21,8 @@ Named list of bivariate metrics.
 \description{
 Compute All Bivariate (2D) Distance & Accuracy Metrics for Joint Distributions
 }
+\examples{
+ref <- matrix(stats::rnorm(100), 50, 2)
+sim <- matrix(stats::rnorm(100), 50, 2)
+calc_all_bivariate_metrics(ref, sim)
+}

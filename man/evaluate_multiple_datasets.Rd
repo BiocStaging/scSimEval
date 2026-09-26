@@ -46,3 +46,7 @@ including paired multiomics (e.g., scRNA-seq and scATAC-seq from the same biolog
 and unimodal datasets (e.g., standalone scRNA-seq or scATAC-seq). Produces a unified,
 consolidated summary table, comparative ranking matrix, and dataset overview.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+}

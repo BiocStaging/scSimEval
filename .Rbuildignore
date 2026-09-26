@@ -8,4 +8,9 @@
 ^.*\.log$
 ^data-raw$
 ^doc$
+^docs$
+^pkgdown$
+^inst/doc$
+^scSimEval\.BiocCheck$
+^man/figures$
 ^Meta$

@@ -26,3 +26,8 @@ Evaluates the diversity of batch labels within each cell's k-nearest neighborhoo
 using the Inverse Simpson Index (1 / sum(p_b^2)).
 Implements a pure-R, lightweight formulation of LISI with optional distance weighting.
 }
+\examples{
+coords <- matrix(stats::rnorm(100), 50, 2)
+batch <- factor(rep(c("B1", "B2"), length.out = 50))
+calc_isi(coords, batch)
+}

@@ -65,3 +65,7 @@ If \code{by_category = TRUE}, a multi-panel dashboard is produced showing one MD
 category (by default across the 6 canonical categories with >= 3 measures, excluding Trajectory and
 Scalability which each contain only 2 measures).
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+}

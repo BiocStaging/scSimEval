@@ -14,11 +14,12 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(scSimEval)
 #' # Launch the interactive studio
-#' launch_scSimEval_app()
-#'
+#' if (interactive()) {
+#'   launch_scSimEval_app()
+#' }
 #' }
 launch_scSimEval_app <- function(port = NULL, host = "127.0.0.1", launch.browser = interactive()) {
   # Verify suggested packages required for the interactive UI

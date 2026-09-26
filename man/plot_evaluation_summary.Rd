@@ -78,7 +78,7 @@ across the 8 canonical evaluation categories and overall composite performance.
 \if{html}{\figure{evaluation_summary_bars.png}{options: width="100\%" alt="Single-Cell Simulator Evaluation Summary"}}
 }
 \examples{
-\dontrun{
+\donttest{
 demo <- readRDS(system.file("shiny/scSimEvalApp/data/demo_benchmark_data.rds", package = "scSimEval"))
 p <- plot_evaluation_summary(demo$benchmark_summary_table)
 print(p)

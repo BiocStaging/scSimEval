@@ -17,3 +17,8 @@ ARI value between -1 and 1.
 \description{
 Calculate Adjusted Rand Index (ARI)
 }
+\examples{
+pred <- factor(rep(c("A", "B"), each = 20))
+truth <- factor(rep(c("A", "B"), each = 20))
+calc_ari(pred, truth)
+}

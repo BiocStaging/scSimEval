@@ -19,3 +19,8 @@ Numeric MAD value.
 \description{
 Calculate Median Absolute Deviation (MAD)
 }
+\examples{
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_mad(ref, sim)
+}

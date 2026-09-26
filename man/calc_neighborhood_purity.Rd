@@ -24,3 +24,9 @@ Integrated from simPIC (Chugh et al., 2024; bluster::neighborPurity).
 For each cell, evaluates the proportion of its k-nearest neighbors that
 share the same cluster or cell-type identity.
 }
+\examples{
+data <- matrix(stats::rnorm(200), 20, 10)
+cl <- factor(rep(c("A", "B"), each = 10))
+dist_mat <- stats::dist(data)
+calc_neighborhood_purity(data, cl)
+}

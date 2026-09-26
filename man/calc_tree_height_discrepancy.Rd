@@ -30,3 +30,7 @@ Computes the Root Mean Squared Error (RMSE) between sorted branch heights of
 hierarchical lineage trees. Accepts either precomputed \code{hclust} objects
 OR scRNA-seq count matrices + \code{cell_types} (which will be automatically inferred).
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+calc_tree_height_discrepancy(example_scrna$ref, example_scrna$sim)
+}

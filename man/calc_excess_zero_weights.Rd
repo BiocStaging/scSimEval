@@ -16,3 +16,7 @@ A list with mean excess zero weight, gene-level weights, and estimated zero-infl
 Calculates the posterior probability of zero counts being technical dropouts
 (excess zeros) versus biological sampling zeros under a Negative Binomial model.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+calc_excess_zero_weights(example_scrna$ref)
+}

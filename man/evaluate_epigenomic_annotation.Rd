@@ -39,3 +39,9 @@ Trains a supervised classification model on reference single-cell chromatin acce
 profiles (scATAC-seq / scCAS) and evaluates cell-type prediction / projection accuracy
 on simulated cells against ground-truth cell-type labels (Chen et al., Nat Mach Intell 2022).
 }
+\examples{
+data <- matrix(stats::rnorm(200), 20, 10)
+cl <- factor(rep(c("A", "B"), each = 10))
+dist_mat <- stats::dist(data)
+evaluate_epigenomic_annotation(data, cl)
+}

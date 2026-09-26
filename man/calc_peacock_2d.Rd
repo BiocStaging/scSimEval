@@ -19,3 +19,8 @@ Peacock test statistic.
 Calculate Peacock 2D Kolmogorov-Smirnov Test Statistic
 Integrated from HelenaLC/simulation-comparison.
 }
+\examples{
+ref <- matrix(stats::rnorm(100), 50, 2)
+sim <- matrix(stats::rnorm(100), 50, 2)
+calc_peacock_2d(ref, sim)
+}

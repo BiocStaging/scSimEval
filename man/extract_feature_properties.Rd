@@ -21,3 +21,7 @@ Computes mean abundance, standard deviation, variance, coefficient of variation 
 feature dropout (zero fraction), dispersion, Biological Coefficient of Variation (BCV),
 gene-gene correlations, and outlier proportions.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+extract_feature_properties(example_scrna$ref)
+}

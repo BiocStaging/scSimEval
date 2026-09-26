@@ -19,3 +19,8 @@ A named list containing homogeneity, completeness, and v_measure.
 \description{
 Integrated from scCluBench (Xu et al., AAAI 2026).
 }
+\examples{
+pred <- factor(rep(c("A", "B"), each = 20))
+truth <- factor(rep(c("A", "B"), each = 20))
+calc_homogeneity_completeness_v_measure(pred, truth)
+}

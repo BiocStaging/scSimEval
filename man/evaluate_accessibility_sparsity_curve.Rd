@@ -21,3 +21,7 @@ A list of reference and simulated curve parameters, absolute discrepancies,
 Compares the non-linear relationship between peak mean accessibility and non-zero
 proportion (NZP) between reference and simulated scATAC-seq datasets.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+evaluate_accessibility_sparsity_curve(example_scrna$ref, example_scrna$sim)
+}

@@ -18,3 +18,8 @@ Normalized area between the two eCDFs.
 Integrated from countsimQC (Soneson & Robinson). Measures the normalized area
 between the eCDFs of reference and simulation across the shared support.
 }
+\examples{
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_ecdf_diffarea(ref, sim)
+}

@@ -20,3 +20,7 @@ A list containing mean intrinsic noise, mean extrinsic noise, noise ratio, and g
 Decomposes gene expression variance / squared coefficient of variation (CV^2)
 into intrinsic transcriptional bursting noise and extrinsic cell-state noise.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+calc_kinetic_noise_decomposition(example_scrna$ref)
+}

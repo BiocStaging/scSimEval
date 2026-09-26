@@ -32,3 +32,8 @@ Vinh, N. X., Epps, J., & Bailey, J. (2010). Information theoretic measures for c
 
 Lan, W., Ling, T., Chen, Q. et al. scMoMtF: An interpretable multitask learning framework for single-cell multi-omics data analysis. PLOS Comput Biol 20(12): e1012679 (2024).
 }
+\examples{
+pred <- factor(rep(c("A", "B"), each = 20))
+truth <- factor(rep(c("A", "B"), each = 20))
+calc_ami(pred, truth)
+}

@@ -25,3 +25,8 @@ A list with MMD, squared MMD, and the kernel bandwidth sigma used.
 Evaluates the distributional discrepancy between empirical reference and
 generated/simulated single-cell high-dimensional profiles or latent embeddings.
 }
+\examples{
+ref <- matrix(stats::rnorm(100), 50, 2)
+sim <- matrix(stats::rnorm(100), 50, 2)
+calc_mmd(ref, sim)
+}

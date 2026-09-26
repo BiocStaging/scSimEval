@@ -78,7 +78,6 @@ evaluate_cross_modal_prediction <- function(mod1_data, cell_types) {
   cell_types <- as.factor(cell_types)
   data_t <- t(as.matrix(mod1_data))
   
-  set.seed(42)
   n <- nrow(data_t)
   train_idx <- sample(seq_len(n), round(0.8 * n))
   

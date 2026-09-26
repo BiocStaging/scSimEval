@@ -216,7 +216,6 @@ evaluate_predictive_de_model <- function(
   }
   
   sub_data <- as.data.frame(t(data_mat[de_features, , drop = FALSE]))
-  set.seed(42)
   n_cells <- nrow(sub_data)
   train_idx <- sample(seq_len(n_cells), round(0.8 * n_cells))
   

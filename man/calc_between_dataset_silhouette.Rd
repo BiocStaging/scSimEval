@@ -21,3 +21,8 @@ Integrated from countsimQC (Soneson & Robinson). Treats dataset identity
 (reference vs. simulation) as cluster labels to test if the two datasets
 separate into distinct clusters or remain well-mixed.
 }
+\examples{
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_between_dataset_silhouette(ref, sim)
+}

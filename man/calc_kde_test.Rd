@@ -19,3 +19,8 @@ z-statistic testing discrepancy between bivariate kernel density estimates.
 Calculate 2D Bivariate Kernel Density Estimation (KDE) Test Statistic
 Integrated from simpipe & SimBench.
 }
+\examples{
+ref <- matrix(stats::rnorm(100), 50, 2)
+sim <- matrix(stats::rnorm(100), 50, 2)
+calc_kde_test(ref, sim)
+}

@@ -21,3 +21,8 @@ Normalized 2D Earth Mover's Distance.
 Computes 2D bivariate density via MASS::kde2d over a shared bounding box,
 then measures optimal transport distance via emdist::emd2d.
 }
+\examples{
+ref <- matrix(stats::rnorm(100), 50, 2)
+sim <- matrix(stats::rnorm(100), 50, 2)
+calc_emd_2d(ref, sim)
+}

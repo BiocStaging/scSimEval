@@ -601,7 +601,6 @@ evaluate_clustering_metrics <- function(
   # If pred_clusters is not provided, run k-means with k = nlevels(cluster_info)
   if (is.null(pred_clusters) && nlevels(cluster_info) >= 2) {
     k_centers <- nlevels(cluster_info)
-    set.seed(42)
     km_fit <- tryCatch(stats::kmeans(t(as.matrix(data)), centers = k_centers, nstart = 5), error = function(e) NULL)
     if (!is.null(km_fit)) {
       pred_clusters <- factor(km_fit$cluster)

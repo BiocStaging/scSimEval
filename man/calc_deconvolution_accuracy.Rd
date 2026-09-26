@@ -32,3 +32,7 @@ methods between empirical reference and simulated cell populations (Chen et al.,
 Can accept precomputed proportion matrices OR cell-type vectors (and optional batch labels)
 to calculate proportion preservation across batches.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+calc_deconvolution_accuracy(example_scrna$ref, example_scrna$sim)
+}

@@ -20,3 +20,6 @@ A named vector or data.frame containing loglik, n_params, n_obs, AIC, and BIC.
 Evaluates the statistical trade-off between model fit and parameter complexity
 for single-cell generative models as benchmarked in scDesign3 (Song et al., Nat Biotechnol 2024).
 }
+\examples{
+calc_model_aic_bic(-100, 5, 100)
+}

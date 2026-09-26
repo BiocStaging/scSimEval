@@ -19,3 +19,8 @@ Mean absolute difference.
 \description{
 Calculate Mean Absolute Error (MAE)
 }
+\examples{
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_mae(ref, sim)
+}

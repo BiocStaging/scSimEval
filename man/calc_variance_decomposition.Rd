@@ -30,3 +30,7 @@ A list of mean percentage of variance explained by cell-type, donor, and residua
 Decomposes gene expression variance into biological cell-type heterogeneity,
 donor / biological replicate variation, and residual technical noise.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+calc_variance_decomposition(example_scrna$ref, example_scrna$sim)
+}

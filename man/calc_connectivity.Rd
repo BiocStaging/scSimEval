@@ -17,3 +17,9 @@ Connectivity metric.
 \description{
 Calculate Cluster Connectivity
 }
+\examples{
+data <- matrix(stats::rnorm(200), 20, 10)
+cl <- factor(rep(c("A", "B"), each = 10))
+dist_mat <- stats::dist(data)
+calc_connectivity(dist_mat, cl)
+}

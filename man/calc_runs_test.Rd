@@ -22,3 +22,8 @@ the two datasets intermingle randomly when sorted. A significant left-sided
 result indicates that identical values cluster together into fewer runs than
 expected by chance, signaling distinct distributions.
 }
+\examples{
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_runs_test(ref, sim)
+}

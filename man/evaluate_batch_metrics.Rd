@@ -50,3 +50,9 @@ computing kBET, LISI, Batch Silhouette, Shannon Entropy, PC Regression,
 CMS (Cell-Specific Mixing Score), Inverse Simpson Index (ISI), Seurat Mixing Metric,
 and optionally Local Density Differences (ldfDiff) and Local Structure Preservation.
 }
+\examples{
+coords <- matrix(stats::rnorm(100), 50, 2)
+batch <- factor(rep(c("B1", "B2"), length.out = 50))
+ct <- factor(rep(c("TypeA", "TypeB"), length.out = 50))
+evaluate_batch_metrics(coords, batch, ct)
+}

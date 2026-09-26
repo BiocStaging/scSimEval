@@ -29,3 +29,9 @@ Computes global and cell-type-stratified Pearson and Spearman correlations
 and Kullback-Leibler (KL) divergence between empirical reference and simulated
 single-cell chromatin accessibility profiles.
 }
+\examples{
+data(example_multiomics, package = "scSimEval")
+r_rna <- example_multiomics$ref_multi$rna
+r_atac <- example_multiomics$ref_multi$atac
+calc_accessibility_profile_concordance(r_rna, r_atac)
+}

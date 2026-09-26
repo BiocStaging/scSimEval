@@ -2365,7 +2365,7 @@ plot_metric_pca <- function(
 #' @return A \code{ggplot} object rendering the multi-dimensional bubble matrix.
 #' @export
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Load benchmark summary across simulators
 #' demo_file <- system.file("shiny/scSimEvalApp/data/demo_benchmark_data.rds", package = "scSimEval")
 #' if (file.exists(demo_file)) {
@@ -2803,7 +2803,7 @@ plot_bubble_matrix <- plot_benchmark_bubble_matrix
 #' @export
 #' @aliases plot_benchmark_summary_bars plot_summary_bars
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' demo <- readRDS(system.file("shiny/scSimEvalApp/data/demo_benchmark_data.rds", package = "scSimEval"))
 #' p <- plot_evaluation_summary(demo$benchmark_summary_table)
 #' print(p)

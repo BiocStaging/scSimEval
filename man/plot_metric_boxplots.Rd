@@ -54,3 +54,7 @@ or original unnormalized raw values with optional direction separation or per-me
 \details{
 \if{html}{\figure{metric_boxplots.png}{options: width="100\%" alt="Multi-Metric Distribution Boxplots"}}
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+}

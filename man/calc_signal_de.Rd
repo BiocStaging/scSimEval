@@ -19,3 +19,7 @@ Vector of adjusted p-values.
 \description{
 Detect Differential Expression (DE) Genes (Mean Shift via Limma or T-Test)
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+calc_signal_de(example_scrna$ref, example_scrna$cell_types)
+}

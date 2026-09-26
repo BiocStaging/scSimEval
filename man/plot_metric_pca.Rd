@@ -56,3 +56,7 @@ are mathematically considered in the PCA decomposition. Panel \code{"both"} disp
     Pass \code{top_n_loadings = NULL} or \code{62} to render all metric loading vectors.
 }
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+}

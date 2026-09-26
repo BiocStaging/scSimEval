@@ -17,3 +17,9 @@ Dunn index (ratio of smallest inter-cluster to largest intra-cluster distance).
 \description{
 Calculate Dunn Index
 }
+\examples{
+data <- matrix(stats::rnorm(200), 20, 10)
+cl <- factor(rep(c("A", "B"), each = 10))
+dist_mat <- stats::dist(data)
+calc_dunn(dist_mat, cl)
+}

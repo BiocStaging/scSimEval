@@ -21,3 +21,8 @@ The 1D Wasserstein distance between the two empirical distributions.
 Calculate 1D Wasserstein Metric / Earth Mover's Distance (WS)
 Integrated from HelenaLC/simulation-comparison.
 }
+\examples{
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_wasserstein_1d(ref, sim)
+}

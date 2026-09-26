@@ -19,3 +19,7 @@ Estimates cell differentiation pseudotime directly from single-cell expression
 counts using diffusion/principal curve projection along the first principal component
 of top highly variable genes.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+infer_scrna_pseudotime(example_scrna$ref)
+}

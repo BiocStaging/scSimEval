@@ -31,3 +31,7 @@ Trains a classifier on simulated features (80\% train / 20\% test) to verify
 whether the simulated biological signals are sufficiently predictive of cell identities.
 If \code{de_features} is NULL, the top variable features are automatically selected.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+evaluate_predictive_de_model(example_scrna$ref, example_scrna$sim)
+}

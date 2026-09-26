@@ -26,3 +26,7 @@ trajectory is preserved between reference and simulated data.
 Accepts either precomputed pseudotime vectors OR scRNA-seq expression matrices
 (which will be automatically inferred via PCA trajectory).
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+calc_pseudotime_correlation(example_scrna$ref, example_scrna$sim)
+}

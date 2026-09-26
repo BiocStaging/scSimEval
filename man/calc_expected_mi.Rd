@@ -21,3 +21,6 @@ Computes the exact expectation of mutual information under the generalized
 hypergeometric model of randomness with fixed marginals (Vinh et al., 2010).
 }
 \keyword{internal}
+\examples{
+calc_expected_mi(c(10, 10), c(10, 10), 20)
+}

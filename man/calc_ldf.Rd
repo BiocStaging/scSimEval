@@ -25,3 +25,8 @@ Computes the Local Density Estimate (LDE) and Local Density Factor (LDF)
 using a Gaussian kernel over reachability distances in the k-NN neighborhood,
 adapted from Latecki et al. and CellMixS.
 }
+\examples{
+coords <- matrix(stats::rnorm(100), 50, 2)
+batch <- factor(rep(c("B1", "B2"), length.out = 50))
+calc_ldf(coords)
+}

@@ -19,3 +19,8 @@ Quadratic error penalizing large discrepancies.
 \description{
 Calculate Root Mean Squared Error (RMSE)
 }
+\examples{
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_rmse(ref, sim)
+}

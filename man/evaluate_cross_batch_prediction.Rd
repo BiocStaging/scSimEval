@@ -26,3 +26,9 @@ cell-type identity across distinct experimental batches or donors.
 Trains a k-NN classifier on each individual batch and tests prediction accuracy 
 and macro F1 score on all other remaining batches.
 }
+\examples{
+coords <- matrix(stats::rnorm(100), 50, 2)
+batch <- factor(rep(c("B1", "B2"), length.out = 50))
+ct <- factor(rep(c("TypeA", "TypeB"), length.out = 50))
+evaluate_cross_batch_prediction(coords, ct, batch)
+}

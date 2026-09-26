@@ -17,3 +17,9 @@ Mean silhouette width.
 \description{
 Calculate Average Silhouette Width (ASW)
 }
+\examples{
+data <- matrix(stats::rnorm(200), 20, 10)
+cl <- factor(rep(c("A", "B"), each = 10))
+dist_mat <- stats::dist(data)
+calc_silhouette(dist_mat, cl)
+}

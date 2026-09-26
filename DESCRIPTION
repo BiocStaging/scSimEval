@@ -1,7 +1,7 @@
 Package: scSimEval
 Type: Package
 Title: Unified Benchmarking and Accuracy Evaluation for Single-Cell Multiomics Simulation Methods
-Version: 0.6.0
+Version: 0.99.0
 Authors@R: c(
     person("Kabilan", "S", role = c("aut", "cre"), email = "kabilan151414@gmail.com"),
     person("Dr", "Dwijesh Chandra Mishra", role = c("aut", "ths"), email = "dwij.mishra@gmail.com"),
@@ -10,13 +10,6 @@ Authors@R: c(
     person("Dr", "Krishna Kumar Chaturvedi", role = c("aut"), email = "kkcchaturvedi@gmail.com"),
     person("Dr", "Sharanbasappa", role = c("ctb"), email = "smadival509@gmail.com")
   )
-Maintainer: Kabilan S <kabilan151414@gmail.com>
-Author: Kabilan S [aut, cre],
-  Dr Dwijesh Chandra Mishra [aut, ths],
-  Dr Shashi Bhushan Lal [aut],
-  Dr Sudhir Srivastava [aut],
-  Dr Krishna Kumar Chaturvedi [aut],
-  Dr Sharanbasappa [ctb]
 Description: A simple and unified evaluation toolkit for benchmarking single-cell
     and multiomics data simulation methods. Evaluates how realistic simulated data
     are compared to real biological datasets (scRNA-seq, scATAC-seq, and paired multiomics)
@@ -33,10 +26,11 @@ Description: A simple and unified evaluation toolkit for benchmarking single-cel
 License: MIT + file LICENSE
 URL: https://kabilanbio.github.io/scSimEval, https://github.com/kabilanbio/scSimEval
 BugReports: https://github.com/kabilanbio/scSimEval/issues
+biocViews: SingleCell, Transcriptomics, ATACSeq, QualityControl, DimensionReduction, DifferentialExpression, Software
 Encoding: UTF-8
-LazyData: true
+LazyData: false
 Depends:
-    R (>= 3.5.0)
+    R (>= 4.4.0)
 VignetteBuilder: knitr
 Imports:
     stats,
@@ -44,8 +38,11 @@ Imports:
     utils,
     Matrix,
     class,
-    ggplot2
+    ggplot2,
+    SingleCellExperiment,
+    SummarizedExperiment
 Suggests:
+    BiocStyle,
     testthat,
     knitr,
     rmarkdown,

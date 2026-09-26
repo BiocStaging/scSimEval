@@ -18,3 +18,7 @@ A list with phase proportions, Jensen-Shannon divergence, and chi-squared test p
 Compares cell cycle phase proportions (e.g. G0/G1, S, G2/M) between reference
 and simulated single-cell populations.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+calc_cell_cycle_phase_fidelity(example_scrna$cell_types, example_scrna$cell_types)
+}

@@ -17,3 +17,7 @@ Numeric vector of Bimodality Index values.
 \description{
 Detect Bimodal Distribution (BD) Genes (Bimodal Separation Index)
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+calc_signal_bd(example_scrna$ref, example_scrna$cell_types)
+}

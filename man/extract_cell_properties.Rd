@@ -28,3 +28,7 @@ Computes library size, log-library size, zero fraction / detection frequency,
 pairwise cell correlation (on top HVGs), cell k-NN hubness, pairwise PCA distance,
 and outlier proportions.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+extract_cell_properties(example_scrna$ref)
+}

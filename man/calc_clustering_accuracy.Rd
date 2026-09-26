@@ -19,3 +19,8 @@ Integrated from scCluBench (Xu et al., AAAI 2026). Aligns predicted clusters
 to ground truth classes using the Hungarian bipartite matching algorithm,
 then computes the fraction of correctly mapped cells.
 }
+\examples{
+pred <- factor(rep(c("A", "B"), each = 20))
+truth <- factor(rep(c("A", "B"), each = 20))
+calc_clustering_accuracy(pred, truth)
+}

@@ -20,3 +20,7 @@ An \code{hclust} tree object representing the cell-type lineage tree.
 Builds a hierarchical clustering lineage tree between cell-type centroids
 from scRNA-seq expression data.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+infer_scrna_lineage_tree(example_scrna$ref, example_scrna$cell_types)
+}

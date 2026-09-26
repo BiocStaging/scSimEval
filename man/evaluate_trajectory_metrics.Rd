@@ -29,3 +29,7 @@ discrepancy, and univariate distribution distance metrics on pseudotime.
 If raw count matrices are provided, pseudotime and lineage trees are automatically
 inferred directly from the scRNA-seq data.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+evaluate_trajectory_metrics(example_scrna$ref, example_scrna$sim)
+}

@@ -24,3 +24,8 @@ Calculates the proportion of overlapping k-nearest neighbors between
 an original/reference embedding and an integrated/simulated embedding
 (adapted from Seurat LocalStruct and CellMixS locStructure).
 }
+\examples{
+coords <- matrix(stats::rnorm(100), 50, 2)
+batch <- factor(rep(c("B1", "B2"), length.out = 50))
+calc_local_structure_metric(coords, coords)
+}

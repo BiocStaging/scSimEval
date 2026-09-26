@@ -20,3 +20,9 @@ generation (e.g. predicting scATAC from scRNA or vice versa; Zhai et al., Genome
 Computes cell-wise and feature-wise Pearson and Spearman correlations, cosine similarity,
 RMSE, and MAE between predicted and measured multi-omics profiles.
 }
+\examples{
+data(example_multiomics, package = "scSimEval")
+r_rna <- example_multiomics$ref_multi$rna
+r_atac <- example_multiomics$ref_multi$atac
+calc_cross_modal_generation(r_rna, r_atac)
+}

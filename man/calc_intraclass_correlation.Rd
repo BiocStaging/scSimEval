@@ -20,3 +20,7 @@ A list with median ICC, mean ICC, and vector of per-gene ICC values.
 Computes the one-way random effects Intraclass Correlation Coefficient (ICC)
 per gene across donors or biological replicates to quantify hierarchical clustering.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+calc_intraclass_correlation(example_scrna$ref, example_scrna$sim)
+}

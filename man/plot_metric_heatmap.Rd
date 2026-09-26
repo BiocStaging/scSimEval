@@ -53,3 +53,7 @@ across all 62 measures without scale distortion from high-magnitude metrics like
 \details{
 \if{html}{\figure{metric_heatmap.png}{options: width="100\%" alt="Cross-Metric Z-Scored Heatmap"}}
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+}

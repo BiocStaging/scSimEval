@@ -34,3 +34,9 @@ Evaluates both unsupervised cluster separation (ASW, Dunn, Connectivity, DB, CH,
 and supervised concordance against ground truth labels (Clustering Accuracy ACC,
 Hungarian F1/Precision/Recall, ARI, NMI, AMI, FMI, Homogeneity, Completeness, V-measure).
 }
+\examples{
+data <- matrix(stats::rnorm(200), 20, 10)
+cl <- factor(rep(c("A", "B"), each = 10))
+dist_mat <- stats::dist(data)
+evaluate_clustering_metrics(data, cl)
+}

@@ -35,3 +35,7 @@ replicates and cell-shuffled pseudoreplicates (Squair et al., Nature Communicati
 Positive delta variance indicates that biological replicates have higher inter-individual
 variability than randomly pooled pseudoreplicates.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+calc_delta_variance(example_scrna$ref, example_scrna$sim)
+}

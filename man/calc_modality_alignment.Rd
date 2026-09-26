@@ -22,3 +22,9 @@ A list containing modality_asw, modality_mixing_score, and mean_cross_modality_n
 Quantifies how well different single-cell omics layers mix in a unified latent embedding space
 without sacrificing biological clustering (Zhai et al., Genome Biology 2024; Luecken et al., Nat Methods 2022).
 }
+\examples{
+data(example_multiomics, package = "scSimEval")
+r_rna <- example_multiomics$ref_multi$rna
+r_atac <- example_multiomics$ref_multi$atac
+calc_modality_alignment(rbind(t(r_rna[1:10,]), t(r_atac[1:10,])), rep(c("RNA","ATAC"), each=ncol(r_rna)))
+}

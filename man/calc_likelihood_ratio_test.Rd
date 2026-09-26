@@ -35,3 +35,6 @@ Direct port and generalization of \code{scDesign3::perform_lrt} (Song et al., Na
 Performs the likelihood ratio test to compare two nested simulation models (e.g., cell-type/covariate
 model vs intercept-only null model, or spline trajectory vs linear model).
 }
+\examples{
+calc_likelihood_ratio_test(stats::rnorm(50), stats::rnorm(50))
+}

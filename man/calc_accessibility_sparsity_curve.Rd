@@ -20,3 +20,7 @@ Fits a polynomial curve relating peak/bin mean accessibility to non-zero cell
 proportion (NZP / detection frequency) as modeled in the simATAC framework
 (Navidi et al., Genome Biology 2021): NZP = c0 + c1 * mean + c2 * mean^2.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+calc_accessibility_sparsity_curve(example_scrna$ref)
+}
