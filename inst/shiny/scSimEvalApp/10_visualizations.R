@@ -973,6 +973,174 @@ plot_metric_boxplots <- function(
 
 
 # ============================================================================
+# 2a. plot_individual_metric_bar()
+# ============================================================================
+
+#' Plot Individual Metric Performance Barplot
+#'
+#' Generates a publication-quality barplot comparing simulator methods on a single
+#' evaluation metric, with exact score labels, direction awareness, and performance ranking.
+#'
+#' @param benchmark_data A benchmark data.frame or named list containing benchmark tables.
+#' @param metric Character. The name of the metric to plot (e.g. \code{"KS"}, \code{"Wasserstein"}, \code{"ARI"}).
+#' @param score_type Character. Either \code{"normalized"} (standardized [0, 1] fidelity score; default)
+#'   or \code{"raw"} (original unnormalized metric value).
+#' @param palette Optional named character vector of simulator colors.
+#' @param base_size Numeric. Base font size. Default \code{12}.
+#'
+#' @return A \code{ggplot} object.
+#' @export
+plot_individual_metric_bar <- function(
+  benchmark_data,
+  metric,
+  score_type = c("normalized", "raw"),
+  palette    = NULL,
+  base_size  = 12
+) {
+  score_type <- match.arg(score_type)
+  df <- .ingest_bubble_data(benchmark_data)
+
+  if ("Category" %in% colnames(df)) {
+    cat_chr <- as.character(df$Category)
+    df$Category <- ifelse(cat_chr %in% names(.LEGACY_CATEGORY_MAP),
+                          .LEGACY_CATEGORY_MAP[cat_chr], cat_chr)
+  }
+
+  avail_m <- unique(df$Metric)
+  if (!metric %in% avail_m) {
+    for (m_key in names(.METRIC_DISPLAY_LABELS)) {
+      if (identical(.METRIC_DISPLAY_LABELS[[m_key]], metric) && m_key %in% avail_m) {
+        metric <- m_key
+        break
+      }
+    }
+  }
+
+  df_sub <- df[df$Metric == metric, , drop = FALSE]
+  if (nrow(df_sub) == 0) {
+    matched <- avail_m[tolower(avail_m) == tolower(metric)]
+    if (length(matched) > 0) {
+      metric <- matched[1]
+      df_sub <- df[df$Metric == metric, , drop = FALSE]
+    } else {
+      stop(sprintf("Metric '%s' not found in benchmark data.", metric))
+    }
+  }
+
+  df_all_norm <- .normalize_bubble_scores(df)
+  df_sub <- df_all_norm[df_all_norm$Metric == metric, , drop = FALSE]
+
+  if (any(duplicated(df_sub$Method))) {
+    df_sub <- stats::aggregate(
+      cbind(Score_Norm, Score_Raw) ~ Method + Metric + Category,
+      data = df_sub, FUN = mean, na.rm = TRUE
+    )
+  }
+
+  disp_m <- if (metric %in% names(.METRIC_DISPLAY_LABELS)) .METRIC_DISPLAY_LABELS[metric] else metric
+  is_hib <- metric %in% .HIGHER_IS_BETTER_METRICS
+  dir_txt <- if (is_hib) "\u2191 Higher is better" else "\u2193 Lower is better"
+  cat_name <- if (nrow(df_sub) > 0 && !is.na(df_sub$Category[1])) as.character(df_sub$Category[1]) else "Benchmark"
+
+  default_sim_cols <- c(
+    "scDesign3" = "#1E8449",
+    "Splatter"  = "#2E86AB",
+    "SCRIP"     = "#E67E22",
+    "SymSim"    = "#8E44AD",
+    "dyngen"    = "#D4AC0D",
+    "simATAC"   = "#C0392B"
+  )
+  sim_methods <- unique(df_sub$Method)
+  if (is.null(palette)) {
+    active_pal <- default_sim_cols[sim_methods]
+    missing_sims <- sim_methods[is.na(active_pal)]
+    if (length(missing_sims) > 0) {
+      extra_cols <- grDevices::hcl.colors(length(missing_sims), palette = "Dark 3")
+      names(extra_cols) <- missing_sims
+      active_pal[missing_sims] <- extra_cols
+    }
+  } else {
+    active_pal <- palette
+  }
+
+  # Order simulators along the X-axis by performance (best performer first on the left)
+  if (score_type == "normalized") {
+    df_sub <- df_sub[order(-df_sub$Score_Norm), ]
+  } else {
+    if (is_hib) {
+      df_sub <- df_sub[order(-df_sub$Score_Raw), ]
+    } else {
+      df_sub <- df_sub[order(df_sub$Score_Raw), ]
+    }
+  }
+  df_sub$Method <- factor(df_sub$Method, levels = df_sub$Method)
+
+  y_var <- if (score_type == "normalized") "Score_Norm" else "Score_Raw"
+  y_lab <- if (score_type == "normalized") {
+    "Standardized Fidelity Score [0, 1] (\u2191 Higher is Better)"
+  } else {
+    sprintf("Raw Score Value: %s (%s)", disp_m, dir_txt)
+  }
+
+  title_txt <- sprintf("Benchmark Barplot: %s", disp_m)
+  sub_txt <- sprintf("Category: %s   |   Optimization: %s", cat_name, dir_txt)
+
+  cap_txt <- if (score_type == "normalized") {
+    "Direction-aware standardized score in [0, 1] (1.0 = best agreement with reference; distance/error inverted).\nSimulators ranked by fidelity from best performer (left) to lowest (right)."
+  } else {
+    sprintf("Unnormalized raw metric values in original units (%s).\nSimulators ranked from best performer (left) to lowest (right).", dir_txt)
+  }
+
+  df_sub$Value_Label <- if (score_type == "normalized") {
+    sprintf("%.3f", df_sub$Score_Norm)
+  } else {
+    ifelse(abs(df_sub$Score_Raw) >= 100, sprintf("%.1f", df_sub$Score_Raw),
+    ifelse(abs(df_sub$Score_Raw) >= 1,   sprintf("%.3f", df_sub$Score_Raw),
+    sprintf("%.4f", df_sub$Score_Raw)))
+  }
+
+  p <- ggplot2::ggplot(df_sub, ggplot2::aes(x = Method, y = .data[[y_var]], fill = Method)) +
+    ggplot2::geom_col(width = 0.58, color = "#1E293B", linewidth = 0.5, alpha = 0.90) +
+    ggplot2::geom_text(
+      ggplot2::aes(label = Value_Label),
+      vjust = ifelse(df_sub[[y_var]] >= 0, -0.45, 1.2),
+      fontface = "bold", size = base_size * 0.32, color = "#0F172A"
+    ) +
+    ggplot2::scale_fill_manual(values = active_pal, guide = "none") +
+    ggplot2::labs(
+      title    = title_txt,
+      subtitle = sub_txt,
+      x        = "Simulator Framework",
+      y        = y_lab,
+      caption  = cap_txt
+    ) +
+    .pub_theme(base_size = base_size) +
+    ggplot2::theme(
+      axis.text.x      = ggplot2::element_text(face = "bold", size = base_size * 0.92, color = "#0F172A"),
+      axis.text.y      = ggplot2::element_text(face = "bold", size = base_size * 0.88),
+      axis.title.x     = ggplot2::element_text(face = "bold", size = base_size * 0.95, margin = ggplot2::margin(t = 10)),
+      axis.title.y     = ggplot2::element_text(face = "bold", size = base_size * 0.95, margin = ggplot2::margin(r = 10)),
+      plot.title       = ggplot2::element_text(face = "bold", size = base_size * 1.25, hjust = 0.5, color = "#0F172A"),
+      plot.subtitle    = ggplot2::element_text(size = base_size * 0.92, hjust = 0.5, color = "#475569", margin = ggplot2::margin(b = 10)),
+      plot.caption     = ggplot2::element_text(size = base_size * 0.78, color = "#64748B", hjust = 0, margin = ggplot2::margin(t = 8)),
+      panel.grid.major.x = ggplot2::element_blank(),
+      panel.grid.minor = ggplot2::element_blank()
+    )
+
+  if (score_type == "normalized") {
+    p <- p +
+      ggplot2::geom_hline(yintercept = 1.0, linetype = "dashed", color = "#10B981", linewidth = 0.6) +
+      ggplot2::geom_hline(yintercept = 0.5, linetype = "dotted", color = "#94A3B8", linewidth = 0.5) +
+      ggplot2::scale_y_continuous(limits = c(0, 1.15), breaks = seq(0, 1, 0.25), expand = ggplot2::expansion(mult = c(0, 0.05)))
+  } else {
+    p <- p + ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0.05, 0.15)))
+  }
+
+  p
+}
+
+
+# ============================================================================
 # 2b. plot_scalability_benchmark()
 # ============================================================================
 

@@ -536,7 +536,7 @@ ui <- page_navbar(
       nav_panel(
         "4. Metric Boxplots",
         card(
-          card_header("Metric Boxplots & Variance (plot_metric_boxplots)"),
+          card_header("Metric Boxplots & Individual Metric Barplots (plot_metric_boxplots / plot_individual_metric_bar)"),
           card_body(
             fluidRow(
               column(12,
@@ -550,7 +550,7 @@ ui <- page_navbar(
             fluidRow(
               conditionalPanel(
                 condition = "input.opt_box_view_mode == 'individual'",
-                column(4,
+                column(3,
                        selectInput(
                          "sel_box_cat_first", "1. Choose Category First:",
                          choices = c(
@@ -566,8 +566,15 @@ ui <- page_navbar(
                          selected = "(I) Distributional Properties"
                        )
                 ),
-                column(4, uiOutput("ui_box_metric_picker")),
-                column(4,
+                column(3, uiOutput("ui_box_metric_picker")),
+                column(3,
+                       selectInput(
+                         "sel_box_indiv_score", "3. Score Type:",
+                         choices = c("Normalized [0, 1]" = "normalized", "Raw Metric Value" = "raw"),
+                         selected = "normalized"
+                       )
+                ),
+                column(3,
                        downloadButton("download_box_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2"),
                        downloadButton("download_box_pdf", "Download PDF", class = "btn btn-sm btn-outline-secondary")
                 )
@@ -1392,11 +1399,12 @@ server <- function(input, output, session) {
     req(rv$benchmark_df)
     if (identical(input$opt_box_view_mode, "individual")) {
       req(input$sel_box_metric_single)
-      plot_metric_boxplots(
+      score_type_val <- if (!is.null(input$sel_box_indiv_score)) input$sel_box_indiv_score else "normalized"
+      plot_individual_metric_bar(
         benchmark_data = rv$benchmark_df,
-        metrics = input$sel_box_metric_single,
-        score_type = "normalized",
-        base_size = 12
+        metric         = input$sel_box_metric_single,
+        score_type     = score_type_val,
+        base_size      = 12
       )
     } else {
       cat_filter <- if (identical(input$sel_box_cat_group, "all")) NULL else input$sel_box_cat_group
@@ -1411,12 +1419,34 @@ server <- function(input, output, session) {
   })
   output$plot_metric_boxes <- renderPlot({ metric_box_reactive() })
   output$download_box_jpeg <- downloadHandler(
-    filename = function() { paste0("scSimEval_metric_boxplot_", Sys.Date(), ".jpeg") },
-    content = function(file) { export_single_jpeg(file, metric_box_reactive(), width = 13, height = 7.5, dpi = 600) }
+    filename = function() {
+      if (identical(input$opt_box_view_mode, "individual")) {
+        paste0("scSimEval_metric_bar_", gsub("[^A-Za-z0-9_-]", "_", input$sel_box_metric_single), "_", Sys.Date(), ".jpeg")
+      } else {
+        paste0("scSimEval_metric_boxplot_", Sys.Date(), ".jpeg")
+      }
+    },
+    content = function(file) {
+      w <- if (identical(input$opt_box_view_mode, "individual")) 10 else 13
+      h <- if (identical(input$opt_box_view_mode, "individual")) 6.5 else 7.5
+      export_single_jpeg(file, metric_box_reactive(), width = w, height = h, dpi = 600)
+    }
   )
   output$download_box_pdf <- downloadHandler(
-    filename = function() { paste0("scSimEval_metric_boxplot_", Sys.Date(), ".pdf") },
-    content = function(file) { grDevices::pdf(file, width = 13, height = 7.5); print(metric_box_reactive()); grDevices::dev.off() }
+    filename = function() {
+      if (identical(input$opt_box_view_mode, "individual")) {
+        paste0("scSimEval_metric_bar_", gsub("[^A-Za-z0-9_-]", "_", input$sel_box_metric_single), "_", Sys.Date(), ".pdf")
+      } else {
+        paste0("scSimEval_metric_boxplot_", Sys.Date(), ".pdf")
+      }
+    },
+    content = function(file) {
+      w <- if (identical(input$opt_box_view_mode, "individual")) 10 else 13
+      h <- if (identical(input$opt_box_view_mode, "individual")) 6.5 else 7.5
+      grDevices::pdf(file, width = w, height = h)
+      print(metric_box_reactive())
+      grDevices::dev.off()
+    }
   )
   output$download_box_cat_jpeg <- downloadHandler(
     filename = function() { paste0("scSimEval_category_boxplots_", Sys.Date(), ".jpeg") },
