@@ -194,6 +194,7 @@ ui <- page_navbar(
   fillable = TRUE,
   
   header = tags$head(
+    tags$link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"),
     tags$style(HTML("
       .navbar { box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-weight: 600; }
       .nav-link { font-size: 0.95rem; }
@@ -245,6 +246,25 @@ ui <- page_navbar(
         padding: 12px;
         margin-bottom: 12px;
       }
+
+      /* Team & Contact Info Cards */
+      .info-card {
+        background: #FFFFFF;
+        border: 1px solid #CBD5E1;
+        border-radius: 12px;
+        padding: 18px 14px;
+        margin: 12px auto;
+        max-width: 290px;
+        transition: all 0.25s ease;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        text-align: center;
+      }
+      .info-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        border-color: #3B82F6;
+        background: #FFFFFF;
+      }
     "))
   ),
   
@@ -266,7 +286,8 @@ ui <- page_navbar(
             actionButton("btn_go_bubble", "2. Comparative Bubble Matrix", class = "btn btn-success me-2 mb-2", icon = icon("chart-pie")),
             actionButton("btn_go_viz", "3. Diagnostic Visualizations", class = "btn btn-info text-white me-2 mb-2", icon = icon("chart-line")),
             actionButton("btn_go_download", "4. Download Results", class = "btn btn-outline-light me-2 mb-2", icon = icon("download")),
-            actionButton("btn_go_help", "Documentation & Help", class = "btn btn-outline-light mb-2", icon = icon("book-open"))
+            actionButton("btn_go_help", "5. Help & Manual", class = "btn btn-outline-light me-2 mb-2", icon = icon("book-open")),
+            actionButton("btn_go_contact", "6. Team & Contact", class = "btn btn-outline-light mb-2", icon = icon("users"))
           )
         )
       )
@@ -1199,6 +1220,188 @@ ui <- page_navbar(
         )
       )
     )
+  ),
+  
+  # ============================================================================
+  # TAB 7: CONTACT
+  # ============================================================================
+  nav_panel(
+    "Contact",
+    fluidRow(
+      column(
+        12,
+        card(
+          card_body(
+            # Institute Header Section
+            div(
+              style = "margin-bottom: 25px; padding: 22px 15px; background: #FFFFFF; border-radius: 12px; border: 1px solid #E2E8F0; box-shadow: 0 2px 6px rgba(0,0,0,0.04);",
+              div(
+                class = "row align-items-center",
+                div(
+                  class = "col-md-2 text-center mb-3 mb-md-0",
+                  tags$img(src = "scfigures/icar_logo.jpg", height = 125, width = 125, style = "border-radius: 12px; object-fit: contain; box-shadow: 0 2px 6px rgba(0,0,0,0.08);")
+                ),
+                div(
+                  class = "col-md-8 text-center",
+                  p("Division of Agricultural Bioinformatics", style = "font-size: 28px; color: #DA9100; margin-bottom: 4px; font-weight: 800; font-family: 'Segoe UI', Arial, sans-serif;"),
+                  p("ICAR - Indian Agricultural Statistics Research Institute (IASRI)", style = "font-size: 22px; color: #85754E; margin-bottom: 4px; font-weight: 700; font-family: 'Segoe UI', Arial, sans-serif;"),
+                  p("New Delhi, India", style = "font-size: 19px; color: #85754E; margin-bottom: 0px; font-weight: 600; font-family: 'Segoe UI', Arial, sans-serif;")
+                ),
+                div(
+                  class = "col-md-2 text-center mt-3 mt-md-0",
+                  tags$img(src = "scfigures/iasri_logo.png", height = 125, width = 125, style = "border-radius: 12px; object-fit: contain; box-shadow: 0 2px 6px rgba(0,0,0,0.08);")
+                )
+              )
+            ),
+            
+            # Author Team Grid: Row 1 (3 Authors)
+            div(
+              class = "row justify-content-center g-4 my-2",
+              
+              # 1. Kabilan S
+              div(
+                class = "col-md-4 col-sm-6 text-center",
+                div(
+                  class = "info-card",
+                  tags$img(src = "scfigures/kabilan.JPG", height = 180, width = 140, style = "border-radius: 12px; border: 2.5px solid #3D0C02; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.12);"),
+                  p("Kabilan S.", style = "font-size: 16px; margin-top: 10px; margin-bottom: 2px; font-weight: 700; color: #0F172A;"),
+                  p("Ph.D. Bioinformatics", style = "font-size: 13.5px; margin-bottom: 6px; font-weight: 600; color: #1B4F72;"),
+                  p(
+                    tags$a(
+                      href = "mailto:kabilan151414@gmail.com",
+                      style = "font-size: 12px; color: #475569; text-decoration: none;",
+                      tags$i(class = "fas fa-envelope", style = "color: #1B4F72; margin-right: 4px;"),
+                      "kabilan151414@gmail.com"
+                    ),
+                    style = "margin-bottom: 0;"
+                  )
+                )
+              ),
+              
+              # 2. Dr Dwijesh Chandra Mishra
+              div(
+                class = "col-md-4 col-sm-6 text-center",
+                div(
+                  class = "info-card",
+                  tags$img(src = "scfigures/mishra_sir.jpg", height = 180, width = 140, style = "border-radius: 12px; border: 2.5px solid #3D0C02; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.12);"),
+                  p("Dr Dwijesh Chandra Mishra", style = "font-size: 16px; margin-top: 10px; margin-bottom: 2px; font-weight: 700; color: #0F172A;"),
+                  p("Senior Scientist", style = "font-size: 13.5px; margin-bottom: 6px; font-weight: 600; color: #1B4F72;"),
+                  p(
+                    tags$a(
+                      href = "mailto:dwij.mishra@gmail.com",
+                      style = "font-size: 12px; color: #475569; text-decoration: none;",
+                      tags$i(class = "fas fa-envelope", style = "color: #1B4F72; margin-right: 4px;"),
+                      "dwij.mishra@gmail.com"
+                    ),
+                    style = "margin-bottom: 0;"
+                  )
+                )
+              ),
+              
+              # 3. Dr Shashi Bhushan Lal
+              div(
+                class = "col-md-4 col-sm-6 text-center",
+                div(
+                  class = "info-card",
+                  tags$img(src = "scfigures/sb_lal_sir.JPG", height = 180, width = 140, style = "border-radius: 12px; border: 2.5px solid #3D0C02; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.12);"),
+                  p("Dr Shashi Bhushan Lal", style = "font-size: 16px; margin-top: 10px; margin-bottom: 2px; font-weight: 700; color: #0F172A;"),
+                  p("Principal Scientist", style = "font-size: 13.5px; margin-bottom: 6px; font-weight: 600; color: #1B4F72;"),
+                  p(
+                    tags$a(
+                      href = "mailto:sblall16@gmail.com",
+                      style = "font-size: 12px; color: #475569; text-decoration: none;",
+                      tags$i(class = "fas fa-envelope", style = "color: #1B4F72; margin-right: 4px;"),
+                      "sblall16@gmail.com"
+                    ),
+                    style = "margin-bottom: 0;"
+                  )
+                )
+              )
+            ),
+            
+            # Author Team Grid: Row 2 (3 Authors)
+            div(
+              class = "row justify-content-center g-4 my-2",
+              
+              # 4. Dr Sudhir Srivastava
+              div(
+                class = "col-md-4 col-sm-6 text-center",
+                div(
+                  class = "info-card",
+                  tags$img(src = "scfigures/sudhir_sir.JPG", height = 180, width = 140, style = "border-radius: 12px; border: 2.5px solid #3D0C02; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.12);"),
+                  p("Dr Sudhir Srivastava", style = "font-size: 16px; margin-top: 10px; margin-bottom: 2px; font-weight: 700; color: #0F172A;"),
+                  p("Senior Scientist", style = "font-size: 13.5px; margin-bottom: 6px; font-weight: 600; color: #1B4F72;"),
+                  p(
+                    tags$a(
+                      href = "mailto:sudhir0401bm@gmail.com",
+                      style = "font-size: 12px; color: #475569; text-decoration: none;",
+                      tags$i(class = "fas fa-envelope", style = "color: #1B4F72; margin-right: 4px;"),
+                      "sudhir0401bm@gmail.com"
+                    ),
+                    style = "margin-bottom: 0;"
+                  )
+                )
+              ),
+              
+              # 5. Dr Krishna Kumar Chaturvedi
+              div(
+                class = "col-md-4 col-sm-6 text-center",
+                div(
+                  class = "info-card",
+                  tags$img(src = "scfigures/kkcsir.JPG", height = 180, width = 140, style = "border-radius: 12px; border: 2.5px solid #3D0C02; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.12);"),
+                  p("Dr Krishna Kumar Chaturvedi", style = "font-size: 16px; margin-top: 10px; margin-bottom: 2px; font-weight: 700; color: #0F172A;"),
+                  p("Principal Scientist", style = "font-size: 13.5px; margin-bottom: 6px; font-weight: 600; color: #1B4F72;"),
+                  p(
+                    tags$a(
+                      href = "mailto:kkcchaturvedi@gmail.com",
+                      style = "font-size: 12px; color: #475569; text-decoration: none;",
+                      tags$i(class = "fas fa-envelope", style = "color: #1B4F72; margin-right: 4px;"),
+                      "kkcchaturvedi@gmail.com"
+                    ),
+                    style = "margin-bottom: 0;"
+                  )
+                )
+              ),
+              
+              # 6. Dr Sharanbasappa
+              div(
+                class = "col-md-4 col-sm-6 text-center",
+                div(
+                  class = "info-card",
+                  tags$img(src = "scfigures/sharan_photo.jpg", height = 180, width = 140, style = "border-radius: 12px; border: 2.5px solid #3D0C02; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.12);"),
+                  p("Dr Sharanbasappa", style = "font-size: 16px; margin-top: 10px; margin-bottom: 2px; font-weight: 700; color: #0F172A;"),
+                  p("Scientist", style = "font-size: 13.5px; margin-bottom: 6px; font-weight: 600; color: #1B4F72;"),
+                  p(
+                    tags$a(
+                      href = "mailto:smadival509@gmail.com",
+                      style = "font-size: 12px; color: #475569; text-decoration: none;",
+                      tags$i(class = "fas fa-envelope", style = "color: #1B4F72; margin-right: 4px;"),
+                      "smadival509@gmail.com"
+                    ),
+                    style = "margin-bottom: 0;"
+                  )
+                )
+              )
+            ),
+            
+            # Feedback & GitHub Box
+            div(
+              style = "text-align: center; font-size: 15.5px; color: #1A1A1A; font-family: Arial, sans-serif; margin: 35px auto 20px auto; max-width: 900px; padding: 16px 20px; background: linear-gradient(135deg, #F8FAFC, #EDF2F7); border: 1px solid #CBD5E1; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.04);",
+              strong("💬 For feedback, bug reports, or suggestions for improvements,"),
+              tags$br(),
+              "please contact us through our GitHub repository: ",
+              tags$a(href = "https://github.com/kabilanbio/scSimEval", target = "_blank", style = "color: #007BFF; text-decoration: none; font-weight: 700;", "🔗 https://github.com/kabilanbio/scSimEval")
+            ),
+            
+            # Footer Note
+            div(
+              style = "font-size: 13.5px; text-align: center; color: #1D2951; font-family: Calibri, sans-serif; background: linear-gradient(135deg, #F4F0EC, #E8E4E0); border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; margin-top: 15px;",
+              strong("🔬 Division of Agricultural Bioinformatics, ICAR-Indian Agricultural Statistics Research Institute, New Delhi, India.")
+            )
+          )
+        )
+      )
+    )
   )
 )
 
@@ -1222,6 +1425,7 @@ server <- function(input, output, session) {
   observeEvent(input$btn_go_viz, { nav_select("nav_active", "Visualizations") })
   observeEvent(input$btn_go_download, { nav_select("nav_active", "Download Results") })
   observeEvent(input$btn_go_help, { nav_select("nav_active", "Help & Getting Started") })
+  observeEvent(input$btn_go_contact, { nav_select("nav_active", "Contact") })
   
   # ----------------------------------------------------------------------------
   # Data Hub: Mode 1 - Load Demo Benchmark
