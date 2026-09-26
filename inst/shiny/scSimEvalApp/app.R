@@ -661,10 +661,11 @@ ui <- page_navbar(
       nav_panel(
         "6. PCA Ordination",
         card(
+          fill = FALSE,
           card_header("PCA Ordination of Simulators in Performance Space (plot_metric_pca)"),
           card_body(
             fluidRow(
-              column(4,
+              column(3,
                      selectInput(
                        "sel_pca_cat", "Category Filter (6 Categories):",
                        choices = c(
@@ -680,7 +681,7 @@ ui <- page_navbar(
                      )
               ),
               column(3, selectInput("sel_pca_panel", "Panel View:", choices = c("Both (Biplot + Loadings)" = "both", "Simulators Only" = "methods", "Loadings Only" = "loadings"), selected = "both")),
-              column(2,
+              column(3,
                      numericInput("num_pca_top_metrics", "Top Metrics (Loadings):", value = 14, min = 4, max = 50, step = 1)
               ),
               column(3,
@@ -689,15 +690,27 @@ ui <- page_navbar(
               )
             ),
             fluidRow(
+              column(6,
+                     sliderInput("sld_pca_height", "PCA Height (px):", min = 500, max = 1600, value = 1100, step = 50)
+              ),
+              column(6,
+                     sliderInput("sld_pca_width", "PCA Width (px):", min = 650, max = 1400, value = 950, step = 25)
+              )
+            ),
+            fluidRow(
               column(12,
                      p(strong("Note on Metrics: "), "For ", em("All Categories Combined"),
-                       ", the figure highlights the ", strong("top 14 most discriminating metrics"),
+                       ", the figure highlights the most discriminating metrics",
                        " ranked by vector loading magnitude (\\(\\sqrt{\\text{PC1}^2 + \\text{PC2}^2}\\)) in ordination space to prevent clutter while capturing key performance drivers.",
                        style = "font-size: 0.86rem; color: #475569; margin-bottom: 8px;")
               )
             ),
             hr(),
-            uiOutput("ui_plot_metric_pca")
+            div(
+              class = "bubble-scroll-container",
+              style = "text-align: center; overflow-x: auto; padding: 10px;",
+              uiOutput("ui_plot_metric_pca")
+            )
           )
         )
       ),
@@ -706,10 +719,11 @@ ui <- page_navbar(
       nav_panel(
         "7. MDS Metric Space",
         card(
+          fill = FALSE,
           card_header("Multi-Dimensional Scaling (MDS) Ordination (plot_metric_mds)"),
           card_body(
             fluidRow(
-              column(4,
+              column(3,
                      selectInput(
                        "sel_mds_cat", "Category Filter (6 Categories):",
                        choices = c(
@@ -724,14 +738,26 @@ ui <- page_navbar(
                        selected = "all"
                      )
               ),
-              column(4, selectInput("sel_mds_by", "MDS Target:", choices = c("By Simulators" = "simulators", "By Metric Summaries" = "summaries"), selected = "simulators")),
-              column(4,
+              column(3, selectInput("sel_mds_by", "MDS Target:", choices = c("By Simulators" = "simulators", "By Metric Summaries" = "summaries"), selected = "simulators")),
+              column(3,
+                     sliderInput("sld_mds_height", "MDS Height (px):", min = 400, max = 1300, value = 620, step = 20)
+              ),
+              column(3,
+                     sliderInput("sld_mds_width", "MDS Width (px):", min = 600, max = 1400, value = 900, step = 20)
+              )
+            ),
+            fluidRow(
+              column(12,
                      downloadButton("download_mds_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2"),
                      downloadButton("download_mds_pdf", "Download PDF", class = "btn btn-sm btn-outline-secondary")
               )
             ),
             hr(),
-            plotOutput("plot_metric_mds_out", height = "560px")
+            div(
+              class = "bubble-scroll-container",
+              style = "text-align: center; overflow-x: auto; padding: 10px;",
+              uiOutput("ui_plot_metric_mds")
+            )
           )
         )
       )
@@ -1553,6 +1579,20 @@ server <- function(input, output, session) {
   )
   
   # 6. PCA Ordination (6 Category-wise options & All Categories Combined)
+  observeEvent(input$sel_pca_panel, {
+    if (identical(input$sel_pca_panel, "both")) {
+      updateSliderInput(session, "sld_pca_height", value = 1100)
+    } else {
+      updateSliderInput(session, "sld_pca_height", value = 600)
+    }
+  }, ignoreInit = TRUE)
+
+  output$ui_plot_metric_pca <- renderUI({
+    w <- if (!is.null(input$sld_pca_width)) input$sld_pca_width else 950
+    h <- if (!is.null(input$sld_pca_height)) input$sld_pca_height else 1100
+    plotOutput("plot_metric_pca_out", width = paste0(w, "px"), height = paste0(h, "px"))
+  })
+
   metric_pca_reactive <- reactive({
     req(rv$benchmark_df)
     cat_sel <- if (identical(input$sel_pca_cat, "all")) NULL else input$sel_pca_cat
@@ -1565,24 +1605,20 @@ server <- function(input, output, session) {
       base_size = 12
     )
   })
-  output$ui_plot_metric_pca <- renderUI({
-    h <- if (identical(input$sel_pca_panel, "both")) "950px" else "580px"
-    plotOutput("plot_metric_pca_out", height = h)
-  })
   output$plot_metric_pca_out <- renderPlot({ metric_pca_reactive() })
   output$download_pca_jpeg <- downloadHandler(
     filename = function() { paste0("scSimEval_metric_pca_", Sys.Date(), ".jpeg") },
     content = function(file) {
-      w <- if (identical(input$sel_pca_panel, "both")) 10.5 else 11
-      h <- if (identical(input$sel_pca_panel, "both")) 12 else 7.5
+      w <- if (!is.null(input$sld_pca_width)) input$sld_pca_width / 90 else 10.5
+      h <- if (!is.null(input$sld_pca_height)) input$sld_pca_height / 90 else (if (identical(input$sel_pca_panel, "both")) 12.5 else 7.5)
       export_single_jpeg(file, metric_pca_reactive(), width = w, height = h, dpi = 600)
     }
   )
   output$download_pca_pdf <- downloadHandler(
     filename = function() { paste0("scSimEval_metric_pca_", Sys.Date(), ".pdf") },
     content = function(file) {
-      w <- if (identical(input$sel_pca_panel, "both")) 10.5 else 11
-      h <- if (identical(input$sel_pca_panel, "both")) 12 else 7.5
+      w <- if (!is.null(input$sld_pca_width)) input$sld_pca_width / 90 else 10.5
+      h <- if (!is.null(input$sld_pca_height)) input$sld_pca_height / 90 else (if (identical(input$sel_pca_panel, "both")) 12.5 else 7.5)
       grDevices::pdf(file, width = w, height = h)
       print(metric_pca_reactive())
       grDevices::dev.off()
@@ -1590,6 +1626,12 @@ server <- function(input, output, session) {
   )
   
   # 7. MDS Metric Space (6 Category-wise options)
+  output$ui_plot_metric_mds <- renderUI({
+    w <- if (!is.null(input$sld_mds_width)) input$sld_mds_width else 900
+    h <- if (!is.null(input$sld_mds_height)) input$sld_mds_height else 620
+    plotOutput("plot_metric_mds_out", width = paste0(w, "px"), height = paste0(h, "px"))
+  })
+
   metric_mds_reactive <- reactive({
     req(rv$benchmark_df)
     cat_sel <- if (identical(input$sel_mds_cat, "all")) NULL else input$sel_mds_cat
@@ -1603,11 +1645,21 @@ server <- function(input, output, session) {
   output$plot_metric_mds_out <- renderPlot({ metric_mds_reactive() })
   output$download_mds_jpeg <- downloadHandler(
     filename = function() { paste0("scSimEval_metric_mds_", Sys.Date(), ".jpeg") },
-    content = function(file) { export_single_jpeg(file, metric_mds_reactive(), width = 13, height = 7.5, dpi = 600) }
+    content = function(file) {
+      w <- if (!is.null(input$sld_mds_width)) input$sld_mds_width / 80 else 12
+      h <- if (!is.null(input$sld_mds_height)) input$sld_mds_height / 80 else 7.5
+      export_single_jpeg(file, metric_mds_reactive(), width = w, height = h, dpi = 600)
+    }
   )
   output$download_mds_pdf <- downloadHandler(
     filename = function() { paste0("scSimEval_metric_mds_", Sys.Date(), ".pdf") },
-    content = function(file) { grDevices::pdf(file, width = 13, height = 7.5); print(metric_mds_reactive()); grDevices::dev.off() }
+    content = function(file) {
+      w <- if (!is.null(input$sld_mds_width)) input$sld_mds_width / 80 else 12
+      h <- if (!is.null(input$sld_mds_height)) input$sld_mds_height / 80 else 7.5
+      grDevices::pdf(file, width = w, height = h)
+      print(metric_mds_reactive())
+      grDevices::dev.off()
+    }
   )
   
   # ----------------------------------------------------------------------------
