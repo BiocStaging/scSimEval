@@ -20,6 +20,23 @@ for (p in c("10_visualizations.R", "R/10_visualizations.R", "../../R/10_visualiz
 # Set max upload size to 500 MB for large single-cell datasets
 options(shiny.maxRequestSize = 500 * 1024^2)
 
+# Register static resource directory for documentation figures
+fig_dirs <- c(
+  system.file("shiny", "scSimEvalApp", "www", package = "scSimEval"),
+  system.file("www", package = "scSimEval"),
+  file.path("inst", "shiny", "scSimEvalApp", "www"),
+  file.path("www"),
+  file.path("man", "figures"),
+  file.path("..", "man", "figures"),
+  file.path("..", "..", "man", "figures")
+)
+for (fd in fig_dirs) {
+  if (nzchar(fd) && dir.exists(fd)) {
+    try(shiny::addResourcePath("scfigures", normalizePath(fd, winslash = "/", mustWork = FALSE)), silent = TRUE)
+    break
+  }
+}
+
 # Load demo benchmark data if present
 demo_data_path <- system.file("shiny", "scSimEvalApp", "data", "demo_benchmark_data.rds", package = "scSimEval")
 if (demo_data_path == "" || !file.exists(demo_data_path)) {
@@ -844,112 +861,363 @@ ui <- page_navbar(
       column(
         12,
         card(
-          card_header("Getting Started with scSimEval"),
+          card_header("scSimEval Studio: Scientific User Guide & Benchmarking Manual"),
           card_body(
-            h4("1. Overview", style = "font-weight: 700; color: #1B4F72;"),
-            p("Computer simulations of single-cell technologies (scRNA-seq, scATAC-seq, and paired multiomics) are widely used to test bioinformatics pipelines, benchmark statistical tools, and evaluate experimental designs. A central question is always: ",
-              tags$i("how realistic is the simulated data compared to genuine biological experiments?")),
-            p(tags$b("scSimEval"), " provides ", tags$b("62 evaluation measures organized into 8 easy-to-understand categories"), ". It evaluates simulation techniques directly against real empirical datasets without requiring artificial ground-truth labels."),
-            hr(),
+            # Introduction Hero Callout
+            div(
+              style = "background: #F8FAFC; border-left: 4px solid #1B4F72; border-radius: 6px; padding: 18px 22px; margin-bottom: 24px;",
+              h4("Unified Evaluation & Benchmarking for Single-Cell Simulations", style = "font-weight: 800; color: #1B4F72; margin-top: 0;"),
+              p(
+                strong("scSimEval"), " is a comprehensive scientific framework designed to evaluate how realistically synthetic single-cell datasets match genuine empirical experiments. ",
+                "It establishes a rigorous, ", strong("ground-truth-free evaluation paradigm"), " spanning ", strong("62 quantitative evaluation measures organized into 8 canonical categories"), 
+                " across single-cell transcriptomics (scRNA-seq), chromatin accessibility (scATAC-seq), and paired multiomics."
+              ),
+              p(
+                "This web application provides an interactive graphical interface to ingest raw simulation datasets, compute multi-tier fidelity metrics, explore multidimensional simulator rankings, and export publication-ready figures at 600 DPI.",
+                style = "margin-bottom: 0; color: #475569;"
+              )
+            ),
             
-            h4("2. The Eight Evaluation Categories", style = "font-weight: 700; color: #1B4F72;"),
-            tags$table(
-              class = "table table-bordered table-striped",
-              tags$thead(
-                tags$tr(
-                  tags$th("Category"),
-                  tags$th("Metrics Count"),
-                  tags$th("What It Evaluates"),
-                  tags$th("Key Measures Included")
+            # ------------------------------------------------------------------
+            # Section 1: Workflow Architecture
+            # ------------------------------------------------------------------
+            h4("1. Workflow Architecture & Scientific Protocol", style = "font-weight: 700; color: #1B4F72; margin-top: 10px;"),
+            p("The benchmarking process follows a standardized four-step scientific pipeline operating directly on empirical reference and simulated matrices:"),
+            
+            div(
+              style = "text-align: center; margin: 24px 0 16px 0;",
+              tags$img(
+                src = "scfigures/workflow_diagram.png",
+                alt = "scSimEval Benchmarking Workflow Architecture",
+                style = "max-width: 100%; height: auto; border: 1.5px solid #0F172A; border-radius: 6px; padding: 4px; background-color: #FFFFFF; box-shadow: 0 4px 10px rgba(0,0,0,0.08);"
+              ),
+              p(
+                tags$b("Figure 1 | The scSimEval Benchmarking Workflow Architecture. "),
+                "Step 1: Input empirical reference and simulated count matrices alongside metadata. Step 2: Compute 62 quantitative fidelity metrics across 8 core evaluation categories. Step 3: Execute the consolidated benchmarking engine. Step 4: Interactively explore standardized scores, simulator rankings, and 600 DPI diagnostic figures.",
+                style = "font-size: 0.88rem; color: #475569; margin-top: 10px; max-width: 950px; margin-left: auto; margin-right: auto;"
+              )
+            ),
+            
+            tags$div(
+              class = "row g-3 my-2",
+              tags$div(
+                class = "col-md-6",
+                tags$div(
+                  style = "background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px 16px; height: 100%;",
+                  h6(tags$b("Step 1: Input Real & Simulated Data"), style = "color: #1B4F72;"),
+                  p("Provide real experimental reference matrices and simulated count matrices (genes \u00d7 cells for scRNA-seq, peaks \u00d7 cells for scATAC-seq), accompanied by cell type labels, technical batch indicators, and computational resource records (runtime in seconds and peak RAM in MiB).", style = "font-size: 0.88rem; margin-bottom: 0;")
                 )
               ),
-              tags$tbody(
-                tags$tr(
-                  tags$td(tags$b("(I) Distributional Properties")),
-                  tags$td("14 metrics"),
-                  tags$td("Statistical distance between real and simulated expression distributions at both cell and feature levels."),
-                  tags$td("KS distance, Wasserstein distance, MAD, MAE, RMSE, Bhattacharyya distance, Jaccard distance")
-                ),
-                tags$tr(
-                  tags$td(tags$b("(II) Correlations & Zero-Inflation")),
-                  tags$td("6 metrics"),
-                  tags$td("Gene-gene co-expression, cell-cell correlations, and dropout patterns."),
-                  tags$td("Gene correlation difference, cell correlation difference, zero fraction divergence")
-                ),
-                tags$tr(
-                  tags$td(tags$b("(III) Cellular Structure & Concordance")),
-                  tags$td("10 metrics"),
-                  tags$td("How faithfully cell types, clustering boundaries, and manifold geometry are preserved."),
-                  tags$td("Silhouette width, Adjusted Rand Index (ARI), Normalized Mutual Information (NMI), Neighborhood Purity")
-                ),
-                tags$tr(
-                  tags$td(tags$b("(IV) Batch Effects & Confounder Mixing")),
-                  tags$td("7 metrics"),
-                  tags$td("Evaluation of technical batch variation and biological cell-type mixing."),
-                  tags$td("kBET rejection rate, Batch LISI, Cell-type LISI, CMS score, Mixing metric")
-                ),
-                tags$tr(
-                  tags$td(tags$b("(V) Biological Signal & Downstream Fidelity")),
-                  tags$td("7 metrics"),
-                  tags$td("Preservation of biological marker genes and differential expression (DEG) rankings."),
-                  tags$td("DEG overlap, Jaccard index, Spearman rank correlation of logFC, F1-score")
-                ),
-                tags$tr(
-                  tags$td(tags$b("(VI) Trajectory & Lineage Dynamics")),
-                  tags$td("2 metrics"),
-                  tags$td("Preservation of continuous developmental pathways and pseudotime progression."),
-                  tags$td("Trajectory topology concordance, Pseudotime Spearman correlation")
-                ),
-                tags$tr(
-                  tags$td(tags$b("(VII) Cross-Modal Coupling & Modularity")),
-                  tags$td("6 metrics"),
-                  tags$td("Coordination between paired modalities (e.g. gene expression and chromatin accessibility)."),
-                  tags$td("Cross-modal correlation, Modality concordance, Paired cell distance")
-                ),
-                tags$tr(
-                  tags$td(tags$b("(VIII) Computational Scalability")),
-                  tags$td("2 metrics"),
-                  tags$td("Computational efficiency and resource usage."),
-                  tags$td("Elapsed runtime (seconds), Peak memory usage (MB)")
+              tags$div(
+                class = "col-md-6",
+                tags$div(
+                  style = "background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px 16px; height: 100%;",
+                  h6(tags$b("Step 2: Calculate Evaluation Measures"), style = "color: #1B4F72;"),
+                  p("scSimEval calculates 62 quantitative evaluation measures across 8 core biological and computational categories. All measures operate directly on empirical reference data without requiring artificial ground-truth labels.", style = "font-size: 0.88rem; margin-bottom: 0;")
+                )
+              ),
+              tags$div(
+                class = "col-md-6",
+                tags$div(
+                  style = "background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px 16px; height: 100%;",
+                  h6(tags$b("Step 3: Run Consolidated Benchmark Pipeline"), style = "color: #1B4F72;"),
+                  p("The benchmark engine consolidates evaluation records across all evaluated simulators and modalities into a standardized, tidy benchmark summary table, mapping each score to its canonical evaluation category.", style = "font-size: 0.88rem; margin-bottom: 0;")
+                )
+              ),
+              tags$div(
+                class = "col-md-6",
+                tags$div(
+                  style = "background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px 16px; height: 100%;",
+                  h6(tags$b("Step 4: Review Scores, Rankings & Diagnostic Figures"), style = "color: #1B4F72;"),
+                  p("Inspect multi-dimensional bubble matrices, executive summary rankings, distribution density curves, PCA biplots, and MDS ordination spaces. Export all high-resolution figures at 600 DPI alongside Excel/CSV data archives.", style = "font-size: 0.88rem; margin-bottom: 0;")
                 )
               )
             ),
-            hr(),
+            hr(style = "margin: 28px 0;"),
             
-            h4("3. Two-Step Score Normalization Pipeline", style = "font-weight: 700; color: #1B4F72;"),
-            p("In single-cell benchmarking, different metrics have different units and directions. For example, runtime is in seconds, peak memory is in megabytes, statistical distances are near zero, and clustering accuracy ranges between -1 and 1. For some metrics, smaller values are better (error, runtime), while for others, larger values are better (correlation, ARI)."),
-            p("To make fair comparisons, ", tags$b("scSimEval"), " applies a standardized two-step normalization:"),
-            tags$ol(
-              tags$li(tags$b("Direction Inversion: "), "Metrics where lower values indicate better results are inverted so higher scores always indicate superior performance: Inverted = Max - Value."),
-              tags$li(tags$b("Min-Max Scaling [0.00, 1.00]: "), "Scores are scaled between 0 (worst performer) and 1 (best performer): Score = (Value - Min) / (Max - Min).")
-            ),
-            hr(),
+            # ------------------------------------------------------------------
+            # Section 2: The Eight Evaluation Categories
+            # ------------------------------------------------------------------
+            h4("2. The Eight Canonical Evaluation Categories", style = "font-weight: 700; color: #1B4F72;"),
+            p("The 62 evaluation criteria in scSimEval are structured across eight foundational categories covering statistical, cellular, molecular, and computational dimensions:"),
             
-            h4("4. How to Run in R (Code Examples)", style = "font-weight: 700; color: #1B4F72;"),
-            p("You can execute the exact same benchmarking workflows directly in R:"),
-            tags$pre(
-              tags$code(
-                "# 1. Unimodal scRNA-seq Simulation Accuracy:\n",
-                "library(scSimEval)\n",
-                "results <- evaluate_simulation_accuracy(\n",
-                "  ref_data     = real_counts_matrix,\n",
-                "  sim_data     = simulated_counts_matrix,\n",
-                "  elapsed_time = 45.2,   # seconds\n",
-                "  memory_mb    = 850     # peak RAM in MB\n",
-                ")\n\n",
-                "# 2. Launch this Interactive Shiny Studio:\n",
-                "launch_scSimEval_app()\n\n",
-                "# 3. Plot the Comparative Bubble Matrix:\n",
-                "plot_benchmark_bubble_matrix(results$metrics_summary_table)\n"
+            tags$div(
+              class = "table-responsive",
+              tags$table(
+                class = "table table-hover table-bordered",
+                style = "font-size: 0.89rem;",
+                tags$thead(
+                  style = "background-color: #F1F5F9; color: #0F172A;",
+                  tags$tr(
+                    tags$th("Category", style = "width: 26%;"),
+                    tags$th("Measures", style = "width: 10%; text-align: center;"),
+                    tags$th("Scientific Purpose & Scope", style = "width: 32%;"),
+                    tags$th("Key Quantitative Measures Included", style = "width: 32%;")
+                  )
+                ),
+                tags$tbody(
+                  tags$tr(
+                    tags$td(tags$b("(I) Distributional Properties")),
+                    tags$td(style = "text-align: center;", tags$span(class = "badge bg-primary", "14 metrics")),
+                    tags$td("Compares single-cell count distributions (library size, mean expression, variance, zero fraction) and data manifolds between empirical reference and synthetic data."),
+                    tags$td("Kolmogorov-Smirnov (KS), Wasserstein distance, MAD, MAE, RMSE, Bhattacharyya distance, ECDF area, Runs test, Maximum Mean Discrepancy (MMD), Fr\u00e9chet SC distance, 2D KDE z-stat, Peacock 2D, Fasano-Franceschini 2D")
+                  ),
+                  tags$tr(
+                    tags$td(tags$b("(II) Correlations & Zero-Inflation")),
+                    tags$td(style = "text-align: center;", tags$span(class = "badge bg-success", "8 metrics")),
+                    tags$td("Evaluates biological variation, technical dropout kinetics, cell-to-cell correlations, and gene co-expression dependencies."),
+                    tags$td("Biological CV (BCV), Dropout midpoint (x0), Dropout slope (k), Mean-variance R\u00b2, Cell Pearson correlation, Feature Pearson correlation, Zero fraction divergence")
+                  ),
+                  tags$tr(
+                    tags$td(tags$b("(III) Cellular Structure & Concordance")),
+                    tags$td(style = "text-align: center;", tags$span(class = "badge bg-info text-dark", "9 metrics")),
+                    tags$td("Assesses whether synthetic data preserves distinct cell types, cluster separation boundaries, and underlying manifold geometry."),
+                    tags$td("Silhouette width (ASW), Dunn index, Davies-Bouldin, Calinski-Harabasz, Adjusted Rand Index (ARI), Normalized Mutual Information (NMI), Adjusted Mutual Information (AMI), V-Measure, Neighborhood Purity, Generative Precision")
+                  ),
+                  tags$tr(
+                    tags$td(tags$b("(IV) Batch Effects & Confounder Mixing")),
+                    tags$td(style = "text-align: center;", tags$span(class = "badge bg-warning text-dark", "6 metrics")),
+                    tags$td("Tests whether technical batch confounders are realistically represented and properly mixed without erasing genuine biological signal."),
+                    tags$td("Batch Silhouette width, Shannon entropy of batch mixing, Principal Component Regression R\u00b2, Cell-Specific Mixing Score (CMS), Local Inverse Simpson's Index (LISI/iLISI), Seurat mixing metric, Local Density Difference (ldfDiff)")
+                  ),
+                  tags$tr(
+                    tags$td(tags$b("(V) Biological Signal & Downstream Fidelity")),
+                    tags$td(style = "text-align: center;", tags$span(class = "badge bg-danger", "15 metrics")),
+                    tags$td("Assesses differentially expressed gene (DEG) preservation and biological identity across Simpipe, SimBench, and Shaky Foundations benchmarking frameworks."),
+                    tags$td("SimBench SMAPE, DEG fidelity (1-SMAPE), log2FC Pearson correlation, log2FC Spearman correlation, Top DEG Jaccard overlap, DEG ratio (sim/real), P-value uniform distribution Chisq, Distribution Score, Classifier Accuracy, Classifier Macro-F1, Classifier Macro-Recall, Group Silhouette, Silhouette Discrepancy, Group PVE, Group PVE Discrepancy")
+                  ),
+                  tags$tr(
+                    tags$td(tags$b("(VI) Trajectory & Lineage Dynamics")),
+                    tags$td(style = "text-align: center;", tags$span(class = "badge bg-secondary", "2 metrics")),
+                    tags$td("Evaluates continuous developmental timelines and branching differentiation topologies inferred directly from scRNA-seq expression."),
+                    tags$td("Pseudotime Spearman rank correlation (rho), Lineage tree branch height RMSE")
+                  ),
+                  tags$tr(
+                    tags$td(tags$b("(VII) Cross-Modal Coupling & Modularity")),
+                    tags$td(style = "text-align: center;", tags$span(class = "badge bg-primary", "6 metrics")),
+                    tags$td("Evaluates paired multiomics coordination between single-cell chromatin accessibility (scATAC-seq) and gene expression (scRNA-seq)."),
+                    tags$td("Cross-modal cell type transfer accuracy, Cross-modal Macro-F1, Fraction of Samples Closer than True Match (FOSCTTM), Match@1 exact pairing, Matrix correlation (RV coefficient), Module co-accessibility correlation")
+                  ),
+                  tags$tr(
+                    tags$td(tags$b("(VIII) Computational Scalability")),
+                    tags$td(style = "text-align: center;", tags$span(class = "badge bg-dark", "2 metrics")),
+                    tags$td("Measures computational footprint, execution throughput, and hardware feasibility across simulator implementations."),
+                    tags$td("Total execution time (wall-clock seconds), Peak resident memory consumption (MiB)")
+                  )
+                )
               )
             ),
-            hr(),
+            hr(style = "margin: 28px 0;"),
             
-            h4("5. Frequently Asked Questions (FAQ)", style = "font-weight: 700; color: #1B4F72;"),
+            # ------------------------------------------------------------------
+            # Section 3: Two-Step Score Normalization
+            # ------------------------------------------------------------------
+            h4("3. Score Normalization & Visual Mapping Workflow", style = "font-weight: 700; color: #1B4F72;"),
+            p("In single-cell simulation benchmarking, evaluated metrics span diverse units and optimization polarities (e.g., KS distance near 0.0, runtime in seconds, memory in MiB, clustering ARI between -1 and 1). To enable equitable comparison across criteria, scSimEval applies an automated, rigorous two-step score normalization pipeline:"),
+            
+            div(
+              style = "text-align: center; margin: 24px 0 16px 0;",
+              tags$img(
+                src = "scfigures/score_normalization_workflow.png",
+                alt = "Score Normalization & Visual Mapping Workflow",
+                style = "max-width: 100%; height: auto; border: 1.5px solid #0F172A; border-radius: 6px; padding: 4px; background-color: #FFFFFF; box-shadow: 0 4px 10px rgba(0,0,0,0.08);"
+              ),
+              p(
+                tags$b("Figure 2 | Two-Step Score Normalization & Visual Mapping Pipeline. "),
+                "Direction inversion of lower-is-better measures followed by min-max scaling [0.00, 1.00] standardizes heterogeneous metrics into a uniform quality scale, directly controlling visual mappings in the Comparative Bubble Matrix and executive summary rankings.",
+                style = "font-size: 0.88rem; color: #475569; margin-top: 10px; max-width: 950px; margin-left: auto; margin-right: auto;"
+              )
+            ),
+            
+            tags$div(
+              class = "row g-3 my-2",
+              tags$div(
+                class = "col-md-4",
+                tags$div(
+                  style = "background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; padding: 14px 16px; height: 100%;",
+                  h6(tags$b("1. Direction Inversion"), style = "color: #1B4F72;"),
+                  p("Metrics where lower values indicate superior performance (such as statistical distance, error, and runtime) are direction-inverted:"),
+                  tags$p(tags$code("Inverted = Maximum - Value"), style = "text-align: center; font-weight: bold;"),
+                  p("This ensures that higher numerical values universally represent superior simulation fidelity.", style = "font-size: 0.86rem; color: #555; margin-bottom: 0;")
+                )
+              ),
+              tags$div(
+                class = "col-md-4",
+                tags$div(
+                  style = "background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; padding: 14px 16px; height: 100%;",
+                  h6(tags$b("2. Min-Max Standardization"), style = "color: #1B4F72;"),
+                  p("All metrics are subsequently rescaled across methods into a uniform interval:"),
+                  tags$p(tags$code("Score = (Value - Min) / (Max - Min)"), style = "text-align: center; font-weight: bold;"),
+                  p("Standardized scores strictly fall between 0.00 (poorest performer) and 1.00 (optimal agreement with reference).", style = "font-size: 0.86rem; color: #555; margin-bottom: 0;")
+                )
+              ),
+              tags$div(
+                class = "col-md-4",
+                tags$div(
+                  style = "background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; padding: 14px 16px; height: 100%;",
+                  h6(tags$b("3. Visual Mapping Rules"), style = "color: #1B4F72;"),
+                  tags$ul(
+                    style = "font-size: 0.86rem; color: #334155; padding-left: 18px; margin-bottom: 0;",
+                    tags$li(tags$b("Bubble Diameter: "), "Directly proportional to standardized score (larger = higher fidelity)."),
+                    tags$li(tags$b("Top-Performer Glyphs: "), "Scores \u2265 0.96 rendered with bold square glyphs; others as circles."),
+                    tags$li(tags$b("Category Colors: "), "Distinct hues assigned to each evaluation category."),
+                    tags$li(tags$b("Rank Ordering: "), "Simulators ordered top-to-bottom by composite average score.")
+                  )
+                )
+              )
+            ),
+            hr(style = "margin: 28px 0;"),
+            
+            # ------------------------------------------------------------------
+            # Section 4: User Guide to the Shiny Studio
+            # ------------------------------------------------------------------
+            h4("4. Guide to Using the scSimEval Shiny Studio", style = "font-weight: 700; color: #1B4F72;"),
+            p("This interactive application is organized into 5 primary workflow tabs accessible from the top navigation bar. Follow this structured guide to navigate each module:"),
+            
+            tags$div(
+              class = "accordion my-3", id = "accordionGuide",
+              
+              # Module A: Home
+              tags$div(
+                class = "accordion-item",
+                tags$h2(
+                  class = "accordion-header", id = "headingOne",
+                  tags$button(
+                    class = "accordion-button", type = "button", "data-bs-toggle" = "collapse", "data-bs-target" = "#collapseOne", "aria-expanded" = "true", "aria-controls" = "collapseOne",
+                    tags$b("Tab 1: Home — Studio Overview & Quick-Launch Hub")
+                  )
+                ),
+                tags$div(
+                  id = "collapseOne", class = "accordion-collapse collapse show", "aria-labelledby" = "headingOne",
+                  tags$div(
+                    class = "accordion-body",
+                    p("The Home tab introduces the package mission and architecture. Use the prominent quick-action buttons in the hero section to immediately jump to the ", strong("Data Hub"), ", inspect the ", strong("Comparative Bubble Matrix"), ", explore ", strong("Visualizations"), ", or proceed to ", strong("Download Results"), ".")
+                  )
+                )
+              ),
+              
+              # Module B: Data Hub
+              tags$div(
+                class = "accordion-item",
+                tags$h2(
+                  class = "accordion-header", id = "headingTwo",
+                  tags$button(
+                    class = "accordion-button collapsed", type = "button", "data-bs-toggle" = "collapse", "data-bs-target" = "#collapseTwo", "aria-expanded" = "false", "aria-controls" = "collapseTwo",
+                    tags$b("Tab 2: Data Hub — Load Pre-Computed Benchmarks or Evaluate Custom Simulators")
+                  )
+                ),
+                tags$div(
+                  id = "collapseTwo", class = "accordion-collapse collapse", "aria-labelledby" = "headingTwo",
+                  tags$div(
+                    class = "accordion-body",
+                    tags$ul(
+                      tags$li(tags$b("Option A: Instant Demo Benchmark: "), "Click ", tags$span(class = "badge bg-primary", "Load Demo Benchmark Data"), " to immediately populate the application with pre-computed evaluation results across 6 benchmarked simulators (Splatter, scDesign3, SCRIP, SymSim, dyngen, simATAC)."),
+                      tags$li(tags$b("Option B: Evaluate New Single-Cell Simulators (Unimodal): "), "Select the Unimodal evaluation subtab. Upload your empirical reference counts matrix and your simulated counts matrix (.rds, .csv, .tsv, .txt). Specify cell-type labels and batch vectors if available. Enter simulator runtime (seconds) and memory (MiB), then click ", tags$span(class = "badge bg-success", "Execute Unimodal Evaluation"), " to calculate 50+ single-cell metrics automatically."),
+                      tags$li(tags$b("Option C: Evaluate Paired Multiomics Simulators: "), "Select the Paired Multiomics subtab. Upload paired RNA and ATAC counts matrices for both reference and simulation. scSimEval computes cross-modal coupling, peak-to-gene correlations, and FOSCTTM cell-pairing metrics."),
+                      tags$li(tags$b("Option D: Append vs Replace: "), "Check ", tags$i("Append to Existing Benchmarks"), " to compare your newly evaluated tool alongside existing benchmarked simulators on the same leaderboards.")
+                    )
+                  )
+                )
+              ),
+              
+              # Module C: Bubble Matrix
+              tags$div(
+                class = "accordion-item",
+                tags$h2(
+                  class = "accordion-header", id = "headingThree",
+                  tags$button(
+                    class = "accordion-button collapsed", type = "button", "data-bs-toggle" = "collapse", "data-bs-target" = "#collapseThree", "aria-expanded" = "false", "aria-controls" = "collapseThree",
+                    tags$b("Tab 3: Comparative Bubble Matrix — Flagship Multi-Dimensional Overview")
+                  )
+                ),
+                tags$div(
+                  id = "collapseThree", class = "accordion-collapse collapse", "aria-labelledby" = "headingThree",
+                  tags$div(
+                    class = "accordion-body",
+                    p("The Comparative Bubble Matrix is the flagship visualization of scSimEval, displaying every simulator against all 62 curated metrics simultaneously."),
+                    tags$ul(
+                      tags$li(tags$b("Category Filter: "), "Use the sidebar dropdown to view all 62 measures combined or isolate individual biological categories."),
+                      tags$li(tags$b("Simulator Method Selector: "), "Selectively include or exclude specific simulators to focus on head-to-head comparisons."),
+                      tags$li(tags$b("Matrix Display Sliders: "), "Adjust the width (1200\u20133200 px) and height (450\u20131100 px) sliders to eliminate label overlapping and optimize layout for wide monitors."),
+                      tags$li(tags$b("High-Resolution Export: "), "Download the matrix at ", tags$b("600 DPI JPEG"), " or as a vector-based ", tags$b("PDF"), " for journal publication.")
+                    )
+                  )
+                )
+              ),
+              
+              # Module D: Diagnostic Visualizations
+              tags$div(
+                class = "accordion-item",
+                tags$h2(
+                  class = "accordion-header", id = "headingFour",
+                  tags$button(
+                    class = "accordion-button collapsed", type = "button", "data-bs-toggle" = "collapse", "data-bs-target" = "#collapseFour", "aria-expanded" = "false", "aria-controls" = "collapseFour",
+                    tags$b("Tab 4: Visualizations — 7 In-Depth Diagnostic Sub-Panels")
+                  )
+                ),
+                tags$div(
+                  id = "collapseFour", class = "accordion-collapse collapse", "aria-labelledby" = "headingFour",
+                  tags$div(
+                    class = "accordion-body",
+                    tags$ol(
+                      tags$li(tags$b("1. Evaluation Summary: "), "Rank-ordered horizontal bar chart comparing simulator performances across each of the 8 canonical categories, with optional numerical score labels."),
+                      tags$li(tags$b("2. Distribution QC: "), "14-panel comparative expression density, library size, and zero-inflation curves contrasting simulated data directly against real reference cells."),
+                      tags$li(tags$b("3. Scalability Benchmark: "), "4-panel runtime and memory dashboards with Pareto efficiency frontiers, identifying methods that balance fidelity with computational throughput."),
+                      tags$li(tags$b("4. Metric Boxplots: "), "Switch between category-wide distribution boxplots or clean ranked individual barplots with score direction indicators (+) and (-)."),
+                      tags$li(tags$b("5. Metric Heatmap: "), "Method-by-metric grid displaying exact unnormalized raw scores in bold text with direction-aware standardized fill colors. Includes dynamic height/width sliders and category filtering."),
+                      tags$li(tags$b("6. PCA Ordination: "), "Principal Component Analysis projecting simulators into multi-dimensional performance space alongside discriminating vector loadings."),
+                      tags$li(tags$b("7. MDS Metric Space: "), "Multi-Dimensional Scaling ordination capturing non-linear simulator performance geometries.")
+                    )
+                  )
+                )
+              ),
+              
+              # Module E: Download Results
+              tags$div(
+                class = "accordion-item",
+                tags$h2(
+                  class = "accordion-header", id = "headingFive",
+                  tags$button(
+                    class = "accordion-button collapsed", type = "button", "data-bs-toggle" = "collapse", "data-bs-target" = "#collapseFive", "aria-expanded" = "false", "aria-controls" = "collapseFive",
+                    tags$b("Tab 5: Download Results — Publication Reports, Data Archives & Master Table")
+                  )
+                ),
+                tags$div(
+                  id = "collapseFive", class = "accordion-collapse collapse", "aria-labelledby" = "headingFive",
+                  tags$div(
+                    class = "accordion-body",
+                    tags$ul(
+                      tags$li(tags$b("All-in-One Benchmark Archive (.zip): "), "Download a single unified ZIP archive containing the complete Excel workbook (.xlsx), master CSV table, R data object (.rds), multi-page compiled PDF report, and individual 600 DPI figures."),
+                      tags$li(tags$b("Individual Spreadsheets: "), "Download clean .xlsx or .csv files with method rankings and raw metric values."),
+                      tags$li(tags$b("Multi-Page PDF Report: "), "Generate a standalone compiled PDF document containing all evaluation figures formatted for supplementary materials."),
+                      tags$li(tags$b("Interactive Master Data Table: "), "Use the column search filters and pagination controls at the bottom of the tab to search, filter, and inspect specific values across all 62 measures.")
+                    )
+                  )
+                )
+              )
+            ),
+            hr(style = "margin: 28px 0;"),
+            
+            # ------------------------------------------------------------------
+            # Section 5: Authorship & Institutional Affiliations
+            # ------------------------------------------------------------------
+            h4("5. Authorship & Institutional Affiliations", style = "font-weight: 700; color: #1B4F72;"),
+            p("scSimEval was developed as part of Ph.D. research in Agricultural Bioinformatics at the Division of Agricultural Bioinformatics, ICAR - Indian Agricultural Statistics Research Institute (IASRI), New Delhi, India:"),
             tags$ul(
-              tags$li(tags$b("What file formats are supported? "), "You can upload .rds (matrices or data frames), .csv, .tsv, or .txt files."),
-              tags$li(tags$b("Do I need artificial ground truth labels? "), "No. scSimEval evaluates how well simulated data reproduce genuine biological reference datasets across statistical, cellular, and molecular properties."),
-              tags$li(tags$b("How should I measure runtime and memory? "), "Record the wall-clock execution time (seconds) and the peak resident memory (MB) consumed by your simulator, then enter them in the Scalability inputs.")
+              style = "font-size: 0.90rem; color: #334155;",
+              tags$li(tags$b("Kabilan S "), "(Ph.D. Scholar and Maintainer, ICAR-IASRI) \u2014 ", tags$code("kabilan151414@gmail.com")),
+              tags$li(tags$b("Dr. Dwijesh Chandra Mishra "), "(Principal Scientist & Thesis Guide, ICAR-IASRI) \u2014 ", tags$code("dwij.mishra@gmail.com")),
+              tags$li(tags$b("Dr. Shashi Bhushan Lal "), "(Principal Scientist, ICAR-IASRI) \u2014 ", tags$code("sblall16@gmail.com")),
+              tags$li(tags$b("Dr. Sudhir Srivastava "), "(Principal Scientist, ICAR-IASRI) \u2014 ", tags$code("sudhir0401bm@gmail.com")),
+              tags$li(tags$b("Dr. Krishna Kumar Chaturvedi "), "(Principal Scientist, ICAR-IASRI) \u2014 ", tags$code("kkcchaturvedi@gmail.com")),
+              tags$li(tags$b("Dr. Sharanbasappa "), "(Scientist, ICAR-IASRI) \u2014 ", tags$code("smadival509@gmail.com"))
+            ),
+            p(
+              "GitHub Source & Documentation: ",
+              tags$a(href = "https://github.com/kabilanbio/scSimEval", target = "_blank", "https://github.com/kabilanbio/scSimEval"),
+              " | Issue Tracker: ",
+              tags$a(href = "https://github.com/kabilanbio/scSimEval/issues", target = "_blank", "https://github.com/kabilanbio/scSimEval/issues"),
+              style = "font-size: 0.88rem; color: #64748B;"
             )
           )
         )
