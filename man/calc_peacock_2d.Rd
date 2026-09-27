@@ -2,8 +2,7 @@
 % Please edit documentation in R/01_metrics_distribution.R
 \name{calc_peacock_2d}
 \alias{calc_peacock_2d}
-\title{Calculate Peacock 2D Kolmogorov-Smirnov Test Statistic
-Integrated from HelenaLC/simulation-comparison.}
+\title{Calculate Peacock 2D Kolmogorov-Smirnov Test Statistic}
 \usage{
 calc_peacock_2d(ref_mat, sim_mat)
 }
@@ -16,7 +15,6 @@ calc_peacock_2d(ref_mat, sim_mat)
 Peacock test statistic.
 }
 \description{
-Calculate Peacock 2D Kolmogorov-Smirnov Test Statistic
 Integrated from HelenaLC/simulation-comparison.
 }
 \examples{

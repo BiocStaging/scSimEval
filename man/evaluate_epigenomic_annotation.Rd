@@ -40,8 +40,11 @@ profiles (scATAC-seq / scCAS) and evaluates cell-type prediction / projection ac
 on simulated cells against ground-truth cell-type labels (Chen et al., Nat Mach Intell 2022).
 }
 \examples{
-data <- matrix(stats::rnorm(200), 20, 10)
-cl <- factor(rep(c("A", "B"), each = 10))
-dist_mat <- stats::dist(data)
-evaluate_epigenomic_annotation(data, cl)
+data(example_multiomics, package = "scSimEval")
+evaluate_epigenomic_annotation(
+  example_multiomics$ref_multi$atac,
+  example_multiomics$sim_multi$atac,
+  ref_celltypes = example_multiomics$cell_types,
+  sim_celltypes = example_multiomics$cell_types
+)
 }

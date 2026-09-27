@@ -14,7 +14,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r knitr-setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -40,7 +40,14 @@ Many existing evaluation tools require artificial "ground truth" labels that are
 5. **Computer resources** (Runtime in seconds and peak RAM in MiB)
 6. **Developmental trajectories** (automatically inferred directly from scRNA-seq counts without requiring external tools)
 
-> **Data Modalities:** `scSimEval` is primarily optimized for scRNA-seq, scATAC-seq, and paired scRNA-seq + scATAC-seq multiomics, and the evaluation framework can be readily extended to other single-cell data types.
+> **Data Modalities:** `scSimEval` supports three multiomics experimental designs:
+> **Paired** (co-assay from identical cells, e.g. 10x Multiome, SHARE-seq) — full evaluation
+> including all Category 7 coupling metrics; **Unpaired** (independent scRNA-seq + scATAC-seq
+> from separate cells) — unimodal evaluation per modality plus population-level cross-modal
+> metrics (module fidelity, network overlap, label transfer); and **Mosaic** (partial
+> co-measurement, e.g. DOGMA-seq) — unimodal evaluation on full matrices plus paired coupling
+> metrics applied to the co-assayed cell subset. See the dedicated
+> [Multiomics vignette](demo-multiomics.html) for full details.
 
 ---
 
@@ -435,7 +442,79 @@ launch_scSimEval_app()
 
 ---
 
-## 15. Extension to Other Single-Cell Data Types
+## 15. Supported Multiomics Data Types and Metric Compatibility
+
+Not all multiomics evaluation metrics are valid for every experimental design. Understanding
+which design your simulated data belongs to is critical for selecting the correct functions.
+
+### 15.1 Three Experimental Designs
+
+| Data Type | Definition | Example Technologies |
+|---|---|---|
+| **Paired** | RNA and ATAC measured from **exactly the same cells** | 10x Multiome, SHARE-seq, SNARE-seq |
+| **Unpaired** | RNA and ATAC from **separate cells** of the same tissue | Independent 10x scRNA + scATAC experiments |
+| **Mosaic** | **Some cells** have both modalities; others have only one | DOGMA-seq, mosaic pooling designs |
+
+### 15.2 Metric Compatibility by Data Type
+
+| Metric Group | Paired | Unpaired | Mosaic |
+|---|:---:|:---:|:---:|
+| Unimodal evaluation (Cat 1–6, 8) per modality | ✅ | ✅ | ✅ |
+| Co-expression module fidelity | ✅ | ✅ | ✅ |
+| Peak co-accessibility fidelity | ✅ | ✅ | ✅ |
+| Cross-modal label transfer | ✅ | ✅ | ✅ |
+| Network Jaccard similarity | ✅ | ✅ | ✅ |
+| **FOSCTTM / Match@1** | ✅ | ❌ | ✅ paired subset |
+| **Cross-modal generation fidelity** | ✅ | ❌ | ✅ paired subset |
+| **Peak-to-gene regulatory coupling** | ✅ | ❌ | ✅ paired subset |
+| **`evaluate_multiomics_accuracy()`** | ✅ direct | ❌ | ✅ paired subset |
+
+### 15.3 Recommended Functions by Data Type
+
+**Paired data** — use the master pipeline directly:
+```r
+evaluate_multiomics_accuracy(ref_multi, sim_multi, cell_types, ...)
+```
+
+**Unpaired data** — evaluate modalities separately, then consolidate:
+```r
+# Per-modality unimodal evaluation
+rna_eval  <- evaluate_simulation_accuracy(ref_rna,  sim_rna)
+atac_eval <- evaluate_simulation_accuracy(ref_atac, sim_atac)
+
+# Population-level cross-modal metrics (no cell pairing required)
+calc_coexpression_module_fidelity(ref_rna, sim_rna)
+calc_peak_coaccessibility_fidelity(ref_atac, sim_atac)
+evaluate_cross_modal_prediction(sim_atac, cell_types)
+
+# Consolidate side-by-side
+evaluate_multiple_datasets(list(RNA = list(ref=ref_rna, sim=sim_rna),
+                                ATAC = list(ref=ref_atac, sim=sim_atac)))
+```
+
+**Mosaic data** — subset co-assayed cells first, then combine:
+```r
+# Step 1: Extract co-assayed subset
+sim_rna_paired  <- sim_rna_full[, paired_cell_idx]
+sim_atac_paired <- sim_atac_full[, paired_cell_idx]
+
+# Step 2: Paired coupling metrics on subset
+evaluate_multiomics_accuracy(
+  ref_multi = list(rna = ref_rna_paired, atac = ref_atac_paired),
+  sim_multi = list(rna = sim_rna_paired, atac = sim_atac_paired)
+)
+
+# Step 3: Full unimodal evaluation on complete matrices
+evaluate_simulation_accuracy(ref_rna_full, sim_rna_full)
+evaluate_simulation_accuracy(ref_atac_full, sim_atac_full)
+```
+
+> See the dedicated **[Multiomics Vignette](demo-multiomics.html)** for complete
+> step-by-step workflows and code examples for all three data types.
+
+---
+
+## 16. Extension to Other Single-Cell Data Types
 
 While `scSimEval` is primarily optimized and demonstrated for **scRNA-seq**, **scATAC-seq**, and **paired scRNA-seq + scATAC-seq multiomics**, all 62 evaluation measures operate on standard numeric count or continuous matrices. 
 

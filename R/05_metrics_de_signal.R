@@ -146,7 +146,9 @@ calc_signal_bd <- function(exprs_mat, cell_types) {
 #' @return A tidy data.frame comparing biological signal proportions.
 #' @examples
 #' data(example_scrna, package = "scSimEval")
-#' evaluate_simbench_signals(example_scrna$ref, example_scrna$cell_types)
+#' evaluate_simbench_signals(example_scrna$ref, example_scrna$sim,
+#'                           ref_celltypes = example_scrna$cell_types,
+#'                           sim_celltypes = example_scrna$cell_types)
 #' @export
 evaluate_simbench_signals <- function(
   ref_mat,
@@ -157,7 +159,7 @@ evaluate_simbench_signals <- function(
   bi_cutoff = 0.3
 ) {
   # Subset to the 2 most abundant cell types in reference
-  top2 <- names(sort(table(ref_celltypes), decreasing = TRUE))[1:2]
+  top2 <- names(sort(table(ref_celltypes), decreasing = TRUE))[seq_len(2)]
   
   idx_ref <- which(ref_celltypes %in% top2)
   idx_sim <- which(sim_celltypes %in% top2)
@@ -211,7 +213,7 @@ evaluate_simbench_signals <- function(
 #' @return A list containing Accuracy, Macro Precision, Macro Recall, and Macro F1 score.
 #' @examples
 #' data(example_scrna, package = "scSimEval")
-#' evaluate_predictive_de_model(example_scrna$ref, example_scrna$sim)
+#' evaluate_predictive_de_model(example_scrna$ref, group = example_scrna$cell_types)
 #' @export
 evaluate_predictive_de_model <- function(
   data,
@@ -351,7 +353,9 @@ to_pseudobulk <- function(
 #'   \item{median_delta_variance}{Median delta variance across all genes}
 #' @examples
 #' data(example_scrna, package = "scSimEval")
-#' calc_delta_variance(example_scrna$ref, example_scrna$sim)
+#' calc_delta_variance(example_scrna$ref,
+#'                     replicates = example_scrna$batch_info,
+#'                     conditions = example_scrna$cell_types)
 #' @export
 calc_delta_variance <- function(
   counts,
@@ -623,7 +627,9 @@ calc_deconvolution_accuracy <- function(
 #' }
 #' @examples
 #' data(example_scrna, package = "scSimEval")
-#' evaluate_deg_fidelity(example_scrna$ref, example_scrna$sim)
+#' evaluate_deg_fidelity(example_scrna$ref, example_scrna$sim,
+#'                       ref_celltypes = example_scrna$cell_types,
+#'                       sim_celltypes = example_scrna$cell_types)
 #' @export
 evaluate_deg_fidelity <- function(
   ref_data,

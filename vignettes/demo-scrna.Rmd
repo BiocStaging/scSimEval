@@ -7,7 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r knitr-setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -176,3 +176,7 @@ plot_distribution_qc(
 # 5. Conclusion
 
 This demonstration illustrates how `scSimEval` comprehensively assesses scRNA-seq simulations across distributions, zero patterns, clustering, batch integration, marker genes, and trajectory dynamics without requiring artificial ground-truth labels.
+
+```{r session-info}
+sessionInfo()
+```

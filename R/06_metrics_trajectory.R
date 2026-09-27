@@ -123,7 +123,9 @@ calc_pseudotime_correlation <- function(ref_pseudotime, sim_pseudotime, method =
 #' @return Root mean squared error between branch heights.
 #' @examples
 #' data(example_scrna, package = "scSimEval")
-#' calc_tree_height_discrepancy(example_scrna$ref, example_scrna$sim)
+#' calc_tree_height_discrepancy(example_scrna$ref, example_scrna$sim,
+#'                              cell_types_ref = example_scrna$cell_types,
+#'                              cell_types_sim = example_scrna$cell_types)
 #' @export
 calc_tree_height_discrepancy <- function(
   ref_tree,

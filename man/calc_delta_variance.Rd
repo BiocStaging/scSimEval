@@ -37,5 +37,7 @@ variability than randomly pooled pseudoreplicates.
 }
 \examples{
 data(example_scrna, package = "scSimEval")
-calc_delta_variance(example_scrna$ref, example_scrna$sim)
+calc_delta_variance(example_scrna$ref,
+                    replicates = example_scrna$batch_info,
+                    conditions = example_scrna$cell_types)
 }

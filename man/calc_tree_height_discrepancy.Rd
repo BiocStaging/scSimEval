@@ -32,5 +32,7 @@ OR scRNA-seq count matrices + \code{cell_types} (which will be automatically inf
 }
 \examples{
 data(example_scrna, package = "scSimEval")
-calc_tree_height_discrepancy(example_scrna$ref, example_scrna$sim)
+calc_tree_height_discrepancy(example_scrna$ref, example_scrna$sim,
+                             cell_types_ref = example_scrna$cell_types,
+                             cell_types_sim = example_scrna$cell_types)
 }

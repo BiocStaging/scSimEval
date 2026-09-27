@@ -52,7 +52,7 @@ superior, resolving metric polarity differences across distance and correlation 
 or original unnormalized raw values with optional direction separation or per-metric faceting.
 }
 \details{
-\if{html}{\figure{metric_boxplots.png}{options: width="100\%" alt="Multi-Metric Distribution Boxplots"}}
+\if{html}{\figure{metric_boxplots.png}{options: width="800" alt="Multi-Metric Distribution Boxplots"}}
 }
 \examples{
 data(example_scrna, package = "scSimEval")

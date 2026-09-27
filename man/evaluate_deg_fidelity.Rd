@@ -72,5 +72,7 @@ benchmarking frameworks:
 }
 \examples{
 data(example_scrna, package = "scSimEval")
-evaluate_deg_fidelity(example_scrna$ref, example_scrna$sim)
+evaluate_deg_fidelity(example_scrna$ref, example_scrna$sim,
+                      ref_celltypes = example_scrna$cell_types,
+                      sim_celltypes = example_scrna$cell_types)
 }

@@ -37,7 +37,7 @@ captured by the simulation method compared to the empirical reference.
 }
 \examples{
 data(example_multiomics, package = "scSimEval")
-r_rna <- example_multiomics$ref_multi$rna
-r_atac <- example_multiomics$ref_multi$atac
-calc_cross_modality_correlation(r_rna, r_atac)
+m <- example_multiomics
+calc_cross_modality_correlation(m$ref_multi$rna, m$ref_multi$atac,
+                                m$sim_multi$rna, m$sim_multi$atac)
 }

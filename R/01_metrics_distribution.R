@@ -166,8 +166,8 @@ calc_bhattacharyya <- function(ref, sim, align = TRUE) {
   }
 }
 
-#' Calculate 1D Wasserstein Metric / Earth Mover's Distance (WS)
-#' Integrated from HelenaLC/simulation-comparison.
+#' @title Calculate 1D Wasserstein Metric / Earth Mover's Distance (WS)
+#' @description Integrated from HelenaLC/simulation-comparison.
 #'
 #' @param ref Numeric vector of reference values.
 #' @param sim Numeric vector of simulated values.
@@ -196,8 +196,8 @@ calc_wasserstein_1d <- function(ref, sim, p = 1) {
 # 2D Bivariate Joint Relationship Metrics
 # -----------------------------------------------------------------------------
 
-#' Calculate Fasano-Franceschini 2D Kolmogorov-Smirnov Test Statistic
-#' Integrated from simpipe.
+#' @title Calculate Fasano-Franceschini 2D Kolmogorov-Smirnov Test Statistic
+#' @description Integrated from simpipe.
 #'
 #' @param ref_mat 2-column numeric matrix for reference.
 #' @param sim_mat 2-column numeric matrix for simulation.
@@ -223,8 +223,8 @@ calc_fasano_franceschini <- function(ref_mat, sim_mat, threads = 1) {
   return(NA_real_)
 }
 
-#' Calculate Peacock 2D Kolmogorov-Smirnov Test Statistic
-#' Integrated from HelenaLC/simulation-comparison.
+#' @title Calculate Peacock 2D Kolmogorov-Smirnov Test Statistic
+#' @description Integrated from HelenaLC/simulation-comparison.
 #'
 #' @param ref_mat 2-column numeric matrix for reference.
 #' @param sim_mat 2-column numeric matrix for simulation.
@@ -249,8 +249,8 @@ calc_peacock_2d <- function(ref_mat, sim_mat) {
   return(NA_real_)
 }
 
-#' Calculate 2D Bivariate Kernel Density Estimation (KDE) Test Statistic
-#' Integrated from simpipe & SimBench.
+#' @title Calculate 2D Bivariate Kernel Density Estimation (KDE) Test Statistic
+#' @description Integrated from simpipe & SimBench.
 #'
 #' @param ref_mat 2-column numeric matrix for reference.
 #' @param sim_mat 2-column numeric matrix for simulation.
@@ -275,8 +275,8 @@ calc_kde_test <- function(ref_mat, sim_mat) {
   return(NA_real_)
 }
 
-#' Calculate 2D Earth Mover's Distance (2D EMD)
-#' Integrated from HelenaLC/simulation-comparison.
+#' @title Calculate 2D Earth Mover's Distance (2D EMD)
+#' @description Integrated from HelenaLC/simulation-comparison.
 #'
 #' Computes 2D bivariate density via MASS::kde2d over a shared bounding box,
 #' then measures optimal transport distance via emdist::emd2d.
@@ -947,9 +947,9 @@ calc_mmd <- function(
   )
 }
 
-#' Fréchet Single-Cell Distance (FSD)
+#' Frechet Single-Cell Distance (FSD)
 #'
-#' Computes the single-cell analogue of Fréchet Inception Distance (FID) on
+#' Computes the single-cell analogue of Frechet Inception Distance (FID) on
 #' low-dimensional PCA embeddings between reference and simulated cell populations.
 #'
 #' @param ref_mat Matrix of reference cells (cells x features or features x cells).
@@ -957,7 +957,7 @@ calc_mmd <- function(
 #' @param cells_as_cols Logical, whether cells are columns (default TRUE).
 #' @param n_pcs Number of principal components to evaluate (default 15).
 #'
-#' @return A list with Fréchet distance (FSD), mean discrepancy, and covariance trace discrepancy.
+#' @return A list with Frechet distance (FSD), mean discrepancy, and covariance trace discrepancy.
 #' @examples
 #' ref <- matrix(stats::rnorm(100), 50, 2)
 #' sim <- matrix(stats::rnorm(100), 50, 2)

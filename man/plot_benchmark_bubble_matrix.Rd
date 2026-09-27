@@ -86,7 +86,7 @@ Methods appear as rows; evaluation metrics appear as columns grouped under the e
 canonical evaluation categories (I-VIII) displayed as colored header strips at the top.
 }
 \details{
-\if{html}{\figure{benchmark_bubble_matrix.png}{options: width="100\%" alt="Benchmarking Bubble Matrix"}}
+\if{html}{\figure{benchmark_bubble_matrix.png}{options: width="800" alt="Benchmarking Bubble Matrix"}}
 
 \strong{Bubble encoding:}
 \itemize{
@@ -102,6 +102,15 @@ so that 1 always means best performance, while concordance/correlation metrics a
 directly (higher = better).
 }
 \examples{
+# Tidy benchmark data frame of standardized scores
+bm_df <- data.frame(
+  Method   = rep(c("Splat", "scDesign3", "SymSim", "dyngen"), each = 4),
+  Category = rep(c("Accuracy", "Accuracy", "Cellular Structure", "Scalability"), 4),
+  Metric   = rep(c("KS Distance", "Wasserstein", "Silhouette ASW", "CPU Time"), 4),
+  Score    = c(0.8, 0.7, 0.9, 0.6, 0.5, 0.8, 0.6, 0.5, 0.8, 0.7, 0.6, 0.5, 0.7, 0.6, 0.9, 0.5)
+)
+p <- plot_benchmark_bubble_matrix(bm_df)
+p
 \donttest{
 # Load benchmark summary across simulators
 demo_file <- system.file("shiny/scSimEvalApp/data/demo_benchmark_data.rds", package = "scSimEval")

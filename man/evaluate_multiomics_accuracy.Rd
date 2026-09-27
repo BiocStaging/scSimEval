@@ -57,7 +57,7 @@ using strictly the user's provided inputs:
 }
 }
 \details{
-\if{html}{\figure{workflow_diagram.png}{options: width="100\%" alt="scSimEval Unified Benchmarking Workflow Diagram"}}
+\if{html}{\figure{workflow_diagram.png}{options: width="800" alt="scSimEval Unified Benchmarking Workflow Diagram"}}
 }
 \examples{
 data(example_multiomics, package = "scSimEval")

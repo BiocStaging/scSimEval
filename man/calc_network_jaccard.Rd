@@ -23,8 +23,6 @@ Computes the Jaccard similarity index of top-k edge predictions between two netw
 or top correlated feature pairs between reference and simulated datasets.
 }
 \examples{
-data(example_multiomics, package = "scSimEval")
-r_rna <- example_multiomics$ref_multi$rna
-r_atac <- example_multiomics$ref_multi$atac
-calc_network_jaccard(matrix(c(1,2, 2,3), ncol=2), matrix(c(1,2, 2,3), ncol=2))
+calc_network_jaccard(data.frame(from = c("g1", "g2"), to = c("g2", "g3")),
+                     data.frame(from = c("g1", "g2"), to = c("g2", "g3")))
 }

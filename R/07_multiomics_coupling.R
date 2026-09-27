@@ -16,9 +16,9 @@
 #'   simulated cross-modality correlation distributions.
 #' @examples
 #' data(example_multiomics, package = "scSimEval")
-#' r_rna <- example_multiomics$ref_multi$rna
-#' r_atac <- example_multiomics$ref_multi$atac
-#' calc_cross_modality_correlation(r_rna, r_atac)
+#' m <- example_multiomics
+#' calc_cross_modality_correlation(m$ref_multi$rna, m$ref_multi$atac,
+#'                                 m$sim_multi$rna, m$sim_multi$atac)
 #' @export
 calc_cross_modality_correlation <- function(
   ref_mod1,
@@ -46,7 +46,7 @@ calc_cross_modality_correlation <- function(
   }
   
   # Compute pairwise correlations in reference
-  ref_cors <- sapply(seq_along(idx1), function(i) {
+  ref_cors <- vapply(seq_along(idx1), function(i) {
     x <- ref_mod1[idx1[i], ]
     y <- ref_mod2[idx2[i], ]
     if (stats::sd(x) > 0 && stats::sd(y) > 0) {
@@ -54,10 +54,10 @@ calc_cross_modality_correlation <- function(
     } else {
       0
     }
-  })
-  
+  }, numeric(1))
+
   # Compute pairwise correlations in simulation
-  sim_cors <- sapply(seq_along(idx1), function(i) {
+  sim_cors <- vapply(seq_along(idx1), function(i) {
     x <- sim_mod1[idx1[i], ]
     y <- sim_mod2[idx2[i], ]
     if (stats::sd(x) > 0 && stats::sd(y) > 0) {
@@ -65,7 +65,7 @@ calc_cross_modality_correlation <- function(
     } else {
       0
     }
-  })
+  }, numeric(1))
   
   calc_all_univariate_metrics(ref_cors, sim_cors, metric_prefix = "cross_modality_cor")
 }
@@ -325,7 +325,7 @@ calc_cross_modal_generation <- function(true_data, pred_data) {
 #' data(example_multiomics, package = "scSimEval")
 #' r_rna <- example_multiomics$ref_multi$rna
 #' r_atac <- example_multiomics$ref_multi$atac
-#' calc_modality_alignment(rbind(t(r_rna[1:10,]), t(r_atac[1:10,])), rep(c("RNA","ATAC"), each=ncol(r_rna)))
+#' calc_modality_alignment(rbind(t(r_rna[seq_len(10),]), t(r_atac[seq_len(10),])), rep(c("RNA","ATAC"), each=ncol(r_rna)))
 #' @export
 calc_modality_alignment <- function(embedding, modalities, cell_types = NULL, k = 15) {
   embedding <- as.matrix(embedding)
@@ -426,10 +426,8 @@ standardize_edges <- function(edges, directed = TRUE) {
 #'
 #' @return Jaccard similarity index in [0, 1] (|E1 cap E2| / |E1 cup E2|).
 #' @examples
-#' data(example_multiomics, package = "scSimEval")
-#' r_rna <- example_multiomics$ref_multi$rna
-#' r_atac <- example_multiomics$ref_multi$atac
-#' calc_network_jaccard(matrix(c(1,2, 2,3), ncol=2), matrix(c(1,2, 2,3), ncol=2))
+#' calc_network_jaccard(data.frame(from = c("g1", "g2"), to = c("g2", "g3")),
+#'                      data.frame(from = c("g1", "g2"), to = c("g2", "g3")))
 #' @export
 calc_network_jaccard <- function(edges1, edges2, k = NULL, directed = TRUE) {
   std1 <- standardize_edges(edges1, directed = directed)
@@ -525,7 +523,9 @@ calc_atac_rna_coupling <- function(atac_data, rna_data, linked_pairs = NULL) {
 #' @return A list containing module correlation r, RMSE, MAE, and modularity fidelity.
 #' @examples
 #' data(example_scrna, package = "scSimEval")
-#' calc_coregulation_fidelity(example_scrna$ref, example_scrna$sim)
+#' modules <- list(Module_1 = rownames(example_scrna$ref)[seq_len(30)],
+#'                 Module_2 = rownames(example_scrna$ref)[31:60])
+#' calc_coregulation_fidelity(example_scrna$ref, example_scrna$sim, modules)
 #' @export
 calc_coregulation_fidelity <- function(
   ref_data,

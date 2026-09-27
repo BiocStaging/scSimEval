@@ -2,8 +2,7 @@
 % Please edit documentation in R/01_metrics_distribution.R
 \name{calc_fasano_franceschini}
 \alias{calc_fasano_franceschini}
-\title{Calculate Fasano-Franceschini 2D Kolmogorov-Smirnov Test Statistic
-Integrated from simpipe.}
+\title{Calculate Fasano-Franceschini 2D Kolmogorov-Smirnov Test Statistic}
 \usage{
 calc_fasano_franceschini(ref_mat, sim_mat, threads = 1)
 }
@@ -18,7 +17,6 @@ calc_fasano_franceschini(ref_mat, sim_mat, threads = 1)
 Estimated 2D KS statistic.
 }
 \description{
-Calculate Fasano-Franceschini 2D Kolmogorov-Smirnov Test Statistic
 Integrated from simpipe.
 }
 \examples{

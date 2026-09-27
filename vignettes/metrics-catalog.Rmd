@@ -7,7 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r knitr-setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -379,3 +379,7 @@ Standardized Score in [0.00, 1.00]
 ```
 
 In visual representations (such as `plot_benchmark_bubble_matrix()`), standardized scores are mapped directly to bubble sizes, and top performers ($\ge 0.96$) receive bold highlighted square glyphs.
+
+```{r session-info}
+sessionInfo()
+```

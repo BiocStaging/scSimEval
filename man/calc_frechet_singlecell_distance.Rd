@@ -2,7 +2,7 @@
 % Please edit documentation in R/01_metrics_distribution.R
 \name{calc_frechet_singlecell_distance}
 \alias{calc_frechet_singlecell_distance}
-\title{Fréchet Single-Cell Distance (FSD)}
+\title{Frechet Single-Cell Distance (FSD)}
 \usage{
 calc_frechet_singlecell_distance(
   ref_mat,
@@ -21,10 +21,10 @@ calc_frechet_singlecell_distance(
 \item{n_pcs}{Number of principal components to evaluate (default 15).}
 }
 \value{
-A list with Fréchet distance (FSD), mean discrepancy, and covariance trace discrepancy.
+A list with Frechet distance (FSD), mean discrepancy, and covariance trace discrepancy.
 }
 \description{
-Computes the single-cell analogue of Fréchet Inception Distance (FID) on
+Computes the single-cell analogue of Frechet Inception Distance (FID) on
 low-dimensional PCA embeddings between reference and simulated cell populations.
 }
 \examples{

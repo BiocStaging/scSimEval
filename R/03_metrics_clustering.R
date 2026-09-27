@@ -71,7 +71,7 @@ calc_connectivity <- function(dist_mat, cluster_labels) {
 #' @return Davies-Bouldin index (lower is better).
 #' @examples
 #' data <- matrix(stats::rnorm(200), 20, 10)
-#' cl <- factor(rep(c("A", "B"), each = 10))
+#' cl <- factor(rep(c("A", "B"), each = 5))
 #' dist_mat <- stats::dist(data)
 #' calc_davies_bouldin(data, cl)
 #' @export
@@ -90,7 +90,7 @@ calc_davies_bouldin <- function(data, cluster_labels) {
 #' @return Calinski-Harabasz index.
 #' @examples
 #' data <- matrix(stats::rnorm(200), 20, 10)
-#' cl <- factor(rep(c("A", "B"), each = 10))
+#' cl <- factor(rep(c("A", "B"), each = 5))
 #' dist_mat <- stats::dist(data)
 #' calc_calinski_harabasz(data, cl)
 #' @export
@@ -171,8 +171,6 @@ calc_nmi <- function(pred, truth) {
 #' @param N Total number of items / cells.
 #' @return Expected mutual information in nats.
 #' @keywords internal
-#' @examples
-#' calc_expected_mi(c(10, 10), c(10, 10), 20)
 calc_expected_mi <- function(a, b, N) {
   emi <- 0
   for (i in seq_along(a)) {
@@ -622,7 +620,7 @@ calc_cdi <- function(counts, cluster_labels, size_factors = NULL,
 #' @return A named list of all clustering metrics.
 #' @examples
 #' data <- matrix(stats::rnorm(200), 20, 10)
-#' cl <- factor(rep(c("A", "B"), each = 10))
+#' cl <- factor(rep(c("A", "B"), each = 5))
 #' dist_mat <- stats::dist(data)
 #' evaluate_clustering_metrics(data, cl)
 #' @export
@@ -830,10 +828,13 @@ calc_generative_precision_recall <- function(
 #' @return A list containing overall accuracy, balanced accuracy, macro F1, macro precision,
 #'   macro recall, Cohen's kappa, and per-class performance metrics.
 #' @examples
-#' data <- matrix(stats::rnorm(200), 20, 10)
-#' cl <- factor(rep(c("A", "B"), each = 10))
-#' dist_mat <- stats::dist(data)
-#' evaluate_epigenomic_annotation(data, cl)
+#' data(example_multiomics, package = "scSimEval")
+#' evaluate_epigenomic_annotation(
+#'   example_multiomics$ref_multi$atac,
+#'   example_multiomics$sim_multi$atac,
+#'   ref_celltypes = example_multiomics$cell_types,
+#'   sim_celltypes = example_multiomics$cell_types
+#' )
 #' @export
 evaluate_epigenomic_annotation <- function(
   ref_data,

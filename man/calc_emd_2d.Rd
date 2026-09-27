@@ -2,8 +2,7 @@
 % Please edit documentation in R/01_metrics_distribution.R
 \name{calc_emd_2d}
 \alias{calc_emd_2d}
-\title{Calculate 2D Earth Mover's Distance (2D EMD)
-Integrated from HelenaLC/simulation-comparison.}
+\title{Calculate 2D Earth Mover's Distance (2D EMD)}
 \usage{
 calc_emd_2d(ref_mat, sim_mat, n = 25)
 }
@@ -18,6 +17,8 @@ calc_emd_2d(ref_mat, sim_mat, n = 25)
 Normalized 2D Earth Mover's Distance.
 }
 \description{
+Integrated from HelenaLC/simulation-comparison.
+
 Computes 2D bivariate density via MASS::kde2d over a shared bounding box,
 then measures optimal transport distance via emdist::emd2d.
 }

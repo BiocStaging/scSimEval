@@ -29,9 +29,10 @@ Launches the Shiny web application embedded in the \pkg{scSimEval} package.
   and export high-resolution figures (600 DPI publication quality), multi-page PDF reports, Excel (.xlsx) workbooks, and complete results ZIP packages.
 }
 \examples{
+# Locate the embedded Shiny app directory bundled with the package
+system.file("shiny", "scSimEvalApp", package = "scSimEval")
 \donttest{
-library(scSimEval)
-# Launch the interactive studio
+# Launch the interactive studio (interactive sessions only)
 if (interactive()) {
   launch_scSimEval_app()
 }

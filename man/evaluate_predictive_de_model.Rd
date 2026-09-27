@@ -33,5 +33,5 @@ If \code{de_features} is NULL, the top variable features are automatically selec
 }
 \examples{
 data(example_scrna, package = "scSimEval")
-evaluate_predictive_de_model(example_scrna$ref, example_scrna$sim)
+evaluate_predictive_de_model(example_scrna$ref, group = example_scrna$cell_types)
 }

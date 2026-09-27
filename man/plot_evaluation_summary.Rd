@@ -75,7 +75,7 @@ Produces a 600 DPI horizontal bar matrix ranking single-cell simulators
 across the 8 canonical evaluation categories and overall composite performance.
 }
 \details{
-\if{html}{\figure{evaluation_summary_bars.png}{options: width="100\%" alt="Single-Cell Simulator Evaluation Summary"}}
+\if{html}{\figure{evaluation_summary_bars.png}{options: width="800" alt="Single-Cell Simulator Evaluation Summary"}}
 }
 \examples{
 data(example_scrna, package = "scSimEval")

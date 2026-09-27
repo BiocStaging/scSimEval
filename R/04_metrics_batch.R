@@ -391,10 +391,9 @@ calc_isi <- function(coords, batch_info, k = 30, weighted = TRUE) {
 #'   \item{cross_batch_accuracy}{Mean cross-batch cell type transfer accuracy (if cell_types supplied)}
 #'   \item{cross_batch_F1}{Mean cross-batch cell type transfer macro F1 (if cell_types supplied)}
 #' @examples
-#' coords <- matrix(stats::rnorm(100), 50, 2)
-#' batch <- factor(rep(c("B1", "B2"), length.out = 50))
-#' ct <- factor(rep(c("TypeA", "TypeB"), length.out = 50))
-#' evaluate_batch_metrics(coords, batch, ct)
+#' data(example_scrna, package = "scSimEval")
+#' evaluate_batch_metrics(example_scrna$ref, example_scrna$batch_info,
+#'                        cell_types = example_scrna$cell_types)
 #' @export
 evaluate_batch_metrics <- function(
   data,
@@ -643,7 +642,9 @@ evaluate_cross_batch_prediction <- function(coords, cell_types, batch_info, k = 
 #' @return A list of mean percentage of variance explained by cell-type, donor, and residual noise.
 #' @examples
 #' data(example_scrna, package = "scSimEval")
-#' calc_variance_decomposition(example_scrna$ref, example_scrna$sim)
+#' md <- data.frame(donor = example_scrna$batch_info,
+#'                  cell_type = example_scrna$cell_types)
+#' calc_variance_decomposition(example_scrna$ref, md)
 #' @export
 calc_variance_decomposition <- function(
   counts,
@@ -658,7 +659,7 @@ calc_variance_decomposition <- function(
   counts <- as.matrix(counts)
   
   if (!all(c(donor_col, celltype_col) %in% colnames(cell_metadata))) {
-    stop(paste("cell_metadata must contain columns:", donor_col, "and", celltype_col))
+    stop("cell_metadata must contain columns: ", donor_col, " and ", celltype_col)
   }
   
   # Select top variable genes

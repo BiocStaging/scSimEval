@@ -54,7 +54,7 @@ human-crafted scientific layout featuring solid visible contour lines, semi-tran
 color-filled density curves, and simple understated titles.
 }
 \details{
-\if{html}{\figure{comparative_distribution_qc.png}{options: width="100\%" alt="Comparative Single-Cell Distribution QC"}}
+\if{html}{\figure{comparative_distribution_qc.png}{options: width="800" alt="Comparative Single-Cell Distribution QC"}}
 }
 \examples{
 data(example_scrna, package = "scSimEval")

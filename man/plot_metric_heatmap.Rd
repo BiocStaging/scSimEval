@@ -51,7 +51,7 @@ with cell fill colors scaled by relative fidelity (direction-aware, ensuring bal
 across all 62 measures without scale distortion from high-magnitude metrics like RAM or runtime).
 }
 \details{
-\if{html}{\figure{metric_heatmap.png}{options: width="100\%" alt="Cross-Metric Z-Scored Heatmap"}}
+\if{html}{\figure{metric_heatmap.png}{options: width="800" alt="Cross-Metric Z-Scored Heatmap"}}
 }
 \examples{
 data(example_scrna, package = "scSimEval")

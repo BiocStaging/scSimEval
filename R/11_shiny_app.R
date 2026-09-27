@@ -14,9 +14,10 @@
 #' @export
 #'
 #' @examples
+#' # Locate the embedded Shiny app directory bundled with the package
+#' system.file("shiny", "scSimEvalApp", package = "scSimEval")
 #' \donttest{
-#' library(scSimEval)
-#' # Launch the interactive studio
+#' # Launch the interactive studio (interactive sessions only)
 #' if (interactive()) {
 #'   launch_scSimEval_app()
 #' }

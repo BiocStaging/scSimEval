@@ -32,5 +32,7 @@ donor / biological replicate variation, and residual technical noise.
 }
 \examples{
 data(example_scrna, package = "scSimEval")
-calc_variance_decomposition(example_scrna$ref, example_scrna$sim)
+md <- data.frame(donor = example_scrna$batch_info,
+                 cell_type = example_scrna$cell_types)
+calc_variance_decomposition(example_scrna$ref, md)
 }

@@ -446,7 +446,7 @@ utils::globalVariables(c(
 #' human-crafted scientific layout featuring solid visible contour lines, semi-transparent
 #' color-filled density curves, and simple understated titles.
 #'
-#' \if{html}{\figure{comparative_distribution_qc.png}{options: width="100\%" alt="Comparative Single-Cell Distribution QC"}}
+#' \if{html}{\figure{comparative_distribution_qc.png}{options: width="800" alt="Comparative Single-Cell Distribution QC"}}
 #'
 #' @param ref_data Numeric count matrix for empirical reference (features x cells).
 #' @param sim_data Numeric count matrix for simulated data (features x cells), or a named list
@@ -658,7 +658,7 @@ plot_distribution_qc <- function(
     theme_human()
 
   # 10. Gene correlation
-  top_g <- order(v_r, decreasing = TRUE)[1:min(nrow(ref_mat), 100)]
+  top_g <- order(v_r, decreasing = TRUE)[seq_len(min(nrow(ref_mat), 100))]
   gc_r <- stats::cor(t(ref_mat[top_g, ]))[upper.tri(diag(length(top_g)))]
   df_gcor_list <- list(data.frame(val = gc_r, Dataset = ref_name))
   for (sn in sim_names) {
@@ -842,7 +842,7 @@ MNO#
 #' superior, resolving metric polarity differences across distance and correlation measures)
 #' or original unnormalized raw values with optional direction separation or per-metric faceting.
 #'
-#' \if{html}{\figure{metric_boxplots.png}{options: width="100\%" alt="Multi-Metric Distribution Boxplots"}}
+#' \if{html}{\figure{metric_boxplots.png}{options: width="800" alt="Multi-Metric Distribution Boxplots"}}
 #'
 #' @param benchmark_data A data frame (such as \code{demo$benchmark_summary_table} or output from
 #'   \code{\link{evaluate_simulation_accuracy}()}) or a named list of benchmark result tables.
@@ -1163,7 +1163,7 @@ plot_individual_metric_bar <- function(
 #' benchmarking measurements (elapsed real wall-clock time in seconds and peak resident
 #' memory consumption in MiB).
 #'
-#' \if{html}{\figure{scalability_benchmark.png}{options: width="100\%" alt="Computational Scalability and Resource Footprint"}}
+#' \if{html}{\figure{scalability_benchmark.png}{options: width="800" alt="Computational Scalability and Resource Footprint"}}
 #'
 #' @param benchmark_data Benchmark summary table or named list containing Category VIII metrics.
 #' @param type Character. Visualization type: \code{"composite"} (multi-panel dashboard),
@@ -1521,7 +1521,7 @@ plot_benchmark_summary <- function(
 #' with cell fill colors scaled by relative fidelity (direction-aware, ensuring balanced visual contrast
 #' across all 62 measures without scale distortion from high-magnitude metrics like RAM or runtime).
 #'
-#' \if{html}{\figure{metric_heatmap.png}{options: width="100\%" alt="Cross-Metric Z-Scored Heatmap"}}
+#' \if{html}{\figure{metric_heatmap.png}{options: width="800" alt="Cross-Metric Z-Scored Heatmap"}}
 #'
 #' @param benchmark_data A tidy benchmark summary table or a named list of benchmark tables.
 #' @param category Optional character vector to filter by canonical evaluation category. Default \code{NULL} (all 8 categories).
@@ -1974,7 +1974,7 @@ plot_metric_mds <- function(
 
     dist_mat <- stats::dist(mat)
     mds      <- stats::cmdscale(dist_mat, k = 2, eig = TRUE)
-    var_exp  <- round(100 * (mds$eig[1:2] / sum(abs(mds$eig))), 1)
+    var_exp  <- round(100 * (mds$eig[seq_len(2)] / sum(abs(mds$eig))), 1)
 
     mds_df <- data.frame(
       Simulator = rownames(mat),
@@ -2158,7 +2158,7 @@ plot_metric_pca <- function(
   if (nrow(mat) < 3 || ncol(mat) < 2) stop("PCA requires at least 3 simulators and 2 non-constant metrics.")
 
   pca     <- stats::prcomp(mat, scale. = TRUE, center = TRUE)
-  pca_var <- round(100 * summary(pca)$importance[2, 1:2], 1)
+  pca_var <- round(100 * summary(pca)$importance[2, seq_len(2)], 1)
 
   # Scores data frame (Methods)
   scores_df <- data.frame(
@@ -2244,7 +2244,7 @@ plot_metric_pca <- function(
   # ---------------------------------------------------------------------------
   # Panel b: PC Loadings Vectors
   # ---------------------------------------------------------------------------
-  loadings_df <- as.data.frame(pca$rotation[, 1:2, drop = FALSE])
+  loadings_df <- as.data.frame(pca$rotation[, seq_len(2), drop = FALSE])
   loadings_df$Metric <- rownames(loadings_df)
   loadings_df$mag <- sqrt(loadings_df$PC1^2 + loadings_df$PC2^2)
 
@@ -2349,7 +2349,7 @@ plot_metric_pca <- function(
 #' Methods appear as rows; evaluation metrics appear as columns grouped under the eight
 #' canonical evaluation categories (I-VIII) displayed as colored header strips at the top.
 #'
-#' \if{html}{\figure{benchmark_bubble_matrix.png}{options: width="100\%" alt="Benchmarking Bubble Matrix"}}
+#' \if{html}{\figure{benchmark_bubble_matrix.png}{options: width="800" alt="Benchmarking Bubble Matrix"}}
 #'
 #' \strong{Bubble encoding:}
 #' \itemize{
@@ -2389,6 +2389,15 @@ plot_metric_pca <- function(
 #' @return A \code{ggplot} object rendering the multi-dimensional bubble matrix.
 #' @export
 #' @examples
+#' # Tidy benchmark data frame of standardized scores
+#' bm_df <- data.frame(
+#'   Method   = rep(c("Splat", "scDesign3", "SymSim", "dyngen"), each = 4),
+#'   Category = rep(c("Accuracy", "Accuracy", "Cellular Structure", "Scalability"), 4),
+#'   Metric   = rep(c("KS Distance", "Wasserstein", "Silhouette ASW", "CPU Time"), 4),
+#'   Score    = c(0.8, 0.7, 0.9, 0.6, 0.5, 0.8, 0.6, 0.5, 0.8, 0.7, 0.6, 0.5, 0.7, 0.6, 0.9, 0.5)
+#' )
+#' p <- plot_benchmark_bubble_matrix(bm_df)
+#' p
 #' \donttest{
 #' # Load benchmark summary across simulators
 #' demo_file <- system.file("shiny/scSimEvalApp/data/demo_benchmark_data.rds", package = "scSimEval")
@@ -2500,12 +2509,12 @@ plot_benchmark_bubble_matrix <- function(
     ord_mets <- c(metrics_order[metrics_order %in% all_mets], setdiff(all_mets, metrics_order))
     df$Display_Metric <- factor(df$Display_Metric, levels = ord_mets)
   } else {
-    cat_met_order <- character(0)
+    category_metric_order <- character(0)
     for (cat in levels(df$Display_Category)) {
       mets_in <- sort(unique(df$Display_Metric[df$Display_Category == cat]))
-      cat_met_order <- c(cat_met_order, mets_in)
+      category_metric_order <- c(category_metric_order, mets_in)
     }
-    df$Display_Metric <- factor(df$Display_Metric, levels = cat_met_order)
+    df$Display_Metric <- factor(df$Display_Metric, levels = category_metric_order)
   }
 
   if (!is.null(method_classes)) {
@@ -2808,7 +2817,7 @@ plot_bubble_matrix <- plot_benchmark_bubble_matrix
 #' Produces a 600 DPI horizontal bar matrix ranking single-cell simulators
 #' across the 8 canonical evaluation categories and overall composite performance.
 #'
-#' \if{html}{\figure{evaluation_summary_bars.png}{options: width="100\%" alt="Single-Cell Simulator Evaluation Summary"}}
+#' \if{html}{\figure{evaluation_summary_bars.png}{options: width="800" alt="Single-Cell Simulator Evaluation Summary"}}
 #'
 #' @param data A benchmark summary data frame, a list containing \code{benchmark_summary_table},
 #'   or the output of \code{\link{evaluate_simulation_accuracy}}.

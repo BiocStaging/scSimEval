@@ -2,8 +2,7 @@
 % Please edit documentation in R/01_metrics_distribution.R
 \name{calc_wasserstein_1d}
 \alias{calc_wasserstein_1d}
-\title{Calculate 1D Wasserstein Metric / Earth Mover's Distance (WS)
-Integrated from HelenaLC/simulation-comparison.}
+\title{Calculate 1D Wasserstein Metric / Earth Mover's Distance (WS)}
 \usage{
 calc_wasserstein_1d(ref, sim, p = 1)
 }
@@ -18,7 +17,6 @@ calc_wasserstein_1d(ref, sim, p = 1)
 The 1D Wasserstein distance between the two empirical distributions.
 }
 \description{
-Calculate 1D Wasserstein Metric / Earth Mover's Distance (WS)
 Integrated from HelenaLC/simulation-comparison.
 }
 \examples{

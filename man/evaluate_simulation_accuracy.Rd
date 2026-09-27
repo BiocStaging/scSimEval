@@ -40,7 +40,7 @@ Computes distribution distances, cellular and feature-level properties,
 zero-inflation curves, and manifold distances between reference and simulated datasets.
 }
 \details{
-\if{html}{\figure{workflow_diagram.png}{options: width="100\%" alt="scSimEval Unified Benchmarking Workflow Diagram"}}
+\if{html}{\figure{workflow_diagram.png}{options: width="800" alt="scSimEval Unified Benchmarking Workflow Diagram"}}
 }
 \examples{
 data(example_scrna, package = "scSimEval")

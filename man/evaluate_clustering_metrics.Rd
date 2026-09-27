@@ -36,7 +36,7 @@ Hungarian F1/Precision/Recall, ARI, NMI, AMI, FMI, Homogeneity, Completeness, V-
 }
 \examples{
 data <- matrix(stats::rnorm(200), 20, 10)
-cl <- factor(rep(c("A", "B"), each = 10))
+cl <- factor(rep(c("A", "B"), each = 5))
 dist_mat <- stats::dist(data)
 evaluate_clustering_metrics(data, cl)
 }

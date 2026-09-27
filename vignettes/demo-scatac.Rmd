@@ -7,7 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r knitr-setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -145,3 +145,7 @@ head(master_atac$metrics_summary_table)
 # 7. Conclusion
 
 `scSimEval` effectively benchmarks scATAC-seq simulations, validating peak insertion distributions, extreme sparsity, cell type clustering, batch mixing, and chromatin peak co-accessibility without requiring synthetic ground-truth annotations.
+
+```{r session-info}
+sessionInfo()
+```

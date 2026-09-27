@@ -2,8 +2,7 @@
 % Please edit documentation in R/01_metrics_distribution.R
 \name{calc_kde_test}
 \alias{calc_kde_test}
-\title{Calculate 2D Bivariate Kernel Density Estimation (KDE) Test Statistic
-Integrated from simpipe & SimBench.}
+\title{Calculate 2D Bivariate Kernel Density Estimation (KDE) Test Statistic}
 \usage{
 calc_kde_test(ref_mat, sim_mat)
 }
@@ -16,7 +15,6 @@ calc_kde_test(ref_mat, sim_mat)
 z-statistic testing discrepancy between bivariate kernel density estimates.
 }
 \description{
-Calculate 2D Bivariate Kernel Density Estimation (KDE) Test Statistic
 Integrated from simpipe & SimBench.
 }
 \examples{

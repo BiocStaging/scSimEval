@@ -35,5 +35,7 @@ empirical reference and simulated datasets.
 }
 \examples{
 data(example_scrna, package = "scSimEval")
-evaluate_simbench_signals(example_scrna$ref, example_scrna$cell_types)
+evaluate_simbench_signals(example_scrna$ref, example_scrna$sim,
+                          ref_celltypes = example_scrna$cell_types,
+                          sim_celltypes = example_scrna$cell_types)
 }

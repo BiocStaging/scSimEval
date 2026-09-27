@@ -26,5 +26,5 @@ without sacrificing biological clustering (Zhai et al., Genome Biology 2024; Lue
 data(example_multiomics, package = "scSimEval")
 r_rna <- example_multiomics$ref_multi$rna
 r_atac <- example_multiomics$ref_multi$atac
-calc_modality_alignment(rbind(t(r_rna[1:10,]), t(r_atac[1:10,])), rep(c("RNA","ATAC"), each=ncol(r_rna)))
+calc_modality_alignment(rbind(t(r_rna[seq_len(10),]), t(r_atac[seq_len(10),])), rep(c("RNA","ATAC"), each=ncol(r_rna)))
 }

@@ -7,7 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r knitr-setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -65,3 +65,7 @@ By default, the application opens an interactive session in your browser (at `ht
 # Summary
 
 The interactive Shiny Studio provides an accessible, zero-code environment to explore, customize, and communicate single-cell simulation benchmarking results.
+
+```{r session-info}
+sessionInfo()
+```

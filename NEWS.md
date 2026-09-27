@@ -1,3 +1,38 @@
+# scSimEval 0.99.2
+
+## Bug Fixes
+* Fixed the Bioconductor staging build failure (`Error in x[clustering == i, ]
+  : (subscript) logical subscript too long`): corrected all roxygen `@examples`
+  blocks in the clustering/batch/DE/trajectory/multiomics metric functions so
+  cluster labels align with matrix dimensions and all required arguments are
+  supplied. All examples now pass `R CMD check`.
+* Removed the example from the internal helper `calc_expected_mi`, which errored
+  in an installed-namespace context ("could not find function").
+* Cleaned up Rd generation: `\figure` widths now declared in pixels, explicit
+  `@title` tags for distribution metrics, ASCII-only documentation text, and
+  regenerated `man/` pages.
+* Labeled all vignette code chunks and added `sessionInfo()` blocks to every
+  vignette as required by BiocCheck.
+
+## Documentation
+
+* **Paired / Unpaired / Mosaic Multiomics:** Added comprehensive, scientifically
+  accurate documentation throughout the package clarifying which evaluation metrics
+  are valid for each multiomics experimental design:
+  - **Paired** (10x Multiome, SHARE-seq, SNARE-seq): Full 62-metric evaluation
+    including all Category 7 cross-modal coupling metrics (FOSCTTM, Match@1,
+    cross-modal generation fidelity, peak-to-gene linkage).
+  - **Unpaired** (independent scRNA-seq + scATAC-seq from separate cells): Full
+    unimodal evaluation (Categories 1-6, 8) plus population-level cross-modal
+    metrics (co-expression module fidelity, network Jaccard, cross-modal label
+    transfer). Cell-pairing metrics (FOSCTTM, cross-modal generation) are not
+    applicable and excluded.
+  - **Mosaic** (partial co-measurement, e.g. DOGMA-seq): Per-modality unimodal
+    evaluation on the full matrix; paired coupling metrics applied only to the
+    co-assayed cell subset.
+* Updated `DESCRIPTION`, `README.md`, `vignettes/demo-multiomics.Rmd`, and
+  `vignettes/scSimEval-workflow.Rmd` to reflect these distinctions.
+
 # scSimEval 0.99.1
 
 ## Bug Fixes
