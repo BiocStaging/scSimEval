@@ -1,6 +1,11 @@
 # scSimEval 0.99.1
 
-* Fixed the bugs.
+## Bug Fixes
+* Fixed R-universe / Bioconductor build failure: removed `^doc$` and `^inst/doc$`
+  from `.Rbuildignore` so that pre-rendered vignette HTML files are correctly
+  included in the source tarball and `R CMD INSTALL --html` succeeds.
+* Cleaned up `docs/` folder by removing scratch files (`git_help.Rmd`),
+  redundant source Markdown files, and the empty `tutorials/` directory.
 
 # scSimEval 0.99.0
 
