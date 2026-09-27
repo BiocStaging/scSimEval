@@ -1,3 +1,7 @@
+# scSimEval 0.99.1
+
+* Fixed the bugs.
+
 # scSimEval 0.99.0
 
 ## New Features
