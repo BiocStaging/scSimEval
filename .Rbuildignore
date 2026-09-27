@@ -1,14 +1,25 @@
+# R project file
 ^.*\.Rproj$
 ^\.Rproj\.user$
+
+# OS files
 ^\.DS_Store$
-^examples$
-^scratch$
+
+# Build artifacts
 ^.*\.tar\.gz$
 ^.*\.Rcheck$
-^.*\.log$
+^.*\.BiocCheck$
+^Meta$
+
+# Development-only (not shipped in package tarball)
+^examples$
 ^data-raw$
+^scratch$
+
+# pkgdown website files (for GitHub Pages only, not part of package)
 ^docs$
 ^pkgdown$
-^scSimEval\.BiocCheck$
+^_pkgdown\.yml$
+
+# man/figures (images embedded in README, not needed in package)
 ^man/figures$
-^Meta$

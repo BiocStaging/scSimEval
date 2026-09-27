@@ -1,14 +1,21 @@
-# R specific
+# R session files
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
+
+# R build artifacts
 *.tar.gz
 *.Rcheck/
 Meta/
+scSimEval.BiocCheck/
 
-# Scratch and temporary testing files
+# Development-only directories (not needed by users)
+examples/
+data-raw/
 scratch/
+
+# Temporary files
 *.tmp
 *.log
 
