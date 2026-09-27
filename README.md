@@ -1,6 +1,6 @@
 # scSimEval: Unified Benchmarking and Accuracy Evaluation for Single-Cell Multiomics Simulation Methods <a href="https://kabilanbio.github.io/scSimEval/"><img src="man/figures/logo.png" align="right" height="139" alt="scSimEval website" /></a>
 
-[![GitHub release](https://img.shields.io/github/v/release/kabilanbio/scSimEval?color=blue)](https://github.com/kabilanbio/scSimEval/releases)
+[![BioC devel build status](https://bioconductor.org/shields/build/devel/bioc/scSimEval.svg)](https://bioconductor.org/checkResults/devel/bioc-LATEST/scSimEval/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Bioconductor submission](https://img.shields.io/badge/Bioconductor-submission%20v0.99.1-brightgreen.svg)](https://github.com/BiocStaging/scSimEval)
 
