@@ -228,6 +228,14 @@ launch_scSimEval_app()
 
 ---
 
+---
+
+## Documentation
+
+The complete documentation of `scSimEval` package is available at `https://kabilanbio.github.io/scSimEval`
+
+---
+
 ## Authors & Maintainers
 
 `scSimEval` is developed and maintained by:
