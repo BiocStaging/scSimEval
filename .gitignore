@@ -3,6 +3,7 @@
 .Rhistory
 .RData
 .Ruserdata
+.Rproj
 
 # R build artifacts
 *.tar.gz
