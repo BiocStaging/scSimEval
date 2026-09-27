@@ -226,6 +226,10 @@ library(scSimEval)
 launch_scSimEval_app()
 ```
 
+## Documentation
+
+Complete documentation of `scSimEval` R package is available at [https://kabilanbio.github.io/scSimEval](https://kabilanbio.github.io/scSimEval).
+
 ## Authors & Maintainers
 
 `scSimEval` is developed and maintained by:
