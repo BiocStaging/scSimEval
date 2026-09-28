@@ -402,6 +402,47 @@ plot_metric_mds(
 )
 ```
 
+### 12.6 Cell Embeddings (t-SNE, UMAP, & PCA) and Low-Dimensional Quality Metrics
+
+Beyond numerical metric profiles, directly projecting real biological cells and simulated cells into low-dimensional embedding spaces (such as UMAP, t-SNE, or PCA) enables researchers to visually inspect whether synthetic datasets faithfully capture phenotypic clusters, biological manifolds, and technical depth variations.
+
+`scSimEval` provides a high-level suite of functions for embedding computation, comparative plotting, and quantitative low-dimensional quality assessment:
+
+```{r cell-embeddings-demo, eval=TRUE}
+# 1. Compute low-dimensional embeddings across reference and simulations
+emb_data <- compute_dataset_embeddings(
+  reference   = example_scrna$ref,
+  simulated   = list("Splatter" = example_scrna$sim),
+  reduction   = "pca",
+  n_pcs       = 10,
+  cell_types  = example_scrna$cell_types,
+  batch       = example_scrna$batch_info
+)
+
+# Preview embedding data structure
+head(emb_data, 3)
+
+# 2. Plot comparative cell embeddings (faceted across datasets)
+plot_dataset_embeddings(
+  embedding_data = emb_data,
+  reduction      = "pca",
+  layout         = "facet",
+  color_by       = "cell_type",
+  pt_size        = 1.0,
+  alpha          = 0.8
+)
+
+# 3. Compute quantitative low-dimensional quality metrics
+quality_table <- compute_embedding_quality_metrics(emb_data)
+knitr::kable(quality_table, digits = 4, caption = "Quantitative Low-Dimensional Quality Metrics")
+```
+
+The quantitative embedding metrics evaluated include:
+- **Mean Silhouette Score**: Quantifies cluster separability in the low-dimensional embedding space.
+- **Adjusted Rand Index (ARI)**: Evaluates unsupervised cluster recovery fidelity against known biological cell types using $k$-means on the principal components.
+- **Mean Library Size & Mean Detected Features**: Verifies whether cellular sequencing depth and gene detection rates are aligned.
+- **Library Size Discrepancy (%)**: Quantifies the percentage deviation in total cellular counts relative to the reference.
+
 ---
 
 ## 13. Multi-Dataset and Multi-Method Benchmarking
@@ -433,12 +474,29 @@ knitr::kable(consolidated_results$dataset_overview, digits = 4, caption = "Conso
 
 ## 14. Interactive Web Application (Shiny Studio)
 
-For researchers who prefer an interactive graphical interface rather than writing R code, `scSimEval` includes an embedded Shiny web application. You can explore benchmark results, filter metrics, view bubble plots, and export high-resolution (600 DPI) figures directly in your web browser:
+For researchers who prefer an interactive graphical interface rather than writing R code, `scSimEval` includes an embedded Shiny web application (`scSimEvalApp`). You can explore benchmark results, filter metrics, view bubble plots, and export high-resolution (600 DPI) figures directly in your web browser:
 
 ```r
 # Launch the interactive web app in your default browser
 launch_scSimEval_app()
 ```
+
+### 14.1 Key Interactive Features
+
+The Shiny app provides a comprehensive graphical workspace:
+1. **Data Hub**: Load pre-computed benchmarks (Splatter, scDesign3, SCRIP, SymSim, dyngen, simATAC) or upload custom empirical reference and simulation count matrices (`.rds`, `.csv`, `.tsv`, `SingleCellExperiment`, `Seurat`). Includes a live **Dataset Properties Summary** table (cells, genes, sparsity %, mean library size) and a **Multiomics Dataset Type** selector (Paired vs. Unpaired modes).
+2. **Comparative Bubble Matrix**: Flagship 62-measure interactive matrix with dynamic category filtering, simulator selection, and adjustable canvas dimensions (1200–3200 px).
+3. **Diagnostic Visualizations (8 Sub-Panels)**:
+   - *1. Evaluation Summary*: Horizontal bar chart ranking overall performance.
+   - *2. Distribution QC*: 14-panel comparative expression density, library size, and zero-inflation curves.
+   - *3. Scalability Benchmark*: Runtime and memory Pareto frontiers.
+   - *4. Metric Boxplots*: Category boxplots and ranked metric bar charts with directionality indicators (+/-).
+   - *5. Metric Heatmap*: Method-by-metric grid showing exact raw scores in bold text with standardized fill.
+   - *6. PCA Ordination*: Principal Component Analysis of simulator performance profiles.
+   - *7. MDS Metric Space*: Multi-Dimensional Scaling ordination.
+   - *8. Cell Embeddings (t-SNE & UMAP)*: Interactive low-dimensional projections (UMAP, t-SNE, PCA) across reference and simulated datasets with multi-simulator grid or 1-to-1 comparison layouts, flexible coloring (cell types, clusters, library size, detected features), and an integrated quantitative quality metrics table (Silhouette, ARI, library size deviation).
+4. **Publication Exports**: One-click downloads for 600 DPI publication JPEGs, vector-based PDFs, multi-sheet Excel workbooks (`.xlsx`), compiled multi-page PDF reports, and complete all-in-one ZIP archives.
+5. **Help & Getting Started**: Full documentation with metric reference guides, normalization protocols, and multiomics compatibility matrices.
 
 ---
 

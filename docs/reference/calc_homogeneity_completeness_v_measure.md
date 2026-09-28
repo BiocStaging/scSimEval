@@ -25,3 +25,20 @@ calc_homogeneity_completeness_v_measure(pred, truth, beta = 1)
 ## Value
 
 A named list containing homogeneity, completeness, and v_measure.
+
+## Examples
+
+``` r
+pred <- factor(rep(c("A", "B"), each = 20))
+truth <- factor(rep(c("A", "B"), each = 20))
+calc_homogeneity_completeness_v_measure(pred, truth)
+#> $homogeneity
+#> [1] 1
+#> 
+#> $completeness
+#> [1] 1
+#> 
+#> $v_measure
+#> [1] 1
+#> 
+```

@@ -1,7 +1,6 @@
-# Calculate Peacock 2D Kolmogorov-Smirnov Test Statistic Integrated from HelenaLC/simulation-comparison.
+# Calculate Peacock 2D Kolmogorov-Smirnov Test Statistic
 
-Calculate Peacock 2D Kolmogorov-Smirnov Test Statistic Integrated from
-HelenaLC/simulation-comparison.
+Integrated from HelenaLC/simulation-comparison.
 
 ## Usage
 
@@ -22,3 +21,12 @@ calc_peacock_2d(ref_mat, sim_mat)
 ## Value
 
 Peacock test statistic.
+
+## Examples
+
+``` r
+ref <- matrix(stats::rnorm(100), 50, 2)
+sim <- matrix(stats::rnorm(100), 50, 2)
+calc_peacock_2d(ref, sim)
+#> [1] NA
+```

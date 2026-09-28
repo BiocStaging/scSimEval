@@ -44,3 +44,23 @@ A named list:
 - median_mixing_metric:
 
   Median mixing rank
+
+## Examples
+
+``` r
+coords <- matrix(stats::rnorm(100), 50, 2)
+batch <- factor(rep(c("B1", "B2"), length.out = 50))
+calc_seurat_mixing_metric(coords, batch)
+#> $mixing_metrics
+#>  [1] 10.0  9.5  9.5 10.0 10.0  9.5  9.0 10.0  9.5 10.0  9.5 10.5  8.5  9.5  9.5
+#> [16]  8.5  9.5  9.0 10.0  9.5  8.5 10.0 10.0 10.0  9.0  9.0  9.5 12.0  9.5 10.0
+#> [31]  9.5 10.5  9.0 11.0  9.0 10.0  8.5 10.5  9.0  9.5 10.5 10.0  9.5  9.0  9.5
+#> [46]  9.5  9.5 10.0  9.0  9.5
+#> 
+#> $mean_mixing_metric
+#> [1] 9.62
+#> 
+#> $median_mixing_metric
+#> [1] 9.5
+#> 
+```

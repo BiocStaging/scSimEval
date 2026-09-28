@@ -27,3 +27,20 @@ calc_intraclass_correlation(counts, donor_labels, n_genes = 200)
 ## Value
 
 A list with median ICC, mean ICC, and vector of per-gene ICC values.
+
+## Examples
+
+``` r
+data(example_scrna, package = "scSimEval")
+calc_intraclass_correlation(example_scrna$ref, example_scrna$sim)
+#> $median_icc
+#> [1] 0
+#> 
+#> $mean_icc
+#> [1] 0
+#> 
+#> $gene_icc
+#>  [1] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+#> [39] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+#> 
+```

@@ -33,3 +33,12 @@ calc_nn_mismatch(ref, sim, k = NULL, subsample_size = 300)
 
 Fraction of points with significant neighbor composition mismatch (p \<=
 0.05).
+
+## Examples
+
+``` r
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_nn_mismatch(ref, sim)
+#> [1] 0.03
+```

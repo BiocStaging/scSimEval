@@ -25,3 +25,12 @@ calc_mae(ref, sim, align = TRUE)
 ## Value
 
 Mean absolute difference.
+
+## Examples
+
+``` r
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_mae(ref, sim)
+#> [1] 0.1261103
+```

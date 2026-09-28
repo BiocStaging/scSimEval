@@ -27,3 +27,17 @@ calc_between_dataset_silhouette(ref, sim, subsample_size = 300)
 ## Value
 
 A named list with global and local between-dataset silhouette widths.
+
+## Examples
+
+``` r
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_between_dataset_silhouette(ref, sim)
+#> $between_dataset_silh_global
+#> [1] -0.00194838
+#> 
+#> $between_dataset_silh_local
+#> [1] 0.05351383
+#> 
+```

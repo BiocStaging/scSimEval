@@ -150,6 +150,16 @@ concordance/correlation metrics are used directly (higher = better).
 ## Examples
 
 ``` r
+# Tidy benchmark data frame of standardized scores
+bm_df <- data.frame(
+  Method   = rep(c("Splat", "scDesign3", "SymSim", "dyngen"), each = 4),
+  Category = rep(c("Accuracy", "Accuracy", "Cellular Structure", "Scalability"), 4),
+  Metric   = rep(c("KS Distance", "Wasserstein", "Silhouette ASW", "CPU Time"), 4),
+  Score    = c(0.8, 0.7, 0.9, 0.6, 0.5, 0.8, 0.6, 0.5, 0.8, 0.7, 0.6, 0.5, 0.7, 0.6, 0.9, 0.5)
+)
+p <- plot_benchmark_bubble_matrix(bm_df)
+p
+
 # \donttest{
 # Load benchmark summary across simulators
 demo_file <- system.file("shiny/scSimEvalApp/data/demo_benchmark_data.rds", package = "scSimEval")

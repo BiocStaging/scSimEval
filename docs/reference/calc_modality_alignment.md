@@ -34,3 +34,21 @@ calc_modality_alignment(embedding, modalities, cell_types = NULL, k = 15)
 
 A list containing modality_asw, modality_mixing_score, and
 mean_cross_modality_neighbor_frac.
+
+## Examples
+
+``` r
+data(example_multiomics, package = "scSimEval")
+r_rna <- example_multiomics$ref_multi$rna
+r_atac <- example_multiomics$ref_multi$atac
+calc_modality_alignment(rbind(t(r_rna[seq_len(10),]), t(r_atac[seq_len(10),])), rep(c("RNA","ATAC"), each=ncol(r_rna)))
+#> $modality_asw
+#> [1] 0.3818172
+#> 
+#> $modality_mixing_score
+#> [1] 0.6181828
+#> 
+#> $mean_cross_modality_neighbor_frac
+#> [1] 0.0825
+#> 
+```

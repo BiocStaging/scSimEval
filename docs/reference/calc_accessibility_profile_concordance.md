@@ -38,3 +38,30 @@ calc_accessibility_profile_concordance(
 
 A list containing global PCC, global SCC, per-cell-type mean PCC/SCC,
 and mean accessibility KL divergence.
+
+## Examples
+
+``` r
+data(example_multiomics, package = "scSimEval")
+r_rna <- example_multiomics$ref_multi$rna
+r_atac <- example_multiomics$ref_multi$atac
+calc_accessibility_profile_concordance(r_rna, r_atac)
+#> $global_pcc
+#> [1] 0.2982499
+#> 
+#> $global_scc
+#> [1] 0.3483745
+#> 
+#> $kl_divergence
+#> [1] 0.03359463
+#> 
+#> $mean_celltype_pcc
+#> [1] NA
+#> 
+#> $mean_celltype_scc
+#> [1] NA
+#> 
+#> $celltype_summary
+#> NULL
+#> 
+```

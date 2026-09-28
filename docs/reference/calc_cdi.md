@@ -74,3 +74,31 @@ A list containing:
 - n_params:
 
   Number of free parameters in the clustering model.
+
+## Examples
+
+``` r
+data <- matrix(stats::rnorm(200), 20, 10)
+cl <- factor(rep(c("A", "B"), each = 10))
+dist_mat <- stats::dist(data)
+calc_cdi(data, cl)
+#> Warning: NaNs produced
+#> $cdi_aic
+#> [1] -8.104551
+#> 
+#> $cdi_bic
+#> [1] -8.004978
+#> 
+#> $loglik
+#> [1] 830.4551
+#> 
+#> $deviance
+#> [1] NaN
+#> 
+#> $n_clusters
+#> [1] 2
+#> 
+#> $n_params
+#> [1] 20
+#> 
+```

@@ -9,6 +9,8 @@ evaluate_multiomics_accuracy(
   sim_multi,
   cell_types = NULL,
   batch_info = NULL,
+  pairing = c("paired", "unpaired"),
+  is_paired = NULL,
   memory_mb = NULL,
   elapsed_time = NULL,
   peak_memory_mb = NULL,
@@ -26,6 +28,19 @@ evaluate_multiomics_accuracy(
 \item{cell_types}{Optional factor or vector of cell type labels for cells.}
 
 \item{batch_info}{Optional factor or vector of batch labels for cells.}
+
+\item{pairing}{Character string specifying whether the multiomics dataset is
+\code{"paired"} (simultaneous co-assay from the same individual cells, e.g.,
+10x Chromium Multiome, SHARE-seq, SNARE-seq) or \code{"unpaired"} (independent
+profiling of modalities from separate cells of the same biological tissue).
+Default is \code{"paired"}. In \code{"unpaired"} mode, cell-level pairing
+metrics (FOSCTTM, Match@1, cross-modal generation, and direct peak-to-gene
+coupling) are skipped, while population-level cross-modal metrics (cross-modal
+label transfer, co-expression module fidelity, peak co-accessibility, and
+accessibility profile concordance) are computed alongside all unimodal metrics.}
+
+\item{is_paired}{Optional logical alias for \code{pairing}. If provided,
+\code{TRUE} corresponds to \code{"paired"} and \code{FALSE} to \code{"unpaired"}.}
 
 \item{memory_mb}{Optional numeric value of peak memory allocation in MB (or peak_memory_mb).}
 

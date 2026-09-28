@@ -1,4 +1,6 @@
-# Calculate 2D Earth Mover's Distance (2D EMD) Integrated from HelenaLC/simulation-comparison.
+# Calculate 2D Earth Mover's Distance (2D EMD)
+
+Integrated from HelenaLC/simulation-comparison.
 
 Computes 2D bivariate density via MASS::kde2d over a shared bounding
 box, then measures optimal transport distance via emdist::emd2d.
@@ -26,3 +28,12 @@ calc_emd_2d(ref_mat, sim_mat, n = 25)
 ## Value
 
 Normalized 2D Earth Mover's Distance.
+
+## Examples
+
+``` r
+ref <- matrix(stats::rnorm(100), 50, 2)
+sim <- matrix(stats::rnorm(100), 50, 2)
+calc_emd_2d(ref, sim)
+#> [1] NA
+```

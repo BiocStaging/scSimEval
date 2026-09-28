@@ -30,6 +30,7 @@ export(calc_frechet_singlecell_distance)
 # 02_extract_properties
 export(extract_cell_properties)
 export(extract_feature_properties)
+export(extract_dataset_summary)
 export(calc_zero_probability_curve)
 export(evaluate_zero_probability_curve)
 export(calc_excess_zero_weights)
@@ -119,6 +120,9 @@ export(plot_metric_mds)
 export(plot_metric_pca)
 export(plot_benchmark_bubble_matrix)
 export(plot_bubble_matrix)
+export(compute_dataset_embeddings)
+export(plot_dataset_embeddings)
+export(compute_embedding_quality_metrics)
 
 # 11_shiny_app
 export(launch_scSimEval_app)

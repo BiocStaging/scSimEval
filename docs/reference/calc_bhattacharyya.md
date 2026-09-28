@@ -25,3 +25,12 @@ calc_bhattacharyya(ref, sim, align = TRUE)
 ## Value
 
 Statistical divergence between discrete probability measures.
+
+## Examples
+
+``` r
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_bhattacharyya(ref, sim)
+#> [1] 0.002866129
+```

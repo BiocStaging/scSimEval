@@ -1,4 +1,4 @@
-# Getting Started with scSimEval: Unified Benchmarking for Single-Cell Multiomics Simulations
+﻿# Getting Started with scSimEval: Unified Benchmarking for Single-Cell Multiomics Simulations
 
 ## 1. Introduction
 
@@ -27,10 +27,18 @@ have, without needing any artificial ground truth:
 6.  **Developmental trajectories** (automatically inferred directly from
     scRNA-seq counts without requiring external tools)
 
-> **Data Modalities:** `scSimEval` is primarily optimized for scRNA-seq,
-> scATAC-seq, and paired scRNA-seq + scATAC-seq multiomics, and the
-> evaluation framework can be readily extended to other single-cell data
-> types.
+> **Data Modalities:** `scSimEval` supports three multiomics
+> experimental designs: **Paired** (co-assay from identical cells,
+> e.g. 10x Multiome, SHARE-seq) — full evaluation including all Category
+> 7 coupling metrics; **Unpaired** (independent scRNA-seq + scATAC-seq
+> from separate cells) — unimodal evaluation per modality plus
+> population-level cross-modal metrics (module fidelity, network
+> overlap, label transfer); and **Mosaic** (partial co-measurement,
+> e.g. DOGMA-seq) — unimodal evaluation on full matrices plus paired
+> coupling metrics applied to the co-assayed cell subset. See the
+> dedicated [Multiomics
+> vignette](https://kabilanbio.github.io/scSimEval/articles/demo-multiomics.md)
+> for full details.
 
 ------------------------------------------------------------------------
 
@@ -270,11 +278,11 @@ clust_res <- evaluate_clustering_metrics(
 cat("Average Silhouette Width:", round(clust_res$silhouette, 4), "\n")
 #> Average Silhouette Width: 0.0278
 cat("Davies-Bouldin Index:", round(clust_res$davies_bouldin, 4), "\n")
-#> Davies-Bouldin Index: NA
+#> Davies-Bouldin Index: 5.1752
 cat("Adjusted Rand Index (ARI):", round(clust_res$ARI, 4), "\n")
-#> Adjusted Rand Index (ARI): 0.1316
+#> Adjusted Rand Index (ARI): 0.0671
 cat("Normalized Mutual Information (NMI):", round(clust_res$NMI, 4), "\n")
-#> Normalized Mutual Information (NMI): 0.1414
+#> Normalized Mutual Information (NMI): 0.0884
 ```
 
 ------------------------------------------------------------------------
@@ -559,6 +567,77 @@ plot_metric_mds(
 )
 ```
 
+### 12.6 Cell Embeddings (t-SNE, UMAP, & PCA) and Low-Dimensional Quality Metrics
+
+Beyond numerical metric profiles, directly projecting real biological
+cells and simulated cells into low-dimensional embedding spaces (such as
+UMAP, t-SNE, or PCA) enables researchers to visually inspect whether
+synthetic datasets faithfully capture phenotypic clusters, biological
+manifolds, and technical depth variations.
+
+`scSimEval` provides a high-level suite of functions for embedding
+computation, comparative plotting, and quantitative low-dimensional
+quality assessment:
+
+``` r
+# 1. Compute low-dimensional embeddings across reference and simulations
+emb_data <- compute_dataset_embeddings(
+  reference   = example_scrna$ref,
+  simulated   = list("Splatter" = example_scrna$sim),
+  reduction   = "pca",
+  n_pcs       = 10,
+  cell_types  = example_scrna$cell_types,
+  batch       = example_scrna$batch_info
+)
+
+# Preview embedding data structure
+head(emb_data, 3)
+#>   Cell_ID      Dim1       Dim2   Dataset      Role Dataset_Type Cell_Type
+#> 1 Cell_01  1.822611 -3.6895068 Reference Reference    Reference     TypeA
+#> 2 Cell_02  2.994293  0.9774853 Reference Reference    Reference     TypeA
+#> 3 Cell_03 -2.898892 -0.4540497 Reference Reference    Reference     TypeA
+#>     Cluster Library_Size Detected_Features  Batch
+#> 1 Cluster_1          225                47 Batch1
+#> 2 Cluster_1          208                49 Batch2
+#> 3 Cluster_2          262                48 Batch1
+
+# 2. Plot comparative cell embeddings (faceted across datasets)
+plot_dataset_embeddings(
+  embedding_data = emb_data,
+  reduction      = "pca",
+  layout         = "facet",
+  color_by       = "cell_type",
+  pt_size        = 1.0,
+  alpha          = 0.8
+)
+```
+
+![](scSimEval-workflow_files/figure-html/cell-embeddings-demo-1.png)
+
+``` r
+
+# 3. Compute quantitative low-dimensional quality metrics
+quality_table <- compute_embedding_quality_metrics(emb_data)
+knitr::kable(quality_table, digits = 4, caption = "Quantitative Low-Dimensional Quality Metrics")
+```
+
+| Dataset | Role | Cells (N) | Mean Silhouette | ARI (Cluster Fidelity) | Mean Library Size | Mean Detected Features | Library Size Diff (%) |
+|:---|:---|---:|---:|---:|---:|---:|---:|
+| Reference | Reference | 80 | -0.0101 | -0.0067 | 256.3 | 49.2 | 0.00 |
+| Splatter | Simulated | 80 | 0.0037 | -0.0071 | 242.3 | 48.3 | 5.46 |
+
+Quantitative Low-Dimensional Quality Metrics
+
+The quantitative embedding metrics evaluated include: - **Mean
+Silhouette Score**: Quantifies cluster separability in the
+low-dimensional embedding space. - **Adjusted Rand Index (ARI)**:
+Evaluates unsupervised cluster recovery fidelity against known
+biological cell types using $`k`$-means on the principal components. -
+**Mean Library Size & Mean Detected Features**: Verifies whether
+cellular sequencing depth and gene detection rates are aligned. -
+**Library Size Discrepancy (%)**: Quantifies the percentage deviation in
+total cellular counts relative to the reference.
+
 ------------------------------------------------------------------------
 
 ## 13. Multi-Dataset and Multi-Method Benchmarking
@@ -606,18 +685,128 @@ Consolidated Benchmark Overview
 
 For researchers who prefer an interactive graphical interface rather
 than writing R code, `scSimEval` includes an embedded Shiny web
-application. You can explore benchmark results, filter metrics, view
-bubble plots, and export high-resolution (600 DPI) figures directly in
-your web browser:
+application (`scSimEvalApp`). You can explore benchmark results, filter
+metrics, view bubble plots, and export high-resolution (600 DPI) figures
+directly in your web browser:
 
 ``` r
 # Launch the interactive web app in your default browser
 launch_scSimEval_app()
 ```
 
+### 14.1 Key Interactive Features
+
+The Shiny app provides a comprehensive graphical workspace: 1. **Data
+Hub**: Load pre-computed benchmarks (Splatter, scDesign3, SCRIP, SymSim,
+dyngen, simATAC) or upload custom empirical reference and simulation
+count matrices (`.rds`, `.csv`, `.tsv`, `SingleCellExperiment`,
+`Seurat`). Includes a live **Dataset Properties Summary** table (cells,
+genes, sparsity %, mean library size) and a **Multiomics Dataset Type**
+selector (Paired vs. Unpaired modes). 2. **Comparative Bubble Matrix**:
+Flagship 62-measure interactive matrix with dynamic category filtering,
+simulator selection, and adjustable canvas dimensions (1200–3200 px). 3.
+**Diagnostic Visualizations (8 Sub-Panels)**: - *1. Evaluation Summary*:
+Horizontal bar chart ranking overall performance. - *2. Distribution
+QC*: 14-panel comparative expression density, library size, and
+zero-inflation curves. - *3. Scalability Benchmark*: Runtime and memory
+Pareto frontiers. - *4. Metric Boxplots*: Category boxplots and ranked
+metric bar charts with directionality indicators (+/-). - *5. Metric
+Heatmap*: Method-by-metric grid showing exact raw scores in bold text
+with standardized fill. - *6. PCA Ordination*: Principal Component
+Analysis of simulator performance profiles. - *7. MDS Metric Space*:
+Multi-Dimensional Scaling ordination. - *8. Cell Embeddings (t-SNE &
+UMAP)*: Interactive low-dimensional projections (UMAP, t-SNE, PCA)
+across reference and simulated datasets with multi-simulator grid or
+1-to-1 comparison layouts, flexible coloring (cell types, clusters,
+library size, detected features), and an integrated quantitative quality
+metrics table (Silhouette, ARI, library size deviation). 4.
+**Publication Exports**: One-click downloads for 600 DPI publication
+JPEGs, vector-based PDFs, multi-sheet Excel workbooks (`.xlsx`),
+compiled multi-page PDF reports, and complete all-in-one ZIP archives.
+5. **Help & Getting Started**: Full documentation with metric reference
+guides, normalization protocols, and multiomics compatibility matrices.
+
 ------------------------------------------------------------------------
 
-## 15. Extension to Other Single-Cell Data Types
+## 15. Supported Multiomics Data Types and Metric Compatibility
+
+Not all multiomics evaluation metrics are valid for every experimental
+design. Understanding which design your simulated data belongs to is
+critical for selecting the correct functions.
+
+### 15.1 Three Experimental Designs
+
+| Data Type | Definition | Example Technologies |
+|----|----|----|
+| **Paired** | RNA and ATAC measured from **exactly the same cells** | 10x Multiome, SHARE-seq, SNARE-seq |
+| **Unpaired** | RNA and ATAC from **separate cells** of the same tissue | Independent 10x scRNA + scATAC experiments |
+| **Mosaic** | **Some cells** have both modalities; others have only one | DOGMA-seq, mosaic pooling designs |
+
+### 15.2 Metric Compatibility by Data Type
+
+| Metric Group | Paired | Unpaired | Mosaic |
+|----|:--:|:--:|:--:|
+| Unimodal evaluation (Cat 1–6, 8) per modality | ✅ | ✅ | ✅ |
+| Co-expression module fidelity | ✅ | ✅ | ✅ |
+| Peak co-accessibility fidelity | ✅ | ✅ | ✅ |
+| Cross-modal label transfer | ✅ | ✅ | ✅ |
+| Network Jaccard similarity | ✅ | ✅ | ✅ |
+| **FOSCTTM / <Match@1>** | ✅ | ❌ | ✅ paired subset |
+| **Cross-modal generation fidelity** | ✅ | ❌ | ✅ paired subset |
+| **Peak-to-gene regulatory coupling** | ✅ | ❌ | ✅ paired subset |
+| **[`evaluate_multiomics_accuracy()`](https://kabilanbio.github.io/scSimEval/reference/evaluate_multiomics_accuracy.md)** | ✅ direct | ❌ | ✅ paired subset |
+
+### 15.3 Recommended Functions by Data Type
+
+**Paired data** — use the master pipeline directly:
+
+``` r
+evaluate_multiomics_accuracy(ref_multi, sim_multi, cell_types, ...)
+```
+
+**Unpaired data** — evaluate modalities separately, then consolidate:
+
+``` r
+# Per-modality unimodal evaluation
+rna_eval  <- evaluate_simulation_accuracy(ref_rna,  sim_rna)
+atac_eval <- evaluate_simulation_accuracy(ref_atac, sim_atac)
+
+# Population-level cross-modal metrics (no cell pairing required)
+calc_coexpression_module_fidelity(ref_rna, sim_rna)
+calc_peak_coaccessibility_fidelity(ref_atac, sim_atac)
+evaluate_cross_modal_prediction(sim_atac, cell_types)
+
+# Consolidate side-by-side
+evaluate_multiple_datasets(list(RNA = list(ref=ref_rna, sim=sim_rna),
+                                ATAC = list(ref=ref_atac, sim=sim_atac)))
+```
+
+**Mosaic data** — subset co-assayed cells first, then combine:
+
+``` r
+# Step 1: Extract co-assayed subset
+sim_rna_paired  <- sim_rna_full[, paired_cell_idx]
+sim_atac_paired <- sim_atac_full[, paired_cell_idx]
+
+# Step 2: Paired coupling metrics on subset
+evaluate_multiomics_accuracy(
+  ref_multi = list(rna = ref_rna_paired, atac = ref_atac_paired),
+  sim_multi = list(rna = sim_rna_paired, atac = sim_atac_paired)
+)
+
+# Step 3: Full unimodal evaluation on complete matrices
+evaluate_simulation_accuracy(ref_rna_full, sim_rna_full)
+evaluate_simulation_accuracy(ref_atac_full, sim_atac_full)
+```
+
+> See the dedicated **[Multiomics
+> Vignette](https://kabilanbio.github.io/scSimEval/articles/demo-multiomics.md)**
+> for complete step-by-step workflows and code examples for all three
+> data types.
+
+------------------------------------------------------------------------
+
+## 16. Extension to Other Single-Cell Data Types
 
 While `scSimEval` is primarily optimized and demonstrated for
 **scRNA-seq**, **scATAC-seq**, and **paired scRNA-seq + scATAC-seq
@@ -696,25 +885,56 @@ sessionInfo()
 #> [1] stats     graphics  grDevices utils     datasets  methods   base     
 #> 
 #> other attached packages:
-#> [1] scSimEval_0.6.0
+#> [1] scSimEval_0.99.3
 #> 
 #> loaded via a namespace (and not attached):
-#>  [1] Matrix_1.7-6        limma_3.68.4        jsonlite_2.0.0     
-#>  [4] compiler_4.6.1      Rcpp_1.1.2          parallel_4.6.1     
-#>  [7] cluster_2.1.8.3     jquerylib_0.1.4     splines_4.6.1      
-#> [10] systemfonts_1.3.2   textshaping_1.0.5   BiocParallel_1.47.0
-#> [13] yaml_2.3.12         fastmap_1.2.0       statmod_1.5.2      
-#> [16] lattice_0.22-9      R6_2.6.1            generics_0.1.4     
-#> [19] igraph_2.3.3        knitr_1.51          BiocGenerics_0.58.1
-#> [22] htmlwidgets_1.6.4   bluster_1.22.0      desc_1.4.3         
-#> [25] bslib_0.12.0        BiocNeighbors_2.6.0 rlang_1.3.0        
-#> [28] cachem_1.1.0        RANN_2.6.2          xfun_0.60          
-#> [31] fs_2.1.0            sass_0.4.10         otel_0.2.0         
-#> [34] cli_3.6.6           magrittr_2.0.5      pkgdown_2.2.1      
-#> [37] class_7.3-24        digest_0.6.39       grid_4.6.1         
-#> [40] locfit_1.5-9.12     edgeR_4.10.1        mclust_6.1.3       
-#> [43] clue_0.3-68         lifecycle_1.0.5     S4Vectors_0.50.1   
-#> [46] evaluate_1.0.5      codetools_0.2-20    ragg_1.5.2         
-#> [49] stats4_4.6.1        rmarkdown_2.31      pkgconfig_2.0.3    
-#> [52] tools_4.6.1         htmltools_0.5.9
+#>  [1] tidyselect_1.2.1            ade4_1.7-24                
+#>  [3] dplyr_1.2.1                 farver_2.1.2               
+#>  [5] S7_0.2.2                    fastmap_1.2.0              
+#>  [7] SingleCellExperiment_1.34.0 RANN_2.6.2                 
+#>  [9] bluster_1.22.0              digest_0.6.39              
+#> [11] lifecycle_1.0.5             cluster_2.1.8.3            
+#> [13] statmod_1.5.2               magrittr_2.0.5             
+#> [15] kernlab_0.9-33              compiler_4.6.1             
+#> [17] rlang_1.3.0                 sass_0.4.10                
+#> [19] tools_4.6.1                 igraph_2.3.3               
+#> [21] yaml_2.3.12                 knitr_1.51                 
+#> [23] labeling_0.4.3              S4Arrays_1.13.0            
+#> [25] htmlwidgets_1.6.4           mclust_6.1.3               
+#> [27] DelayedArray_0.38.2         RColorBrewer_1.1-3         
+#> [29] abind_1.4-8                 BiocParallel_1.47.0        
+#> [31] withr_3.0.3                 BiocGenerics_0.58.1        
+#> [33] desc_1.4.3                  nnet_7.3-21                
+#> [35] grid_4.6.1                  stats4_4.6.1               
+#> [37] e1071_1.7-17                edgeR_4.10.1               
+#> [39] ggplot2_4.0.3               scales_1.4.0               
+#> [41] fpc_2.2-15                  MASS_7.3-66                
+#> [43] prabclus_2.3-5              dichromat_2.0-1            
+#> [45] SummarizedExperiment_1.42.0 cli_3.6.6                  
+#> [47] rmarkdown_2.31              ragg_1.5.2                 
+#> [49] generics_0.1.4              otel_0.2.0                 
+#> [51] robustbase_0.99-7           cachem_1.1.0               
+#> [53] proxy_0.4-29                modeltools_0.2-24          
+#> [55] splines_4.6.1               clValid_0.7                
+#> [57] parallel_4.6.1              XVector_0.52.0             
+#> [59] vctrs_0.7.3                 matrixStats_1.5.0          
+#> [61] Matrix_1.7-6                jsonlite_2.0.0             
+#> [63] IRanges_2.46.0              S4Vectors_0.50.1           
+#> [65] BiocNeighbors_2.6.0         irlba_2.3.7                
+#> [67] clue_0.3-68                 systemfonts_1.3.2          
+#> [69] locfit_1.5-9.12             diptest_0.77-2             
+#> [71] limma_3.68.4                jquerylib_0.1.4            
+#> [73] glue_1.8.1                  pkgdown_2.2.1              
+#> [75] DEoptimR_1.2-0              codetools_0.2-20           
+#> [77] gtable_0.3.6                GenomicRanges_1.64.0       
+#> [79] tibble_3.3.1                pillar_1.11.1              
+#> [81] htmltools_0.5.9             Seqinfo_1.2.0              
+#> [83] clusterSim_0.51-6           R6_2.6.1                   
+#> [85] textshaping_1.0.5           evaluate_1.0.5             
+#> [87] lattice_0.22-9              Biobase_2.73.2             
+#> [89] bslib_0.12.0                class_7.3-24               
+#> [91] Rcpp_1.1.2                  flexmix_2.3-21             
+#> [93] SparseArray_1.13.2          xfun_0.60                  
+#> [95] fs_2.1.0                    MatrixGenerics_1.24.0      
+#> [97] pkgconfig_2.0.3
 ```

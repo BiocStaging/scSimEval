@@ -42,3 +42,21 @@ A named list:
 - median_local_structure:
 
   Median overlap fraction
+
+## Examples
+
+``` r
+coords <- matrix(stats::rnorm(100), 50, 2)
+batch <- factor(rep(c("B1", "B2"), length.out = 50))
+calc_local_structure_metric(coords, coords)
+#> $cell_overlaps
+#>  [1] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+#> [39] 1 1 1 1 1 1 1 1 1 1 1 1
+#> 
+#> $mean_local_structure
+#> [1] 1
+#> 
+#> $median_local_structure
+#> [1] 1
+#> 
+```

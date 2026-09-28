@@ -41,3 +41,18 @@ A list containing:
 - mean_cross_batch_F1:
 
   Overall mean macro-averaged F1 score across all directed batch pairs
+
+## Examples
+
+``` r
+coords <- matrix(stats::rnorm(100), 50, 2)
+batch <- factor(rep(c("B1", "B2"), length.out = 50))
+ct <- factor(rep(c("TypeA", "TypeB"), length.out = 50))
+evaluate_cross_batch_prediction(coords, ct, batch)
+#> $mean_cross_batch_accuracy
+#> [1] NaN
+#> 
+#> $mean_cross_batch_F1
+#> [1] NaN
+#> 
+```

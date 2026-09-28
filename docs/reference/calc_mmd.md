@@ -37,3 +37,20 @@ calc_mmd(ref_mat, sim_mat, cells_as_cols = TRUE, sigma = NULL, max_cells = 500)
 ## Value
 
 A list with MMD, squared MMD, and the kernel bandwidth sigma used.
+
+## Examples
+
+``` r
+ref <- matrix(stats::rnorm(100), 50, 2)
+sim <- matrix(stats::rnorm(100), 50, 2)
+calc_mmd(ref, sim)
+#> $mmd
+#> [1] 0
+#> 
+#> $mmd_squared
+#> [1] -0.09432456
+#> 
+#> $bandwidth_sigma
+#> [1] 7.326944
+#> 
+```

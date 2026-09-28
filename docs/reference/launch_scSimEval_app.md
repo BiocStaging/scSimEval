@@ -1,11 +1,13 @@
 # Launch Interactive scSimEval Benchmarking Studio
 
 Launches the Shiny web application embedded in the scSimEval package.
-Provides an intuitive graphical interface to ingest single-cell
-reference and simulated datasets, configure ground-truth-free evaluation
-pipelines, interactively inspect the flagship 62-measure bubble matrix,
-adjust category weighting for custom method rankings, and export
-high-resolution (600 DPI) figures and tables.
+Provides an intuitive graphical interface to upload biological reference
+and simulated datasets (single-cell scRNA-seq, scATAC-seq, or paired
+multiomics), specify computational scalability metrics (elapsed time and
+peak memory), interactively inspect the flagship 62-measure comparative
+bubble matrix, explore diagnostic figures, and export high-resolution
+figures (600 DPI publication quality), multi-page PDF reports, Excel
+(.xlsx) workbooks, and complete results ZIP packages.
 
 ## Usage
 
@@ -41,10 +43,13 @@ Invisibly returns the Shiny app process object.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-library(scSimEval)
-# Launch the interactive studio
-launch_scSimEval_app()
-
-} # }
+# Locate the embedded Shiny app directory bundled with the package
+system.file("shiny", "scSimEvalApp", package = "scSimEval")
+#> [1] "C:/Users/kabil/AppData/Local/Temp/RtmpwrNIbF/temp_libpathdb065ab4307/scSimEval/shiny/scSimEvalApp"
+# \donttest{
+# Launch the interactive studio (interactive sessions only)
+if (interactive()) {
+  launch_scSimEval_app()
+}
+# }
 ```

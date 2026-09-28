@@ -30,3 +30,32 @@ calc_all_bivariate_metrics(ref_mat, sim_mat, metric_prefix = "", threads = 1)
 ## Value
 
 Named list of bivariate metrics.
+
+## Examples
+
+``` r
+ref <- matrix(stats::rnorm(100), 50, 2)
+sim <- matrix(stats::rnorm(100), 50, 2)
+calc_all_bivariate_metrics(ref, sim)
+#> $Fasano_Franceschini_2D_KS
+#> [1] NA
+#> 
+#> $Peacock_2D_KS
+#> [1] NA
+#> 
+#> $KDE_Bivariate_zstat
+#> [1] NA
+#> 
+#> $EMD_2D
+#> [1] NA
+#> 
+#> $NN_Mismatch_2D
+#> [1] 0.1
+#> 
+#> $Between_Dataset_Silh_2D_Global
+#> [1] -0.005137758
+#> 
+#> $Between_Dataset_Silh_2D_Local
+#> [1] 0.05642477
+#> 
+```

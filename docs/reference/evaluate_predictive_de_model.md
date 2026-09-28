@@ -44,3 +44,22 @@ evaluate_predictive_de_model(
 
 A list containing Accuracy, Macro Precision, Macro Recall, and Macro F1
 score.
+
+## Examples
+
+``` r
+data(example_scrna, package = "scSimEval")
+evaluate_predictive_de_model(example_scrna$ref, group = example_scrna$cell_types)
+#> $accuracy
+#> [1] 0.625
+#> 
+#> $precision
+#> [1] 0.7692308
+#> 
+#> $recall
+#> [1] 0.6666667
+#> 
+#> $F1
+#> [1] 0.6
+#> 
+```
