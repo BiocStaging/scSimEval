@@ -29,3 +29,11 @@ calc_model_aic_bic(loglik, n_params, n_obs)
 
 A named vector or data.frame containing loglik, n_params, n_obs, AIC,
 and BIC.
+
+## Examples
+
+``` r
+calc_model_aic_bic(-100, 5, 100)
+#>    loglik  n_params     n_obs       AIC       BIC 
+#> -100.0000    5.0000  100.0000  210.0000  223.0259 
+```

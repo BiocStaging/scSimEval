@@ -25,3 +25,12 @@ calc_rmse(ref, sim, align = TRUE)
 ## Value
 
 Quadratic error penalizing large discrepancies.
+
+## Examples
+
+``` r
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_rmse(ref, sim)
+#> [1] 0.4305341
+```

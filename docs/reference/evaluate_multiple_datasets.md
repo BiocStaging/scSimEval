@@ -69,3 +69,16 @@ An S3 object of class `scSimEval_consolidated` containing:
 
 - `dataset_results`: Named list containing detailed evaluation results
   for each individual dataset.
+
+## Examples
+
+``` r
+data(example_scrna, package = "scSimEval")
+res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+#> [1/5] Extracting cell-level properties...
+#> [2/5] Extracting feature-level properties...
+#> [3/5] Computing univariate accuracy metrics...
+#> [4/5] Computing bivariate metrics (Fasano-Franceschini, Peacock, KDE zstat, 2D EMD)...
+#> [5/5] Computing zero-probability and manifold distances...
+#> Unimodal accuracy evaluation complete.
+```

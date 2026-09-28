@@ -25,3 +25,27 @@ calc_cell_cycle_phase_fidelity(ref_phases, sim_phases)
 
 A list with phase proportions, Jensen-Shannon divergence, and
 chi-squared test p-value.
+
+## Examples
+
+``` r
+data(example_scrna, package = "scSimEval")
+calc_cell_cycle_phase_fidelity(example_scrna$cell_types, example_scrna$cell_types)
+#> $ref_proportions
+#> TypeA TypeB 
+#>   0.5   0.5 
+#> 
+#> $sim_proportions
+#> TypeA TypeB 
+#>   0.5   0.5 
+#> 
+#> $phase_mae
+#> [1] 0
+#> 
+#> $phase_jsd
+#> [1] 0
+#> 
+#> $homogeneity_pvalue
+#> [1] 1
+#> 
+```

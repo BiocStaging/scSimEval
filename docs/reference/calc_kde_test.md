@@ -1,6 +1,5 @@
-# Calculate 2D Bivariate Kernel Density Estimation (KDE) Test Statistic Integrated from simpipe & SimBench.
+# Calculate 2D Bivariate Kernel Density Estimation (KDE) Test Statistic
 
-Calculate 2D Bivariate Kernel Density Estimation (KDE) Test Statistic
 Integrated from simpipe & SimBench.
 
 ## Usage
@@ -23,3 +22,12 @@ calc_kde_test(ref_mat, sim_mat)
 
 z-statistic testing discrepancy between bivariate kernel density
 estimates.
+
+## Examples
+
+``` r
+ref <- matrix(stats::rnorm(100), 50, 2)
+sim <- matrix(stats::rnorm(100), 50, 2)
+calc_kde_test(ref, sim)
+#> [1] NA
+```

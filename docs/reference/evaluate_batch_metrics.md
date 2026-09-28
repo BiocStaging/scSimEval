@@ -105,3 +105,47 @@ A named list of batch metrics:
 - cross_batch_F1:
 
   Mean cross-batch cell type transfer macro F1 (if cell_types supplied)
+
+## Examples
+
+``` r
+data(example_scrna, package = "scSimEval")
+evaluate_batch_metrics(example_scrna$ref, example_scrna$batch_info,
+                       cell_types = example_scrna$cell_types)
+#> $batch_silhouette
+#> [1] 0.0005078404
+#> 
+#> $shannon_entropy
+#> [1] 0.9782351
+#> 
+#> $pcr_r2
+#> [1] 0.01241228
+#> 
+#> $cms
+#> [1] 0.52044
+#> 
+#> $isi
+#> [1] 1.945591
+#> 
+#> $seurat_mixing_metric
+#> [1] 9.79375
+#> 
+#> $ldf_diff
+#> [1] NA
+#> 
+#> $local_structure
+#> [1] NA
+#> 
+#> $kbet_rejection
+#> [1] NA
+#> 
+#> $lisi_batch
+#> [1] NA
+#> 
+#> $cross_batch_accuracy
+#> [1] 0.575
+#> 
+#> $cross_batch_F1
+#> [1] 0.5238095
+#> 
+```

@@ -40,11 +40,23 @@ cross-simulator benchmarking.
 - [`plot_metric_mds()`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_mds.md)
   : Multi-Dimensional Scaling (MDS) Ordination of Evaluation Metrics or
   Simulators
+- [`plot_individual_metric_bar()`](https://kabilanbio.github.io/scSimEval/reference/plot_individual_metric_bar.md)
+  : Plot Individual Metric Performance Barplot
+- [`compute_dataset_embeddings()`](https://kabilanbio.github.io/scSimEval/reference/compute_dataset_embeddings.md)
+  : Compute Low-Dimensional Embeddings for Reference and Simulated
+  Single-Cell Datasets
+- [`plot_dataset_embeddings()`](https://kabilanbio.github.io/scSimEval/reference/plot_dataset_embeddings.md)
+  : Plot High-Dimensional Dataset Embeddings for Reference and Simulated
+  Single-Cell Data
+- [`compute_embedding_quality_metrics()`](https://kabilanbio.github.io/scSimEval/reference/compute_embedding_quality_metrics.md)
+  : Compute Quantitative Quality Metrics for Low-Dimensional Cell
+  Embeddings
 
-## Interactive Graphical Interface (Shiny App GUI)
+## Interactive Graphical Interface (Shiny App Studio)
 
 Interactive Shiny web application providing point-and-click simulation
-benchmarking and dynamic exploration.
+benchmarking, UMAP/t-SNE embedding explorations, and dynamic data
+packaging.
 
 - [`launch_scSimEval_app()`](https://kabilanbio.github.io/scSimEval/reference/launch_scSimEval_app.md)
   : Launch Interactive scSimEval Benchmarking Studio
@@ -89,6 +101,8 @@ Extraction of feature-level and cell-level empirical properties.
   : Extract Comprehensive Cell-Level Properties
 - [`extract_feature_properties()`](https://kabilanbio.github.io/scSimEval/reference/extract_feature_properties.md)
   : Extract Comprehensive Feature-Level (Gene / Peak) Properties
+- [`extract_dataset_summary()`](https://kabilanbio.github.io/scSimEval/reference/extract_dataset_summary.md)
+  : Extract Dataset Dimensional Properties and Summary Statistics
 
 ## Example Multiomics Datasets
 
@@ -111,7 +125,6 @@ divergence.
   : Calculate Kolmogorov-Smirnov Distance (1D KS)
 - [`calc_wasserstein_1d()`](https://kabilanbio.github.io/scSimEval/reference/calc_wasserstein_1d.md)
   : Calculate 1D Wasserstein Metric / Earth Mover's Distance (WS)
-  Integrated from HelenaLC/simulation-comparison.
 - [`calc_mad()`](https://kabilanbio.github.io/scSimEval/reference/calc_mad.md)
   : Calculate Median Absolute Deviation (MAD)
 - [`calc_mae()`](https://kabilanbio.github.io/scSimEval/reference/calc_mae.md)
@@ -133,20 +146,17 @@ divergence.
   : Calculate Between-Dataset Silhouette Width
 - [`calc_fasano_franceschini()`](https://kabilanbio.github.io/scSimEval/reference/calc_fasano_franceschini.md)
   : Calculate Fasano-Franceschini 2D Kolmogorov-Smirnov Test Statistic
-  Integrated from simpipe.
 - [`calc_peacock_2d()`](https://kabilanbio.github.io/scSimEval/reference/calc_peacock_2d.md)
-  : Calculate Peacock 2D Kolmogorov-Smirnov Test Statistic Integrated
-  from HelenaLC/simulation-comparison.
+  : Calculate Peacock 2D Kolmogorov-Smirnov Test Statistic
 - [`calc_kde_test()`](https://kabilanbio.github.io/scSimEval/reference/calc_kde_test.md)
   : Calculate 2D Bivariate Kernel Density Estimation (KDE) Test
-  Statistic Integrated from simpipe & SimBench.
+  Statistic
 - [`calc_emd_2d()`](https://kabilanbio.github.io/scSimEval/reference/calc_emd_2d.md)
-  : Calculate 2D Earth Mover's Distance (2D EMD) Integrated from
-  HelenaLC/simulation-comparison.
+  : Calculate 2D Earth Mover's Distance (2D EMD)
 - [`calc_mmd()`](https://kabilanbio.github.io/scSimEval/reference/calc_mmd.md)
   : Maximum Mean Discrepancy (MMD) with Gaussian RBF Kernel
 - [`calc_frechet_singlecell_distance()`](https://kabilanbio.github.io/scSimEval/reference/calc_frechet_singlecell_distance.md)
-  : Fréchet Single-Cell Distance (FSD)
+  : Frechet Single-Cell Distance (FSD)
 - [`calc_model_aic_bic()`](https://kabilanbio.github.io/scSimEval/reference/calc_model_aic_bic.md)
   : Compute Model Information Criteria (AIC and BIC)
 - [`calc_marginal_aic_bic()`](https://kabilanbio.github.io/scSimEval/reference/calc_marginal_aic_bic.md)

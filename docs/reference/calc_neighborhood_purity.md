@@ -33,3 +33,17 @@ calc_neighborhood_purity(data, cluster_labels, k = NULL, is_distance = FALSE)
 
 A numeric vector of neighborhood purity scores (values from 0 to 1),
 with an attribute "mean_purity" containing the overall average.
+
+## Examples
+
+``` r
+data <- matrix(stats::rnorm(200), 20, 10)
+cl <- factor(rep(c("A", "B"), each = 10))
+dist_mat <- stats::dist(data)
+calc_neighborhood_purity(data, cl)
+#>  [1] 0.6250000 0.6666667 0.7500000 0.5000000 0.6666667 0.4000000 1.0000000
+#>  [8] 0.6250000 0.5000000 0.6666667 0.3750000 0.7500000 0.6666667 0.4545455
+#> [15] 0.8000000 0.6666667 0.6000000 0.8000000 0.3333333 1.0000000
+#> attr(,"mean_purity")
+#> [1] 0.6423106
+```

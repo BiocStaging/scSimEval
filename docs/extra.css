@@ -316,3 +316,101 @@ small.dont-index {
 .template-citation-authors #citation ~ * {
   display: none !important;
 }
+
+/* ==========================================================================
+   Navbar Search Bar & Autocomplete Styling
+   ========================================================================== */
+.navbar #search-input {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 20px !important;
+  color: #ffffff !important;
+  padding: 0.32rem 0.95rem 0.32rem 2.2rem !important;
+  font-size: 0.86rem !important;
+  width: 200px !important;
+  transition: all 0.25s ease-in-out !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: 0.65rem center !important;
+  background-size: 0.92rem 0.92rem !important;
+}
+
+.navbar #search-input::placeholder {
+  color: rgba(255, 255, 255, 0.75) !important;
+  font-size: 0.84rem !important;
+}
+
+.navbar #search-input:focus {
+  background-color: #ffffff !important;
+  border-color: #38bdf8 !important;
+  color: #0f172a !important;
+  width: 270px !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35) !important;
+  outline: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E") !important;
+}
+
+.navbar #search-input:focus::placeholder {
+  color: #94a3b8 !important;
+}
+
+.navbar form[role="search"] {
+  display: flex !important;
+  align-items: center !important;
+  margin: 0 0.5rem 0 0 !important;
+}
+
+.navbar .navbar-nav:last-child {
+  display: flex !important;
+  align-items: center !important;
+  flex-direction: row !important;
+  gap: 0.25rem !important;
+}
+
+/* Autocomplete dropdown menu */
+.algolia-autocomplete {
+  width: 100% !important;
+}
+
+.algolia-autocomplete .aa-dropdown-menu {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.08) !important;
+  margin-top: 0.5rem !important;
+  padding: 0.5rem !important;
+  min-width: 320px !important;
+  max-width: 480px !important;
+  max-height: 60vh !important;
+  overflow-y: auto !important;
+  z-index: 1050 !important;
+}
+
+.algolia-autocomplete .aa-suggestion {
+  padding: 0.55rem 0.8rem !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-size: 0.88rem !important;
+  color: #334155 !important;
+  transition: background-color 0.15s ease-in-out !important;
+}
+
+.algolia-autocomplete .aa-suggestion:hover,
+.algolia-autocomplete .aa-suggestion.aa-cursor {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.algolia-autocomplete .search-details {
+  font-weight: 600 !important;
+  color: #1e40af !important;
+  text-decoration: none !important;
+}
+
+.algolia-autocomplete mark {
+  background: #fef08a !important;
+  color: #713f12 !important;
+  padding: 0.1em 0.25em !important;
+  border-radius: 3px !important;
+}
+

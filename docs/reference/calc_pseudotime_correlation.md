@@ -36,3 +36,11 @@ calc_pseudotime_correlation(
 
 Correlation coefficient between reference and simulated pseudotime
 trajectories.
+
+## Examples
+
+``` r
+data(example_scrna, package = "scSimEval")
+calc_pseudotime_correlation(example_scrna$ref, example_scrna$sim)
+#> [1] 1
+```

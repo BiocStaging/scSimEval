@@ -279,6 +279,17 @@ evaluate_simulation_accuracy <- function(
 #' @param elapsed_time Optional numeric value of wall-clock elapsed time in seconds.
 #' @param peak_memory_mb Optional alias for \code{memory_mb}.
 #' @param feature_pairs Optional 2-column data.frame of linked feature pairs.
+#' @param pairing Character string specifying whether the multiomics dataset is
+#'   \code{"paired"} (simultaneous co-assay from the same individual cells, e.g.,
+#'   10x Chromium Multiome, SHARE-seq, SNARE-seq) or \code{"unpaired"} (independent
+#'   profiling of modalities from separate cells of the same biological tissue).
+#'   Default is \code{"paired"}. In \code{"unpaired"} mode, cell-level pairing
+#'   metrics (FOSCTTM, Match@1, cross-modal generation, and direct peak-to-gene
+#'   coupling) are skipped, while population-level cross-modal metrics (cross-modal
+#'   label transfer, co-expression module fidelity, peak co-accessibility, and
+#'   accessibility profile concordance) are computed alongside all unimodal metrics.
+#' @param is_paired Optional logical alias for \code{pairing}. If provided,
+#'   \code{TRUE} corresponds to \code{"paired"} and \code{FALSE} to \code{"unpaired"}.
 #' @param compute_bivariate Logical, whether to compute 2D bivariate tests. Default FALSE for speed.
 #' @param threads Number of CPU threads. Default is 1.
 #' @param verbose Logical, whether to print execution progress. Default is TRUE.
@@ -293,6 +304,8 @@ evaluate_multiomics_accuracy <- function(
   sim_multi,
   cell_types = NULL,
   batch_info = NULL,
+  pairing = c("paired", "unpaired"),
+  is_paired = NULL,
   memory_mb = NULL,
   elapsed_time = NULL,
   peak_memory_mb = NULL,
@@ -301,6 +314,11 @@ evaluate_multiomics_accuracy <- function(
   threads = 1,
   verbose = TRUE
 ) {
+  if (!is.null(is_paired)) {
+    pairing <- if (isTRUE(is_paired)) "paired" else "unpaired"
+  } else {
+    pairing <- match.arg(pairing)
+  }
   if (is.null(memory_mb) && !is.null(peak_memory_mb)) {
     memory_mb <- peak_memory_mb
   }
@@ -527,106 +545,127 @@ evaluate_multiomics_accuracy <- function(
   # ============================================================================
   # 6. Cross-Modality Coupling & Modularity (Category 7)
   # ============================================================================
-  if (verbose) message("=== [Step 7] Evaluating Cross-Modality Regulatory Linkage & Alignment ===")
-  cross_cor_res <- calc_cross_modality_correlation(
-    ref_mod1 = ref_multi[[1]],
-    ref_mod2 = ref_multi[[2]],
-    sim_mod1 = sim_multi[[1]],
-    sim_mod2 = sim_multi[[2]],
-    feature_pairs = feature_pairs
-  )
-  
-  cross_cor_metrics <- c("MAD", "KS", "MAE", "RMSE", "OV", "Bhattacharyya", "Wasserstein")
-  for (m in cross_cor_metrics) {
-    key <- paste0("cross_modality_cor_", m)
-    if (!is.null(cross_cor_res[[key]])) {
+  cross_cor_res <- NULL
+  fos_res <- NULL
+  gen_fid <- NULL
+  coupling_res <- NULL
+
+  if (pairing == "paired") {
+    if (verbose) message("=== [Step 7] Evaluating Cross-Modality Regulatory Linkage & Alignment (Paired Mode) ===")
+    
+    # 1. Cross-modality feature correlation (requires matching cell barcodes)
+    cross_cor_res <- calc_cross_modality_correlation(
+      ref_mod1 = ref_multi[[1]],
+      ref_mod2 = ref_multi[[2]],
+      sim_mod1 = sim_multi[[1]],
+      sim_mod2 = sim_multi[[2]],
+      feature_pairs = feature_pairs
+    )
+    
+    cross_cor_metrics <- c("MAD", "KS", "MAE", "RMSE", "OV", "Bhattacharyya", "Wasserstein")
+    for (m in cross_cor_metrics) {
+      key <- paste0("cross_modality_cor_", m)
+      if (!is.null(cross_cor_res[[key]])) {
+        master_rows[[length(master_rows) + 1]] <- data.frame(
+          Category = "Cross-Modal Relationships",
+          Property = "cross_feature_correlation",
+          Metric = m,
+          Value = as.numeric(cross_cor_res[[key]]),
+          Modality = "Joint (Cross-Modal)",
+          stringsAsFactors = FALSE
+        )
+      }
+    }
+    
+    # 2. FOSCTTM cell alignment in joint latent space (requires true cell pairing)
+    sub_m1 <- as.matrix(sim_multi[[1]])
+    sub_m2 <- as.matrix(sim_multi[[2]])
+    min_c <- min(ncol(sub_m1), ncol(sub_m2))
+    if (min_c >= 5) {
+      p1 <- stats::prcomp(t(sub_m1[, seq_len(min_c)]), rank. = min(5, min_c - 1))$x
+      p2 <- stats::prcomp(t(sub_m2[, seq_len(min_c)]), rank. = min(5, min_c - 1))$x
+      fos_res <- calc_foscttm(p1, p2)
       master_rows[[length(master_rows) + 1]] <- data.frame(
         Category = "Cross-Modal Relationships",
-        Property = "cross_feature_correlation",
-        Metric = m,
-        Value = as.numeric(cross_cor_res[[key]]),
+        Property = "cell_alignment",
+        Metric = "FOSCTTM",
+        Value = as.numeric(fos_res$foscttm),
+        Modality = "Joint (Cross-Modal)",
+        stringsAsFactors = FALSE
+      )
+      master_rows[[length(master_rows) + 1]] <- data.frame(
+        Category = "Cross-Modal Relationships",
+        Property = "cell_alignment",
+        Metric = "match_at_1",
+        Value = as.numeric(fos_res$match_at_1),
+        Modality = "Joint (Cross-Modal)",
+        stringsAsFactors = FALSE
+      )
+    }
+    
+    # 3. In silico generation fidelity
+    gen_fid <- calc_cross_modal_generation(ref_multi[[2]], sim_multi[[2]])
+    master_rows[[length(master_rows) + 1]] <- data.frame(
+      Category = "Cross-Modal Relationships",
+      Property = "in_silico_generation",
+      Metric = "cell_pearson_cor",
+      Value = as.numeric(gen_fid$mean_cell_pcc),
+      Modality = m2_name,
+      stringsAsFactors = FALSE
+    )
+    master_rows[[length(master_rows) + 1]] <- data.frame(
+      Category = "Cross-Modal Relationships",
+      Property = "in_silico_generation",
+      Metric = "feature_pearson_cor",
+      Value = as.numeric(gen_fid$mean_feat_pcc),
+      Modality = m2_name,
+      stringsAsFactors = FALSE
+    )
+    
+    # 4. Regulatory coupling
+    coupling_res <- calc_atac_rna_coupling(sim_multi[[2]], sim_multi[[1]])
+    master_rows[[length(master_rows) + 1]] <- data.frame(
+      Category = "Cross-Modal Relationships",
+      Property = "regulatory_coupling",
+      Metric = "mean_coupling_cor",
+      Value = as.numeric(coupling_res$mean_coupling_cor),
+      Modality = "Joint (Cross-Modal)",
+      stringsAsFactors = FALSE
+    )
+  } else {
+    if (verbose) {
+      message("=== [Step 7] Evaluating Cross-Modality Relationships (Unpaired Mode: Population-Level & Modularity Metrics) ===")
+      message("[Notice] Unpaired multiomics selected: Cell-level pairing metrics (FOSCTTM, Match@1, Cross-Modal Generation, Peak-to-Gene Coupling) are excluded as cell barcodes are unlinked.")
+    }
+  }
+
+  # --- Metrics evaluated for BOTH Paired and Unpaired Multiomics ---
+
+  # 5. Cross-modal label transfer (population-level classification)
+  if (!is.null(cell_types)) {
+    ct_m2 <- if (is.list(cell_types) && !is.null(cell_types[[2]])) cell_types[[2]] else cell_types
+    if (length(ct_m2) == ncol(sim_multi[[2]])) {
+      cpred <- evaluate_cross_modal_prediction(sim_multi[[2]], ct_m2)
+      master_rows[[length(master_rows) + 1]] <- data.frame(
+        Category = "Cross-Modal Relationships",
+        Property = "label_transfer",
+        Metric = "cross_modal_accuracy",
+        Value = as.numeric(cpred$cross_modal_accuracy),
+        Modality = "Joint (Cross-Modal)",
+        stringsAsFactors = FALSE
+      )
+      master_rows[[length(master_rows) + 1]] <- data.frame(
+        Category = "Cross-Modal Relationships",
+        Property = "label_transfer",
+        Metric = "cross_modal_F1",
+        Value = as.numeric(cpred$cross_modal_F1),
         Modality = "Joint (Cross-Modal)",
         stringsAsFactors = FALSE
       )
     }
   }
   
-  # Cross-modal label transfer
-  if (!is.null(cell_types)) {
-    cpred <- evaluate_cross_modal_prediction(sim_multi[[2]], cell_types)
-    master_rows[[length(master_rows) + 1]] <- data.frame(
-      Category = "Cross-Modal Relationships",
-      Property = "label_transfer",
-      Metric = "cross_modal_accuracy",
-      Value = as.numeric(cpred$cross_modal_accuracy),
-      Modality = "Joint (Cross-Modal)",
-      stringsAsFactors = FALSE
-    )
-    master_rows[[length(master_rows) + 1]] <- data.frame(
-      Category = "Cross-Modal Relationships",
-      Property = "label_transfer",
-      Metric = "cross_modal_F1",
-      Value = as.numeric(cpred$cross_modal_F1),
-      Modality = "Joint (Cross-Modal)",
-      stringsAsFactors = FALSE
-    )
-  }
-  
-  # FOSCTTM cell alignment in joint latent space
-  sub_m1 <- as.matrix(sim_multi[[1]])
-  sub_m2 <- as.matrix(sim_multi[[2]])
-  min_c <- min(ncol(sub_m1), ncol(sub_m2))
-  p1 <- stats::prcomp(t(sub_m1[, seq_len(min_c)]), rank. = 5)$x
-  p2 <- stats::prcomp(t(sub_m2[, seq_len(min_c)]), rank. = 5)$x
-  fos_res <- calc_foscttm(p1, p2)
-  master_rows[[length(master_rows) + 1]] <- data.frame(
-    Category = "Cross-Modal Relationships",
-    Property = "cell_alignment",
-    Metric = "FOSCTTM",
-    Value = as.numeric(fos_res$foscttm),
-    Modality = "Joint (Cross-Modal)",
-    stringsAsFactors = FALSE
-  )
-  master_rows[[length(master_rows) + 1]] <- data.frame(
-    Category = "Cross-Modal Relationships",
-    Property = "cell_alignment",
-    Metric = "match_at_1",
-    Value = as.numeric(fos_res$match_at_1),
-    Modality = "Joint (Cross-Modal)",
-    stringsAsFactors = FALSE
-  )
-  
-  # In silico generation fidelity
-  gen_fid <- calc_cross_modal_generation(ref_multi[[2]], sim_multi[[2]])
-  master_rows[[length(master_rows) + 1]] <- data.frame(
-    Category = "Cross-Modal Relationships",
-    Property = "in_silico_generation",
-    Metric = "cell_pearson_cor",
-    Value = as.numeric(gen_fid$mean_cell_pcc),
-    Modality = m2_name,
-    stringsAsFactors = FALSE
-  )
-  master_rows[[length(master_rows) + 1]] <- data.frame(
-    Category = "Cross-Modal Relationships",
-    Property = "in_silico_generation",
-    Metric = "feature_pearson_cor",
-    Value = as.numeric(gen_fid$mean_feat_pcc),
-    Modality = m2_name,
-    stringsAsFactors = FALSE
-  )
-  
-  # Regulatory coupling
-  coupling_res <- calc_atac_rna_coupling(sim_multi[[2]], sim_multi[[1]])
-  master_rows[[length(master_rows) + 1]] <- data.frame(
-    Category = "Cross-Modal Relationships",
-    Property = "regulatory_coupling",
-    Metric = "mean_coupling_cor",
-    Value = as.numeric(coupling_res$mean_coupling_cor),
-    Modality = "Joint (Cross-Modal)",
-    stringsAsFactors = FALSE
-  )
-  
-  # Peak co-accessibility fidelity
+  # 6. Peak co-accessibility fidelity (within ATAC layer)
   peak_coacc <- calc_peak_coaccessibility_fidelity(ref_multi[[2]], sim_multi[[2]])
   master_rows[[length(master_rows) + 1]] <- data.frame(
     Category = "Cross-Modal Relationships",
@@ -637,7 +676,7 @@ evaluate_multiomics_accuracy <- function(
     stringsAsFactors = FALSE
   )
   
-  # Co-expression module fidelity
+  # 7. Co-expression module fidelity (within RNA layer)
   coexpr_fid <- calc_coexpression_module_fidelity(ref_multi[[1]], sim_multi[[1]])
   master_rows[[length(master_rows) + 1]] <- data.frame(
     Category = "Cross-Modal Relationships",
@@ -648,8 +687,10 @@ evaluate_multiomics_accuracy <- function(
     stringsAsFactors = FALSE
   )
   
-  # Accessibility profile concordance
-  acc_prof <- calc_accessibility_profile_concordance(ref_multi[[2]], sim_multi[[2]], cell_types = cell_types)
+  # 8. Accessibility profile concordance
+  ct_acc <- if (is.list(cell_types) && !is.null(cell_types[[2]])) cell_types[[2]] else cell_types
+  if (!is.null(ct_acc) && length(ct_acc) != ncol(ref_multi[[2]])) ct_acc <- NULL
+  acc_prof <- calc_accessibility_profile_concordance(ref_multi[[2]], sim_multi[[2]], cell_types = ct_acc)
   master_rows[[length(master_rows) + 1]] <- data.frame(
     Category = "Cross-Modal Relationships",
     Property = "accessibility_profile",
@@ -691,6 +732,7 @@ evaluate_multiomics_accuracy <- function(
   
   list(
     benchmark_summary_table = master_table,
+    pairing = pairing,
     mod1_unimodal = m1_eval,
     mod2_unimodal = m2_eval,
     clustering = clustering_res,
@@ -837,6 +879,7 @@ evaluate_multiple_datasets <- function(
             sim = sim_list,
             cell_types = ct,
             batch_info = bi,
+            pairing = if (!is.null(sub_items[[rna_idx]]$pairing)) sub_items[[rna_idx]]$pairing else if (!is.null(sub_items[[rna_idx]]$is_paired)) (if (isTRUE(sub_items[[rna_idx]]$is_paired)) "paired" else "unpaired") else "paired",
             memory_mb = sub_items[[rna_idx]]$memory_mb,
             elapsed_time = sub_items[[rna_idx]]$elapsed_time,
             feature_pairs = sub_items[[rna_idx]]$feature_pairs
@@ -882,6 +925,7 @@ evaluate_multiple_datasets <- function(
           sim = sim_mat,
           cell_types = item$cell_types,
           batch_info = item$batch_info,
+          pairing = if (!is.null(item$pairing)) item$pairing else if (!is.null(item$is_paired)) (if (isTRUE(item$is_paired)) "paired" else "unpaired") else "paired",
           memory_mb = item$memory_mb,
           elapsed_time = item$elapsed_time,
           feature_pairs = item$feature_pairs
@@ -927,6 +971,7 @@ evaluate_multiple_datasets <- function(
         sim_multi = exp$sim,
         cell_types = exp$cell_types,
         batch_info = exp$batch_info,
+        pairing = if (!is.null(exp$pairing)) exp$pairing else "paired",
         memory_mb = exp$memory_mb,
         elapsed_time = exp$elapsed_time,
         feature_pairs = exp$feature_pairs,

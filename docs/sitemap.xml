@@ -10,6 +10,7 @@
 <url><loc>https://kabilanbio.github.io/scSimEval/authors.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/index.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/LICENSE-text.html</loc></url>
+<url><loc>https://kabilanbio.github.io/scSimEval/news/index.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/align_distributions.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/benchmark_resource_usage.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/calc_accessibility_profile_concordance.html</loc></url>
@@ -85,6 +86,8 @@
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/calc_v_measure.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/calc_wasserstein_1d.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/calc_zero_probability_curve.html</loc></url>
+<url><loc>https://kabilanbio.github.io/scSimEval/reference/compute_dataset_embeddings.html</loc></url>
+<url><loc>https://kabilanbio.github.io/scSimEval/reference/compute_embedding_quality_metrics.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/dot-ingest_bubble_data.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/dot-normalize_bubble_scores.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/evaluate_accessibility_sparsity_curve.html</loc></url>
@@ -106,6 +109,7 @@
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/example_scatac.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/example_scrna.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/extract_cell_properties.html</loc></url>
+<url><loc>https://kabilanbio.github.io/scSimEval/reference/extract_dataset_summary.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/extract_feature_properties.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/extract_properties.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/hungarian_match.html</loc></url>
@@ -122,18 +126,15 @@
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/multiomics_coupling.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_benchmark_bubble_matrix.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_benchmark_summary.html</loc></url>
-<url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_consolidated_summary.html</loc></url>
-<url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_cross_modal_coupling.html</loc></url>
-<url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_deg_bubble_matrix.html</loc></url>
-<url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_deg_fidelity.html</loc></url>
+<url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_dataset_embeddings.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_distribution_qc.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_evaluation_summary.html</loc></url>
+<url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_individual_metric_bar.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_metric_boxplots.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_metric_heatmap.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_metric_mds.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_metric_pca.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_scalability_benchmark.html</loc></url>
-<url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_trajectory_comparison.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/to_pseudobulk.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/utils.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/visualizations.html</loc></url>

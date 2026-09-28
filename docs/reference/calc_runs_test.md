@@ -29,3 +29,17 @@ calc_runs_test(ref, sim, alternative = c("left.sided", "two.sided"))
 ## Value
 
 A named list with the runs test statistic and p-value.
+
+## Examples
+
+``` r
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_runs_test(ref, sim)
+#> $runs_statistic
+#> [1] 0.8040713
+#> 
+#> $runs_pvalue
+#> [1] 0.7893221
+#> 
+```

@@ -28,3 +28,45 @@ calc_cross_modal_generation(true_data, pred_data)
 
 A list containing cell-wise and feature-wise correlation, cosine
 similarity, RMSE, and MAE.
+
+## Examples
+
+``` r
+data(example_multiomics, package = "scSimEval")
+r_rna <- example_multiomics$ref_multi$rna
+r_atac <- example_multiomics$ref_multi$atac
+calc_cross_modal_generation(r_rna, r_atac)
+#> $mean_cell_pcc
+#> [1] 0.07326002
+#> 
+#> $median_cell_pcc
+#> [1] 0.06511867
+#> 
+#> $mean_cell_scc
+#> [1] 0.07055168
+#> 
+#> $median_cell_scc
+#> [1] 0.07361193
+#> 
+#> $mean_feat_pcc
+#> [1] 0.05053426
+#> 
+#> $median_feat_pcc
+#> [1] 0.05450756
+#> 
+#> $mean_feat_scc
+#> [1] 0.05363397
+#> 
+#> $median_feat_scc
+#> [1] 0.05325754
+#> 
+#> $mean_cell_cosine
+#> [1] 0.4599328
+#> 
+#> $rmse
+#> [1] 6.034916
+#> 
+#> $mae
+#> [1] 3.951458
+#> 
+```

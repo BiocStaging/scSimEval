@@ -1,6 +1,5 @@
-# Calculate Fasano-Franceschini 2D Kolmogorov-Smirnov Test Statistic Integrated from simpipe.
+# Calculate Fasano-Franceschini 2D Kolmogorov-Smirnov Test Statistic
 
-Calculate Fasano-Franceschini 2D Kolmogorov-Smirnov Test Statistic
 Integrated from simpipe.
 
 ## Usage
@@ -26,3 +25,12 @@ calc_fasano_franceschini(ref_mat, sim_mat, threads = 1)
 ## Value
 
 Estimated 2D KS statistic.
+
+## Examples
+
+``` r
+ref <- matrix(stats::rnorm(100), 50, 2)
+sim <- matrix(stats::rnorm(100), 50, 2)
+calc_fasano_franceschini(ref, sim)
+#> [1] NA
+```

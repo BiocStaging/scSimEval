@@ -37,3 +37,25 @@ calc_peak_coaccessibility_fidelity(
 
 A list containing RV coefficient, matrix correlation, Frobenius
 distance, and MAE.
+
+## Examples
+
+``` r
+data(example_scrna, package = "scSimEval")
+calc_peak_coaccessibility_fidelity(example_scrna$ref, example_scrna$sim)
+#> $rv_coefficient
+#> [1] 0.5649862
+#> 
+#> $coaccessibility_pearson
+#> [1] -0.01444
+#> 
+#> $coaccessibility_spearman
+#> [1] -0.01044432
+#> 
+#> $frobenius_distance
+#> [1] 0.005401201
+#> 
+#> $coaccessibility_mae
+#> [1] 0.1283634
+#> 
+```

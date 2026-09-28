@@ -105,3 +105,40 @@ test_that("plot_benchmark_bubble_matrix returns a valid ggplot object with data.
   expect_s3_class(p2, "ggplot")
 })
 
+test_that("compute_dataset_embeddings, plot_dataset_embeddings and compute_embedding_quality_metrics execute properly", {
+  set.seed(42)
+  ref <- matrix(stats::rpois(2000, 3), nrow = 40, ncol = 50)
+  sim1 <- matrix(stats::rpois(2000, 3), nrow = 40, ncol = 50)
+  sim2 <- matrix(stats::rpois(2000, 4), nrow = 40, ncol = 50)
+  ct <- sample(c("TypeA", "TypeB"), 50, replace = TRUE)
+  batch <- sample(c("Batch1", "Batch2"), 50, replace = TRUE)
+  
+  # Compute embeddings
+  emb <- compute_dataset_embeddings(
+    reference = ref,
+    simulated = list(Splatter = sim1, scDesign3 = sim2),
+    reduction = "pca",
+    n_pcs = 5,
+    cell_types = ct,
+    batch = batch
+  )
+  
+  expect_s3_class(emb, "data.frame")
+  expect_true(all(c("Dataset", "Role", "Dim1", "Dim2", "Cell_Type", "Batch") %in% colnames(emb)))
+  expect_equal(nrow(emb), 150)
+  
+  # Plot faceted grid
+  p_facet <- plot_dataset_embeddings(emb, reduction = "pca", layout = "facet", color_by = "cell_type")
+  expect_s3_class(p_facet, "ggplot")
+  
+  # Plot side-by-side
+  p_side <- plot_dataset_embeddings(emb, reduction = "pca", layout = "side_by_side", selected_methods = "Splatter", color_by = "cluster")
+  expect_s3_class(p_side, "ggplot")
+  
+  # Compute quality metrics table
+  qm <- compute_embedding_quality_metrics(emb)
+  expect_s3_class(qm, "data.frame")
+  expect_equal(nrow(qm), 3)
+  expect_true(all(c("Dataset", "Role", "Mean Silhouette", "ARI (Cluster Fidelity)", "Library Size Diff (%)") %in% colnames(qm)))
+})
+

@@ -42,6 +42,11 @@ plot_metric_mds(
   category separately (skipping categories with fewer than 3 measures).
   Default is `FALSE`.
 
+- as_list:
+
+  Logical. If `TRUE` and `by_category = TRUE`, returns a named list of
+  ggplot objects. Default `FALSE`.
+
 - category:
 
   Optional character vector to filter by evaluation category (e.g.
@@ -96,3 +101,16 @@ multi-panel dashboard is produced showing one MDS ordination per
 category (by default across the 6 canonical categories with \>= 3
 measures, excluding Trajectory and Scalability which each contain only 2
 measures).
+
+## Examples
+
+``` r
+data(example_scrna, package = "scSimEval")
+res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+#> [1/5] Extracting cell-level properties...
+#> [2/5] Extracting feature-level properties...
+#> [3/5] Computing univariate accuracy metrics...
+#> [4/5] Computing bivariate metrics (Fasano-Franceschini, Peacock, KDE zstat, 2D EMD)...
+#> [5/5] Computing zero-probability and manifold distances...
+#> Unimodal accuracy evaluation complete.
+```

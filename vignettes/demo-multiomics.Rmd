@@ -361,8 +361,7 @@ coaccess   <- calc_peak_coaccessibility_fidelity(ref_atac_full, sim_atac_full)
 
 # Part 5: Visualization
 
-`scSimEval` visualization functions work identically regardless of data type, as they
-operate on the consolidated benchmark results table:
+`scSimEval` visualization functions work seamlessly across unimodal, paired, and unpaired multiomics configurations:
 
 ```r
 # Multi-dataset consolidated benchmark bubble matrix
@@ -376,6 +375,32 @@ plot_evaluation_summary(
   data  = consolidated,
   title = "Multiomics Simulator Leaderboard"
 )
+```
+
+## 5.1 Low-Dimensional Multiomics Cell Embeddings
+
+To visually examine whether simulated cells maintain the biological manifold of empirical data across modalities, researchers can project reference and simulated cells into low-dimensional UMAP, t-SNE, or PCA coordinates:
+
+```{r multiomics-embeddings-demo, eval=TRUE}
+# Compute low-dimensional embeddings for the scRNA-seq modality
+emb_rna <- compute_dataset_embeddings(
+  reference   = example_multiomics$ref_multi$rna,
+  simulated   = list("Multi_Sim" = example_multiomics$sim_multi$rna),
+  reduction   = "pca",
+  n_pcs       = 5,
+  cell_types  = example_multiomics$cell_types
+)
+
+# Plot multiomics cell embeddings
+plot_dataset_embeddings(
+  embedding_data = emb_rna,
+  reduction      = "pca",
+  layout         = "side_by_side",
+  color_by       = "cell_type"
+)
+
+# Quantitative embedding quality metrics
+knitr::kable(compute_embedding_quality_metrics(emb_rna), digits = 4)
 ```
 
 ---

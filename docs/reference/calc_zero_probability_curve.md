@@ -20,3 +20,22 @@ calc_zero_probability_curve(counts)
 
 A list containing intercept, slope, midpoint (inflection point), and
 R-squared.
+
+## Examples
+
+``` r
+data(example_scrna, package = "scSimEval")
+calc_zero_probability_curve(example_scrna$ref)
+#> $intercept
+#> [1] 0.1664043
+#> 
+#> $slope
+#> [1] -1.259067
+#> 
+#> $midpoint
+#> [1] 0.1321648
+#> 
+#> $r_squared
+#> [1] 0.7142614
+#> 
+```

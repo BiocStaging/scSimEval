@@ -23,3 +23,18 @@ evaluate_cross_modal_prediction(mod1_data, cell_types)
 ## Value
 
 A list with cross-modal classification accuracy and macro F1 score.
+
+## Examples
+
+``` r
+data(example_multiomics, package = "scSimEval")
+r_rna <- example_multiomics$ref_multi$rna
+r_atac <- example_multiomics$ref_multi$atac
+evaluate_cross_modal_prediction(r_rna, example_multiomics$cell_types)
+#> $cross_modal_accuracy
+#> [1] 0.75
+#> 
+#> $cross_modal_F1
+#> [1] 0.7090909
+#> 
+```

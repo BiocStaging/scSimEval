@@ -32,3 +32,11 @@ calc_network_jaccard(edges1, edges2, k = NULL, directed = TRUE)
 ## Value
 
 Jaccard similarity index in \[0, 1\] (\|E1 cap E2\| / \|E1 cup E2\|).
+
+## Examples
+
+``` r
+calc_network_jaccard(data.frame(from = c("g1", "g2"), to = c("g2", "g3")),
+                     data.frame(from = c("g1", "g2"), to = c("g2", "g3")))
+#> [1] 1
+```

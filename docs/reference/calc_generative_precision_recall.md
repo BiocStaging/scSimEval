@@ -43,3 +43,21 @@ calc_generative_precision_recall(
 
 A list containing Generative Precision, Generative Recall, and
 Generative F1.
+
+## Examples
+
+``` r
+data <- matrix(stats::rnorm(200), 20, 10)
+cl <- factor(rep(c("A", "B"), each = 10))
+dist_mat <- stats::dist(data)
+calc_generative_precision_recall(data, cl)
+#> $generative_precision
+#> [1] NA
+#> 
+#> $generative_recall
+#> [1] NA
+#> 
+#> $generative_f1
+#> [1] NA
+#> 
+```

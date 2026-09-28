@@ -21,3 +21,13 @@ calc_davies_bouldin(data, cluster_labels)
 ## Value
 
 Davies-Bouldin index (lower is better).
+
+## Examples
+
+``` r
+data <- matrix(stats::rnorm(200), 20, 10)
+cl <- factor(rep(c("A", "B"), each = 5))
+dist_mat <- stats::dist(data)
+calc_davies_bouldin(data, cl)
+#> [1] 2.249869
+```

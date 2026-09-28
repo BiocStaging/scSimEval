@@ -45,3 +45,18 @@ evaluate_simbench_signals(
 ## Value
 
 A tidy data.frame comparing biological signal proportions.
+
+## Examples
+
+``` r
+data(example_scrna, package = "scSimEval")
+evaluate_simbench_signals(example_scrna$ref, example_scrna$sim,
+                          ref_celltypes = example_scrna$cell_types,
+                          sim_celltypes = example_scrna$cell_types)
+#>               Signal_Type Reference_Prop Simulation_Prop Absolute_Error
+#> 1         DE (Mean Shift)      0.0000000      0.08333333     0.08333333
+#> 2        DV (Variability)      0.2500000      0.25000000     0.00000000
+#> 3       DD (Distribution)      0.0000000      0.03333333     0.03333333
+#> 4 DP (Proportion/Dropout)      0.0000000      0.00000000     0.00000000
+#> 5      BD (Bimodal Index)      0.3333333      0.31666667     0.01666667
+```

@@ -1,4 +1,4 @@
-# Demonstration 1: scRNA-seq Simulation Evaluation
+﻿# Demonstration 1: scRNA-seq Simulation Evaluation
 
 ## Introduction
 
@@ -87,11 +87,11 @@ clust_res <- evaluate_clustering_metrics(
 cat("Average Silhouette Width (Simulated):", round(clust_res$silhouette, 4), "\n")
 #> Average Silhouette Width (Simulated): 0.0278
 cat("Davies-Bouldin Index:", round(clust_res$davies_bouldin, 4), "\n")
-#> Davies-Bouldin Index: NA
+#> Davies-Bouldin Index: 5.1752
 cat("Adjusted Rand Index (ARI):", round(clust_res$ARI, 4), "\n")
-#> Adjusted Rand Index (ARI): 0.1316
+#> Adjusted Rand Index (ARI): 0.0671
 cat("Normalized Mutual Information (NMI):", round(clust_res$NMI, 4), "\n")
-#> Normalized Mutual Information (NMI): 0.1414
+#> Normalized Mutual Information (NMI): 0.0884
 ```
 
 #### 2.3 Batch Effects and Confounder Mixing (Category 4)
@@ -132,13 +132,13 @@ deg_res <- evaluate_deg_fidelity(
 
 # Display DEG summary metrics
 head(deg_res$deg_summary_table)
-#>                    Framework                  Metric     Value
-#> 1 Simpipe (Duo et al., 2024)               DEG_Ratio 0.0000000
-#> 2 Simpipe (Duo et al., 2024) PValue_Uniformity_Chisq 8.0000000
-#> 3 Simpipe (Duo et al., 2024)      Distribution_Score 1.0000000
-#> 4 Simpipe (Duo et al., 2024)     Classifier_Accuracy 0.5000000
-#> 5 Simpipe (Duo et al., 2024)     Classifier_Macro_F1 0.4920635
-#> 6 Simpipe (Duo et al., 2024) Classifier_Macro_Recall 0.5238095
+#>                    Framework                  Metric    Value
+#> 1 Simpipe (Duo et al., 2024)               DEG_Ratio 0.000000
+#> 2 Simpipe (Duo et al., 2024) PValue_Uniformity_Chisq 8.000000
+#> 3 Simpipe (Duo et al., 2024)      Distribution_Score 1.000000
+#> 4 Simpipe (Duo et al., 2024)     Classifier_Accuracy 0.437500
+#> 5 Simpipe (Duo et al., 2024)     Classifier_Macro_F1 0.417004
+#> 6 Simpipe (Duo et al., 2024) Classifier_Macro_Recall 0.468254
 #>                                 Direction
 #> 1          Target = 1.0 (Optimal balance)
 #> 2     Lower is better (closer to Uniform)
@@ -220,3 +220,70 @@ This demonstration illustrates how `scSimEval` comprehensively assesses
 scRNA-seq simulations across distributions, zero patterns, clustering,
 batch integration, marker genes, and trajectory dynamics without
 requiring artificial ground-truth labels.
+
+``` r
+sessionInfo()
+#> R version 4.6.1 (2026-06-24 ucrt)
+#> Platform: x86_64-w64-mingw32/x64
+#> Running under: Windows 11 x64 (build 26200)
+#> 
+#> Matrix products: default
+#>   LAPACK version 3.12.1
+#> 
+#> locale:
+#> [1] LC_COLLATE=English_India.utf8  LC_CTYPE=English_India.utf8   
+#> [3] LC_MONETARY=English_India.utf8 LC_NUMERIC=C                  
+#> [5] LC_TIME=English_India.utf8    
+#> 
+#> time zone: Asia/Calcutta
+#> tzcode source: internal
+#> 
+#> attached base packages:
+#> [1] stats     graphics  grDevices utils     datasets  methods   base     
+#> 
+#> other attached packages:
+#> [1] scSimEval_0.99.3
+#> 
+#> loaded via a namespace (and not attached):
+#>  [1] SummarizedExperiment_1.42.0 xfun_0.60                  
+#>  [3] bslib_0.12.0                htmlwidgets_1.6.4          
+#>  [5] Biobase_2.73.2              lattice_0.22-9             
+#>  [7] tools_4.6.1                 generics_0.1.4             
+#>  [9] parallel_4.6.1              clValid_0.7                
+#> [11] stats4_4.6.1                flexmix_2.3-21             
+#> [13] proxy_0.4-29                DEoptimR_1.2-0             
+#> [15] cluster_2.1.8.3             pkgconfig_2.0.3            
+#> [17] BiocNeighbors_2.6.0         Matrix_1.7-6               
+#> [19] RColorBrewer_1.1-3          desc_1.4.3                 
+#> [21] S4Vectors_0.50.1            lifecycle_1.0.5            
+#> [23] clusterSim_0.51-6           compiler_4.6.1             
+#> [25] textshaping_1.0.5           statmod_1.5.2              
+#> [27] bluster_1.22.0              codetools_0.2-20           
+#> [29] Seqinfo_1.2.0               clue_0.3-68                
+#> [31] htmltools_0.5.9             class_7.3-24               
+#> [33] sass_0.4.10                 yaml_2.3.12                
+#> [35] pkgdown_2.2.1               jquerylib_0.1.4            
+#> [37] prabclus_2.3-5              MASS_7.3-66                
+#> [39] BiocParallel_1.47.0         diptest_0.77-2             
+#> [41] SingleCellExperiment_1.34.0 DelayedArray_0.38.2        
+#> [43] cachem_1.1.0                limma_3.68.4               
+#> [45] fpc_2.2-15                  abind_1.4-8                
+#> [47] mclust_6.1.3                robustbase_0.99-7          
+#> [49] locfit_1.5-9.12             digest_0.6.39              
+#> [51] kernlab_0.9-33              splines_4.6.1              
+#> [53] ade4_1.7-24                 fastmap_1.2.0              
+#> [55] grid_4.6.1                  cli_3.6.6                  
+#> [57] SparseArray_1.13.2          magrittr_2.0.5             
+#> [59] S4Arrays_1.13.0             e1071_1.7-17               
+#> [61] edgeR_4.10.1                rmarkdown_2.31             
+#> [63] XVector_0.52.0              matrixStats_1.5.0          
+#> [65] igraph_2.3.3                otel_0.2.0                 
+#> [67] nnet_7.3-21                 RANN_2.6.2                 
+#> [69] ragg_1.5.2                  modeltools_0.2-24          
+#> [71] evaluate_1.0.5              knitr_1.51                 
+#> [73] GenomicRanges_1.64.0        IRanges_2.46.0             
+#> [75] rlang_1.3.0                 Rcpp_1.1.2                 
+#> [77] BiocGenerics_0.58.1         jsonlite_2.0.0             
+#> [79] R6_2.6.1                    MatrixGenerics_1.24.0      
+#> [81] systemfonts_1.3.2           fs_2.1.0
+```

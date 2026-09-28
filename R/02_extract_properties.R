@@ -520,4 +520,94 @@ evaluate_accessibility_sparsity_curve <- function(ref_data, sim_data, poly_degre
   )
 }
 
+#' Extract Dataset Dimensional Properties and Summary Statistics
+#'
+#' Computes key dimensional and biological properties from single-cell or multiomics count matrices,
+#' including cell counts, feature counts, sparsity percentage, biological group/cell type counts,
+#' batch counts, median library size, median detected features per cell, and mean expression level.
+#'
+#' @param mat A count matrix (genes/features x cells), dgCMatrix, SingleCellExperiment, or Seurat object.
+#' @param role Character string describing the role of the dataset (e.g. \code{"Biological Reference"} or \code{"Simulated"}). Default is \code{"Reference"}.
+#' @param method_name Character string indicating the method or dataset name (e.g. \code{"Empirical Reference"}, \code{"Splatter"}). Default is \code{"Dataset"}.
+#' @param modality Character string describing the molecular modality (e.g. \code{"scRNA-seq"}, \code{"scATAC-seq"}). Default is \code{"scRNA-seq"}.
+#' @param cell_types Optional factor or character vector of cell type annotations.
+#' @param batch_info Optional factor or character vector of batch annotations.
+#'
+#' @return A data.frame with 1 row summarizing the dataset properties.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' extract_dataset_summary(example_scrna$ref, role = "Reference", method_name = "Empirical")
+#' @export
+extract_dataset_summary <- function(mat, role = "Reference", method_name = "Dataset",
+                                    modality = "scRNA-seq", cell_types = NULL, batch_info = NULL) {
+  if (is.null(mat)) return(NULL)
+  
+  if (inherits(mat, "SingleCellExperiment")) {
+    if (is.null(cell_types) && "cell_type" %in% colnames(SummarizedExperiment::colData(mat))) {
+      cell_types <- SummarizedExperiment::colData(mat)$cell_type
+    }
+    if (is.null(batch_info) && "batch" %in% colnames(SummarizedExperiment::colData(mat))) {
+      batch_info <- SummarizedExperiment::colData(mat)$batch
+    }
+    mat <- SingleCellExperiment::counts(mat)
+  } else if (inherits(mat, "Seurat")) {
+    if (is.null(cell_types)) cell_types <- Seurat::Idents(mat)
+    if (is.null(batch_info) && "batch" %in% colnames(mat@meta.data)) {
+      batch_info <- mat@meta.data$batch
+    }
+    mat <- mat[["RNA"]]$counts
+  }
+  
+  n_cells <- ncol(mat)
+  n_features <- nrow(mat)
+  
+  if (inherits(mat, "dgCMatrix")) {
+    n_zeros <- (as.numeric(n_cells) * as.numeric(n_features)) - length(mat@x)
+    sparsity_pct <- round((n_zeros / (as.numeric(n_cells) * as.numeric(n_features))) * 100, 2)
+    lib_sizes <- Matrix::colSums(mat)
+    det_feats <- Matrix::colSums(mat > 0)
+    mean_expr <- mean(mat@x) * (length(mat@x) / (as.numeric(n_cells) * as.numeric(n_features)))
+  } else {
+    mat_num <- as.matrix(mat)
+    sparsity_pct <- round(mean(mat_num == 0) * 100, 2)
+    lib_sizes <- colSums(mat_num)
+    det_feats <- colSums(mat_num > 0)
+    mean_expr <- mean(mat_num)
+  }
+  
+  med_lib <- stats::median(lib_sizes)
+  med_det <- stats::median(det_feats)
+  
+  ct_str <- if (!is.null(cell_types) && length(cell_types) == n_cells) {
+    u_ct <- unique(stats::na.omit(as.character(cell_types)))
+    formatC(length(u_ct), format = "d", big.mark = ",")
+  } else {
+    "Not specified"
+  }
+  
+  b_str <- if (!is.null(batch_info) && length(batch_info) == n_cells) {
+    u_b <- unique(stats::na.omit(as.character(batch_info)))
+    formatC(length(u_b), format = "d", big.mark = ",")
+  } else {
+    "1"
+  }
+  
+  data.frame(
+    "Dataset / Simulator" = as.character(method_name),
+    "Role" = as.character(role),
+    "Modality" = as.character(modality),
+    "Cells (N)" = formatC(as.integer(n_cells), format = "d", big.mark = ","),
+    "Features (P)" = formatC(as.integer(n_features), format = "d", big.mark = ","),
+    "Sparsity" = sprintf("%.2f%%", sparsity_pct),
+    "Cell Types (Groups)" = ct_str,
+    "Batches" = b_str,
+    "Median Lib Size" = formatC(round(med_lib, 1), format = "f", digits = 1, big.mark = ","),
+    "Median Detected Features" = formatC(round(med_det, 0), format = "d", big.mark = ","),
+    "Mean Expression" = formatC(round(mean_expr, 3), format = "f", digits = 3),
+    check.names = FALSE,
+    stringsAsFactors = FALSE
+  )
+}
+
+
 

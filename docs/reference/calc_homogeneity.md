@@ -21,3 +21,12 @@ calc_homogeneity(pred, truth)
 ## Value
 
 Homogeneity score between 0 and 1.
+
+## Examples
+
+``` r
+pred <- factor(rep(c("A", "B"), each = 20))
+truth <- factor(rep(c("A", "B"), each = 20))
+calc_homogeneity(pred, truth)
+#> [1] 1
+```

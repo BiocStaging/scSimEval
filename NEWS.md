@@ -1,3 +1,55 @@
+# scSimEval 0.99.3
+
+## New Features & Enhancements
+
+* **Paired, Unpaired & Mosaic Multiomics Framework:**
+  - Added explicit `pairing = c("paired", "unpaired")` parameter (with `is_paired` alias) to `evaluate_multiomics_accuracy()` and `evaluate_multiple_datasets()`.
+  - In **Paired mode** (default; e.g. 10x Chromium Multiome, SHARE-seq), all 62 measures across all 8 canonical categories are evaluated, including cell-level pairing metrics (FOSCTTM, Match@1, in silico cross-modal generation, direct peak-to-gene linkage).
+  - In **Unpaired mode** (separate cells from the same tissue/condition), cell-level pairing metrics that require 1-to-1 matching cell barcodes are safely omitted with clear informational logging, while population-level cross-modal metrics and unimodal evaluations are fully computed and standardized.
+  - Added comprehensive methodological guidance for decomposing mosaic multiomics datasets into paired and unpaired evaluation blocks.
+  - Integrated dynamic **Multiomics Dataset Type** selector (radio buttons) in Shiny Studio Tab 2 (Data Hub: Mode 3) with live contextual warning/info banners.
+
+* **Sub-panel 8: Cell Embeddings (UMAP, t-SNE, PCA) & Quality Metrics:**
+  - Implemented high-level dimensionality reduction and visualization functions: `compute_dataset_embeddings()`, `plot_dataset_embeddings()`, and `compute_embedding_quality_metrics()`.
+  - Interactive layout options: Multi-Simulator Faceted Grid and Direct 1-to-1 Comparison (Reference vs. Selected Simulator).
+  - Flexible cell coloring: Cell Type labels, Unsupervised cluster recovery, Library size gradient, and Detected features gradient.
+  - Integrated interactive summary table of quantitative embedding fidelity metrics (Mean Silhouette width, Adjusted Rand Index cluster concordance, and library size discrepancy %).
+
+* **Comprehensive All-in-One Benchmark Archive (.zip) & Export Suite:**
+  - Overhauled the complete benchmark bundle (`download_complete_zip`) in Shiny Studio Tab 5 ("Download Results") to deliver all quantitative results, spreadsheets, reports, and figures in an organized hierarchy.
+  - **All Metrics in Multiple Formats:** Bundles complete evaluation results in Excel (`.xlsx`), CSV (`.csv`), tab-delimited text (`.txt`), and native R object (`.rds`) formats in both root and `metrics/` subfolders.
+  - **Rankings & Metadata Tables:** Automatically generates and packages `method_rankings_leaderboard` (`.csv` & `.txt`) and `dataset_properties_summary` (`.csv` & `.txt`).
+  - **Multi-Page Compiled PDF Report:** Compiles all 9 diagnostic and comparative figures into a single publication-quality vector PDF (`scSimEval_all_plots_report.pdf`).
+  - **All Kinds of Figures (Grouped & Individual):**
+    - `figures/grouped/`: Both 600 DPI publication-grade JPEGs and vectorized PDFs for comparative bubble matrix, overall evaluation summary, scalability benchmark, metric boxplots by category, performance heatmap, PCA simulator ordination, MDS metric space, comparative distribution QC, and cell embeddings comparison grid.
+    - `figures/individual/`: Individual publication-grade barplots for every evaluated metric (`metric_bar_<MetricName>.jpeg` & `.pdf`) and simulator-specific 1-to-1 comparison cell embeddings against empirical reference (`cell_embeddings_compare_<SimulatorName>.jpeg` & `.pdf`).
+  - Added dedicated **Download TXT Table (.txt)** action button to Card 2 in Tab 5 for one-click tab-delimited exports.
+
+* **Documentation, Search & Site Integration:**
+  - Enabled client-side Fuse.js full-text search across the GitHub Pages documentation site, allowing instant search of all functions, parameters, vignettes, and metric descriptions.
+  - Completely rewritten `vignettes/shiny-app.Rmd` documenting all 6 navigation tabs, 8 visualization panels, UI controls, export options, and an R-API cross-reference table.
+  - Integrated official documentation links and quick-launch actions into Tab 6 ("Help & Getting Started").
+
+* **Dedicated Individual Figure Export (Shiny Tab 5 - Card 4):**
+  - Added on-demand figure export suite in Tab 5 ("Download Results") allowing researchers to download any single diagnostic or comparative visualization in either publication-grade vector PDF (`.pdf`) or ultra-high-resolution 600 DPI JPEG (`.jpeg`).
+  - Covers all 14 figure types: Comparative Bubble Matrix, Overall Evaluation Summary, Scalability Benchmark, Metric Boxplots, Performance Heatmap, PCA Ordination, MDS Metric Space, Comparative Distribution QC, UMAP Grid, t-SNE Grid, PCA Grid, and 1-to-1 simulator vs reference comparisons.
+  - Dynamically populated simulator selector for custom 1-to-1 side-by-side comparison figure downloads.
+
+* **Expanded Embeddings in Complete Benchmark Archive (`download_complete_zip`):**
+  - Upgraded the comprehensive `.zip` bundle to systematically generate and organize cell embedding figures for all three supported dimensionality reduction techniques (UMAP, t-SNE, and PCA) in `figures/grouped/` (`09_cell_embeddings_umap_grid`, `10_cell_embeddings_tsne_grid`, `11_cell_embeddings_pca_grid`).
+  - Systematically exports 1-to-1 comparison plots for every simulator against the empirical reference across UMAP, t-SNE, and PCA to `figures/individual/`.
+
+* **Documentation & Vignette Synchronization:**
+  - Fully updated `vignettes/shiny-app.Rmd` to document the new Card 4 export controls and the expanded zip bundle directory structure.
+
+## Bug Fixes
+
+* **`plot_metric_pca()` and `plot_metric_mds()` — `category = "all"` support:**
+  - Fixed category filter edge case where passing `category = "all"` or `NULL` now correctly retains all metrics across all categories without filtering out rows.
+* **Self-Contained Shiny Studio Runtime:**
+  - Embedded runtime definitions directly within `inst/shiny/scSimEvalApp/app.R` to ensure seamless execution across any R environment without requiring package re-installation.
+
+
 # scSimEval 0.99.2
 
 ## Bug Fixes

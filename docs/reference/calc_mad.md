@@ -25,3 +25,12 @@ calc_mad(ref, sim, align = TRUE)
 ## Value
 
 Numeric MAD value.
+
+## Examples
+
+``` r
+ref <- stats::rnorm(50)
+sim <- stats::rnorm(50)
+calc_mad(ref, sim)
+#> [1] 0.2565679
+```

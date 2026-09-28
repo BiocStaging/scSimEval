@@ -38,3 +38,30 @@ calc_coregulation_fidelity(
 
 A list containing module correlation r, RMSE, MAE, and modularity
 fidelity.
+
+## Examples
+
+``` r
+data(example_scrna, package = "scSimEval")
+modules <- list(Module_1 = rownames(example_scrna$ref)[seq_len(30)],
+                Module_2 = rownames(example_scrna$ref)[31:60])
+calc_coregulation_fidelity(example_scrna$ref, example_scrna$sim, modules)
+#> $module_correlation_r
+#> [1] -0.002873385
+#> 
+#> $module_correlation_rmse
+#> [1] 0.1573539
+#> 
+#> $module_correlation_mae
+#> [1] 0.1248352
+#> 
+#> $ref_modularity_ratio
+#> [1] -0.02873166
+#> 
+#> $sim_modularity_ratio
+#> [1] -0.00725975
+#> 
+#> $modularity_fidelity
+#> [1] 0
+#> 
+```

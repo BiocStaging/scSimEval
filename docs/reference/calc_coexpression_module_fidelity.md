@@ -42,3 +42,28 @@ calc_coexpression_module_fidelity(
 
 A list summarizing module correlation preservation, RMSE, and modularity
 ratio fidelity.
+
+## Examples
+
+``` r
+data(example_scrna, package = "scSimEval")
+calc_coexpression_module_fidelity(example_scrna$ref, example_scrna$sim)
+#> $module_correlation_r
+#> [1] -0.01457616
+#> 
+#> $module_correlation_rmse
+#> [1] 0.1690945
+#> 
+#> $module_correlation_mae
+#> [1] 0.1360054
+#> 
+#> $ref_modularity_ratio
+#> [1] 0.5568422
+#> 
+#> $sim_modularity_ratio
+#> [1] -0.02798568
+#> 
+#> $modularity_fidelity
+#> [1] 0
+#> 
+```

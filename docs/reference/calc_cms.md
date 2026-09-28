@@ -71,3 +71,20 @@ A named list:
 - median_cms:
 
   Median CMS score across cells
+
+## Examples
+
+``` r
+coords <- matrix(stats::rnorm(100), 50, 2)
+batch <- factor(rep(c("B1", "B2"), length.out = 50))
+calc_cms(coords, batch)
+#> $cms_scores
+#> [1] 0 0
+#> 
+#> $mean_cms
+#> [1] 0
+#> 
+#> $median_cms
+#> [1] 0
+#> 
+```

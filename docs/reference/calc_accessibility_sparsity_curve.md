@@ -26,3 +26,46 @@ calc_accessibility_sparsity_curve(data, poly_degree = 2)
 
 A list with estimated coefficients (c0, c1, c2), R-squared,
 Spearman/Pearson correlations, and model fit summary.
+
+## Examples
+
+``` r
+data(example_scrna, package = "scSimEval")
+calc_accessibility_sparsity_curve(example_scrna$ref)
+#> $c0
+#> [1] 0.5117571
+#> 
+#> $c1
+#> [1] 0.1032392
+#> 
+#> $c2
+#> [1] -0.006616585
+#> 
+#> $r_squared
+#> [1] 0.7560448
+#> 
+#> $spearman_cor
+#> [1] 0.8167929
+#> 
+#> $pearson_cor
+#> [1] 0.8428295
+#> 
+#> $poly_degree
+#> [1] 2
+#> 
+#> $model
+#> 
+#> Call:
+#> stats::lm(formula = y ~ stats::poly(x, degree = poly_degree, 
+#>     raw = TRUE), data = df)
+#> 
+#> Coefficients:
+#>                                       (Intercept)  
+#>                                          0.511757  
+#> stats::poly(x, degree = poly_degree, raw = TRUE)1  
+#>                                          0.103239  
+#> stats::poly(x, degree = poly_degree, raw = TRUE)2  
+#>                                         -0.006617  
+#> 
+#> 
+```
