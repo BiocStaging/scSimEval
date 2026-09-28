@@ -113,6 +113,7 @@ export(evaluate_multiomics_accuracy)
 # 10_visualizations
 export(plot_distribution_qc)
 export(plot_metric_boxplots)
+export(plot_category_metric_bars)
 export(plot_individual_metric_bar)
 export(plot_scalability_benchmark)
 export(plot_metric_heatmap)

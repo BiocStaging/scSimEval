@@ -490,7 +490,7 @@ The Shiny app provides a comprehensive graphical workspace:
    - *1. Evaluation Summary*: Horizontal bar chart ranking overall performance.
    - *2. Distribution QC*: 14-panel comparative expression density, library size, and zero-inflation curves.
    - *3. Scalability Benchmark*: Runtime and memory Pareto frontiers.
-   - *4. Metric Boxplots*: Category boxplots and ranked metric bar charts with directionality indicators (+/-).
+   - *4. Metric Plots*: Category distribution boxplots, faceted category metric barplots, and ranked individual metric bar charts with directionality indicators (+/-).
    - *5. Metric Heatmap*: Method-by-metric grid showing exact raw scores in bold text with standardized fill.
    - *6. PCA Ordination*: Principal Component Analysis of simulator performance profiles.
    - *7. MDS Metric Space*: Multi-Dimensional Scaling ordination.

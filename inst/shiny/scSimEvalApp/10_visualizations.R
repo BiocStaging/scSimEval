@@ -1141,6 +1141,174 @@ plot_individual_metric_bar <- function(
 
 
 # ============================================================================
+# 2ab. plot_category_metric_bars()
+# ============================================================================
+
+#' Plot Benchmark Metric Performance Barplots by Category
+#'
+#' Generates publication-ready faceted barplots comparing simulator methods across all individual
+#' evaluation metrics belonging to a specified benchmark category. Each metric is presented in its own
+#' sub-panel with exact numeric score labels, direction-awareness indicators (indicating whether higher
+#' or lower values are optimal), and standardized or original raw score formulation.
+#'
+#' @param benchmark_data A benchmark data.frame (e.g. \code{demo$benchmark_summary_table} or output from
+#'   \code{\link{evaluate_simulation_accuracy}()}) or a named list of benchmark result tables.
+#' @param category Character. The benchmark category to visualize (e.g., \code{"(I) Distributional Properties"}
+#'   or \code{"Distributional Properties"}).
+#' @param score_type Character. Either \code{"normalized"} (standardized [0, 1] fidelity score where 1.0 is optimal; default)
+#'   or \code{"raw"} (unnormalized original metric values in native measurement units).
+#' @param palette Optional named character vector of simulator colors.
+#' @param ncol Integer. Optional number of columns in facet layout. Defaults to dynamic layout based on metric count.
+#' @param base_size Numeric. Base font size. Default \code{11}.
+#'
+#' @return A \code{ggplot} object.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+#' @export
+plot_category_metric_bars <- function(
+  benchmark_data,
+  category,
+  score_type = c("normalized", "raw"),
+  palette    = NULL,
+  ncol       = NULL,
+  base_size  = 11
+) {
+  score_type <- match.arg(score_type)
+  df <- .ingest_bubble_data(benchmark_data)
+
+  if ("Category" %in% colnames(df)) {
+    cat_chr <- as.character(df$Category)
+    df$Category <- ifelse(cat_chr %in% names(.LEGACY_CATEGORY_MAP),
+                          .LEGACY_CATEGORY_MAP[cat_chr], cat_chr)
+  }
+
+  if (!missing(category) && !is.null(category) && !identical(category, "all")) {
+    if (category %in% names(.LEGACY_CATEGORY_MAP)) {
+      category <- .LEGACY_CATEGORY_MAP[[category]]
+    }
+    df <- df[df$Category == category, , drop = FALSE]
+  }
+
+  if (nrow(df) == 0) {
+    stop(sprintf("No data found for category '%s'.", category))
+  }
+
+  df <- .normalize_bubble_scores(df)
+
+  if (any(duplicated(df[, c("Method", "Metric")]))) {
+    df <- stats::aggregate(
+      cbind(Score_Norm, Score_Raw) ~ Method + Metric + Category,
+      data = df, FUN = mean, na.rm = TRUE
+    )
+  }
+
+  is_hib <- df$Metric %in% .HIGHER_IS_BETTER_METRICS
+  disp_m <- ifelse(df$Metric %in% names(.METRIC_DISPLAY_LABELS), .METRIC_DISPLAY_LABELS[df$Metric], df$Metric)
+  dir_symbol <- ifelse(is_hib, "\u2191", "\u2193")
+  df$Display_Metric <- paste0(disp_m, " (", dir_symbol, ")")
+
+  unique_metrics <- unique(df$Metric)
+  canonical_order <- names(.METRIC_DISPLAY_LABELS)
+  ordered_m <- intersect(canonical_order, unique_metrics)
+  ordered_m <- c(ordered_m, setdiff(unique_metrics, ordered_m))
+
+  disp_levels <- character(length(ordered_m))
+  for (i in seq_along(ordered_m)) {
+    m_i <- ordered_m[i]
+    dm <- if (m_i %in% names(.METRIC_DISPLAY_LABELS)) .METRIC_DISPLAY_LABELS[[m_i]] else m_i
+    ds <- if (m_i %in% .HIGHER_IS_BETTER_METRICS) "\u2191" else "\u2193"
+    disp_levels[i] <- paste0(dm, " (", ds, ")")
+  }
+  df$Display_Metric <- factor(df$Display_Metric, levels = disp_levels)
+
+  default_sim_cols <- c(
+    "scDesign3" = "#1E8449",
+    "Splatter"  = "#2E86AB",
+    "SCRIP"     = "#E67E22",
+    "SymSim"    = "#8E44AD",
+    "dyngen"    = "#D4AC0D",
+    "simATAC"   = "#C0392B"
+  )
+  sim_methods <- unique(df$Method)
+  if (is.null(palette)) {
+    active_pal <- default_sim_cols[sim_methods]
+    missing_sims <- sim_methods[is.na(active_pal)]
+    if (length(missing_sims) > 0) {
+      extra_cols <- grDevices::hcl.colors(length(missing_sims), palette = "Dark 3")
+      names(extra_cols) <- missing_sims
+      active_pal[missing_sims] <- extra_cols
+    }
+  } else {
+    active_pal <- palette
+  }
+
+  y_var <- if (score_type == "normalized") "Score_Norm" else "Score_Raw"
+  df$Value_Label <- if (score_type == "normalized") {
+    sprintf("%.2f", df$Score_Norm)
+  } else {
+    ifelse(abs(df$Score_Raw) >= 100, sprintf("%.1f", df$Score_Raw),
+    ifelse(abs(df$Score_Raw) >= 1,   sprintf("%.2f", df$Score_Raw),
+    sprintf("%.3f", df$Score_Raw)))
+  }
+
+  n_m <- length(unique(df$Metric))
+  ncol_use <- if (!is.null(ncol)) ncol else if (n_m <= 4) n_m else 4
+
+  title_txt <- sprintf("Category Metric Benchmark: %s", category)
+  sub_txt <- if (score_type == "normalized") {
+    "Standardized Fidelity Scores in [0, 1] per simulator (\u2191 Higher is Better; distance/error inverted)"
+  } else {
+    "Original unnormalized raw metric scores (\u2191 = Higher is better, \u2193 = Lower is better)"
+  }
+  cap_txt <- if (score_type == "normalized") {
+    "Bars represent standardized fidelity scores [0, 1] across evaluated metrics (1.0 = best observed agreement with reference).\nArrows in panel headers indicate optimization polarity: (\u2191) higher is better, (\u2193) lower is better."
+  } else {
+    "Bars represent unnormalized raw metric scores in native measurement units.\nArrows in panel headers indicate optimization polarity: (\u2191) higher is better, (\u2193) lower is better."
+  }
+  y_lab <- if (score_type == "normalized") "Fidelity Score [0, 1] (\u2191 Better)" else "Raw Metric Score"
+
+  p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$Method, y = .data[[y_var]], fill = .data$Method)) +
+    ggplot2::geom_col(width = 0.65, color = "#1E293B", linewidth = 0.4, alpha = 0.88) +
+    ggplot2::geom_text(
+      ggplot2::aes(label = .data$Value_Label),
+      vjust = ifelse(df[[y_var]] >= 0, -0.35, 1.2),
+      size = base_size * 0.26, fontface = "bold", color = "#1E293B"
+    ) +
+    ggplot2::scale_fill_manual(values = active_pal, name = "Simulator") +
+    ggplot2::facet_wrap(~ Display_Metric, scales = "free_y", ncol = ncol_use) +
+    ggplot2::labs(
+      title    = title_txt,
+      subtitle = sub_txt,
+      x        = "Simulator Framework",
+      y        = y_lab,
+      caption  = cap_txt
+    ) +
+    .pub_theme(base_size = base_size) +
+    ggplot2::theme(
+      legend.position  = "none",
+      axis.text.x      = ggplot2::element_text(angle = 35, hjust = 1, face = "bold", size = base_size * 0.82),
+      plot.title       = ggplot2::element_text(face = "bold", size = base_size * 1.15, hjust = 0.5),
+      plot.subtitle    = ggplot2::element_text(size = base_size * 0.88, hjust = 0.5, color = "#566573"),
+      strip.text       = ggplot2::element_text(face = "bold", size = base_size * 0.78, lineheight = 0.92, hjust = 0.5),
+      strip.background = ggplot2::element_rect(fill = "#F2F4F4", color = "#D5D8DC", linewidth = 0.5),
+      panel.spacing    = grid::unit(0.7, "lines")
+    )
+
+  if (score_type == "normalized") {
+    p <- p +
+      ggplot2::geom_hline(yintercept = 1.0, linetype = "dashed", color = "#10B981", linewidth = 0.5, alpha = 0.7) +
+      ggplot2::geom_hline(yintercept = 0.5, linetype = "dotted", color = "#94A3B8", linewidth = 0.5, alpha = 0.7) +
+      ggplot2::scale_y_continuous(limits = c(0, 1.15), breaks = seq(0, 1, 0.25))
+  } else {
+    p <- p + ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0.05, 0.22)))
+  }
+
+  p
+}
+
+
+# ============================================================================
 # 2b. plot_scalability_benchmark()
 # ============================================================================
 

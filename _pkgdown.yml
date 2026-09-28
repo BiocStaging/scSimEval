@@ -293,6 +293,7 @@ reference:
       - plot_distribution_qc
       - plot_scalability_benchmark
       - plot_metric_boxplots
+      - plot_category_metric_bars
       - plot_metric_heatmap
       - plot_metric_pca
       - plot_metric_mds
