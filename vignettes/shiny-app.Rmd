@@ -183,9 +183,9 @@ library sizes, and zero-inflation curves between reference and simulated cells.
 |---------|---------|
 | **Scalability View** | 4-Panel Comprehensive · Runtime Only · Peak RAM Only · Runtime vs Memory Trade-Off · Resource Cost Footprint |
 
-### Sub-panel 4 — Metric Boxplots
+### Sub-panel 4 — Metric Plots
 
-`plot_metric_boxplots()` / `plot_individual_metric_bar()` — two view modes.
+`plot_metric_boxplots()` / `plot_category_metric_bars()` / `plot_individual_metric_bar()` — two view modes.
 
 **Individual Metric mode:**
 
@@ -199,7 +199,7 @@ library sizes, and zero-inflation curves between reference and simulated cells.
 
 | Control | Description |
 |---------|-------------|
-| **Choose Category** | All 8 combined, or one specific category |
+| **Choose Category** | All 8 combined (displays 8-category distribution boxplots via `plot_metric_boxplots()`), or an individual category (displays faceted barplots across all category metrics via `plot_category_metric_bars()`) |
 | **Score Type** | Normalized [0, 1] · Raw Value |
 
 ### Sub-panel 5 — Metric Heatmap
@@ -388,8 +388,9 @@ Every Shiny control maps directly to a documented R function:
 | Evaluation Summary | `plot_evaluation_summary()` |
 | Distribution QC | `plot_distribution_qc()` |
 | Scalability Benchmark | `plot_scalability_benchmark()` |
-| Metric Boxplots (category) | `plot_metric_boxplots()` |
-| Metric Boxplots (individual) | `plot_individual_metric_bar()` |
+| Metric Plots (all categories) | `plot_metric_boxplots()` |
+| Metric Plots (by category) | `plot_category_metric_bars()` |
+| Metric Plots (individual) | `plot_individual_metric_bar()` |
 | Metric Heatmap | `plot_metric_heatmap()` |
 | PCA Ordination | `plot_metric_pca()` |
 | MDS Metric Space | `plot_metric_mds()` |

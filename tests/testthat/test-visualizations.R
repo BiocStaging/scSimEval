@@ -23,6 +23,20 @@ test_that("plot_metric_boxplots returns a valid ggplot object", {
   expect_s3_class(p, "ggplot")
 })
 
+test_that("plot_category_metric_bars returns a valid ggplot object", {
+  demo_df <- data.frame(
+    Method = rep(c("Splatter", "scDesign3", "SymSim"), each = 2),
+    Category = "(I) Distributional Properties",
+    Metric = rep(c("KS", "Wasserstein"), 3),
+    Score = runif(6, 0.4, 0.95)
+  )
+  p_norm <- plot_category_metric_bars(demo_df, category = "(I) Distributional Properties", score_type = "normalized")
+  expect_s3_class(p_norm, "ggplot")
+
+  p_raw <- plot_category_metric_bars(demo_df, category = "(I) Distributional Properties", score_type = "raw")
+  expect_s3_class(p_raw, "ggplot")
+})
+
 test_that("plot_scalability_benchmark returns valid ggplot and patchwork objects", {
   demo_sc <- data.frame(
     Method = rep(c("Splatter", "scDesign3", "SymSim"), each = 2),

@@ -1084,11 +1084,12 @@ ui <- page_navbar(
         )
       ),
       
-      # Sub-panel 4: Metric Boxplots
+      # Sub-panel 4: Metric Plots
       nav_panel(
-        "4. Metric Boxplots",
+        "4. Metric Plots",
         card(
-          card_header("Metric Boxplots & Individual Metric Barplots (plot_metric_boxplots / plot_individual_metric_bar)"),
+          fill = FALSE,
+          card_header("Metric Plots: Category Distributions & Metric Barplots (plot_metric_boxplots / plot_category_metric_bars / plot_individual_metric_bar)"),
           card_body(
             fluidRow(
               column(12,
@@ -1158,7 +1159,7 @@ ui <- page_navbar(
               )
             ),
             hr(),
-            plotOutput("plot_metric_boxes", height = "560px")
+            uiOutput("ui_plot_metric_boxes")
           )
         )
       ),
@@ -1451,7 +1452,7 @@ ui <- page_navbar(
               tags$li("Comparative Bubble Matrix"),
               tags$li("Overall Evaluation Summary"),
               tags$li("Scalability Benchmark"),
-              tags$li("Metric Boxplots by Category"),
+              tags$li("Metric Plots by Category (Boxplots / Barplots)"),
               tags$li("Performance Heatmap"),
               tags$li("PCA Simulator Ordination"),
               tags$li("MDS Ordination"),
@@ -1479,7 +1480,7 @@ ui <- page_navbar(
                   "Comparative Bubble Matrix" = "bubble",
                   "Overall Evaluation Summary" = "summary",
                   "Scalability Benchmark" = "scalability",
-                  "Metric Boxplots by Category" = "boxplots",
+                  "Metric Plots by Category (Boxplots / Barplots)" = "boxplots",
                   "Performance Heatmap" = "heatmap",
                   "Simulator PCA Ordination (Metrics)" = "pca_metric",
                   "Simulator MDS Ordination" = "mds_metric",
@@ -1857,7 +1858,7 @@ ui <- page_navbar(
                       tags$li(tags$b("1. Evaluation Summary: "), "Rank-ordered horizontal bar chart comparing simulator performances across each of the 8 canonical categories, with optional numerical score labels."),
                       tags$li(tags$b("2. Distribution QC: "), "14-panel comparative expression density, library size, and zero-inflation curves contrasting simulated data directly against real reference cells."),
                       tags$li(tags$b("3. Scalability Benchmark: "), "4-panel runtime and memory dashboards with Pareto efficiency frontiers, identifying methods that balance fidelity with computational throughput."),
-                      tags$li(tags$b("4. Metric Boxplots: "), "Switch between category-wide distribution boxplots or clean ranked individual barplots with score direction indicators (+) and (-)."),
+                      tags$li(tags$b("4. Metric Plots: "), "Switch between category-wide distribution boxplots, faceted category metric barplots, or clean ranked individual barplots with score direction indicators (+) and (-)."),
                       tags$li(tags$b("5. Metric Heatmap: "), "Method-by-metric grid displaying exact unnormalized raw scores in bold text with direction-aware standardized fill colors. Includes dynamic height/width sliders and category filtering."),
                       tags$li(tags$b("6. PCA Ordination: "), "Principal Component Analysis projecting simulators into multi-dimensional performance space alongside discriminating vector loadings."),
                       tags$li(tags$b("7. MDS Metric Space: "), "Multi-Dimensional Scaling ordination capturing non-linear simulator performance geometries."),
@@ -2819,7 +2820,7 @@ server <- function(input, output, session) {
     content = function(file) { grDevices::pdf(file, width = 13, height = 8); print(scale_bench_reactive()); grDevices::dev.off() }
   )
   
-  # 4. Metric Boxplots
+  # 4. Metric Plots
   output$ui_box_metric_picker <- renderUI({
     req(rv$benchmark_df, input$sel_box_cat_first)
     sub_df <- rv$benchmark_df[rv$benchmark_df$Category == input$sel_box_cat_first, , drop = FALSE]
@@ -2839,23 +2840,57 @@ server <- function(input, output, session) {
         base_size      = 12
       )
     } else {
-      cat_filter <- if (identical(input$sel_box_cat_group, "all")) NULL else input$sel_box_cat_group
-      plot_metric_boxplots(
-        benchmark_data = rv$benchmark_df,
-        categories = cat_filter,
-        score_type = input$sel_box_score_type,
-        facet_by = if (is.null(cat_filter)) "category" else "metric",
-        base_size = 11
-      )
+      if (identical(input$sel_box_cat_group, "all")) {
+        plot_metric_boxplots(
+          benchmark_data = rv$benchmark_df,
+          categories     = NULL,
+          score_type     = input$sel_box_score_type,
+          facet_by       = "category",
+          base_size      = 11
+        )
+      } else {
+        plot_category_metric_bars(
+          benchmark_data = rv$benchmark_df,
+          category       = input$sel_box_cat_group,
+          score_type     = input$sel_box_score_type,
+          base_size      = 11
+        )
+      }
     }
   })
+
+  output$ui_plot_metric_boxes <- renderUI({
+    h <- 560
+    if (identical(input$opt_box_view_mode, "individual")) {
+      h <- 520
+    } else {
+      if (!identical(input$sel_box_cat_group, "all") && !is.null(rv$benchmark_df)) {
+        sub_df <- rv$benchmark_df[rv$benchmark_df$Category == input$sel_box_cat_group, , drop = FALSE]
+        n_m <- length(unique(sub_df$Metric))
+        if (n_m <= 4) {
+          h <- 440
+        } else if (n_m <= 8) {
+          h <- 640
+        } else if (n_m <= 12) {
+          h <- 820
+        } else {
+          h <- 960
+        }
+      } else {
+        h <- 580
+      }
+    }
+    plotOutput("plot_metric_boxes", height = paste0(h, "px"))
+  })
+
   output$plot_metric_boxes <- renderPlot({ metric_box_reactive() })
+
   output$download_box_jpeg <- downloadHandler(
     filename = function() {
       if (identical(input$opt_box_view_mode, "individual")) {
         paste0("scSimEval_metric_bar_", gsub("[^A-Za-z0-9_-]", "_", input$sel_box_metric_single), "_", Sys.Date(), ".jpeg")
       } else {
-        paste0("scSimEval_metric_boxplot_", Sys.Date(), ".jpeg")
+        paste0("scSimEval_metric_plot_", Sys.Date(), ".jpeg")
       }
     },
     content = function(file) {
@@ -2869,7 +2904,7 @@ server <- function(input, output, session) {
       if (identical(input$opt_box_view_mode, "individual")) {
         paste0("scSimEval_metric_bar_", gsub("[^A-Za-z0-9_-]", "_", input$sel_box_metric_single), "_", Sys.Date(), ".pdf")
       } else {
-        paste0("scSimEval_metric_boxplot_", Sys.Date(), ".pdf")
+        paste0("scSimEval_metric_plot_", Sys.Date(), ".pdf")
       }
     },
     content = function(file) {
@@ -2880,13 +2915,51 @@ server <- function(input, output, session) {
       grDevices::dev.off()
     }
   )
+
+  get_box_cat_dims <- function() {
+    if (identical(input$sel_box_cat_group, "all") || is.null(rv$benchmark_df)) {
+      return(list(w = 13, h = 7.5))
+    }
+    sub_df <- rv$benchmark_df[rv$benchmark_df$Category == input$sel_box_cat_group, , drop = FALSE]
+    n_m <- length(unique(sub_df$Metric))
+    if (n_m <= 4) {
+      list(w = 11, h = 5.5)
+    } else if (n_m <= 8) {
+      list(w = 13, h = 7.5)
+    } else {
+      list(w = 14, h = 10.5)
+    }
+  }
+
   output$download_box_cat_jpeg <- downloadHandler(
-    filename = function() { paste0("scSimEval_category_boxplots_", Sys.Date(), ".jpeg") },
-    content = function(file) { export_single_jpeg(file, metric_box_reactive(), width = 13, height = 8, dpi = 600) }
+    filename = function() {
+      if (identical(input$sel_box_cat_group, "all")) {
+        paste0("scSimEval_category_boxplots_", Sys.Date(), ".jpeg")
+      } else {
+        cat_slug <- gsub("[^A-Za-z0-9_-]", "_", input$sel_box_cat_group)
+        paste0("scSimEval_category_barplots_", cat_slug, "_", Sys.Date(), ".jpeg")
+      }
+    },
+    content = function(file) {
+      dims <- get_box_cat_dims()
+      export_single_jpeg(file, metric_box_reactive(), width = dims$w, height = dims$h, dpi = 600)
+    }
   )
   output$download_box_cat_pdf <- downloadHandler(
-    filename = function() { paste0("scSimEval_category_boxplots_", Sys.Date(), ".pdf") },
-    content = function(file) { grDevices::pdf(file, width = 13, height = 8); print(metric_box_reactive()); grDevices::dev.off() }
+    filename = function() {
+      if (identical(input$sel_box_cat_group, "all")) {
+        paste0("scSimEval_category_boxplots_", Sys.Date(), ".pdf")
+      } else {
+        cat_slug <- gsub("[^A-Za-z0-9_-]", "_", input$sel_box_cat_group)
+        paste0("scSimEval_category_barplots_", cat_slug, "_", Sys.Date(), ".pdf")
+      }
+    },
+    content = function(file) {
+      dims <- get_box_cat_dims()
+      grDevices::pdf(file, width = dims$w, height = dims$h)
+      print(metric_box_reactive())
+      grDevices::dev.off()
+    }
   )
   
   # 5. Metric Performance Heatmap (Interactive dimensions & Category filtering)
