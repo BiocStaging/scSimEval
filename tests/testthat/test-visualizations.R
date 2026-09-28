@@ -37,6 +37,21 @@ test_that("plot_category_metric_bars returns a valid ggplot object", {
   expect_s3_class(p_raw, "ggplot")
 })
 
+test_that("compute_method_leaderboard computes valid ranking table", {
+  demo_df <- data.frame(
+    Method = rep(c("Splatter", "scDesign3", "SymSim"), each = 2),
+    Category = "(I) Distributional Properties",
+    Metric = rep(c("KS", "Wasserstein"), 3),
+    Score = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
+  )
+  lb <- compute_method_leaderboard(demo_df)
+  expect_s3_class(lb, "data.frame")
+  expect_named(lb, c("Overall_Rank", "Method", "Average_Fidelity", "Fidelity_Score"))
+  expect_equal(nrow(lb), 3)
+  expect_equal(lb$Overall_Rank, c(1, 2, 3))
+  expect_true(all(lb$Fidelity_Score >= 0 & lb$Fidelity_Score <= 1))
+})
+
 test_that("plot_scalability_benchmark returns valid ggplot and patchwork objects", {
   demo_sc <- data.frame(
     Method = rep(c("Splatter", "scDesign3", "SymSim"), each = 2),

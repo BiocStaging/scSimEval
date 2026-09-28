@@ -301,6 +301,7 @@ reference:
       - compute_dataset_embeddings
       - plot_dataset_embeddings
       - compute_embedding_quality_metrics
+      - compute_method_leaderboard
 
   - title: "Interactive Graphical Interface (Shiny App Studio)"
     desc: "Interactive Shiny web application providing point-and-click simulation benchmarking, UMAP/t-SNE embedding explorations, and dynamic data packaging."

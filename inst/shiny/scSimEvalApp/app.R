@@ -713,14 +713,16 @@ ui <- page_navbar(
         padding: 8px 14px !important;
       }
       
-      /* Horizontal scroll container for big bubble plot */
+      /* Horizontal & Vertical scroll container for big bubble plot */
       .bubble-scroll-container {
         overflow-x: auto;
-        overflow-y: hidden;
+        overflow-y: auto;
+        max-height: 720px;
         border: 1px solid #E2E8F0;
         border-radius: 8px;
         background: #FFFFFF;
         padding: 12px;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.03);
       }
       
       /* Clean scientific inputs */
@@ -992,13 +994,43 @@ ui <- page_navbar(
         downloadButton("download_bubble_pdf", "Download Vector PDF", class = "btn btn-outline-secondary w-100")
       ),
       
-      card(
-        card_header("Comparative Simulation Fidelity Bubble Matrix (All Datasets)"),
-        card_body(
-          p("Each column represents a simulator method; each row represents a curated evaluation metric. Bubble size reflects standardized fidelity (larger bubbles = higher fidelity to reference). Color indicates biological category.", style = "font-size: 0.9rem; color: #555;"),
-          div(
-            class = "bubble-scroll-container",
-            uiOutput("ui_bubble_plot_render")
+      navset_pill(
+        id = "bubble_matrix_subtabs",
+        selected = "Comparative Bubble Matrix Figure",
+        
+        # Subtab 1: Figure
+        nav_panel(
+          "Comparative Bubble Matrix Figure",
+          card(
+            card_header("Comparative Simulation Fidelity Bubble Matrix (All Datasets)"),
+            card_body(
+              p("Each column represents a simulator method; each row represents a curated evaluation metric. Bubble size reflects standardized fidelity (larger bubbles = higher fidelity to reference). Color indicates biological category.", style = "font-size: 0.9rem; color: #555;"),
+              div(
+                class = "bubble-scroll-container",
+                uiOutput("ui_bubble_plot_render")
+              )
+            )
+          )
+        ),
+        
+        # Subtab 2: Fidelity Leaderboard (Right After Figure)
+        nav_panel(
+          "Fidelity Leaderboard",
+          card(
+            card_header(
+              class = "d-flex justify-content-between align-items-center py-2",
+              tags$span(tags$b("Accurate Benchmark Results: Overall Simulator Fidelity Leaderboard")),
+              downloadButton("download_leaderboard_csv", "Download Leaderboard (CSV)", class = "btn btn-sm btn-outline-primary")
+            ),
+            card_body(
+              p(
+                "Overall simulator rankings computed across all 62 curated benchmark measures. ",
+                "Metrics are direction-inverted (so lower error, runtime, and memory are recognized as superior) ",
+                "and min-max standardized into fidelity scores in [0.00, 1.00] (higher % represents superior agreement with empirical reference):",
+                style = "font-size: 0.88rem; color: #555; margin-bottom: 10px;"
+              ),
+              DTOutput("table_leaderboard_dt")
+            )
           )
         )
       )
@@ -1726,36 +1758,46 @@ ui <- page_navbar(
             tags$div(
               class = "row g-3 my-2",
               tags$div(
-                class = "col-md-4",
+                class = "col-md-3",
                 tags$div(
                   style = "background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; padding: 14px 16px; height: 100%;",
                   h6(tags$b("1. Direction Inversion"), style = "color: #1B4F72;"),
                   p("Metrics where lower values indicate superior performance (such as statistical distance, error, and runtime) are direction-inverted:"),
-                  tags$p(tags$code("Inverted = Maximum - Value"), style = "text-align: center; font-weight: bold;"),
-                  p("This ensures that higher numerical values universally represent superior simulation fidelity.", style = "font-size: 0.86rem; color: #555; margin-bottom: 0;")
+                  tags$p(tags$code("Inverted = Max - Value"), style = "text-align: center; font-weight: bold;"),
+                  p("This ensures that higher numerical values universally represent superior simulation fidelity.", style = "font-size: 0.85rem; color: #555; margin-bottom: 0;")
                 )
               ),
               tags$div(
-                class = "col-md-4",
+                class = "col-md-3",
                 tags$div(
                   style = "background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; padding: 14px 16px; height: 100%;",
-                  h6(tags$b("2. Min-Max Standardization"), style = "color: #1B4F72;"),
-                  p("All metrics are subsequently rescaled across methods into a uniform interval:"),
-                  tags$p(tags$code("Score = (Value - Min) / (Max - Min)"), style = "text-align: center; font-weight: bold;"),
-                  p("Standardized scores strictly fall between 0.00 (poorest performer) and 1.00 (optimal agreement with reference).", style = "font-size: 0.86rem; color: #555; margin-bottom: 0;")
+                  h6(tags$b("2. Min-Max Scaling"), style = "color: #1B4F72;"),
+                  p("All metrics are subsequently rescaled across methods into a uniform [0, 1] interval:"),
+                  tags$p(tags$code("Score = (Val - Min) / (Max - Min)"), style = "text-align: center; font-weight: bold;"),
+                  p("Standardized scores strictly fall between 0.00 (poorest performer) and 1.00 (optimal agreement with reference).", style = "font-size: 0.85rem; color: #555; margin-bottom: 0;")
                 )
               ),
               tags$div(
-                class = "col-md-4",
+                class = "col-md-3",
                 tags$div(
                   style = "background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; padding: 14px 16px; height: 100%;",
-                  h6(tags$b("3. Visual Mapping Rules"), style = "color: #1B4F72;"),
+                  h6(tags$b("3. Composite Leaderboard"), style = "color: #1B4F72;"),
+                  p("Overall simulator fidelity is calculated by averaging all 62 standardized scores:"),
+                  tags$p(tags$code("Fidelity = mean(Score_Norm)"), style = "text-align: center; font-weight: bold;"),
+                  p("Reported as Fidelity Score in [0, 1] and Average Fidelity (%). 100% represents top performance on every evaluated metric.", style = "font-size: 0.85rem; color: #555; margin-bottom: 0;")
+                )
+              ),
+              tags$div(
+                class = "col-md-3",
+                tags$div(
+                  style = "background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; padding: 14px 16px; height: 100%;",
+                  h6(tags$b("4. Visual Mapping Rules"), style = "color: #1B4F72;"),
                   tags$ul(
-                    style = "font-size: 0.86rem; color: #334155; padding-left: 18px; margin-bottom: 0;",
-                    tags$li(tags$b("Bubble Diameter: "), "Directly proportional to standardized score (larger = higher fidelity)."),
-                    tags$li(tags$b("Top-Performer Glyphs: "), "Scores \u2265 0.96 rendered with bold square glyphs; others as circles."),
+                    style = "font-size: 0.84rem; color: #334155; padding-left: 16px; margin-bottom: 0;",
+                    tags$li(tags$b("Bubble Diameter: "), "Proportional to standardized fidelity score."),
+                    tags$li(tags$b("Top-Performer Glyphs: "), "Scores \u2265 0.96 rendered with bold square glyphs."),
                     tags$li(tags$b("Category Colors: "), "Distinct hues assigned to each evaluation category."),
-                    tags$li(tags$b("Rank Ordering: "), "Simulators ordered top-to-bottom by composite average score.")
+                    tags$li(tags$b("Rank Ordering: "), "Simulators ordered top-to-bottom by composite average fidelity.")
                   )
                 )
               )
@@ -2718,25 +2760,80 @@ server <- function(input, output, session) {
   # Method Ranking Leaderboard
   leaderboard_reactive <- reactive({
     req(rv$benchmark_df)
-    df <- rv$benchmark_df
-    score_col <- if ("Score" %in% colnames(df)) "Score" else if ("Value" %in% colnames(df)) "Value" else NULL
-    req(score_col)
-    
-    leaderboard <- aggregate(
-      df[[score_col]],
-      by = list(Method = df$Method),
-      FUN = mean,
-      na.rm = TRUE
-    )
-    colnames(leaderboard)[2] <- "Score"
-    
-    leaderboard$Overall_Rank <- rank(-leaderboard$Score, ties.method = "min")
-    leaderboard <- leaderboard[order(leaderboard$Overall_Rank), ]
-    leaderboard$Average_Fidelity <- paste0(round(leaderboard$Score * 100, 1), "%")
-    leaderboard$Fidelity_Score <- round(leaderboard$Score, 4)
-    
-    leaderboard[, c("Overall_Rank", "Method", "Average_Fidelity", "Fidelity_Score")]
+    if (exists("compute_method_leaderboard", mode = "function")) {
+      compute_method_leaderboard(rv$benchmark_df)
+    } else if (requireNamespace("scSimEval", quietly = TRUE) && exists("compute_method_leaderboard", where = asNamespace("scSimEval"))) {
+      scSimEval::compute_method_leaderboard(rv$benchmark_df)
+    } else {
+      # Robust inline fallback
+      .ingest_data <- .ingest_bubble_data(rv$benchmark_df)
+      .norm_data <- .normalize_bubble_scores(.ingest_data)
+      agg <- stats::aggregate(Normalized_Score ~ Method, data = .norm_data, FUN = mean, na.rm = TRUE)
+      agg <- agg[order(-agg$Normalized_Score), ]
+      data.frame(
+        Overall_Rank = seq_len(nrow(agg)),
+        Method = as.character(agg$Method),
+        Average_Fidelity = paste0(sprintf("%.1f", agg$Normalized_Score * 100), "%"),
+        Fidelity_Score = round(agg$Normalized_Score, 4),
+        stringsAsFactors = FALSE
+      )
+    }
   })
+
+  output$table_leaderboard_dt <- renderDT({
+    req(rv$benchmark_df)
+    lb <- leaderboard_reactive()
+    display_df <- lb
+    colnames(display_df) <- c("Overall Rank", "Method", "Average Fidelity", "Fidelity Score")
+    
+    datatable(
+      display_df,
+      options = list(
+        dom = "t",
+        pageLength = 25,
+        ordering = FALSE,
+        columnDefs = list(list(className = "dt-center", targets = "_all"))
+      ),
+      rownames = FALSE,
+      class = "compact stripe hover border"
+    ) %>%
+      formatStyle(
+        "Overall Rank",
+        fontWeight = "bold",
+        backgroundColor = styleEqual(
+          c(1, 2, 3),
+          c("#FFF9DB", "#F1F3F5", "#FFF4E6")
+        )
+      ) %>%
+      formatStyle(
+        "Average Fidelity",
+        fontWeight = "bold",
+        color = "#1D72B8"
+      ) %>%
+      formatStyle(
+        "Fidelity Score",
+        fontFamily = "monospace",
+        fontWeight = "bold"
+      )
+  })
+
+  output$download_leaderboard_csv <- downloadHandler(
+    filename = function() { paste0("scSimEval_benchmark_leaderboard_", Sys.Date(), ".csv") },
+    content = function(file) {
+      lb <- leaderboard_reactive()
+      colnames(lb) <- c("Overall Rank", "Method", "Average Fidelity", "Fidelity Score")
+      utils::write.csv(lb, file, row.names = FALSE)
+    }
+  )
+
+  output$download_leaderboard_csv_side <- downloadHandler(
+    filename = function() { paste0("scSimEval_benchmark_leaderboard_", Sys.Date(), ".csv") },
+    content = function(file) {
+      lb <- leaderboard_reactive()
+      colnames(lb) <- c("Overall Rank", "Method", "Average Fidelity", "Fidelity Score")
+      utils::write.csv(lb, file, row.names = FALSE)
+    }
+  )
   
   output$download_bubble_jpeg <- downloadHandler(
     filename = function() { paste0("scSimEval_bubble_matrix_", Sys.Date(), ".jpeg") },
