@@ -131,6 +131,10 @@ Bubble **diameter** is proportional to the normalized fidelity score.
 Scores ≥ 0.96 are rendered as bold square glyphs.
 Simulators are rank-ordered top-to-bottom by composite average score.
 
+The main panel organizes content into two dedicated subtabs:
+1. **Comparative Bubble Matrix Figure**: Displays the full 62-metric matrix figure with smooth horizontal panning at publication resolution.
+2. **Fidelity Leaderboard**: Positioned right after the figure subtab, displaying the complete rankings table (Overall Rank, Method, Average Fidelity %, Fidelity Score) with an instant CSV export button.
+
 ### Sidebar Controls
 
 | Control | Options | Default |
@@ -149,6 +153,7 @@ Simulators are rank-ordered top-to-bottom by composite average score.
 |--------|--------|
 | **Download JPEG (600 DPI)** | Publication-grade `.jpeg` |
 | **Download Vector PDF** | Scalable `.pdf` |
+| **Download Leaderboard (CSV)** | Tidy CSV table of accurate method rankings and fidelity scores |
 
 ---
 

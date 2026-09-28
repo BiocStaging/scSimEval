@@ -346,6 +346,18 @@ plot_evaluation_summary(
 )
 ```
 
+### 12.2b Simulator Performance Leaderboard (`compute_method_leaderboard`)
+
+To obtain exact numeric rankings and composite fidelity scores across all 62 criteria, `compute_method_leaderboard()` extracts the definitive simulator performance leaderboard:
+
+```r
+# Generate the method performance leaderboard
+leaderboard <- compute_method_leaderboard(demo$benchmark_summary_table)
+knitr::kable(leaderboard, caption = "Overall Simulator Performance Leaderboard (Ranked by Standardized Fidelity)")
+```
+
+Every metric is first converted into a direction-aware standardized score in $[0.00, 1.00]$ (where $1.00$ universally represents best observed performance; distance and error measures are inverted). The **Fidelity_Score** is the arithmetic mean across all standardized metric scores, and **Average_Fidelity** expresses this as an overall fidelity percentage ($0\%$ to $100\%$).
+
 ### 12.3 Metric Score Distributions Across Categories (`plot_metric_boxplots`)
 
 To inspect variability across individual metrics and simulators, `plot_metric_boxplots()` displays boxplots with jittered data points across all 8 categories:

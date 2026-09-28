@@ -3192,3 +3192,51 @@ plot_benchmark_summary_bars <- plot_evaluation_summary
 #' @rdname plot_evaluation_summary
 #' @export
 plot_summary_bars <- plot_evaluation_summary
+
+
+# ============================================================================
+# 11. compute_method_leaderboard()
+# ============================================================================
+
+#' Compute Simulator Method Performance Leaderboard
+#'
+#' Computes the overall performance leaderboard ranking simulation methods across
+#' all benchmark evaluation metrics. Metrics are first direction-inverted and min-max
+#' standardized into fidelity scores in [0, 1] (where 1.0 represents best observed performance).
+#' Simulators are then rank-ordered by mean overall fidelity score.
+#'
+#' @param benchmark_data A benchmark data.frame (such as \code{demo$benchmark_summary_table} or output from
+#'   \code{\link{evaluate_simulation_accuracy}()}) or a named list of benchmark result tables.
+#'
+#' @return A \code{data.frame} with columns:
+#' \itemize{
+#'   \item \code{Overall_Rank}: Integer rank (1 = top-performing simulator).
+#'   \item \code{Method}: Simulator method name.
+#'   \item \code{Average_Fidelity}: Formatted percentage string (e.g., \code{"58.5\%"}).
+#'   \item \code{Fidelity_Score}: Numeric composite fidelity score in [0, 1] rounded to 4 decimals.
+#' }
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+#' lb <- compute_method_leaderboard(res)
+#' @export
+compute_method_leaderboard <- function(benchmark_data) {
+  df <- .ingest_bubble_data(benchmark_data)
+  df_norm <- .normalize_bubble_scores(df)
+
+  leaderboard <- stats::aggregate(
+    Score_Norm ~ Method,
+    data = df_norm,
+    FUN  = mean,
+    na.rm = TRUE
+  )
+  colnames(leaderboard)[2] <- "Score"
+
+  leaderboard$Overall_Rank     <- rank(-leaderboard$Score, ties.method = "min")
+  leaderboard                  <- leaderboard[order(leaderboard$Overall_Rank), ]
+  leaderboard$Average_Fidelity <- sprintf("%.1f%%", leaderboard$Score * 100)
+  leaderboard$Fidelity_Score   <- round(leaderboard$Score, 4)
+
+  leaderboard[, c("Overall_Rank", "Method", "Average_Fidelity", "Fidelity_Score"), drop = FALSE]
+}
+
