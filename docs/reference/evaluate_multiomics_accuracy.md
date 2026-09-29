@@ -503,9 +503,9 @@ evaluate_multiomics_accuracy(example_multiomics$ref_multi, example_multiomics$si
 #> 47                   ECDF_DiffArea  6.167456e-03                 rna
 #> 48                  Runs_Statistic -2.188896e+00                 rna
 #> 49                     Runs_PValue  1.430221e-02                 rna
-#> 50                     NN_Mismatch  5.333333e-02                 rna
-#> 51     Between_Dataset_Silh_Global  8.599858e-04                 rna
-#> 52      Between_Dataset_Silh_Local -3.129275e-03                 rna
+#> 50                     NN_Mismatch  6.000000e-02                 rna
+#> 51     Between_Dataset_Silh_Global -5.725631e-04                 rna
+#> 52      Between_Dataset_Silh_Local -2.740266e-03                 rna
 #> 53                             MAD  2.571903e-01                 rna
 #> 54                              KS  2.166667e-01                 rna
 #> 55                             MAE  2.473408e-01                 rna
@@ -594,9 +594,9 @@ evaluate_multiomics_accuracy(example_multiomics$ref_multi, example_multiomics$si
 #> 138                  ECDF_DiffArea  4.425170e-03                 rna
 #> 139                 Runs_Statistic -2.050782e+00                 rna
 #> 140                    Runs_PValue  2.014407e-02                 rna
-#> 141                    NN_Mismatch  5.666667e-02                 rna
-#> 142    Between_Dataset_Silh_Global  2.002014e-04                 rna
-#> 143     Between_Dataset_Silh_Local  4.805187e-03                 rna
+#> 141                    NN_Mismatch  3.333333e-02                 rna
+#> 142    Between_Dataset_Silh_Global  4.757416e-04                 rna
+#> 143     Between_Dataset_Silh_Local -6.881370e-03                 rna
 #> 144                    slope_error  2.560909e-01                 rna
 #> 145                 midpoint_error  2.624144e-01                 rna
 #> 146                 r2_discrepancy  1.646825e-01                 rna
@@ -654,9 +654,9 @@ evaluate_multiomics_accuracy(example_multiomics$ref_multi, example_multiomics$si
 #> 198                  ECDF_DiffArea  5.220982e-03                atac
 #> 199                 Runs_Statistic -8.554305e-01                atac
 #> 200                    Runs_PValue  1.961564e-01                atac
-#> 201                    NN_Mismatch  4.333333e-02                atac
-#> 202    Between_Dataset_Silh_Global  2.310724e-04                atac
-#> 203     Between_Dataset_Silh_Local -5.088907e-03                atac
+#> 201                    NN_Mismatch  5.333333e-02                atac
+#> 202    Between_Dataset_Silh_Global -5.432718e-04                atac
+#> 203     Between_Dataset_Silh_Local -2.786803e-03                atac
 #> 204                            MAD  3.899549e-01                atac
 #> 205                             KS  2.000000e-01                atac
 #> 206                            MAE  4.192301e-01                atac
@@ -746,8 +746,8 @@ evaluate_multiomics_accuracy(example_multiomics$ref_multi, example_multiomics$si
 #> 290                 Runs_Statistic -6.723876e-02                atac
 #> 291                    Runs_PValue  4.731958e-01                atac
 #> 292                    NN_Mismatch  5.000000e-02                atac
-#> 293    Between_Dataset_Silh_Global  7.789831e-05                atac
-#> 294     Between_Dataset_Silh_Local -2.612827e-03                atac
+#> 293    Between_Dataset_Silh_Global -3.996914e-04                atac
+#> 294     Between_Dataset_Silh_Local -8.226994e-04                atac
 #> 295                    slope_error  2.751402e-02                atac
 #> 296                 midpoint_error  8.887770e-03                atac
 #> 297                 r2_discrepancy  5.809628e-03                atac
@@ -980,9 +980,9 @@ evaluate_multiomics_accuracy(example_multiomics$ref_multi, example_multiomics$si
 #> 47                   ECDF_DiffArea  6.167456e-03
 #> 48                  Runs_Statistic -2.188896e+00
 #> 49                     Runs_PValue  1.430221e-02
-#> 50                     NN_Mismatch  5.333333e-02
-#> 51     Between_Dataset_Silh_Global  8.599858e-04
-#> 52      Between_Dataset_Silh_Local -3.129275e-03
+#> 50                     NN_Mismatch  6.000000e-02
+#> 51     Between_Dataset_Silh_Global -5.725631e-04
+#> 52      Between_Dataset_Silh_Local -2.740266e-03
 #> 53                             MAD  2.571903e-01
 #> 54                              KS  2.166667e-01
 #> 55                             MAE  2.473408e-01
@@ -1071,9 +1071,9 @@ evaluate_multiomics_accuracy(example_multiomics$ref_multi, example_multiomics$si
 #> 138                  ECDF_DiffArea  4.425170e-03
 #> 139                 Runs_Statistic -2.050782e+00
 #> 140                    Runs_PValue  2.014407e-02
-#> 141                    NN_Mismatch  5.666667e-02
-#> 142    Between_Dataset_Silh_Global  2.002014e-04
-#> 143     Between_Dataset_Silh_Local  4.805187e-03
+#> 141                    NN_Mismatch  3.333333e-02
+#> 142    Between_Dataset_Silh_Global  4.757416e-04
+#> 143     Between_Dataset_Silh_Local -6.881370e-03
 #> 144                    slope_error  2.560909e-01
 #> 145                 midpoint_error  2.624144e-01
 #> 146                 r2_discrepancy  1.646825e-01
@@ -1239,13 +1239,13 @@ evaluate_multiomics_accuracy(example_multiomics$ref_multi, example_multiomics$si
 #> [1] 0.01430221
 #> 
 #> $mod1_unimodal$cell_metrics$cell_cor$cell_cor_NN_Mismatch
-#> [1] 0.05333333
+#> [1] 0.06
 #> 
 #> $mod1_unimodal$cell_metrics$cell_cor$cell_cor_Between_Dataset_Silh_Global
-#> [1] 0.0008599858
+#> [1] -0.0005725631
 #> 
 #> $mod1_unimodal$cell_metrics$cell_cor$cell_cor_Between_Dataset_Silh_Local
-#> [1] -0.003129275
+#> [1] -0.002740266
 #> 
 #> 
 #> 
@@ -1528,13 +1528,13 @@ evaluate_multiomics_accuracy(example_multiomics$ref_multi, example_multiomics$si
 #> [1] 0.02014407
 #> 
 #> $mod1_unimodal$feature_metrics$gene_cor$gene_cor_NN_Mismatch
-#> [1] 0.05666667
+#> [1] 0.03333333
 #> 
 #> $mod1_unimodal$feature_metrics$gene_cor$gene_cor_Between_Dataset_Silh_Global
-#> [1] 0.0002002014
+#> [1] 0.0004757416
 #> 
 #> $mod1_unimodal$feature_metrics$gene_cor$gene_cor_Between_Dataset_Silh_Local
-#> [1] 0.004805187
+#> [1] -0.00688137
 #> 
 #> 
 #> 
@@ -5009,9 +5009,9 @@ evaluate_multiomics_accuracy(example_multiomics$ref_multi, example_multiomics$si
 #> 47                   ECDF_DiffArea  5.220982e-03
 #> 48                  Runs_Statistic -8.554305e-01
 #> 49                     Runs_PValue  1.961564e-01
-#> 50                     NN_Mismatch  4.333333e-02
-#> 51     Between_Dataset_Silh_Global  2.310724e-04
-#> 52      Between_Dataset_Silh_Local -5.088907e-03
+#> 50                     NN_Mismatch  5.333333e-02
+#> 51     Between_Dataset_Silh_Global -5.432718e-04
+#> 52      Between_Dataset_Silh_Local -2.786803e-03
 #> 53                             MAD  3.899549e-01
 #> 54                              KS  2.000000e-01
 #> 55                             MAE  4.192301e-01
@@ -5101,8 +5101,8 @@ evaluate_multiomics_accuracy(example_multiomics$ref_multi, example_multiomics$si
 #> 139                 Runs_Statistic -6.723876e-02
 #> 140                    Runs_PValue  4.731958e-01
 #> 141                    NN_Mismatch  5.000000e-02
-#> 142    Between_Dataset_Silh_Global  7.789831e-05
-#> 143     Between_Dataset_Silh_Local -2.612827e-03
+#> 142    Between_Dataset_Silh_Global -3.996914e-04
+#> 143     Between_Dataset_Silh_Local -8.226994e-04
 #> 144                    slope_error  2.751402e-02
 #> 145                 midpoint_error  8.887770e-03
 #> 146                 r2_discrepancy  5.809628e-03
@@ -5268,13 +5268,13 @@ evaluate_multiomics_accuracy(example_multiomics$ref_multi, example_multiomics$si
 #> [1] 0.1961564
 #> 
 #> $mod2_unimodal$cell_metrics$cell_cor$cell_cor_NN_Mismatch
-#> [1] 0.04333333
+#> [1] 0.05333333
 #> 
 #> $mod2_unimodal$cell_metrics$cell_cor$cell_cor_Between_Dataset_Silh_Global
-#> [1] 0.0002310724
+#> [1] -0.0005432718
 #> 
 #> $mod2_unimodal$cell_metrics$cell_cor$cell_cor_Between_Dataset_Silh_Local
-#> [1] -0.005088907
+#> [1] -0.002786803
 #> 
 #> 
 #> 
@@ -5560,10 +5560,10 @@ evaluate_multiomics_accuracy(example_multiomics$ref_multi, example_multiomics$si
 #> [1] 0.05
 #> 
 #> $mod2_unimodal$feature_metrics$gene_cor$gene_cor_Between_Dataset_Silh_Global
-#> [1] 7.789831e-05
+#> [1] -0.0003996914
 #> 
 #> $mod2_unimodal$feature_metrics$gene_cor$gene_cor_Between_Dataset_Silh_Local
-#> [1] -0.002612827
+#> [1] -0.0008226994
 #> 
 #> 
 #> 

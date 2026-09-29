@@ -221,7 +221,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -254,6 +254,23 @@
       <small>Source: <a href="https://github.com/kabilanbio/scSimEval/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.99.4" id="scsimeval-0994">scSimEval 0.99.4<a class="anchor" aria-label="anchor" href="#scsimeval-0994"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes--improvements-0-99-4">Bug Fixes &amp; Improvements<a class="anchor" aria-label="anchor" href="#bug-fixes--improvements-0-99-4"></a></h3>
+<ul><li>
+<strong><code><a href="../reference/compute_method_leaderboard.html">compute_method_leaderboard()</a></code> &amp; <code>.ingest_bubble_data()</code> Robustness:</strong>
+<ul><li>Added automatic fallback to <code>Method = "Simulation"</code> and <code>Category = "Uncategorized"</code> when evaluating single simulation accuracy results (<code><a href="../reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy()</a></code>) or pre-formed benchmark data frames lacking explicit method labels.</li>
+<li>Resolved <code>R CMD check</code> example failure in <code>man/compute_method_leaderboard.Rd</code>.</li>
+</ul></li>
+<li>
+<strong>Dependency &amp; Package Best Practices:</strong>
+<ul><li>Added <code>irlba</code> to <code>Suggests:</code> in <code>DESCRIPTION</code> to properly declare conditional SVD acceleration in <code><a href="../reference/compute_dataset_embeddings.html">compute_dataset_embeddings()</a></code>.</li>
+<li>Replaced direct <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> invocation with RNG-safe execution that preserves and restores <code>.Random.seed</code> on function exit in accordance with Bioconductor guidelines.</li>
+<li>Removed global <code>eval = FALSE</code> in <code>vignettes/shiny-app.Rmd</code> to satisfy Bioconductor vignette check requirements.</li>
+</ul></li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.99.3" id="scsimeval-0993">scSimEval 0.99.3<a class="anchor" aria-label="anchor" href="#scsimeval-0993"></a></h2>
 <div class="section level3">

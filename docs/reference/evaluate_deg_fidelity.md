@@ -136,9 +136,9 @@ evaluate_deg_fidelity(example_scrna$ref, example_scrna$sim,
 #> 1  0.00000000                 Target = 1.0 (Optimal balance)
 #> 2  8.00000000            Lower is better (closer to Uniform)
 #> 3  1.00000000          Higher is better (1.0 = Uniform null)
-#> 4  0.56250000        Higher is better (Group predictability)
-#> 5  0.54655870                 Higher is better (Balanced F1)
-#> 6  0.56250000                 Higher is better (Sensitivity)
+#> 4  0.37500000        Higher is better (Group predictability)
+#> 5  0.33333333                 Higher is better (Balanced F1)
+#> 6  0.33333333                 Higher is better (Sensitivity)
 #> 7  0.00000000             Lower is better (0.0 = zero error)
 #> 8  1.00000000         Higher is better (1.0 = perfect match)
 #> 9  0.22342423           Higher is better (Effect size match)
@@ -204,16 +204,16 @@ evaluate_deg_fidelity(example_scrna$ref, example_scrna$sim,
 #> 
 #> $ml_classification
 #> $ml_classification$accuracy
-#> [1] 0.5625
+#> [1] 0.375
 #> 
 #> $ml_classification$precision
-#> [1] 0.5727273
+#> [1] 0.3333333
 #> 
 #> $ml_classification$recall
-#> [1] 0.5625
+#> [1] 0.3333333
 #> 
 #> $ml_classification$F1
-#> [1] 0.5465587
+#> [1] 0.3333333
 #> 
 #> 
 #> $pvalue_uniformity

@@ -1,3 +1,17 @@
+# scSimEval 0.99.4
+
+## Bug Fixes & Improvements
+
+* **`compute_method_leaderboard()` & `.ingest_bubble_data()` Robustness:**
+  - Added automatic fallback to `Method = "Simulation"` and `Category = "Uncategorized"` when evaluating single simulation accuracy results (`evaluate_simulation_accuracy()`) or pre-formed benchmark data frames lacking explicit method labels.
+  - Resolved `R CMD check` example failure in `man/compute_method_leaderboard.Rd`.
+
+* **Dependency & Package Best Practices:**
+  - Added `irlba` to `Suggests:` in `DESCRIPTION` to properly declare conditional SVD acceleration in `compute_dataset_embeddings()`.
+  - Replaced direct `set.seed()` invocation with RNG-safe execution that preserves and restores `.Random.seed` on function exit in accordance with Bioconductor guidelines.
+  - Removed global `eval = FALSE` in `vignettes/shiny-app.Rmd` to satisfy Bioconductor vignette check requirements.
+
+
 # scSimEval 0.99.3
 
 ## New Features & Enhancements

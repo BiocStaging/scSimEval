@@ -9,10 +9,9 @@ single line of R code.
 
 Launch it with:
 
-``` r
-library(scSimEval)
-launch_scSimEval_app()          # opens at http://127.0.0.1:<port>
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`scSimEval`](https://kabilanbio.github.io/scSimEval)`)`\
+[`launch_scSimEval_app`](https://kabilanbio.github.io/scSimEval/reference/launch_scSimEval_app.md)`(``)``          ``# opens at http://127.0.0.1:<port>`
 
 > **File size limit:** The app accepts uploads up to **500 MB** per
 > file, which handles most real-world single-cell datasets.
@@ -94,10 +93,9 @@ Load output previously saved from
 or
 [`evaluate_multiple_datasets()`](https://kabilanbio.github.io/scSimEval/reference/evaluate_multiple_datasets.md):
 
-``` r
-bench <- evaluate_simulation_accuracy(ref, sim, method_name = "MyTool")
-saveRDS(bench, "my_benchmark.rds")
-```
+\
+`bench`` ``<-`` `[`evaluate_simulation_accuracy`](https://kabilanbio.github.io/scSimEval/reference/evaluate_simulation_accuracy.md)`(``ref``, ``sim``, method_name ``=`` ``"MyTool"``)`\
+[`saveRDS`](https://rdrr.io/r/base/readRDS.html)`(``bench``, ``"my_benchmark.rds"``)`
 
 Click **Load Saved File** to restore the entire benchmark session.
 
@@ -120,6 +118,13 @@ normalized fidelity score. Scores ≥ 0.96 are rendered as bold square
 glyphs. Simulators are rank-ordered top-to-bottom by composite average
 score.
 
+The main panel organizes content into two dedicated subtabs: 1.
+**Comparative Bubble Matrix Figure**: Displays the full 62-metric matrix
+figure with smooth horizontal panning at publication resolution. 2.
+**Fidelity Leaderboard**: Positioned right after the figure subtab,
+displaying the complete rankings table (Overall Rank, Method, Average
+Fidelity %, Fidelity Score) with an instant CSV export button.
+
 ### Sidebar Controls
 
 | Control | Options | Default |
@@ -135,10 +140,11 @@ score.
 
 ### Exports
 
-| Button                      | Output                    |
-|-----------------------------|---------------------------|
+| Button | Output |
+|----|----|
 | **Download JPEG (600 DPI)** | Publication-grade `.jpeg` |
-| **Download Vector PDF**     | Scalable `.pdf`           |
+| **Download Vector PDF** | Scalable `.pdf` |
+| **Download Leaderboard (CSV)** | Tidy CSV table of accurate method rankings and fidelity scores |
 
 ------------------------------------------------------------------------
 
@@ -177,9 +183,11 @@ zero-inflation curves between reference and simulated cells.
 |----|----|
 | **Scalability View** | 4-Panel Comprehensive · Runtime Only · Peak RAM Only · Runtime vs Memory Trade-Off · Resource Cost Footprint |
 
-### Sub-panel 4 — Metric Boxplots
+### Sub-panel 4 — Metric Plots
 
 [`plot_metric_boxplots()`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_boxplots.md)
+/
+[`plot_category_metric_bars()`](https://kabilanbio.github.io/scSimEval/reference/plot_category_metric_bars.md)
 /
 [`plot_individual_metric_bar()`](https://kabilanbio.github.io/scSimEval/reference/plot_individual_metric_bar.md)
 — two view modes.
@@ -194,10 +202,10 @@ zero-inflation curves between reference and simulated cells.
 
 **Category Group mode:**
 
-| Control             | Description                              |
-|---------------------|------------------------------------------|
-| **Choose Category** | All 8 combined, or one specific category |
-| **Score Type**      | Normalized \[0, 1\] · Raw Value          |
+| Control | Description |
+|----|----|
+| **Choose Category** | All 8 combined (displays 8-category distribution boxplots via [`plot_metric_boxplots()`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_boxplots.md)), or an individual category (displays faceted barplots across all category metrics via [`plot_category_metric_bars()`](https://kabilanbio.github.io/scSimEval/reference/plot_category_metric_bars.md)) |
+| **Score Type** | Normalized \[0, 1\] · Raw Value |
 
 ### Sub-panel 5 — Metric Heatmap
 
@@ -289,39 +297,85 @@ vector loadings.
 
 ### 1. All-in-One Benchmark Archive (.zip)
 
-Contents of the single zip:
+The comprehensive benchmark archive packages all quantitative results,
+tabular summaries, compiled reports, and figures into an organized
+directory structure:
 
-- **Excel Workbook (.xlsx)** — 4 sheets: All Benchmark Metrics, Dataset
-  Properties, Method Rankings, Scalability Metrics
-- **Master Table (.csv)** — all 62 metrics, tidy long format
-- **R Object (.rds)** — for downstream R analysis
-- **Multi-Page PDF Report** — all figures in one file
-- **Individual JPEG Figures** — 600 DPI per visualization
+- **Metrics in Multiple Formats (`metrics/` and root):**
+  - **Excel Workbook (`.xlsx`)** — 4 sheets: All Benchmark Metrics,
+    Dataset Properties, Method Rankings, Scalability Metrics
+  - **Master CSV Table (`.csv`)** — All 62 metrics in tidy long format
+  - **Master TXT Table (`.txt`)** — Tab-delimited text export of the
+    complete metric evaluation matrix
+  - **Method Rankings Leaderboard (`.csv` and `.txt`)** — Overall
+    scores, ranks, and category-level rankings
+  - **Dataset Properties Summary (`.csv` and `.txt`)** — Cell counts,
+    feature counts, sparsity, library size, and detected features
+  - **Native R Object (`.rds`)** — Serialized R list containing all
+    benchmark objects for reproducible downstream analysis and custom
+    plotting
+- **Compiled PDF Report (`scSimEval_all_plots_report.pdf`):** Multi-page
+  publication-ready vector report containing all 9 benchmark figures
+- **Grouped Figures (`figures/grouped/`):** Both 600 DPI
+  publication-grade JPEGs and vectorized PDFs for all overview
+  diagnostic figures:
+  1.  Comparative Bubble Matrix (`01_bubble_matrix_comparative`)
+  2.  Overall Evaluation Summary (`02_evaluation_summary_grouped`)
+  3.  Scalability Benchmark (`03_scalability_benchmark_grouped`)
+  4.  Metric Boxplots by Category (`04_metric_boxplots_by_category`)
+  5.  Performance Heatmap (`05_metric_performance_heatmap`)
+  6.  PCA Simulator Ordination (`06_simulator_pca_ordination`)
+  7.  MDS Ordination (`07_simulator_mds_ordination`)
+  8.  Distribution QC Curves (`08_comparative_distribution_qc`)
+  9.  Cell Embeddings UMAP Grid (`09_cell_embeddings_umap_grid`)
+  10. Cell Embeddings t-SNE Grid (`10_cell_embeddings_tsne_grid`)
+  11. Cell Embeddings PCA Grid (`11_cell_embeddings_pca_grid`)
+- **Individual Figures (`figures/individual/`):**
+  - High-resolution bar plots for each individual metric
+    (`metric_bar_<MetricName>.jpeg` & `.pdf`)
+  - Simulator-specific 1-to-1 comparison cell embeddings against
+    empirical reference across all reductions
+    (`cell_embeddings_compare_<reduction>_<SimulatorName>.jpeg` & `.pdf`
+    for UMAP, t-SNE, and PCA)
 
 Click **Download Complete Results (.zip)**.
 
 ### 2. Spreadsheets & Data Files
 
-| Button                      | Format                     |
-|-----------------------------|----------------------------|
-| Download Excel File (.xlsx) | Multi-sheet workbook       |
-| Download CSV Table (.csv)   | Flat tidy table            |
-| Download R Data File (.rds) | Native R serialized object |
+| Button | Format | Description |
+|----|----|----|
+| Download Excel File (.xlsx) | Multi-sheet workbook (`.xlsx`) | Full benchmark scores, rankings, dataset metadata, and scalability |
+| Download CSV Table (.csv) | Flat tidy table (`.csv`) | Comma-separated values for Python (pandas), Excel, or R |
+| Download TXT Table (.txt) | Tab-delimited table (`.txt`) | Clean TSV/TXT export for command-line workflows and bioinformatics tools |
+| Download R Data File (.rds) | Native R serialized object (`.rds`) | Ready for [`readRDS()`](https://rdrr.io/r/base/readRDS.html) in downstream R pipelines |
 
 ### 3. Complete Multi-Page PDF Report
 
-Pages compiled into one PDF:
+All figures compiled into a single high-quality vector PDF report:
 
 1.  Comparative Bubble Matrix
-2.  Evaluation Summary
+2.  Overall Evaluation Summary
 3.  Scalability Benchmark
-4.  Metric Boxplots
-5.  Metric Heatmap
-6.  PCA Ordination
-7.  MDS Metric Space
+4.  Metric Boxplots by Category
+5.  Performance Heatmap
+6.  PCA Simulator Ordination
+7.  MDS Ordination
 8.  Distribution QC Curves
+9.  Cell Embeddings Comparison Grids
 
 Click **Download All Figures (.pdf)**.
+
+### 4. Export Individual Figures (High-Res 600 DPI JPEG & Vector PDF)
+
+Download any single visualization on demand with dedicated format
+controls:
+
+| Control | Description |
+|----|----|
+| **Choose Figure to Export** | Dropdown spanning all 14 benchmark visual types: Comparative Bubble Matrix, Overall Evaluation Summary, Scalability Benchmark, Metric Boxplots, Performance Heatmap, PCA Ordination, MDS Metric Space, Distribution QC, UMAP Comparison Grid, t-SNE Comparison Grid, PCA Comparison Grid, or 1-to-1 side-by-side comparison against reference (UMAP, t-SNE, PCA) |
+| **Select Simulator (for 1-to-1 compare)** | Dynamically populated dropdown to pick the specific simulator to benchmark against the empirical reference |
+| **Download Vector PDF (.pdf)** | Vectorized, infinitely scalable PDF styled to optimal aspect ratio |
+| **Download 600 DPI JPEG (.jpeg)** | Ultra-high-resolution raster JPEG ready for high-impact journal submission |
 
 ### Interactive Benchmark Data Table
 
@@ -363,8 +417,9 @@ Every Shiny control maps directly to a documented R function:
 | Evaluation Summary | [`plot_evaluation_summary()`](https://kabilanbio.github.io/scSimEval/reference/plot_evaluation_summary.md) |
 | Distribution QC | [`plot_distribution_qc()`](https://kabilanbio.github.io/scSimEval/reference/plot_distribution_qc.md) |
 | Scalability Benchmark | [`plot_scalability_benchmark()`](https://kabilanbio.github.io/scSimEval/reference/plot_scalability_benchmark.md) |
-| Metric Boxplots (category) | [`plot_metric_boxplots()`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_boxplots.md) |
-| Metric Boxplots (individual) | [`plot_individual_metric_bar()`](https://kabilanbio.github.io/scSimEval/reference/plot_individual_metric_bar.md) |
+| Metric Plots (all categories) | [`plot_metric_boxplots()`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_boxplots.md) |
+| Metric Plots (by category) | [`plot_category_metric_bars()`](https://kabilanbio.github.io/scSimEval/reference/plot_category_metric_bars.md) |
+| Metric Plots (individual) | [`plot_individual_metric_bar()`](https://kabilanbio.github.io/scSimEval/reference/plot_individual_metric_bar.md) |
 | Metric Heatmap | [`plot_metric_heatmap()`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_heatmap.md) |
 | PCA Ordination | [`plot_metric_pca()`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_pca.md) |
 | MDS Metric Space | [`plot_metric_mds()`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_mds.md) |

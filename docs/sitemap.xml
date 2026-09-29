@@ -88,6 +88,7 @@
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/calc_zero_probability_curve.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/compute_dataset_embeddings.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/compute_embedding_quality_metrics.html</loc></url>
+<url><loc>https://kabilanbio.github.io/scSimEval/reference/compute_method_leaderboard.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/dot-ingest_bubble_data.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/dot-normalize_bubble_scores.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/evaluate_accessibility_sparsity_curve.html</loc></url>
@@ -126,6 +127,7 @@
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/multiomics_coupling.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_benchmark_bubble_matrix.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_benchmark_summary.html</loc></url>
+<url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_category_metric_bars.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_dataset_embeddings.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_distribution_qc.html</loc></url>
 <url><loc>https://kabilanbio.github.io/scSimEval/reference/plot_evaluation_summary.html</loc></url>
