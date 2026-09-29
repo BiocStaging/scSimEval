@@ -1,4 +1,4 @@
-﻿# Getting Started with scSimEval: Unified Benchmarking for Single-Cell Multiomics Simulations
+# Getting Started with scSimEval: Unified Benchmarking for Single-Cell Multiomics Simulations
 
 ## 1. Introduction
 
@@ -157,16 +157,15 @@ performers are highlighted with bold squares.
 
 To install and load **`scSimEval`** directly from GitHub:
 
-``` r
-# Install devtools if needed
-if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
-
-# Install scSimEval from GitHub
-devtools::install_github("kabilanbio/scSimEval")
-
-# Load the package
-library(scSimEval)
-```
+\
+`# Install devtools if needed`\
+`if`` ``(``!`[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"devtools"``, quietly ``=`` ``TRUE``)``)`` `[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(``"devtools"``)`\
+\
+`# Install scSimEval from GitHub`\
+`devtools``::`[`install_github`](https://devtools.r-lib.org/reference/install-deprecated.html)`(``"kabilanbio/scSimEval"``)`\
+\
+`# Load the package`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`scSimEval`](https://kabilanbio.github.io/scSimEval)`)`
 
 `scSimEval` includes built-in example datasets so you can test all
 functions immediately: \* **`example_scrna`**: Paired real and simulated
@@ -177,20 +176,19 @@ simulated scATAC-seq chromatin accessibility matrices
 **`example_multiomics`**: A paired bundle containing both RNA and ATAC
 modalities, cell labels, and computer resource logs.
 
-``` r
-# Load example datasets
-data(example_scrna)
-data(example_scatac)
-data(example_multiomics)
-
-# Check dimensions
-cat("Real scRNA-seq dimensions:", dim(example_scrna$ref), "\n")
-#> Real scRNA-seq dimensions: 60 80
-cat("Simulated scRNA-seq dimensions:", dim(example_scrna$sim), "\n")
-#> Simulated scRNA-seq dimensions: 60 80
-cat("Cell types present:", levels(example_scrna$cell_types), "\n")
-#> Cell types present: TypeA TypeB
-```
+\
+`# Load example datasets`\
+[`data`](https://rdrr.io/r/utils/data.html)`(``example_scrna``)`\
+[`data`](https://rdrr.io/r/utils/data.html)`(``example_scatac``)`\
+[`data`](https://rdrr.io/r/utils/data.html)`(``example_multiomics``)`\
+\
+`# Check dimensions`\
+[`cat`](https://rdrr.io/r/base/cat.html)`(``"Real scRNA-seq dimensions:"``, `[`dim`](https://rdrr.io/r/base/dim.html)`(``example_scrna``$``ref``)``, ``"\n"``)`\
+`#> Real scRNA-seq dimensions: 60 80`\
+[`cat`](https://rdrr.io/r/base/cat.html)`(``"Simulated scRNA-seq dimensions:"``, `[`dim`](https://rdrr.io/r/base/dim.html)`(``example_scrna``$``sim``)``, ``"\n"``)`\
+`#> Simulated scRNA-seq dimensions: 60 80`\
+[`cat`](https://rdrr.io/r/base/cat.html)`(``"Cell types present:"``, `[`levels`](https://rdrr.io/r/base/levels.html)`(``example_scrna``$``cell_types``)``, ``"\n"``)`\
+`#> Cell types present: TypeA TypeB`
 
 ------------------------------------------------------------------------
 
@@ -201,19 +199,18 @@ The function
 evaluates 1D and 2D statistical distributions and zero-count patterns
 between real and simulated matrices:
 
-``` r
-# Evaluate unimodal accuracy on scRNA-seq
-unimodal_res <- evaluate_simulation_accuracy(
-  ref_data = example_scrna$ref,
-  sim_data = example_scrna$sim,
-  compute_bivariate = FALSE,
-  verbose = FALSE
-)
-
-# Preview library size distribution metrics
-lib_summary <- subset(unimodal_res$metrics_summary_table, Property == "library_size")
-knitr::kable(head(lib_summary, 8), digits = 4, caption = "Library Size Statistical Distance Measures")
-```
+\
+`# Evaluate unimodal accuracy on scRNA-seq`\
+`unimodal_res`` ``<-`` `[`evaluate_simulation_accuracy`](https://kabilanbio.github.io/scSimEval/reference/evaluate_simulation_accuracy.md)`(`\
+`  ref_data ``=`` ``example_scrna``$``ref``,`\
+`  sim_data ``=`` ``example_scrna``$``sim``,`\
+`  compute_bivariate ``=`` ``FALSE``,`\
+`  verbose ``=`` ``FALSE`\
+`)`\
+\
+`# Preview library size distribution metrics`\
+`lib_summary`` ``<-`` `[`subset`](https://rdrr.io/r/base/subset.html)`(``unimodal_res``$``metrics_summary_table``, ``Property`` ``==`` ``"library_size"``)`\
+`knitr``::`[`kable`](https://rdrr.io/pkg/knitr/man/kable.html)`(`[`head`](https://rdrr.io/r/utils/head.html)`(``lib_summary``, ``8``)``, digits ``=`` ``4``, caption ``=`` ``"Library Size Statistical Distance Measures"``)`
 
 | Category                  | Property     | Metric        |   Value |
 |:--------------------------|:-------------|:--------------|--------:|
@@ -226,7 +223,7 @@ knitr::kable(head(lib_summary, 8), digits = 4, caption = "Library Size Statistic
 | Distributional Properties | library_size | Wasserstein   | 15.0625 |
 | Distributional Properties | library_size | ECDF_DiffArea |  0.0766 |
 
-Library Size Statistical Distance Measures
+Library Size Statistical Distance Measures {.table}
 
 ### 5.1 Comparative Distribution QC Plot (`plot_distribution_qc`)
 
@@ -247,17 +244,16 @@ biological data (warm brick red) and simulated data (steel blue) across
 single-cell properties, bivariate relationships, and biological signal
 retention.
 
-``` r
-# Generate the 14-panel comparative QC plot
-plot_distribution_qc(
-  ref_data   = example_scrna$ref,
-  sim_data   = example_scrna$sim,
-  title      = "Data Properties Quality Control",
-  ref_name   = "Real Data",
-  sim_name   = "Simulated Data",
-  cell_types = example_scrna$cell_types
-)
-```
+\
+`# Generate the 14-panel comparative QC plot`\
+[`plot_distribution_qc`](https://kabilanbio.github.io/scSimEval/reference/plot_distribution_qc.md)`(`\
+`  ref_data   ``=`` ``example_scrna``$``ref``,`\
+`  sim_data   ``=`` ``example_scrna``$``sim``,`\
+`  title      ``=`` ``"Data Properties Quality Control"``,`\
+`  ref_name   ``=`` ``"Real Data"``,`\
+`  sim_name   ``=`` ``"Simulated Data"``,`\
+`  cell_types ``=`` ``example_scrna``$``cell_types`\
+`)`
 
 ------------------------------------------------------------------------
 
@@ -268,22 +264,21 @@ cluster boundaries without requiring external truth,
 [`evaluate_clustering_metrics()`](https://kabilanbio.github.io/scSimEval/reference/evaluate_clustering_metrics.md)
 calculates cluster separation and concordance:
 
-``` r
-clust_res <- evaluate_clustering_metrics(
-  data = example_scrna$sim,
-  cell_types = example_scrna$cell_types,
-  ref_data = example_scrna$ref
-)
-
-cat("Average Silhouette Width:", round(clust_res$silhouette, 4), "\n")
-#> Average Silhouette Width: 0.0278
-cat("Davies-Bouldin Index:", round(clust_res$davies_bouldin, 4), "\n")
-#> Davies-Bouldin Index: 5.1752
-cat("Adjusted Rand Index (ARI):", round(clust_res$ARI, 4), "\n")
-#> Adjusted Rand Index (ARI): 0.0671
-cat("Normalized Mutual Information (NMI):", round(clust_res$NMI, 4), "\n")
-#> Normalized Mutual Information (NMI): 0.0884
-```
+\
+`clust_res`` ``<-`` `[`evaluate_clustering_metrics`](https://kabilanbio.github.io/scSimEval/reference/evaluate_clustering_metrics.md)`(`\
+`  data ``=`` ``example_scrna``$``sim``,`\
+`  cell_types ``=`` ``example_scrna``$``cell_types``,`\
+`  ref_data ``=`` ``example_scrna``$``ref`\
+`)`\
+\
+[`cat`](https://rdrr.io/r/base/cat.html)`(``"Average Silhouette Width:"``, `[`round`](https://rdrr.io/r/base/Round.html)`(``clust_res``$``silhouette``, ``4``)``, ``"\n"``)`\
+`#> Average Silhouette Width: 0.0278`\
+[`cat`](https://rdrr.io/r/base/cat.html)`(``"Davies-Bouldin Index:"``, `[`round`](https://rdrr.io/r/base/Round.html)`(``clust_res``$``davies_bouldin``, ``4``)``, ``"\n"``)`\
+`#> Davies-Bouldin Index: 5.1752`\
+[`cat`](https://rdrr.io/r/base/cat.html)`(``"Adjusted Rand Index (ARI):"``, `[`round`](https://rdrr.io/r/base/Round.html)`(``clust_res``$``ARI``, ``4``)``, ``"\n"``)`\
+`#> Adjusted Rand Index (ARI): 0.0671`\
+[`cat`](https://rdrr.io/r/base/cat.html)`(``"Normalized Mutual Information (NMI):"``, `[`round`](https://rdrr.io/r/base/Round.html)`(``clust_res``$``NMI``, ``4``)``, ``"\n"``)`\
+`#> Normalized Mutual Information (NMI): 0.0884`
 
 ------------------------------------------------------------------------
 
@@ -294,21 +289,20 @@ When evaluating multi-batch or multi-donor simulations,
 checks whether technical batch differences are properly represented
 without overshadowing biological variation:
 
-``` r
-batch_res <- evaluate_batch_metrics(
-  data = example_scrna$sim,
-  batch_info = example_scrna$batch_info,
-  cell_types = example_scrna$cell_types,
-  verbose = FALSE
-)
-
-cat("Batch Shannon Entropy:", round(batch_res$shannon_entropy, 4), "\n")
-#> Batch Shannon Entropy: 0.9796
-cat("PC Regression R2 (PCR):", round(batch_res$pcr_r2, 4), "\n")
-#> PC Regression R2 (PCR): 0.0121
-cat("Cross-Batch Transfer Accuracy:", round(batch_res$cross_batch_accuracy, 4), "\n")
-#> Cross-Batch Transfer Accuracy: 0.6125
-```
+\
+`batch_res`` ``<-`` `[`evaluate_batch_metrics`](https://kabilanbio.github.io/scSimEval/reference/evaluate_batch_metrics.md)`(`\
+`  data ``=`` ``example_scrna``$``sim``,`\
+`  batch_info ``=`` ``example_scrna``$``batch_info``,`\
+`  cell_types ``=`` ``example_scrna``$``cell_types``,`\
+`  verbose ``=`` ``FALSE`\
+`)`\
+\
+[`cat`](https://rdrr.io/r/base/cat.html)`(``"Batch Shannon Entropy:"``, `[`round`](https://rdrr.io/r/base/Round.html)`(``batch_res``$``shannon_entropy``, ``4``)``, ``"\n"``)`\
+`#> Batch Shannon Entropy: 0.9796`\
+[`cat`](https://rdrr.io/r/base/cat.html)`(``"PC Regression R2 (PCR):"``, `[`round`](https://rdrr.io/r/base/Round.html)`(``batch_res``$``pcr_r2``, ``4``)``, ``"\n"``)`\
+`#> PC Regression R2 (PCR): 0.0121`\
+[`cat`](https://rdrr.io/r/base/cat.html)`(``"Cross-Batch Transfer Accuracy:"``, `[`round`](https://rdrr.io/r/base/Round.html)`(``batch_res``$``cross_batch_accuracy``, ``4``)``, ``"\n"``)`\
+`#> Cross-Batch Transfer Accuracy: 0.6125`
 
 ------------------------------------------------------------------------
 
@@ -318,20 +312,19 @@ Instead of requiring external pseudotime labels, `scSimEval`
 automatically infers differentiation paths directly from scRNA-seq
 expression counts and compares the real and simulated trajectories:
 
-``` r
-# Automatically infer trajectories and evaluate fidelity
-traj_res <- evaluate_trajectory_metrics(
-  ref_data = example_scrna$ref,
-  sim_data = example_scrna$sim,
-  cell_types_ref = example_scrna$cell_types,
-  cell_types_sim = example_scrna$cell_types
-)
-
-cat("Pseudotime Spearman Correlation:", round(traj_res$pseudotime_correlation, 4), "\n")
-#> Pseudotime Spearman Correlation: 1
-cat("Lineage Tree Branch Height RMSE:", round(as.numeric(traj_res$tree_height_rmse), 4), "\n")
-#> Lineage Tree Branch Height RMSE: 1.8672
-```
+\
+`# Automatically infer trajectories and evaluate fidelity`\
+`traj_res`` ``<-`` `[`evaluate_trajectory_metrics`](https://kabilanbio.github.io/scSimEval/reference/evaluate_trajectory_metrics.md)`(`\
+`  ref_data ``=`` ``example_scrna``$``ref``,`\
+`  sim_data ``=`` ``example_scrna``$``sim``,`\
+`  cell_types_ref ``=`` ``example_scrna``$``cell_types``,`\
+`  cell_types_sim ``=`` ``example_scrna``$``cell_types`\
+`)`\
+\
+[`cat`](https://rdrr.io/r/base/cat.html)`(``"Pseudotime Spearman Correlation:"``, `[`round`](https://rdrr.io/r/base/Round.html)`(``traj_res``$``pseudotime_correlation``, ``4``)``, ``"\n"``)`\
+`#> Pseudotime Spearman Correlation: 1`\
+[`cat`](https://rdrr.io/r/base/cat.html)`(``"Lineage Tree Branch Height RMSE:"``, `[`round`](https://rdrr.io/r/base/Round.html)`(`[`as.numeric`](https://rdrr.io/r/base/numeric.html)`(``traj_res``$``tree_height_rmse``)``, ``4``)``, ``"\n"``)`\
+`#> Lineage Tree Branch Height RMSE: 1.8672`
 
 ------------------------------------------------------------------------
 
@@ -348,21 +341,20 @@ Spearman correlations, and top-DEG Jaccard overlap. \* **Shaky
 Foundations (Crowell et al., 2023):** Group silhouette width, group
 separation discrepancy, and percent variance explained (PVE).
 
-``` r
-# Evaluate marker gene and biological signal retention
-deg_res <- evaluate_deg_fidelity(
-  ref_data              = example_scrna$ref,
-  sim_data              = example_scrna$sim,
-  ref_celltypes         = example_scrna$cell_types,
-  sim_celltypes         = example_scrna$cell_types,
-  fdr_cutoff            = 0.05,
-  logfc_cutoff          = 0.5,
-  top_n_de              = 50
-)
-
-# View the first 10 metrics
-knitr::kable(head(deg_res$deg_summary_table, 10), digits = 4)
-```
+\
+`# Evaluate marker gene and biological signal retention`\
+`deg_res`` ``<-`` `[`evaluate_deg_fidelity`](https://kabilanbio.github.io/scSimEval/reference/evaluate_deg_fidelity.md)`(`\
+`  ref_data              ``=`` ``example_scrna``$``ref``,`\
+`  sim_data              ``=`` ``example_scrna``$``sim``,`\
+`  ref_celltypes         ``=`` ``example_scrna``$``cell_types``,`\
+`  sim_celltypes         ``=`` ``example_scrna``$``cell_types``,`\
+`  fdr_cutoff            ``=`` ``0.05``,`\
+`  logfc_cutoff          ``=`` ``0.5``,`\
+`  top_n_de              ``=`` ``50`\
+`)`\
+\
+`# View the first 10 metrics`\
+`knitr``::`[`kable`](https://rdrr.io/pkg/knitr/man/kable.html)`(`[`head`](https://rdrr.io/r/utils/head.html)`(``deg_res``$``deg_summary_table``, ``10``)``, digits ``=`` ``4``)`
 
 ------------------------------------------------------------------------
 
@@ -385,14 +377,13 @@ dashboard comparing execution runtime, peak RAM, runtime-memory
 tradeoff, CPU efficiency, cost footprint, and throughput across
 simulation methods.
 
-``` r
-# Generate the 6-panel computational scalability dashboard
-plot_scalability_benchmark(
-  scalability_data = sim_comparison_list,
-  mode = "composite",
-  panels = "6panel"
-)
-```
+\
+`# Generate the 6-panel computational scalability dashboard`\
+[`plot_scalability_benchmark`](https://kabilanbio.github.io/scSimEval/reference/plot_scalability_benchmark.md)`(`\
+`  scalability_data ``=`` ``sim_comparison_list``,`\
+`  mode ``=`` ``"composite"``,`\
+`  panels ``=`` ``"6panel"`\
+`)`
 
 ------------------------------------------------------------------------
 
@@ -403,29 +394,28 @@ The flagship function
 runs all evaluation categories in one command and returns a tidy summary
 table:
 
-``` r
-master_eval <- evaluate_multiomics_accuracy(
-  ref_multi = example_multiomics$ref_multi,
-  sim_multi = example_multiomics$sim_multi,
-  cell_types = example_multiomics$cell_types,
-  batch_info = example_multiomics$batch_info,
-  memory_mb = example_multiomics$resource_stats$memory_mb,
-  elapsed_time = example_multiomics$resource_stats$elapsed_time,
-  verbose = FALSE
-)
-
-summary_df <- master_eval$benchmark_summary_table
-cat("Total evaluated metric instances:", nrow(summary_df), "\n")
-#> Total evaluated metric instances: 358
-table(summary_df$Category)
-#> 
-#> Biological Signal & Downstream    Cellular Structure & Mixing 
-#>                             10                             33 
-#>      Computational Scalability      Cross-Modal Relationships 
-#>                              2                             17 
-#>      Distributional Properties            Trajectory Dynamics 
-#>                            294                              2
-```
+\
+`master_eval`` ``<-`` `[`evaluate_multiomics_accuracy`](https://kabilanbio.github.io/scSimEval/reference/evaluate_multiomics_accuracy.md)`(`\
+`  ref_multi ``=`` ``example_multiomics``$``ref_multi``,`\
+`  sim_multi ``=`` ``example_multiomics``$``sim_multi``,`\
+`  cell_types ``=`` ``example_multiomics``$``cell_types``,`\
+`  batch_info ``=`` ``example_multiomics``$``batch_info``,`\
+`  memory_mb ``=`` ``example_multiomics``$``resource_stats``$``memory_mb``,`\
+`  elapsed_time ``=`` ``example_multiomics``$``resource_stats``$``elapsed_time``,`\
+`  verbose ``=`` ``FALSE`\
+`)`\
+\
+`summary_df`` ``<-`` ``master_eval``$``benchmark_summary_table`\
+[`cat`](https://rdrr.io/r/base/cat.html)`(``"Total evaluated metric instances:"``, `[`nrow`](https://rdrr.io/r/base/nrow.html)`(``summary_df``)``, ``"\n"``)`\
+`#> Total evaluated metric instances: 358`\
+[`table`](https://rdrr.io/r/base/table.html)`(``summary_df``$``Category``)`\
+`#> `\
+`#> Biological Signal & Downstream    Cellular Structure & Mixing `\
+`#>                             10                             33 `\
+`#>      Computational Scalability      Cross-Modal Relationships `\
+`#>                              2                             17 `\
+`#>      Distributional Properties            Trajectory Dynamics `\
+`#>                            294                              2`
 
 ------------------------------------------------------------------------
 
@@ -454,15 +444,14 @@ Ranks simulation methods top-to-bottom across the 8 evaluation
 categories. Bubble size reflects standardized fidelity score ($`0.00`$
 to $`1.00`$), and top performers are highlighted with bold squares.
 
-``` r
-# Generate benchmark bubble matrix
-plot_benchmark_bubble_matrix(
-  data = sim_comparison_list,
-  bubble_size_range = c(2, 7.5),
-  title = "Benchmarking Single-Cell Simulation Methods",
-  subtitle = "Comparative performance across 8 evaluation categories"
-)
-```
+\
+`# Generate benchmark bubble matrix`\
+[`plot_benchmark_bubble_matrix`](https://kabilanbio.github.io/scSimEval/reference/plot_benchmark_bubble_matrix.md)`(`\
+`  data ``=`` ``sim_comparison_list``,`\
+`  bubble_size_range ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``2``, ``7.5``)``,`\
+`  title ``=`` ``"Benchmarking Single-Cell Simulation Methods"``,`\
+`  subtitle ``=`` ``"Comparative performance across 8 evaluation categories"`\
+`)`
 
 ### 12.2 Evaluation Summary Horizontal Bar Matrix (`plot_evaluation_summary`)
 
@@ -480,14 +469,32 @@ annotations.](figures/evaluation_summary_bars.png)
 simulators across the 8 categories and displays overall composite
 performance with exact score annotations.
 
-``` r
-# Generate horizontal summary bar chart
-plot_evaluation_summary(
-  data = sim_comparison_list,
-  title = "Single-Cell Simulator Evaluation Summary",
-  subtitle = "Standardized benchmark scores across categories and overall ranking"
-)
-```
+\
+`# Generate horizontal summary bar chart`\
+[`plot_evaluation_summary`](https://kabilanbio.github.io/scSimEval/reference/plot_evaluation_summary.md)`(`\
+`  data ``=`` ``sim_comparison_list``,`\
+`  title ``=`` ``"Single-Cell Simulator Evaluation Summary"``,`\
+`  subtitle ``=`` ``"Standardized benchmark scores across categories and overall ranking"`\
+`)`
+
+### 12.2b Simulator Performance Leaderboard (`compute_method_leaderboard`)
+
+To obtain exact numeric rankings and composite fidelity scores across
+all 62 criteria,
+[`compute_method_leaderboard()`](https://kabilanbio.github.io/scSimEval/reference/compute_method_leaderboard.md)
+extracts the definitive simulator performance leaderboard:
+
+\
+`# Generate the method performance leaderboard`\
+`leaderboard`` ``<-`` `[`compute_method_leaderboard`](https://kabilanbio.github.io/scSimEval/reference/compute_method_leaderboard.md)`(``demo``$``benchmark_summary_table``)`\
+`knitr``::`[`kable`](https://rdrr.io/pkg/knitr/man/kable.html)`(``leaderboard``, caption ``=`` ``"Overall Simulator Performance Leaderboard (Ranked by Standardized Fidelity)"``)`
+
+Every metric is first converted into a direction-aware standardized
+score in $`[0.00, 1.00]`$ (where $`1.00`$ universally represents best
+observed performance; distance and error measures are inverted). The
+**Fidelity_Score** is the arithmetic mean across all standardized metric
+scores, and **Average_Fidelity** expresses this as an overall fidelity
+percentage ($`0\%`$ to $`100\%`$).
 
 ### 12.3 Metric Score Distributions Across Categories (`plot_metric_boxplots`)
 
@@ -504,14 +511,13 @@ simulators.](figures/metric_boxplots.png)
 Displays standardized scores ($`[0, 1]`$, higher is better) with
 individual data points and boxplots across candidate simulators.
 
-``` r
-# Generate 8-category standardized boxplots
-plot_metric_boxplots(
-  benchmark_data = sim_list,
-  score_type     = "normalized",
-  ncol           = 4
-)
-```
+\
+`# Generate 8-category standardized boxplots`\
+[`plot_metric_boxplots`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_boxplots.md)`(`\
+`  benchmark_data ``=`` ``sim_list``,`\
+`  score_type     ``=`` ``"normalized"``,`\
+`  ncol           ``=`` ``4`\
+`)`
 
 ### 12.4 Comprehensive Benchmark Heatmap (`plot_metric_heatmap`)
 
@@ -529,14 +535,13 @@ across the 8 evaluation categories.](figures/metric_heatmap.png)
 unnormalized raw scores in bold text inside every cell, grouped cleanly
 across the 8 evaluation categories.
 
-``` r
-# Render full benchmark heatmap with exact numbers
-plot_metric_heatmap(
-  benchmark_data    = sim_comparison_list,
-  scale_fill        = "relative",
-  facet_by_category = TRUE
-)
-```
+\
+`# Render full benchmark heatmap with exact numbers`\
+[`plot_metric_heatmap`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_heatmap.md)`(`\
+`  benchmark_data    ``=`` ``sim_comparison_list``,`\
+`  scale_fill        ``=`` ``"relative"``,`\
+`  facet_by_category ``=`` ``TRUE`\
+`)`
 
 ### 12.5 Dimension Reduction and Ordination Plots (PCA & MDS)
 
@@ -553,19 +558,18 @@ vectors.](figures/individual_category_plots/pca_cat1_distribution.png)
 methods.** Projects simulators based on their metric profiles, showing
 global affinities and key discriminating metric vectors.
 
-``` r
-# Run PCA biplot across benchmark metric profiles
-plot_metric_pca(
-  benchmark_data = sim_comparison_list,
-  top_n_loadings = 8
-)
-
-# Run classical MDS ordination
-plot_metric_mds(
-  benchmark_data = sim_comparison_list,
-  point_size = 4.5
-)
-```
+\
+`# Run PCA biplot across benchmark metric profiles`\
+[`plot_metric_pca`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_pca.md)`(`\
+`  benchmark_data ``=`` ``sim_comparison_list``,`\
+`  top_n_loadings ``=`` ``8`\
+`)`\
+\
+`# Run classical MDS ordination`\
+[`plot_metric_mds`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_mds.md)`(`\
+`  benchmark_data ``=`` ``sim_comparison_list``,`\
+`  point_size ``=`` ``4.5`\
+`)`
 
 ### 12.6 Cell Embeddings (t-SNE, UMAP, & PCA) and Low-Dimensional Quality Metrics
 
@@ -579,54 +583,53 @@ manifolds, and technical depth variations.
 computation, comparative plotting, and quantitative low-dimensional
 quality assessment:
 
-``` r
-# 1. Compute low-dimensional embeddings across reference and simulations
-emb_data <- compute_dataset_embeddings(
-  reference   = example_scrna$ref,
-  simulated   = list("Splatter" = example_scrna$sim),
-  reduction   = "pca",
-  n_pcs       = 10,
-  cell_types  = example_scrna$cell_types,
-  batch       = example_scrna$batch_info
-)
-
-# Preview embedding data structure
-head(emb_data, 3)
-#>   Cell_ID      Dim1       Dim2   Dataset      Role Dataset_Type Cell_Type
-#> 1 Cell_01  1.822611 -3.6895068 Reference Reference    Reference     TypeA
-#> 2 Cell_02  2.994293  0.9774853 Reference Reference    Reference     TypeA
-#> 3 Cell_03 -2.898892 -0.4540497 Reference Reference    Reference     TypeA
-#>     Cluster Library_Size Detected_Features  Batch
-#> 1 Cluster_1          225                47 Batch1
-#> 2 Cluster_1          208                49 Batch2
-#> 3 Cluster_2          262                48 Batch1
-
-# 2. Plot comparative cell embeddings (faceted across datasets)
-plot_dataset_embeddings(
-  embedding_data = emb_data,
-  reduction      = "pca",
-  layout         = "facet",
-  color_by       = "cell_type",
-  pt_size        = 1.0,
-  alpha          = 0.8
-)
-```
+\
+`# 1. Compute low-dimensional embeddings across reference and simulations`\
+`emb_data`` ``<-`` `[`compute_dataset_embeddings`](https://kabilanbio.github.io/scSimEval/reference/compute_dataset_embeddings.md)`(`\
+`  reference   ``=`` ``example_scrna``$``ref``,`\
+`  simulated   ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``"Splatter"`` ``=`` ``example_scrna``$``sim``)``,`\
+`  reduction   ``=`` ``"pca"``,`\
+`  n_pcs       ``=`` ``10``,`\
+`  cell_types  ``=`` ``example_scrna``$``cell_types``,`\
+`  batch       ``=`` ``example_scrna``$``batch_info`\
+`)`\
+\
+`# Preview embedding data structure`\
+[`head`](https://rdrr.io/r/utils/head.html)`(``emb_data``, ``3``)`\
+`#>   Cell_ID      Dim1       Dim2   Dataset      Role Dataset_Type Cell_Type`\
+`#> 1 Cell_01  1.822611 -3.6895068 Reference Reference    Reference     TypeA`\
+`#> 2 Cell_02  2.994293  0.9774853 Reference Reference    Reference     TypeA`\
+`#> 3 Cell_03 -2.898892 -0.4540497 Reference Reference    Reference     TypeA`\
+`#>     Cluster Library_Size Detected_Features  Batch`\
+`#> 1 Cluster_1          225                47 Batch1`\
+`#> 2 Cluster_1          208                49 Batch2`\
+`#> 3 Cluster_2          262                48 Batch1`\
+\
+`# 2. Plot comparative cell embeddings (faceted across datasets)`\
+[`plot_dataset_embeddings`](https://kabilanbio.github.io/scSimEval/reference/plot_dataset_embeddings.md)`(`\
+`  embedding_data ``=`` ``emb_data``,`\
+`  reduction      ``=`` ``"pca"``,`\
+`  layout         ``=`` ``"facet"``,`\
+`  color_by       ``=`` ``"cell_type"``,`\
+`  pt_size        ``=`` ``1.0``,`\
+`  alpha          ``=`` ``0.8`\
+`)`
 
 ![](scSimEval-workflow_files/figure-html/cell-embeddings-demo-1.png)
 
-``` r
-
-# 3. Compute quantitative low-dimensional quality metrics
-quality_table <- compute_embedding_quality_metrics(emb_data)
-knitr::kable(quality_table, digits = 4, caption = "Quantitative Low-Dimensional Quality Metrics")
-```
+\
+\
+`# 3. Compute quantitative low-dimensional quality metrics`\
+`quality_table`` ``<-`` `[`compute_embedding_quality_metrics`](https://kabilanbio.github.io/scSimEval/reference/compute_embedding_quality_metrics.md)`(``emb_data``)`\
+`knitr``::`[`kable`](https://rdrr.io/pkg/knitr/man/kable.html)`(``quality_table``, digits ``=`` ``4``, caption ``=`` ``"Quantitative Low-Dimensional Quality Metrics"``)`
 
 | Dataset | Role | Cells (N) | Mean Silhouette | ARI (Cluster Fidelity) | Mean Library Size | Mean Detected Features | Library Size Diff (%) |
 |:---|:---|---:|---:|---:|---:|---:|---:|
 | Reference | Reference | 80 | -0.0101 | -0.0067 | 256.3 | 49.2 | 0.00 |
 | Splatter | Simulated | 80 | 0.0037 | -0.0071 | 242.3 | 48.3 | 5.46 |
 
-Quantitative Low-Dimensional Quality Metrics
+Quantitative Low-Dimensional Quality Metrics {.table
+style="width:100%;"}
 
 The quantitative embedding metrics evaluated include: - **Mean
 Silhouette Score**: Quantifies cluster separability in the
@@ -647,26 +650,25 @@ samples, tissues, or experimental cohorts,
 [`evaluate_multiple_datasets()`](https://kabilanbio.github.io/scSimEval/reference/evaluate_multiple_datasets.md)
 processes all datasets simultaneously:
 
-``` r
-# Set up a collection of datasets
-dataset_collection <- list(
-  "Method 1-scRNA-seq" = list(ref = example_scrna$ref, sim = example_scrna$sim),
-  "Method 1-scATAC-seq" = list(ref = example_scatac$ref, sim = example_scatac$sim),
-  "Method 2-scRNA-seq" = list(ref = example_scrna$ref, sim = example_scrna$sim),
-  "Method 2-scATAC-seq" = list(ref = example_scatac$ref, sim = example_scatac$sim)
-)
-
-# Run consolidated benchmarking in one step
-consolidated_results <- evaluate_multiple_datasets(
-  datasets = dataset_collection,
-  pair_by_prefix = TRUE,
-  compute_bivariate = FALSE,
-  verbose = FALSE
-)
-
-# Preview consolidated results overview
-knitr::kable(consolidated_results$dataset_overview, digits = 4, caption = "Consolidated Benchmark Overview")
-```
+\
+`# Set up a collection of datasets`\
+`dataset_collection`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`  ``"Method 1-scRNA-seq"`` ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``ref ``=`` ``example_scrna``$``ref``, sim ``=`` ``example_scrna``$``sim``)``,`\
+`  ``"Method 1-scATAC-seq"`` ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``ref ``=`` ``example_scatac``$``ref``, sim ``=`` ``example_scatac``$``sim``)``,`\
+`  ``"Method 2-scRNA-seq"`` ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``ref ``=`` ``example_scrna``$``ref``, sim ``=`` ``example_scrna``$``sim``)``,`\
+`  ``"Method 2-scATAC-seq"`` ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``ref ``=`` ``example_scatac``$``ref``, sim ``=`` ``example_scatac``$``sim``)`\
+`)`\
+\
+`# Run consolidated benchmarking in one step`\
+`consolidated_results`` ``<-`` `[`evaluate_multiple_datasets`](https://kabilanbio.github.io/scSimEval/reference/evaluate_multiple_datasets.md)`(`\
+`  datasets ``=`` ``dataset_collection``,`\
+`  pair_by_prefix ``=`` ``TRUE``,`\
+`  compute_bivariate ``=`` ``FALSE``,`\
+`  verbose ``=`` ``FALSE`\
+`)`\
+\
+`# Preview consolidated results overview`\
+`knitr``::`[`kable`](https://rdrr.io/pkg/knitr/man/kable.html)`(``consolidated_results``$``dataset_overview``, digits ``=`` ``4``, caption ``=`` ``"Consolidated Benchmark Overview"``)`
 
 | Dataset | Data_Name | Modality | Total_Metrics | Mean_KS_Distance | Mean_Wasserstein | Mean_RMSE |
 |:---|:---|:---|---:|---:|---:|---:|
@@ -677,7 +679,7 @@ knitr::kable(consolidated_results$dataset_overview, digits = 4, caption = "Conso
 | Method 2 | Method 2-scATAC-seq | scATAC-seq | 155 | 0.1488 | 1.2090 | 1.4124 |
 | Method 2 | Method 2-Joint | Joint (Cross-Modal) | 10 | 0.3167 | 0.0635 | 0.0663 |
 
-Consolidated Benchmark Overview
+Consolidated Benchmark Overview {.table}
 
 ------------------------------------------------------------------------
 
@@ -689,10 +691,9 @@ application (`scSimEvalApp`). You can explore benchmark results, filter
 metrics, view bubble plots, and export high-resolution (600 DPI) figures
 directly in your web browser:
 
-``` r
-# Launch the interactive web app in your default browser
-launch_scSimEval_app()
-```
+\
+`# Launch the interactive web app in your default browser`\
+[`launch_scSimEval_app`](https://kabilanbio.github.io/scSimEval/reference/launch_scSimEval_app.md)`(``)`
 
 ### 14.1 Key Interactive Features
 
@@ -709,11 +710,12 @@ simulator selection, and adjustable canvas dimensions (1200–3200 px). 3.
 Horizontal bar chart ranking overall performance. - *2. Distribution
 QC*: 14-panel comparative expression density, library size, and
 zero-inflation curves. - *3. Scalability Benchmark*: Runtime and memory
-Pareto frontiers. - *4. Metric Boxplots*: Category boxplots and ranked
-metric bar charts with directionality indicators (+/-). - *5. Metric
-Heatmap*: Method-by-metric grid showing exact raw scores in bold text
-with standardized fill. - *6. PCA Ordination*: Principal Component
-Analysis of simulator performance profiles. - *7. MDS Metric Space*:
+Pareto frontiers. - *4. Metric Plots*: Category distribution boxplots,
+faceted category metric barplots, and ranked individual metric bar
+charts with directionality indicators (+/-). - *5. Metric Heatmap*:
+Method-by-metric grid showing exact raw scores in bold text with
+standardized fill. - *6. PCA Ordination*: Principal Component Analysis
+of simulator performance profiles. - *7. MDS Metric Space*:
 Multi-Dimensional Scaling ordination. - *8. Cell Embeddings (t-SNE &
 UMAP)*: Interactive low-dimensional projections (UMAP, t-SNE, PCA)
 across reference and simulated datasets with multi-simulator grid or
@@ -760,44 +762,41 @@ critical for selecting the correct functions.
 
 **Paired data** — use the master pipeline directly:
 
-``` r
-evaluate_multiomics_accuracy(ref_multi, sim_multi, cell_types, ...)
-```
+\
+[`evaluate_multiomics_accuracy`](https://kabilanbio.github.io/scSimEval/reference/evaluate_multiomics_accuracy.md)`(``ref_multi``, ``sim_multi``, ``cell_types``, ``...``)`
 
 **Unpaired data** — evaluate modalities separately, then consolidate:
 
-``` r
-# Per-modality unimodal evaluation
-rna_eval  <- evaluate_simulation_accuracy(ref_rna,  sim_rna)
-atac_eval <- evaluate_simulation_accuracy(ref_atac, sim_atac)
-
-# Population-level cross-modal metrics (no cell pairing required)
-calc_coexpression_module_fidelity(ref_rna, sim_rna)
-calc_peak_coaccessibility_fidelity(ref_atac, sim_atac)
-evaluate_cross_modal_prediction(sim_atac, cell_types)
-
-# Consolidate side-by-side
-evaluate_multiple_datasets(list(RNA = list(ref=ref_rna, sim=sim_rna),
-                                ATAC = list(ref=ref_atac, sim=sim_atac)))
-```
+\
+`# Per-modality unimodal evaluation`\
+`rna_eval``  ``<-`` `[`evaluate_simulation_accuracy`](https://kabilanbio.github.io/scSimEval/reference/evaluate_simulation_accuracy.md)`(``ref_rna``,  ``sim_rna``)`\
+`atac_eval`` ``<-`` `[`evaluate_simulation_accuracy`](https://kabilanbio.github.io/scSimEval/reference/evaluate_simulation_accuracy.md)`(``ref_atac``, ``sim_atac``)`\
+\
+`# Population-level cross-modal metrics (no cell pairing required)`\
+[`calc_coexpression_module_fidelity`](https://kabilanbio.github.io/scSimEval/reference/calc_coexpression_module_fidelity.md)`(``ref_rna``, ``sim_rna``)`\
+[`calc_peak_coaccessibility_fidelity`](https://kabilanbio.github.io/scSimEval/reference/calc_peak_coaccessibility_fidelity.md)`(``ref_atac``, ``sim_atac``)`\
+[`evaluate_cross_modal_prediction`](https://kabilanbio.github.io/scSimEval/reference/evaluate_cross_modal_prediction.md)`(``sim_atac``, ``cell_types``)`\
+\
+`# Consolidate side-by-side`\
+[`evaluate_multiple_datasets`](https://kabilanbio.github.io/scSimEval/reference/evaluate_multiple_datasets.md)`(`[`list`](https://rdrr.io/r/base/list.html)`(``RNA ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``ref``=``ref_rna``, sim``=``sim_rna``)``,`\
+`                                ATAC ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``ref``=``ref_atac``, sim``=``sim_atac``)``)``)`
 
 **Mosaic data** — subset co-assayed cells first, then combine:
 
-``` r
-# Step 1: Extract co-assayed subset
-sim_rna_paired  <- sim_rna_full[, paired_cell_idx]
-sim_atac_paired <- sim_atac_full[, paired_cell_idx]
-
-# Step 2: Paired coupling metrics on subset
-evaluate_multiomics_accuracy(
-  ref_multi = list(rna = ref_rna_paired, atac = ref_atac_paired),
-  sim_multi = list(rna = sim_rna_paired, atac = sim_atac_paired)
-)
-
-# Step 3: Full unimodal evaluation on complete matrices
-evaluate_simulation_accuracy(ref_rna_full, sim_rna_full)
-evaluate_simulation_accuracy(ref_atac_full, sim_atac_full)
-```
+\
+`# Step 1: Extract co-assayed subset`\
+`sim_rna_paired``  ``<-`` ``sim_rna_full``[``, ``paired_cell_idx``]`\
+`sim_atac_paired`` ``<-`` ``sim_atac_full``[``, ``paired_cell_idx``]`\
+\
+`# Step 2: Paired coupling metrics on subset`\
+[`evaluate_multiomics_accuracy`](https://kabilanbio.github.io/scSimEval/reference/evaluate_multiomics_accuracy.md)`(`\
+`  ref_multi ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``rna ``=`` ``ref_rna_paired``, atac ``=`` ``ref_atac_paired``)``,`\
+`  sim_multi ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``rna ``=`` ``sim_rna_paired``, atac ``=`` ``sim_atac_paired``)`\
+`)`\
+\
+`# Step 3: Full unimodal evaluation on complete matrices`\
+[`evaluate_simulation_accuracy`](https://kabilanbio.github.io/scSimEval/reference/evaluate_simulation_accuracy.md)`(``ref_rna_full``, ``sim_rna_full``)`\
+[`evaluate_simulation_accuracy`](https://kabilanbio.github.io/scSimEval/reference/evaluate_simulation_accuracy.md)`(``ref_atac_full``, ``sim_atac_full``)`
 
 > See the dedicated **[Multiomics
 > Vignette](https://kabilanbio.github.io/scSimEval/articles/demo-multiomics.md)**
@@ -864,77 +863,76 @@ researchers to select and validate simulation methods with confidence.
 
 ## 18. Session Information
 
-``` r
-sessionInfo()
-#> R version 4.6.1 (2026-06-24 ucrt)
-#> Platform: x86_64-w64-mingw32/x64
-#> Running under: Windows 11 x64 (build 26200)
-#> 
-#> Matrix products: default
-#>   LAPACK version 3.12.1
-#> 
-#> locale:
-#> [1] LC_COLLATE=English_India.utf8  LC_CTYPE=English_India.utf8   
-#> [3] LC_MONETARY=English_India.utf8 LC_NUMERIC=C                  
-#> [5] LC_TIME=English_India.utf8    
-#> 
-#> time zone: Asia/Calcutta
-#> tzcode source: internal
-#> 
-#> attached base packages:
-#> [1] stats     graphics  grDevices utils     datasets  methods   base     
-#> 
-#> other attached packages:
-#> [1] scSimEval_0.99.3
-#> 
-#> loaded via a namespace (and not attached):
-#>  [1] tidyselect_1.2.1            ade4_1.7-24                
-#>  [3] dplyr_1.2.1                 farver_2.1.2               
-#>  [5] S7_0.2.2                    fastmap_1.2.0              
-#>  [7] SingleCellExperiment_1.34.0 RANN_2.6.2                 
-#>  [9] bluster_1.22.0              digest_0.6.39              
-#> [11] lifecycle_1.0.5             cluster_2.1.8.3            
-#> [13] statmod_1.5.2               magrittr_2.0.5             
-#> [15] kernlab_0.9-33              compiler_4.6.1             
-#> [17] rlang_1.3.0                 sass_0.4.10                
-#> [19] tools_4.6.1                 igraph_2.3.3               
-#> [21] yaml_2.3.12                 knitr_1.51                 
-#> [23] labeling_0.4.3              S4Arrays_1.13.0            
-#> [25] htmlwidgets_1.6.4           mclust_6.1.3               
-#> [27] DelayedArray_0.38.2         RColorBrewer_1.1-3         
-#> [29] abind_1.4-8                 BiocParallel_1.47.0        
-#> [31] withr_3.0.3                 BiocGenerics_0.58.1        
-#> [33] desc_1.4.3                  nnet_7.3-21                
-#> [35] grid_4.6.1                  stats4_4.6.1               
-#> [37] e1071_1.7-17                edgeR_4.10.1               
-#> [39] ggplot2_4.0.3               scales_1.4.0               
-#> [41] fpc_2.2-15                  MASS_7.3-66                
-#> [43] prabclus_2.3-5              dichromat_2.0-1            
-#> [45] SummarizedExperiment_1.42.0 cli_3.6.6                  
-#> [47] rmarkdown_2.31              ragg_1.5.2                 
-#> [49] generics_0.1.4              otel_0.2.0                 
-#> [51] robustbase_0.99-7           cachem_1.1.0               
-#> [53] proxy_0.4-29                modeltools_0.2-24          
-#> [55] splines_4.6.1               clValid_0.7                
-#> [57] parallel_4.6.1              XVector_0.52.0             
-#> [59] vctrs_0.7.3                 matrixStats_1.5.0          
-#> [61] Matrix_1.7-6                jsonlite_2.0.0             
-#> [63] IRanges_2.46.0              S4Vectors_0.50.1           
-#> [65] BiocNeighbors_2.6.0         irlba_2.3.7                
-#> [67] clue_0.3-68                 systemfonts_1.3.2          
-#> [69] locfit_1.5-9.12             diptest_0.77-2             
-#> [71] limma_3.68.4                jquerylib_0.1.4            
-#> [73] glue_1.8.1                  pkgdown_2.2.1              
-#> [75] DEoptimR_1.2-0              codetools_0.2-20           
-#> [77] gtable_0.3.6                GenomicRanges_1.64.0       
-#> [79] tibble_3.3.1                pillar_1.11.1              
-#> [81] htmltools_0.5.9             Seqinfo_1.2.0              
-#> [83] clusterSim_0.51-6           R6_2.6.1                   
-#> [85] textshaping_1.0.5           evaluate_1.0.5             
-#> [87] lattice_0.22-9              Biobase_2.73.2             
-#> [89] bslib_0.12.0                class_7.3-24               
-#> [91] Rcpp_1.1.2                  flexmix_2.3-21             
-#> [93] SparseArray_1.13.2          xfun_0.60                  
-#> [95] fs_2.1.0                    MatrixGenerics_1.24.0      
-#> [97] pkgconfig_2.0.3
-```
+\
+[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)`\
+`#> R version 4.6.1 (2026-06-24 ucrt)`\
+`#> Platform: x86_64-w64-mingw32/x64`\
+`#> Running under: Windows 11 x64 (build 26200)`\
+`#> `\
+`#> Matrix products: default`\
+`#>   LAPACK version 3.12.1`\
+`#> `\
+`#> locale:`\
+`#> [1] LC_COLLATE=English_India.utf8  LC_CTYPE=English_India.utf8   `\
+`#> [3] LC_MONETARY=English_India.utf8 LC_NUMERIC=C                  `\
+`#> [5] LC_TIME=English_India.utf8    `\
+`#> `\
+`#> time zone: Asia/Calcutta`\
+`#> tzcode source: internal`\
+`#> `\
+`#> attached base packages:`\
+`#> [1] stats     graphics  grDevices utils     datasets  methods   base     `\
+`#> `\
+`#> other attached packages:`\
+`#> [1] scSimEval_0.99.4`\
+`#> `\
+`#> loaded via a namespace (and not attached):`\
+`#>  [1] tidyselect_1.2.1            ade4_1.7-24                `\
+`#>  [3] dplyr_1.2.1                 farver_2.1.2               `\
+`#>  [5] S7_0.2.2                    fastmap_1.2.0              `\
+`#>  [7] SingleCellExperiment_1.34.0 RANN_2.6.2                 `\
+`#>  [9] bluster_1.22.0              digest_0.6.39              `\
+`#> [11] lifecycle_1.0.5             cluster_2.1.8.3            `\
+`#> [13] statmod_1.5.2               magrittr_2.0.5             `\
+`#> [15] kernlab_0.9-33              compiler_4.6.1             `\
+`#> [17] rlang_1.3.0                 sass_0.4.10                `\
+`#> [19] tools_4.6.1                 igraph_2.3.3               `\
+`#> [21] yaml_2.3.12                 knitr_1.51                 `\
+`#> [23] labeling_0.4.3              S4Arrays_1.13.0            `\
+`#> [25] htmlwidgets_1.6.4           mclust_6.1.3               `\
+`#> [27] DelayedArray_0.38.2         RColorBrewer_1.1-3         `\
+`#> [29] abind_1.4-8                 BiocParallel_1.47.0        `\
+`#> [31] withr_3.0.3                 BiocGenerics_0.58.1        `\
+`#> [33] desc_1.4.3                  nnet_7.3-21                `\
+`#> [35] grid_4.6.1                  stats4_4.6.1               `\
+`#> [37] e1071_1.7-17                edgeR_4.10.1               `\
+`#> [39] ggplot2_4.0.3               scales_1.4.0               `\
+`#> [41] fpc_2.2-15                  MASS_7.3-66                `\
+`#> [43] prabclus_2.3-5              dichromat_2.0-1            `\
+`#> [45] SummarizedExperiment_1.42.0 cli_3.6.6                  `\
+`#> [47] rmarkdown_2.31              ragg_1.5.2                 `\
+`#> [49] generics_0.1.4              otel_0.2.0                 `\
+`#> [51] robustbase_0.99-7           cachem_1.1.0               `\
+`#> [53] proxy_0.4-29                modeltools_0.2-24          `\
+`#> [55] splines_4.6.1               clValid_0.7                `\
+`#> [57] parallel_4.6.1              XVector_0.52.0             `\
+`#> [59] vctrs_0.7.3                 matrixStats_1.5.0          `\
+`#> [61] Matrix_1.7-6                jsonlite_2.0.0             `\
+`#> [63] IRanges_2.46.0              S4Vectors_0.50.1           `\
+`#> [65] BiocNeighbors_2.6.0         irlba_2.3.7                `\
+`#> [67] clue_0.3-68                 systemfonts_1.3.2          `\
+`#> [69] locfit_1.5-9.12             diptest_0.77-2             `\
+`#> [71] limma_3.68.4                jquerylib_0.1.4            `\
+`#> [73] glue_1.8.1                  pkgdown_2.2.1              `\
+`#> [75] DEoptimR_1.2-0              codetools_0.2-20           `\
+`#> [77] gtable_0.3.6                GenomicRanges_1.64.0       `\
+`#> [79] tibble_3.3.1                pillar_1.11.1              `\
+`#> [81] htmltools_0.5.9             Seqinfo_1.2.0              `\
+`#> [83] clusterSim_0.51-6           R6_2.6.1                   `\
+`#> [85] textshaping_1.0.5           evaluate_1.0.5             `\
+`#> [87] lattice_0.22-9              Biobase_2.73.2             `\
+`#> [89] bslib_0.12.0                class_7.3-24               `\
+`#> [91] Rcpp_1.1.2                  flexmix_2.3-21             `\
+`#> [93] SparseArray_1.13.2          xfun_0.60                  `\
+`#> [95] fs_2.1.0                    MatrixGenerics_1.24.0      `\
+`#> [97] pkgconfig_2.0.3`

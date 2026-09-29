@@ -45,7 +45,7 @@ Invisibly returns the Shiny app process object.
 ``` r
 # Locate the embedded Shiny app directory bundled with the package
 system.file("shiny", "scSimEvalApp", package = "scSimEval")
-#> [1] "C:/Users/kabil/AppData/Local/Temp/RtmpwrNIbF/temp_libpathdb065ab4307/scSimEval/shiny/scSimEvalApp"
+#> [1] "C:/Users/kabil/AppData/Local/Temp/RtmpOCLiYd/temp_libpath3ec478163ce/scSimEval/shiny/scSimEvalApp"
 # \donttest{
 # Launch the interactive studio (interactive sessions only)
 if (interactive()) {

@@ -26,7 +26,7 @@ benchmark_resource_usage({ Sys.sleep(0.01); 1 + 1 })
 #> [1] 2
 #> 
 #> $elapsed_seconds
-#> [1] 0.03
+#> [1] 0.02
 #> 
 #> $memory_mb
 #> [1] 0.003444672

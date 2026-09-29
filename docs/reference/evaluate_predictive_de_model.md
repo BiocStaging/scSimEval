@@ -51,15 +51,15 @@ score.
 data(example_scrna, package = "scSimEval")
 evaluate_predictive_de_model(example_scrna$ref, group = example_scrna$cell_types)
 #> $accuracy
-#> [1] 0.625
+#> [1] 0.8125
 #> 
 #> $precision
-#> [1] 0.7692308
+#> [1] 0.8846154
 #> 
 #> $recall
-#> [1] 0.6666667
+#> [1] 0.75
 #> 
 #> $F1
-#> [1] 0.6
+#> [1] 0.7681159
 #> 
 ```

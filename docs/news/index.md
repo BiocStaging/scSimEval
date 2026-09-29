@@ -1,164 +1,35 @@
 # Changelog
 
-## scSimEval 0.99.9
-
-### Documentation
-
-- **Global search bar added to GitHub Pages site:**
-  - Enabled pkgdown’s built-in Fuse.js client-side full-text search
-    across all reference pages, vignettes, and news entries via
-    `search: exclude: ['news/index.html']` in `_pkgdown.yml`.
-  - Users can now instantly search any function name, parameter, or
-    concept from the documentation navbar.
-- **Shiny Studio vignette completely rewritten
-  (`vignettes/shiny-app.Rmd`):**
-  - Previous version was 72 lines with minimal coverage; new guide is
-    comprehensive.
-  - Documents all **6 navigation tabs** (Home, Data Hub, Comparative
-    Bubble Matrix, Visualizations, Download Results, Help & Getting
-    Started) and the **8 Visualization sub-panels** (Evaluation Summary,
-    Distribution QC, Scalability Benchmark, Metric Boxplots, Metric
-    Heatmap, PCA Ordination, MDS Metric Space, Cell Embeddings).
-  - Every UI control is documented with its options, range, and default
-    value.
-  - All 4 Data Hub evaluation modes (Demo, Single-Cell, Multiomics,
-    Upload Saved) are explained in detail including Paired vs. Unpaired
-    multiomics distinction.
-  - Every export button (JPEG 600 DPI, PDF, Excel, CSV, RDS, zip
-    archive) is listed.
-  - Cross-reference table maps all Shiny controls to their R API
-    equivalents.
-- **Shiny Studio added to navbar:**
-  - `articles/shiny-app.html` now appears as a top-level **Shiny
-    Studio** link in the navbar.
-  - Added `articles:` section to `_pkgdown.yml` to explicitly index and
-    organize all vignettes.
-
-## scSimEval 0.99.8
-
-### Bug Fixes
-
-- **[`plot_metric_pca()`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_pca.md)
-  and
-  [`plot_metric_mds()`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_mds.md)
-  — `category = "all"` support:**
-  - Fixed a category filter edge case where passing `category = "all"`
-    would return an empty data frame (no category named “all” exists)
-    instead of showing all available categories.
-  - Both functions now treat `category = "all"` or `NULL` identically —
-    no category filter is applied, so all metrics from every category
-    contribute to the PCA / MDS ordination.
-  - This matches the expected behavior when users select “All” in the
-    interactive Shiny Studio.
-
-## scSimEval 0.99.7
-
-### Documentation & Online Integration
-
-- **Interactive Shiny Studio Documentation Portal:**
-  - Integrated official documentation links
-    (`https://kabilanbio.github.io/scSimEval`) into Tab 6 (“Help &
-    Getting Started”) of the Shiny application via a top hero callout
-    badge and a dedicated gradient footer card with quick-launch
-    actions.
-  - Linked users directly to online vignettes, tutorials, paired
-    vs. unpaired multiomics protocols, and function reference manuals.
-- **GitHub Pages Site Synchronization (`pkgdown`):**
-  - Updated `_pkgdown.yml` and rebuilt documentation website to align
-    with all new features, including
-    [`compute_dataset_embeddings()`](https://kabilanbio.github.io/scSimEval/reference/compute_dataset_embeddings.md),
-    [`plot_dataset_embeddings()`](https://kabilanbio.github.io/scSimEval/reference/plot_dataset_embeddings.md),
-    [`compute_embedding_quality_metrics()`](https://kabilanbio.github.io/scSimEval/reference/compute_embedding_quality_metrics.md),
-    and
-    [`extract_dataset_summary()`](https://kabilanbio.github.io/scSimEval/reference/extract_dataset_summary.md).
-  - Re-rendered full documentation site in `docs/` reflecting all 62
-    metrics, multiomics compatibility guides, and low-dimensional cell
-    embedding workflows.
-
-## scSimEval 0.99.6
-
-### Bug Fixes & Standalone Robustness
-
-- **Self-Contained Shiny Studio Runtime:**
-  - Resolved `could not find function "compute_dataset_embeddings"`
-    error when launching the Shiny app under pre-existing library
-    installations by embedding fully self-contained runtime definitions
-    for
-    [`compute_dataset_embeddings()`](https://kabilanbio.github.io/scSimEval/reference/compute_dataset_embeddings.md),
-    [`plot_dataset_embeddings()`](https://kabilanbio.github.io/scSimEval/reference/plot_dataset_embeddings.md),
-    and
-    [`compute_embedding_quality_metrics()`](https://kabilanbio.github.io/scSimEval/reference/compute_embedding_quality_metrics.md)
-    directly within `inst/shiny/scSimEvalApp/app.R`.
-  - Guaranteed seamless rendering of Sub-panel 8 Cell Embeddings for
-    demo datasets and custom uploaded matrices alike, without requiring
-    manual package re-installation.
-  - Updated Tab 6 (“Help & Getting Started”) in the Shiny app studio to
-    fully document Sub-panel 8: Cell Embeddings (t-SNE & UMAP), layout
-    modes, and quantitative quality metrics table.
-
-### Documentation Across Package & App
-
-- **Comprehensive Package-Wide Documentation Overhaul:**
-  - Synchronized `DESCRIPTION`, `README.md`, `NEWS.md`,
-    `vignettes/scSimEval-workflow.Rmd`, and
-    `vignettes/demo-multiomics.Rmd` across all recent additions.
-  - Documented low-dimensional cell embedding workflows, multi-simulator
-    comparison layouts, and embedding quality metrics (Silhouette, ARI,
-    library size deviation).
-  - Documented Dataset Properties Summary extraction
-    ([`extract_dataset_summary()`](https://kabilanbio.github.io/scSimEval/reference/extract_dataset_summary.md))
-    and multiomics pairing mode selection (paired vs. unpaired).
-
-## scSimEval 0.99.5
-
-### New Features & Enhancements
-
-- **Sub-panel 8: Cell Embeddings (t-SNE & UMAP) & Quantitative Quality
-  Metrics:**
-  - Implemented high-level dimensionality reduction and visualization
-    functions:
-    [`compute_dataset_embeddings()`](https://kabilanbio.github.io/scSimEval/reference/compute_dataset_embeddings.md),
-    [`plot_dataset_embeddings()`](https://kabilanbio.github.io/scSimEval/reference/plot_dataset_embeddings.md),
-    and
-    [`compute_embedding_quality_metrics()`](https://kabilanbio.github.io/scSimEval/reference/compute_embedding_quality_metrics.md).
-  - Supports UMAP, t-SNE, and PCA reductions computed simultaneously
-    across the empirical reference and all evaluated simulators.
-  - Interactive layout options: Multi-Simulator Faceted Grid (comparing
-    reference with all simulators side by side) and Direct 1-to-1
-    Comparison (Reference vs. Selected Simulator).
-  - Rich aesthetic coloring options: Cell-type labels, Unsupervised
-    cluster recovery (k-means on principal components), Library size
-    gradient, and Detected features gradient.
-  - Integrated an interactive summary table of quantitative quality
-    metrics directly beneath the embedding plots (Mean Silhouette Score,
-    Adjusted Rand Index cluster concordance, Mean Library Size, Mean
-    Detected Features, and Library Size Discrepancy %).
-  - Full export support: 600 DPI publication JPEG, vectorized PDF,
-    inclusion in the multi-page PDF report, and automatic bundling in
-    the complete benchmark ZIP download.
-
 ## scSimEval 0.99.4
 
-### Documentation & Methodological Guidance
+### Bug Fixes & Improvements
 
-- **Unpaired & Mosaic Multiomics Compatibility Framework:**
-  - Expanded `DESCRIPTION`, `vignettes/scSimEval-workflow.Rmd`, and
-    `vignettes/demo-multiomics.Rmd` with deep-dive documentation on
-    experimental design compatibility.
-  - Clarified support for (i) paired multiomics (e.g. 10x Multiome,
-    SHARE-seq), (ii) unpaired multiomics (separate cells from the same
-    biological system), and (iii) mosaic multiomics (partially
-    overlapping cell cohorts or modality subsets).
-  - Provided practical code recipes and metric breakdown matrices for
-    decomposing mosaic multiomics datasets into paired and unpaired
-    evaluation blocks.
+- **[`compute_method_leaderboard()`](https://kabilanbio.github.io/scSimEval/reference/compute_method_leaderboard.md)
+  & `.ingest_bubble_data()` Robustness:**
+  - Added automatic fallback to `Method = "Simulation"` and
+    `Category = "Uncategorized"` when evaluating single simulation
+    accuracy results
+    ([`evaluate_simulation_accuracy()`](https://kabilanbio.github.io/scSimEval/reference/evaluate_simulation_accuracy.md))
+    or pre-formed benchmark data frames lacking explicit method labels.
+  - Resolved `R CMD check` example failure in
+    `man/compute_method_leaderboard.Rd`.
+- **Dependency & Package Best Practices:**
+  - Added `irlba` to `Suggests:` in `DESCRIPTION` to properly declare
+    conditional SVD acceleration in
+    [`compute_dataset_embeddings()`](https://kabilanbio.github.io/scSimEval/reference/compute_dataset_embeddings.md).
+  - Replaced direct [`set.seed()`](https://rdrr.io/r/base/Random.html)
+    invocation with RNG-safe execution that preserves and restores
+    `.Random.seed` on function exit in accordance with Bioconductor
+    guidelines.
+  - Removed global `eval = FALSE` in `vignettes/shiny-app.Rmd` to
+    satisfy Bioconductor vignette check requirements.
 
 ## scSimEval 0.99.3
 
 ### New Features & Enhancements
 
-- **Paired vs. Unpaired Multiomics Selection:**
-  - Added `pairing = c("paired", "unpaired")` parameter (with
+- **Paired, Unpaired & Mosaic Multiomics Framework:**
+  - Added explicit `pairing = c("paired", "unpaired")` parameter (with
     `is_paired` alias) to
     [`evaluate_multiomics_accuracy()`](https://kabilanbio.github.io/scSimEval/reference/evaluate_multiomics_accuracy.md)
     and
@@ -166,25 +37,107 @@
   - In **Paired mode** (default; e.g. 10x Chromium Multiome, SHARE-seq),
     all 62 measures across all 8 canonical categories are evaluated,
     including cell-level pairing metrics (FOSCTTM, <Match@1>, in silico
-    cross-modal generation, direct peak-to-gene regulatory coupling,
-    cross-modality correlation).
-  - In **Unpaired mode** (separate cells from the same tissue),
-    cell-level pairing metrics that require 1-to-1 matching cell
-    barcodes are safely omitted with clear informational logging.
-    Population-level cross-modal metrics (cross-modal cell-type label
-    transfer accuracy and macro-F1, chromatin peak co-accessibility RV
-    coefficient, gene co-expression module correlation, and
-    accessibility profile concordance) and unimodal metrics for both
-    layers are fully computed and standardized.
-- **Interactive Shiny Studio App:**
-  - Added a dynamic **Multiomics Dataset Type** selector (radio buttons)
-    in Tab 2 (Data Hub: Mode 3) allowing users to switch between Paired
-    and Unpaired multiomics evaluation with live contextual warning/info
-    banners.
-  - Automatically routes datasets to the appropriate evaluation pipeline
-    and updates benchmark headers and method names accordingly.
-  - Updated Help & Manual (Tab 5) with full metric compatibility tables
-    and guidelines for paired vs. unpaired multiomics.
+    cross-modal generation, direct peak-to-gene linkage).
+  - In **Unpaired mode** (separate cells from the same
+    tissue/condition), cell-level pairing metrics that require 1-to-1
+    matching cell barcodes are safely omitted with clear informational
+    logging, while population-level cross-modal metrics and unimodal
+    evaluations are fully computed and standardized.
+  - Added comprehensive methodological guidance for decomposing mosaic
+    multiomics datasets into paired and unpaired evaluation blocks.
+  - Integrated dynamic **Multiomics Dataset Type** selector (radio
+    buttons) in Shiny Studio Tab 2 (Data Hub: Mode 3) with live
+    contextual warning/info banners.
+- **Sub-panel 8: Cell Embeddings (UMAP, t-SNE, PCA) & Quality Metrics:**
+  - Implemented high-level dimensionality reduction and visualization
+    functions:
+    [`compute_dataset_embeddings()`](https://kabilanbio.github.io/scSimEval/reference/compute_dataset_embeddings.md),
+    [`plot_dataset_embeddings()`](https://kabilanbio.github.io/scSimEval/reference/plot_dataset_embeddings.md),
+    and
+    [`compute_embedding_quality_metrics()`](https://kabilanbio.github.io/scSimEval/reference/compute_embedding_quality_metrics.md).
+  - Interactive layout options: Multi-Simulator Faceted Grid and Direct
+    1-to-1 Comparison (Reference vs. Selected Simulator).
+  - Flexible cell coloring: Cell Type labels, Unsupervised cluster
+    recovery, Library size gradient, and Detected features gradient.
+  - Integrated interactive summary table of quantitative embedding
+    fidelity metrics (Mean Silhouette width, Adjusted Rand Index cluster
+    concordance, and library size discrepancy %).
+- **Comprehensive All-in-One Benchmark Archive (.zip) & Export Suite:**
+  - Overhauled the complete benchmark bundle (`download_complete_zip`)
+    in Shiny Studio Tab 5 (“Download Results”) to deliver all
+    quantitative results, spreadsheets, reports, and figures in an
+    organized hierarchy.
+  - **All Metrics in Multiple Formats:** Bundles complete evaluation
+    results in Excel (`.xlsx`), CSV (`.csv`), tab-delimited text
+    (`.txt`), and native R object (`.rds`) formats in both root and
+    `metrics/` subfolders.
+  - **Rankings & Metadata Tables:** Automatically generates and packages
+    `method_rankings_leaderboard` (`.csv` & `.txt`) and
+    `dataset_properties_summary` (`.csv` & `.txt`).
+  - **Multi-Page Compiled PDF Report:** Compiles all 9 diagnostic and
+    comparative figures into a single publication-quality vector PDF
+    (`scSimEval_all_plots_report.pdf`).
+  - **All Kinds of Figures (Grouped & Individual):**
+    - `figures/grouped/`: Both 600 DPI publication-grade JPEGs and
+      vectorized PDFs for comparative bubble matrix, overall evaluation
+      summary, scalability benchmark, metric boxplots by category,
+      performance heatmap, PCA simulator ordination, MDS metric space,
+      comparative distribution QC, and cell embeddings comparison grid.
+    - `figures/individual/`: Individual publication-grade barplots for
+      every evaluated metric (`metric_bar_<MetricName>.jpeg` & `.pdf`)
+      and simulator-specific 1-to-1 comparison cell embeddings against
+      empirical reference
+      (`cell_embeddings_compare_<SimulatorName>.jpeg` & `.pdf`).
+  - Added dedicated **Download TXT Table (.txt)** action button to Card
+    2 in Tab 5 for one-click tab-delimited exports.
+- **Documentation, Search & Site Integration:**
+  - Enabled client-side Fuse.js full-text search across the GitHub Pages
+    documentation site, allowing instant search of all functions,
+    parameters, vignettes, and metric descriptions.
+  - Completely rewritten `vignettes/shiny-app.Rmd` documenting all 6
+    navigation tabs, 8 visualization panels, UI controls, export
+    options, and an R-API cross-reference table.
+  - Integrated official documentation links and quick-launch actions
+    into Tab 6 (“Help & Getting Started”).
+- **Dedicated Individual Figure Export (Shiny Tab 5 - Card 4):**
+  - Added on-demand figure export suite in Tab 5 (“Download Results”)
+    allowing researchers to download any single diagnostic or
+    comparative visualization in either publication-grade vector PDF
+    (`.pdf`) or ultra-high-resolution 600 DPI JPEG (`.jpeg`).
+  - Covers all 14 figure types: Comparative Bubble Matrix, Overall
+    Evaluation Summary, Scalability Benchmark, Metric Boxplots,
+    Performance Heatmap, PCA Ordination, MDS Metric Space, Comparative
+    Distribution QC, UMAP Grid, t-SNE Grid, PCA Grid, and 1-to-1
+    simulator vs reference comparisons.
+  - Dynamically populated simulator selector for custom 1-to-1
+    side-by-side comparison figure downloads.
+- **Expanded Embeddings in Complete Benchmark Archive
+  (`download_complete_zip`):**
+  - Upgraded the comprehensive `.zip` bundle to systematically generate
+    and organize cell embedding figures for all three supported
+    dimensionality reduction techniques (UMAP, t-SNE, and PCA) in
+    `figures/grouped/` (`09_cell_embeddings_umap_grid`,
+    `10_cell_embeddings_tsne_grid`, `11_cell_embeddings_pca_grid`).
+  - Systematically exports 1-to-1 comparison plots for every simulator
+    against the empirical reference across UMAP, t-SNE, and PCA to
+    `figures/individual/`.
+- **Documentation & Vignette Synchronization:**
+  - Fully updated `vignettes/shiny-app.Rmd` to document the new Card 4
+    export controls and the expanded zip bundle directory structure.
+
+### Bug Fixes
+
+- **[`plot_metric_pca()`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_pca.md)
+  and
+  [`plot_metric_mds()`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_mds.md)
+  — `category = "all"` support:**
+  - Fixed category filter edge case where passing `category = "all"` or
+    `NULL` now correctly retains all metrics across all categories
+    without filtering out rows.
+- **Self-Contained Shiny Studio Runtime:**
+  - Embedded runtime definitions directly within
+    `inst/shiny/scSimEvalApp/app.R` to ensure seamless execution across
+    any R environment without requiring package re-installation.
 
 ## scSimEval 0.99.2
 
@@ -251,13 +204,13 @@
 - 62 quantitative fidelity metrics spanning 8 biological and
   computational categories:
   - 1.  Distributional Properties
-  - 2.  Correlations & Zero-Inflation
-  - 3.  Cellular Structure & Concordance
-  - 4.  Batch Effects & Confounder Mixing
-  - 22. Biological Signal & Downstream Fidelity
-  - 6.  Trajectory & Lineage Dynamics
-  - 7.  Cross-Modal Coupling & Modularity
-  - 8.  Computational Scalability
+  - \(II\) Correlations & Zero-Inflation
+  - \(III\) Cellular Structure & Concordance
+  - \(IV\) Batch Effects & Confounder Mixing
+  - \(V\) Biological Signal & Downstream Fidelity
+  - \(VI\) Trajectory & Lineage Dynamics
+  - \(VII\) Cross-Modal Coupling & Modularity
+  - \(VIII\) Computational Scalability
 - Comprehensive visualization suite with publication-ready comparative
   bubble matrices, individual metric barplots, heatmaps, PCA, and MDS
   projections.

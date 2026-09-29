@@ -31,6 +31,8 @@ cross-simulator benchmarking.
 - [`plot_metric_boxplots()`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_boxplots.md)
   : Plot Comparison Boxplots Across Simulators Plot Benchmark Metric
   Score Distributions Across Simulators
+- [`plot_category_metric_bars()`](https://kabilanbio.github.io/scSimEval/reference/plot_category_metric_bars.md)
+  : Plot Benchmark Metric Performance Barplots by Category
 - [`plot_metric_heatmap()`](https://kabilanbio.github.io/scSimEval/reference/plot_metric_heatmap.md)
   : Plot Multi-Simulator Comparative Metric Heatmap Across Canonical
   Categories
@@ -51,6 +53,8 @@ cross-simulator benchmarking.
 - [`compute_embedding_quality_metrics()`](https://kabilanbio.github.io/scSimEval/reference/compute_embedding_quality_metrics.md)
   : Compute Quantitative Quality Metrics for Low-Dimensional Cell
   Embeddings
+- [`compute_method_leaderboard()`](https://kabilanbio.github.io/scSimEval/reference/compute_method_leaderboard.md)
+  : Compute Simulator Method Performance Leaderboard
 
 ## Interactive Graphical Interface (Shiny App Studio)
 

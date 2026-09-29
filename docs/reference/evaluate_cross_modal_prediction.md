@@ -32,9 +32,9 @@ r_rna <- example_multiomics$ref_multi$rna
 r_atac <- example_multiomics$ref_multi$atac
 evaluate_cross_modal_prediction(r_rna, example_multiomics$cell_types)
 #> $cross_modal_accuracy
-#> [1] 0.75
+#> [1] 0.625
 #> 
 #> $cross_modal_F1
-#> [1] 0.7090909
+#> [1] 0.625
 #> 
 ```
