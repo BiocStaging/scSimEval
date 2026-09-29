@@ -1,7 +1,7 @@
 Package: scSimEval
 Type: Package
 Title: Unified Benchmarking and Accuracy Evaluation for Single-Cell Multiomics Simulation Methods
-Version: 0.99.3
+Version: 0.99.4
 Authors@R: c(
     person("Kabilan", "S", role = c("aut", "cre"), email = "kabilan151414@gmail.com"),
     person("Dr", "Dwijesh Chandra Mishra", role = c("aut", "ths"), email = "dwij.mishra@gmail.com"),
@@ -94,6 +94,7 @@ Suggests:
     RANN,
     bluster,
     Seurat,
+    irlba,
     Rtsne,
     uwot
 Config/roxygen2/version: 8.1.0

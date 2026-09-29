@@ -2861,13 +2861,25 @@ plot_bubble_matrix <- plot_benchmark_bubble_matrix
   # Direct evaluation result object with benchmark_summary_table or metrics_summary_table
   if (is.list(data) && !is.data.frame(data)) {
     if ("benchmark_summary_table" %in% names(data)) {
-      return(.ingest_bubble_data(data$benchmark_summary_table))
+      tbl <- data$benchmark_summary_table
+      if (is.data.frame(tbl)) {
+        if (!"Method" %in% colnames(tbl)) tbl$Method <- "Simulation"
+        return(.ingest_bubble_data(tbl))
+      }
     }
     if ("metrics_summary_table" %in% names(data)) {
-      return(.ingest_bubble_data(data$metrics_summary_table))
+      tbl <- data$metrics_summary_table
+      if (is.data.frame(tbl)) {
+        if (!"Method" %in% colnames(tbl)) tbl$Method <- "Simulation"
+        return(.ingest_bubble_data(tbl))
+      }
     }
     if ("summary_table" %in% names(data)) {
-      return(.ingest_bubble_data(data$summary_table))
+      tbl <- data$summary_table
+      if (is.data.frame(tbl)) {
+        if (!"Method" %in% colnames(tbl)) tbl$Method <- "Simulation"
+        return(.ingest_bubble_data(tbl))
+      }
     }
   }
 
@@ -2884,7 +2896,8 @@ plot_bubble_matrix <- plot_benchmark_bubble_matrix
       if (!is.null(tbl)) {
         val <- if (!is.null(tbl$Score)) tbl$Score else if (!is.null(tbl$Value)) tbl$Value else NA_real_
         mth <- if (!is.null(tbl$Method)) tbl$Method else nm
-        rows[[nm]] <- data.frame(Method = mth, Category = tbl$Category,
+        cat_col <- if (!is.null(tbl$Category)) tbl$Category else "Uncategorized"
+        rows[[nm]] <- data.frame(Method = mth, Category = cat_col,
                                   Metric = tbl$Metric, Score_Raw = val,
                                   stringsAsFactors = FALSE)
       }
@@ -2896,9 +2909,18 @@ plot_bubble_matrix <- plot_benchmark_bubble_matrix
   # Pre-formed tidy data.frame
   if (is.data.frame(data)) {
     df <- data
-    if (!"Method" %in% colnames(df) && "Simulator" %in% colnames(df)) df$Method <- df$Simulator
-    if (!"Score_Raw" %in% colnames(df) && "Score" %in% colnames(df))  df$Score_Raw <- df$Score
-    if (!"Score_Raw" %in% colnames(df) && "Value" %in% colnames(df))  df$Score_Raw <- df$Value
+    if (!"Method" %in% colnames(df)) {
+      if ("Simulator" %in% colnames(df)) {
+        df$Method <- df$Simulator
+      } else if ("Data_Name" %in% colnames(df)) {
+        df$Method <- df$Data_Name
+      } else {
+        df$Method <- "Simulation"
+      }
+    }
+    if (!"Category" %in% colnames(df)) df$Category <- "Uncategorized"
+    if (!"Score_Raw" %in% colnames(df) && "Score" %in% colnames(df)) df$Score_Raw <- df$Score
+    if (!"Score_Raw" %in% colnames(df) && "Value" %in% colnames(df)) df$Score_Raw <- df$Value
     if (!"Metric" %in% colnames(df) && "Display_Metric" %in% colnames(df)) df$Metric <- df$Display_Metric
     missing <- setdiff(c("Method", "Metric", "Score_Raw"), colnames(df))
     if (length(missing) > 0)
