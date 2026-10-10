@@ -1,5 +1,5 @@
 # inst/shiny/scSimEvalApp/app.R
-# Unified Single-Cell & Multiomics Simulation Benchmarking Studio
+# Simulation Evaluation Studio for scRNA-seq, scATAC-seq, and Single-Cell Multiomics
 # Powered by scSimEval (62 Curated Ground-Truth-Free Measures)
 
 library(shiny)
@@ -805,14 +805,14 @@ ui <- page_navbar(
           div(
             style = "display: inline-flex; align-items: center; gap: 8px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.28); border-radius: 20px; padding: 4px 14px; margin-bottom: 14px;",
             icon("dna", style = "color: #38BDF8; font-size: 0.82rem;"),
-            span("Single-Cell & Multiomics Simulation Benchmarking", style = "color: #38BDF8; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;")
+            span("Simulation Evaluation • scRNA-seq • scATAC-seq • Multiomics", style = "color: #38BDF8; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;")
           ),
           h2(
             "scSimEval Studio",
             style = "font-weight: 800; font-size: 2.1rem; letter-spacing: -0.03em; color: #FFFFFF; margin-bottom: 10px;"
           ),
           p(
-            "A unified, ground-truth-free framework for multi-metric fidelity benchmarking of synthetic single-cell transcriptomics (scRNA-seq), chromatin accessibility (scATAC-seq), and paired multiomics datasets against empirical biological references.",
+            "This application is designed for simulation evaluation of single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) datasets by comparing them against real reference datasets across 62 evaluation measures without requiring known ground truth.",
             style = "font-size: 1.02rem; color: #CBD5E1; line-height: 1.6; margin-bottom: 0;"
           )
         )
@@ -906,7 +906,7 @@ ui <- page_navbar(
                   div(style = "flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #EFF6FF; color: #2563EB; font-weight: 700; font-size: 0.82rem; display: flex; align-items: center; justify-content: center; border: 1px solid #BFDBFE;", "2"),
                   div(
                     div(tags$b("Evaluation & Ranking"), style = "font-size: 0.86rem; color: #0F172A;"),
-                    div("Automated execution of 62 fidelity measures across distributions, clustering, batch effects, and multiomics coupling.", style = "font-size: 0.79rem; color: #64748B; line-height: 1.4;")
+                    div("Comprehensive evaluation of scRNA-seq, scATAC-seq, and multiomics simulations across 62 measures covering distributions, clustering, batch effects, and cross-modality coupling.", style = "font-size: 0.79rem; color: #64748B; line-height: 1.4;")
                   )
                 ),
                 div(
@@ -1798,11 +1798,11 @@ ui <- page_navbar(
             # Introduction Hero Callout
             div(
               style = "background: #F8FAFC; border-left: 4px solid #1B4F72; border-radius: 6px; padding: 18px 22px; margin-bottom: 24px;",
-              h4("Unified Evaluation & Benchmarking for Single-Cell Simulations", style = "font-weight: 800; color: #1B4F72; margin-top: 0; font-size: 1.18rem;"),
+              h4("Simulation Evaluation for Single-Cell and Multiomics Datasets", style = "font-weight: 800; color: #1B4F72; margin-top: 0; font-size: 1.18rem;"),
               p(
-                strong("scSimEval"), " is a scientific framework to test how well synthetic single-cell datasets reproduce real biological experiments. ",
-                "It provides a ground-truth-free evaluation pipeline with ", strong("62 evaluation metrics organized into 8 biological and computational categories"), 
-                " across single-cell RNA-seq, ATAC-seq, and paired multiomics."
+                strong("scSimEval"), " is designed for simulation evaluation of single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) datasets. ",
+                "It evaluates how well simulated datasets reproduce real biological reference data across ", strong("62 evaluation measures organized into 8 biological categories"), 
+                " without requiring known ground truth."
               ),
               p(
                 "This web application lets you load example benchmarks or upload your own datasets, calculate scores, compare simulators, and download publication-ready figures.",
@@ -2430,11 +2430,31 @@ server <- function(input, output, session) {
   observeEvent(input$btn_go_download, { nav_select("nav_active", "Download Results") })
   observeEvent(input$btn_go_help, { nav_select("nav_active", "Help & Getting Started") })
   observeEvent(input$btn_go_contact, { nav_select("nav_active", "Contact") })
+  observeEvent(input$btn_empty_help, { nav_select("nav_active", "Help & Getting Started") })
   
   # ----------------------------------------------------------------------------
   # Data Hub: Mode 1 - Load Demo Benchmark
   # ----------------------------------------------------------------------------
   observeEvent(input$btn_load_demo, {
+    if (!is.null(initial_demo)) {
+      rv$benchmark_df <- initial_demo$benchmark_summary_table
+      rv$methods <- initial_demo$methods
+      rv$toy_ref <- initial_demo$toy_data$ref
+      rv$toy_sim <- initial_demo$toy_data$sim
+      rv$sim_matrices <- init_demo_sim_matrices(initial_demo)
+      rv$cell_types <- initial_demo$toy_data$cell_types
+      rv$batch <- initial_demo$toy_data$batch
+      rv$source_name <- "Demo Benchmark (Splatter, scDesign3, SCRIP, SymSim, dyngen, simATAC)"
+      rv$dataset_summary_df <- init_demo_summary(initial_demo)
+      
+      updateCheckboxGroupInput(session, "sel_bubble_methods", choices = rv$methods, selected = rv$methods)
+      showNotification("Demo benchmark loaded successfully!", type = "message")
+    } else {
+      showNotification("Demo benchmark file not found on disk.", type = "warning")
+    }
+  })
+
+  observeEvent(input$btn_empty_load_demo, {
     if (!is.null(initial_demo)) {
       rv$benchmark_df <- initial_demo$benchmark_summary_table
       rv$methods <- initial_demo$methods
@@ -2950,7 +2970,7 @@ server <- function(input, output, session) {
             ),
             h4("Welcome to Data Hub", style = "font-weight: 700; color: #1E293B; margin-bottom: 8px; font-size: 1.15rem;"),
             p(
-              "Load our example benchmark to explore all features with 6 pre-evaluated simulators, or upload your own real and simulated count matrices using the controls on the left.",
+              "Load our example benchmark to explore all features with 6 pre-evaluated simulators, or upload your own real and simulated datasets (scRNA-seq, scATAC-seq, or single-cell multiomics) using the controls on the left.",
               style = "font-size: 0.90rem; color: #64748B; line-height: 1.6; margin-bottom: 22px;"
             ),
             div(
