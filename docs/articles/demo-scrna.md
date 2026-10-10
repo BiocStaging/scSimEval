@@ -234,7 +234,7 @@ requiring artificial ground-truth labels.
 `#> [1] stats     graphics  grDevices utils     datasets  methods   base     `\
 `#> `\
 `#> other attached packages:`\
-`#> [1] scSimEval_0.99.4`\
+`#> [1] scSimEval_0.99.5`\
 `#> `\
 `#> loaded via a namespace (and not attached):`\
 `#>  [1] SummarizedExperiment_1.42.0 xfun_0.60                  `\

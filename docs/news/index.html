@@ -221,7 +221,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -255,13 +255,68 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.99.4" id="scsimeval-0994">scSimEval 0.99.4<a class="anchor" aria-label="anchor" href="#scsimeval-0994"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.99.5" id="scsimeval-0995">scSimEval 0.99.5<a class="anchor" aria-label="anchor" href="#scsimeval-0995"></a></h2>
+<div class="section level3">
+<h3 id="ui--user-experience-enhancements-0-99-5">UI &amp; User Experience Enhancements<a class="anchor" aria-label="anchor" href="#ui--user-experience-enhancements-0-99-5"></a></h3>
+<ul><li>
+<strong>Streamlined &amp; Minimalist Home Tab:</strong>
+<ul><li>Redesigned the Home tab hero banner with a clean, modern scientific aesthetic.</li>
+<li>Removed redundant nested action button boxes inside the main <em>scSimEval Studio</em> hero card, decluttering the initial landing view and relying on the intuitive top navigation bar.</li>
+<li>Symmetrically balanced card paddings and layout typography.</li>
+</ul></li>
+<li>
+<strong>Clear, Accessible &amp; Human Language Refinement:</strong>
+<ul><li>Rewrote application copy across all tabs to replace technical jargon and buzzwords with clear, direct scientific explanations.</li>
+<li>Clearly articulated the core purpose of scSimEval: evaluating simulations of single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) datasets against real biological reference data across 62 evaluation measures without requiring known ground truth.</li>
+</ul></li>
+<li>
+<strong>Data Hub Improvements &amp; Bug Fixes:</strong>
+<ul><li>Fixed the empty-state <strong>“Open User Guide”</strong> button (<code>btn_empty_help</code>) to properly navigate directly to the <em>Help &amp; Getting Started</em> tab.</li>
+<li>Wired the empty-state <strong>“Load Example Benchmark (6 Simulators)”</strong> button (<code>btn_empty_load_demo</code>) for instant one-click demonstration data loading.</li>
+<li>Streamlined Data Hub inputs by removing redundant metadata fields (such as taxonomic ranges and ingestion schemas), creating a focused, user-friendly data import workflow.</li>
+<li>Added helpful capacity guidance badges for cloud vs. local package execution.</li>
+</ul></li>
+<li>
+<strong>Comparative Bubble Matrix Metric Filtering:</strong>
+<ul><li>Simplified the metric filtering interface into two clean options: <strong>“All 62 Measures”</strong> and <strong>“Custom Selection”</strong>.</li>
+<li>Added an intuitive category picker dropdown and dynamic metric checklist with convenient “All” and “Clear” toggles.</li>
+</ul></li>
+<li>
+<strong>Help &amp; Methodology Documentation Updates:</strong>
+<ul><li>Restored <strong>Figure 2 | Score Normalization Pipeline</strong> (<code>score_normalization_workflow.png</code>) in Section 3 of the <em>Help &amp; Getting Started</em> tab, accompanied by 4 structured methodology cards explaining directional transformation, min-max feature scaling, outlier winsorization, and overall fidelity calculation.</li>
+</ul></li>
+<li>
+<strong>Team, Authorship &amp; Contact Tab Refinement:</strong>
+<ul><li>Retained a single official ICAR emblem on the Contact page.</li>
+<li>Updated author name to <strong>Kabilan Sakthivel</strong> and designation of <strong>Dr. Dwijesh Chandra Mishra</strong> to <strong>Principal Scientist</strong>.</li>
+</ul></li>
+</ul></div>
+<div class="section level3">
+<h3 id="architecture--code-alignment-0-99-5">Architecture &amp; Code Alignment<a class="anchor" aria-label="anchor" href="#architecture--code-alignment-0-99-5"></a></h3>
+<ul><li>
+<strong>Full Parity Between Package &amp; Deployment Apps:</strong>
+<ul><li>Synchronized <code>inst/shiny/scSimEvalApp/10_visualizations.R</code> with package core <code>R/10_visualizations.R</code>, providing full access to dataset embedding algorithms (<code><a href="../reference/compute_dataset_embeddings.html">compute_dataset_embeddings()</a></code>, <code><a href="../reference/plot_dataset_embeddings.html">plot_dataset_embeddings()</a></code>, <code><a href="../reference/compute_embedding_quality_metrics.html">compute_embedding_quality_metrics()</a></code>).</li>
+<li>Aligned <code>app.R</code> between the local package (<code>inst/shiny/scSimEvalApp/app.R</code>) and Posit Connect Cloud deployment (<code>scSimEval_shiny/app.R</code>) with exact line-for-line parity, maintaining Google Analytics tracking solely in the cloud deployment.</li>
+</ul></li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.99.5" id="scsimeval-0994">scSimEval 0.99.5<a class="anchor" aria-label="anchor" href="#scsimeval-0994"></a></h2>
 <div class="section level3">
 <h3 id="bug-fixes--improvements-0-99-4">Bug Fixes &amp; Improvements<a class="anchor" aria-label="anchor" href="#bug-fixes--improvements-0-99-4"></a></h3>
 <ul><li>
 <strong><code><a href="../reference/compute_method_leaderboard.html">compute_method_leaderboard()</a></code> &amp; <code>.ingest_bubble_data()</code> Robustness:</strong>
 <ul><li>Added automatic fallback to <code>Method = "Simulation"</code> and <code>Category = "Uncategorized"</code> when evaluating single simulation accuracy results (<code><a href="../reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy()</a></code>) or pre-formed benchmark data frames lacking explicit method labels.</li>
 <li>Resolved <code>R CMD check</code> example failure in <code>man/compute_method_leaderboard.Rd</code>.</li>
+</ul></li>
+<li>
+<strong>Expanded Upload Size Limit (10 GB):</strong>
+<ul><li>Increased <code>shiny.maxRequestSize</code> from 500 MB to 10 GB (<code>10 * 1024^3</code> bytes) in <code>inst/shiny/scSimEvalApp/app.R</code> to accommodate large-scale single-cell and single-nucleus multiomics count matrices.</li>
+<li>Added configurable <code>maxRequestSize</code> argument to <code><a href="../reference/launch_scSimEval_app.html">launch_scSimEval_app()</a></code> in <code>R/11_shiny_app.R</code> (defaulting to 10 GB).</li>
+</ul></li>
+<li>
+<strong>Organism-Agnostic Metric Harmonization:</strong>
+<ul><li>Removed <code>calc_cell_cycle_phase_fidelity()</code> which was reliant on species-specific cell-cycle phase definitions and marker genes (primarily human and mouse). All 62 core evaluation metrics across the 8 categories are verified to operate purely on mathematical, distributional, and machine-learning properties of single-cell matrices without species or organism-specific priors, guaranteeing universal applicability to plant (e.g. soybean, rice, Arabidopsis) and animal datasets alike.</li>
 </ul></li>
 <li>
 <strong>Dependency &amp; Package Best Practices:</strong>
@@ -403,7 +458,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Kabilan S, Dr Dwijesh Chandra Mishra, Dr Shashi Bhushan Lal, Dr Sudhir Srivastava, Dr Krishna Kumar Chaturvedi.</p>
+  <p>Developed by Kabilan Sakthivel, Dr Dwijesh Chandra Mishra, Dr Shashi Bhushan Lal, Dr Sudhir Srivastava, Dr Krishna Kumar Chaturvedi.</p>
 </div>
 
 <div class="pkgdown-footer-right">
