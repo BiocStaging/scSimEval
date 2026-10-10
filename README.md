@@ -79,11 +79,11 @@ Review clean summary tables, standardized scores ($0.00$ to $1.00$), simulator r
 
 1. **Category 1: Distribution Properties (14 metrics)** — Compares single-cell count distributions (such as library size, average expression, gene variance, and zero fraction) and data manifolds between real and simulated data using statistical distance measures (Kolmogorov-Smirnov, Wasserstein, Median Absolute Deviation, RMSE, Density Overlap, Bhattacharyya distance, ECDF area, Runs test, Maximum Mean Discrepancy, and Fréchet distance).
 
-2. **Category 2: Correlations and Zero Patterns (8 metrics)** — Checks biological variation, dropout curves, cell-to-cell correlations, and gene-gene co-expression relationships.
+2. **Category 2: Correlations & Zero-Inflation (6 metrics)** — Checks biological variation (BCV), logistic dropout curves (midpoint $x_0$, slope $k$, $R^2$), cell-to-cell correlations, and gene co-expression networks.
 
-3. **Category 3: Cell Structure and Clustering (9 metrics)** — Evaluates whether simulated data preserves distinct cell types in unsupervised clustering (Silhouette width, Dunn index, Davies-Bouldin, Calinski-Harabasz) and supervised group matching (Adjusted Rand Index, Normalized Mutual Information, $V$-measure, Neighborhood Purity, and Hungarian matching accuracy).
+3. **Category 3: Cellular Structure & Concordance (10 metrics)** — Evaluates whether simulated data preserves distinct cell types in unsupervised clustering (Silhouette width, Dunn index, Davies-Bouldin, Calinski-Harabasz) and supervised group matching (Adjusted Rand Index, Normalized Mutual Information, Adjusted Mutual Information, $V$-measure, Neighborhood Purity, and Hungarian optimal matching precision).
 
-4. **Category 4: Batch Effects and Technical Confounders (6 metrics)** — Tests whether technical batch differences are well-mixed without erasing true biological differences (CellMixS, batch Shannon entropy, Principal Component Regression $R^2$, Seurat mixing metric, LISI, and cross-batch cell prediction accuracy).
+4. **Category 4: Batch Effects & Technical Confounders (7 metrics)** — Tests whether technical batch differences are well-mixed without erasing true biological differences (Batch ASW, batch Shannon entropy, Principal Component Regression $R^2_{\text{batch}}$, CellMixS CMS, LISI, Seurat mixing metric, and local density factor discrepancy ldfDiff).
 
 5. **Category 5: Marker Genes and Biological Signals (15 metrics)** — Assesses differentially expressed gene (DEG) fidelity across three established benchmarking frameworks: Simpipe, SimBench, and Shaky Foundations (effect size errors, fold-change correlations, top-marker overlap, and cell classification accuracy).
 
