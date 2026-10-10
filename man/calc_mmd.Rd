@@ -4,7 +4,14 @@
 \alias{calc_mmd}
 \title{Maximum Mean Discrepancy (MMD) with Gaussian RBF Kernel}
 \usage{
-calc_mmd(ref_mat, sim_mat, cells_as_cols = TRUE, sigma = NULL, max_cells = 500)
+calc_mmd(
+  ref_mat,
+  sim_mat,
+  cells_as_cols = TRUE,
+  sigma = NULL,
+  max_cells = 500,
+  max_features = 1000
+)
 }
 \arguments{
 \item{ref_mat}{Matrix of reference cells (cells x features or features x cells).}

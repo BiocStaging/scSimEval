@@ -13,19 +13,18 @@
 #' infer_scrna_pseudotime(example_scrna$ref)
 #' @export
 infer_scrna_pseudotime <- function(data, n_top = 500) {
-  mat <- as.matrix(data)
-  n_cells <- ncol(mat)
+  n_cells <- ncol(data)
   if (n_cells < 3) return(seq(0, 1, length.out = n_cells))
   
-  # Select top variable genes
-  gene_vars <- apply(mat, 1, stats::var)
+  # Select top variable genes directly without densifying the full matrix
+  gene_vars <- fast_row_vars(data)
   n_top_use <- min(n_top, length(gene_vars))
   top_idx <- order(gene_vars, decreasing = TRUE)[seq_len(n_top_use)]
   
-  # Run PCA
-  sub_mat <- mat[top_idx, , drop = FALSE]
-  pca_res <- stats::prcomp(t(sub_mat), center = TRUE, scale. = FALSE, rank. = 2)
-  pc1 <- pca_res$x[, 1]
+  # Run PCA on top variable genes
+  sub_mat <- as.matrix(data[top_idx, , drop = FALSE])
+  pca_pts <- fast_pca(t(sub_mat), n_pcs = 2, n_hvg = n_top, scale = FALSE)
+  pc1 <- pca_pts[, 1]
   
   # Normalize to [0, 1]
   rng <- max(pc1) - min(pc1)
@@ -34,7 +33,7 @@ infer_scrna_pseudotime <- function(data, n_top = 500) {
   } else {
     pt <- seq(0, 1, length.out = n_cells)
   }
-  names(pt) <- colnames(mat)
+  names(pt) <- colnames(data)
   return(pt)
 }
 

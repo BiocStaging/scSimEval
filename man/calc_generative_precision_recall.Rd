@@ -9,7 +9,8 @@ calc_generative_precision_recall(
   sim_mat,
   cells_as_cols = TRUE,
   k = 5,
-  max_cells = 500
+  max_cells = 500,
+  max_features = 1000
 )
 }
 \arguments{

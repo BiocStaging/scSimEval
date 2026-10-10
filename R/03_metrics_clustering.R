@@ -640,8 +640,14 @@ evaluate_clustering_metrics <- function(
   }
   cluster_info <- as.factor(cluster_info)
   
+  # Fast low-dimensional PCA projection for high-dimensional single-cell clustering
+  pca_coords <- NULL
+  if (nrow(data) > 30) {
+    pca_coords <- fast_pca(t(data), n_pcs = min(30, ncol(data) - 1, nrow(data) - 1), n_hvg = 2000)
+  }
+  
   if (is.null(dist_mat)) {
-    dist_mat <- stats::dist(t(as.matrix(data)))
+    dist_mat <- if (!is.null(pca_coords)) stats::dist(pca_coords) else stats::dist(t(as.matrix(data)))
   }
   
   res <- list(
@@ -651,19 +657,20 @@ evaluate_clustering_metrics <- function(
     dunn = calc_dunn(dist_mat, cluster_info),
     connectivity_sim = calc_connectivity(dist_mat, cluster_info),
     connectivity = calc_connectivity(dist_mat, cluster_info),
-    davies_bouldin_sim = calc_davies_bouldin(data, cluster_info),
-    davies_bouldin = calc_davies_bouldin(data, cluster_info),
-    calinski_harabasz_sim = calc_calinski_harabasz(data, cluster_info),
-    calinski_harabasz = calc_calinski_harabasz(data, cluster_info),
+    davies_bouldin_sim = calc_davies_bouldin(if (!is.null(pca_coords)) t(pca_coords) else data, cluster_info),
+    davies_bouldin = calc_davies_bouldin(if (!is.null(pca_coords)) t(pca_coords) else data, cluster_info),
+    calinski_harabasz_sim = calc_calinski_harabasz(if (!is.null(pca_coords)) t(pca_coords) else data, cluster_info),
+    calinski_harabasz = calc_calinski_harabasz(if (!is.null(pca_coords)) t(pca_coords) else data, cluster_info),
     neighborhood_purity = mean(calc_neighborhood_purity(dist_mat, cluster_info, is_distance = TRUE), na.rm = TRUE)
   )
   
   if (!is.null(ref_data)) {
-    ref_dist <- stats::dist(t(as.matrix(ref_data)))
+    ref_pca <- if (nrow(ref_data) > 30) fast_pca(t(ref_data), n_pcs = min(30, ncol(ref_data) - 1, nrow(ref_data) - 1), n_hvg = 2000) else NULL
+    ref_dist <- if (!is.null(ref_pca)) stats::dist(ref_pca) else stats::dist(t(as.matrix(ref_data)))
     res$silhouette_ref <- calc_silhouette(ref_dist, cluster_info)
     res$dunn_ref <- calc_dunn(ref_dist, cluster_info)
-    res$davies_bouldin_ref <- calc_davies_bouldin(ref_data, cluster_info)
-    res$calinski_harabasz_ref <- calc_calinski_harabasz(ref_data, cluster_info)
+    res$davies_bouldin_ref <- calc_davies_bouldin(if (!is.null(ref_pca)) t(ref_pca) else ref_data, cluster_info)
+    res$calinski_harabasz_ref <- calc_calinski_harabasz(if (!is.null(ref_pca)) t(ref_pca) else ref_data, cluster_info)
   }
   
   # Unsupervised Clustering Deviation Index (CDI; Fang et al., 2022 / scDesign3)
@@ -677,7 +684,8 @@ evaluate_clustering_metrics <- function(
   # If pred_clusters is not provided, run k-means with k = nlevels(cluster_info)
   if (is.null(pred_clusters) && nlevels(cluster_info) >= 2) {
     k_centers <- nlevels(cluster_info)
-    km_fit <- tryCatch(stats::kmeans(t(as.matrix(data)), centers = k_centers, nstart = 5), error = function(e) NULL)
+    km_input <- if (!is.null(pca_coords)) pca_coords else t(as.matrix(data))
+    km_fit <- tryCatch(stats::kmeans(km_input, centers = k_centers, nstart = 5), error = function(e) NULL)
     if (!is.null(km_fit)) {
       pred_clusters <- factor(km_fit$cluster)
     }
@@ -737,13 +745,23 @@ calc_generative_precision_recall <- function(
   sim_mat,
   cells_as_cols = TRUE,
   k = 5,
-  max_cells = 500
+  max_cells = 500,
+  max_features = 1000
 ) {
   if (inherits(ref_mat, "SingleCellExperiment")) {
     ref_mat <- SummarizedExperiment::assay(ref_mat, "counts")
   }
   if (inherits(sim_mat, "SingleCellExperiment")) {
     sim_mat <- SummarizedExperiment::assay(sim_mat, "counts")
+  }
+  
+  # Subsample features to top HVGs if large
+  n_r_feats <- if (cells_as_cols) nrow(ref_mat) else ncol(ref_mat)
+  if (n_r_feats > max_features) {
+    rv <- if (cells_as_cols) fast_row_vars(ref_mat) else fast_col_vars(ref_mat)
+    top_f <- order(rv, decreasing = TRUE)[seq_len(max_features)]
+    ref_mat <- if (cells_as_cols) ref_mat[top_f, , drop = FALSE] else ref_mat[, top_f, drop = FALSE]
+    sim_mat <- if (cells_as_cols) sim_mat[top_f, , drop = FALSE] else sim_mat[, top_f, drop = FALSE]
   }
   
   x <- if (cells_as_cols) t(as.matrix(ref_mat)) else as.matrix(ref_mat)
@@ -765,31 +783,23 @@ calc_generative_precision_recall <- function(
   # Pairwise distance within reference: dist_xx
   dist_xx <- as.matrix(stats::dist(x))
   diag(dist_xx) <- Inf
-  # Radius of k-NN sphere around each reference cell
   radius_x <- apply(dist_xx, 1, function(row) sort(row)[k_x])
   
   # Pairwise distance within simulation: dist_yy
   dist_yy <- as.matrix(stats::dist(y))
   diag(dist_yy) <- Inf
-  # Radius of k-NN sphere around each simulated cell
   radius_y <- apply(dist_yy, 1, function(row) sort(row)[k_y])
   
-  # Cross distance between reference and simulation: dist_xy (m x n)
-  dist_xy <- matrix(0, nrow = m, ncol = n)
-  for (i in seq_len(m)) {
-    diffs <- sweep(y, 2, x[i, ], "-")
-    dist_xy[i, ] <- sqrt(rowSums(diffs^2))
-  }
+  # Fast BLAS cross distance between reference and simulation: dist_xy (m x n)
+  dist_xy <- sqrt(fast_cross_distance_sq(x, y))
   
   # Precision: For each simulated cell y_j, is it within at least one reference sphere?
-  # dist_xy[i, j] <= radius_x[i] for some i
   precision_hits <- apply(dist_xy, 2, function(col_dists) {
     any(col_dists <= radius_x)
   })
   precision_val <- mean(precision_hits)
   
   # Recall: For each reference cell x_i, is it within at least one simulated sphere?
-  # dist_xy[i, j] <= radius_y[j] for some j
   recall_hits <- apply(dist_xy, 1, function(row_dists) {
     any(row_dists <= radius_y)
   })

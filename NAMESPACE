@@ -2,6 +2,13 @@
 
 # 00_utils
 export(calc_outlier_proportion)
+export(fast_row_vars)
+export(fast_col_vars)
+export(fast_sparse_zero_fraction_cell)
+export(fast_sparse_zero_fraction_feature)
+export(fast_cross_distance_sq)
+export(fast_pca)
+export(subsample_dist_vector)
 
 # 01_metrics_distribution
 export(calc_mad)

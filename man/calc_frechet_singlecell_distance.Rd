@@ -8,7 +8,8 @@ calc_frechet_singlecell_distance(
   ref_mat,
   sim_mat,
   cells_as_cols = TRUE,
-  n_pcs = 15
+  n_pcs = 15,
+  max_features = 2000
 )
 }
 \arguments{
@@ -19,6 +20,8 @@ calc_frechet_singlecell_distance(
 \item{cells_as_cols}{Logical, whether cells are columns (default TRUE).}
 
 \item{n_pcs}{Number of principal components to evaluate (default 15).}
+
+\item{max_features}{Number of top variable features to retain (default 2000).}
 }
 \value{
 A list with Frechet distance (FSD), mean discrepancy, and covariance trace discrepancy.

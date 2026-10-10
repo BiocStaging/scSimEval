@@ -23,13 +23,21 @@ calc_signal_de <- function(exprs_mat, cell_types, p_sig = 0.05) {
     tt <- limma::topTable(fit, coef = 2, number = Inf, sort.by = "none")
     p_adj <- stats::p.adjust(tt$P.Value, method = "BH")
   } else {
-    # Two-sample t-test fallback
+    # Vectorized Welch two-sample t-test fallback
     idx1 <- which(cell_types == levels(cell_types)[1])
     idx2 <- which(cell_types == levels(cell_types)[2])
-    p_vals <- apply(as.matrix(exprs_mat), 1, function(x) {
-      if (stats::sd(x[idx1]) == 0 && stats::sd(x[idx2]) == 0) return(1)
-      suppressWarnings(stats::t.test(x[idx1], x[idx2])$p.value)
-    })
+    n1 <- length(idx1)
+    n2 <- length(idx2)
+    m1 <- as.numeric(Matrix::rowMeans(exprs_mat[, idx1, drop = FALSE]))
+    m2 <- as.numeric(Matrix::rowMeans(exprs_mat[, idx2, drop = FALSE]))
+    v1 <- fast_row_vars(exprs_mat[, idx1, drop = FALSE])
+    v2 <- fast_row_vars(exprs_mat[, idx2, drop = FALSE])
+    se <- sqrt(v1 / max(1, n1) + v2 / max(1, n2))
+    se[se == 0] <- 1e-10
+    t_stat <- (m1 - m2) / se
+    df_welch <- (v1 / n1 + v2 / n2)^2 / ((v1 / n1)^2 / max(1, n1 - 1) + (v2 / n2)^2 / max(1, n2 - 1))
+    df_welch[is.na(df_welch) | df_welch < 1] <- 1
+    p_vals <- 2 * stats::pt(-abs(t_stat), df = df_welch)
     p_adj <- stats::p.adjust(p_vals, method = "BH")
   }
   return(p_adj)
@@ -45,13 +53,16 @@ calc_signal_de <- function(exprs_mat, cell_types, p_sig = 0.05) {
 #' @export
 calc_signal_dv <- function(exprs_mat, cell_types) {
   cell_types <- droplevels(as.factor(cell_types))
-  exprs_mat <- as.matrix(exprs_mat)
-  p_vals <- apply(exprs_mat, 1, function(x) {
-    df <- data.frame(gene = x, cell_type = cell_types)
-    res <- tryCatch(stats::bartlett.test(gene ~ cell_type, data = df)$p.value,
-                    error = function(e) 1)
-    if (is.nan(res)) 1 else res
-  })
+  idx1 <- which(cell_types == levels(cell_types)[1])
+  idx2 <- which(cell_types == levels(cell_types)[2])
+  v1 <- fast_row_vars(exprs_mat[, idx1, drop = FALSE])
+  v2 <- fast_row_vars(exprs_mat[, idx2, drop = FALSE])
+  v2_safe <- pmax(1e-10, v2)
+  f_stat <- v1 / v2_safe
+  df1 <- max(1, length(idx1) - 1)
+  df2 <- max(1, length(idx2) - 1)
+  p_f <- stats::pf(f_stat, df1 = df1, df2 = df2)
+  p_vals <- 2 * pmin(p_f, 1 - p_f)
   stats::p.adjust(p_vals, method = "BH")
 }
 
@@ -69,7 +80,17 @@ calc_signal_dd <- function(exprs_mat, cell_types) {
   idx1 <- which(cell_types == levels(cell_types)[1])
   idx2 <- which(cell_types == levels(cell_types)[2])
   
-  p_vals <- apply(exprs_mat, 1, function(x) {
+  # For high dimensions (> 2000 genes), test top variable genes to avoid slow interpreted loops
+  n_genes <- nrow(exprs_mat)
+  if (n_genes > 2000) {
+    g_vars <- fast_row_vars(exprs_mat)
+    test_idx <- order(g_vars, decreasing = TRUE)[seq_len(2000)]
+  } else {
+    test_idx <- seq_len(n_genes)
+  }
+  
+  p_vals <- rep(1.0, n_genes)
+  p_vals[test_idx] <- apply(exprs_mat[test_idx, , drop = FALSE], 1, function(x) {
     res <- tryCatch(
       suppressWarnings(stats::ks.test(x[idx1], x[idx2])$p.value),
       error = function(e) 1

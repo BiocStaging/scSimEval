@@ -30,7 +30,7 @@ align_distributions <- function(ref, sim, method = c("quantile", "resample"), n_
   
   if (method == "quantile") {
     if (is.null(n_points)) {
-      n_points <- max(n_ref, n_sim)
+      n_points <- min(max(n_ref, n_sim), 2500)
     }
     probs <- seq(0, 1, length.out = n_points)
     aligned_ref <- stats::quantile(ref, probs = probs, names = FALSE, type = 7)
@@ -168,4 +168,147 @@ hungarian_match <- function(pred, truth) {
     aligned_pred = aligned_pred
   )
 }
+
+# -----------------------------------------------------------------------------
+# High-Performance Computational Acceleration Helpers
+# (Vectorized Sparse Matrix Arithmetic, BLAS Distance, & Truncated SVD)
+# -----------------------------------------------------------------------------
+
+#' Fast Row-Wise Variances for Dense or Sparse Single-Cell Matrices
+#' @param mat Matrix or dgCMatrix (features x cells).
+#' @return Numeric vector of row variances.
+#' @export
+fast_row_vars <- function(mat) {
+  if (inherits(mat, "dgCMatrix")) {
+    n_cols <- ncol(mat)
+    if (n_cols <= 1) return(rep(0, nrow(mat)))
+    rm <- Matrix::rowMeans(mat)
+    mat_sq <- mat
+    mat_sq@x <- mat_sq@x^2
+    sq_rm <- Matrix::rowMeans(mat_sq)
+    v <- (sq_rm - rm^2) * (n_cols / (n_cols - 1))
+    v[v < 0] <- 0
+    return(as.numeric(v))
+  } else if (requireNamespace("matrixStats", quietly = TRUE)) {
+    return(as.numeric(matrixStats::rowVars(as.matrix(mat))))
+  } else {
+    n_cols <- ncol(mat)
+    if (n_cols <= 1) return(rep(0, nrow(mat)))
+    rm <- rowMeans(mat)
+    sq_rm <- rowMeans(mat^2)
+    v <- (sq_rm - rm^2) * (n_cols / (n_cols - 1))
+    v[v < 0] <- 0
+    return(as.numeric(v))
+  }
+}
+
+#' Fast Column-Wise Variances for Dense or Sparse Single-Cell Matrices
+#' @param mat Matrix or dgCMatrix (features x cells).
+#' @return Numeric vector of column variances.
+#' @export
+fast_col_vars <- function(mat) {
+  if (inherits(mat, "dgCMatrix")) {
+    n_rows <- nrow(mat)
+    if (n_rows <= 1) return(rep(0, ncol(mat)))
+    cm <- Matrix::colMeans(mat)
+    mat_sq <- mat
+    mat_sq@x <- mat_sq@x^2
+    sq_cm <- Matrix::colMeans(mat_sq)
+    v <- (sq_cm - cm^2) * (n_rows / (n_rows - 1))
+    v[v < 0] <- 0
+    return(as.numeric(v))
+  } else if (requireNamespace("matrixStats", quietly = TRUE)) {
+    return(as.numeric(matrixStats::colVars(as.matrix(mat))))
+  } else {
+    n_rows <- nrow(mat)
+    if (n_rows <= 1) return(rep(0, ncol(mat)))
+    cm <- colMeans(mat)
+    sq_cm <- colMeans(mat^2)
+    v <- (sq_cm - cm^2) * (n_rows / (n_rows - 1))
+    v[v < 0] <- 0
+    return(as.numeric(v))
+  }
+}
+
+#' Fast Zero Fraction per Cell (Column-wise)
+#' @param mat Matrix or dgCMatrix (features x cells).
+#' @return Numeric vector of zero fraction per cell.
+#' @export
+fast_sparse_zero_fraction_cell <- function(mat) {
+  if (inherits(mat, "dgCMatrix")) {
+    nz_per_col <- diff(mat@p)
+    return(as.numeric((nrow(mat) - nz_per_col) / nrow(mat)))
+  }
+  as.numeric(colMeans(mat == 0))
+}
+
+#' Fast Zero Fraction per Feature (Row-wise)
+#' @param mat Matrix or dgCMatrix (features x cells).
+#' @return Numeric vector of zero fraction per feature.
+#' @export
+fast_sparse_zero_fraction_feature <- function(mat) {
+  if (inherits(mat, "dgCMatrix")) {
+    nz_idx <- which(mat@x != 0)
+    nz_per_row <- tabulate(mat@i[nz_idx] + 1, nbins = nrow(mat))
+    return(as.numeric((ncol(mat) - nz_per_row) / ncol(mat)))
+  }
+  as.numeric(rowMeans(mat == 0))
+}
+
+#' Fast BLAS-Accelerated Cross-Distance Squared Matrix
+#'
+#' Computes ||X_i - Y_j||^2 using BLAS matrix product: ||x||^2 + ||y||^2 - 2 <x, y>.
+#' @param X Matrix (m x p).
+#' @param Y Matrix (n x p).
+#' @return Matrix of squared Euclidean distances (m x n).
+#' @export
+fast_cross_distance_sq <- function(X, Y) {
+  X <- as.matrix(X)
+  Y <- as.matrix(Y)
+  x_norm <- rowSums(X^2)
+  y_norm <- rowSums(Y^2)
+  d2 <- outer(x_norm, y_norm, "+") - 2 * (X %*% t(Y))
+  d2[d2 < 0] <- 0
+  d2
+}
+
+#' Fast Truncated PCA on Top Highly Variable Features
+#' @param mat Matrix or dgCMatrix (cells x features).
+#' @param n_pcs Number of principal components. Default 20.
+#' @param n_hvg Number of top highly variable genes to retain. Default 2000.
+#' @param scale Logical, whether to scale features. Default FALSE.
+#' @return Matrix of cell principal component embeddings (cells x n_pcs).
+#' @export
+fast_pca <- function(mat, n_pcs = 20, n_hvg = 2000, scale = FALSE) {
+  n_feats <- ncol(mat)
+  if (n_feats > n_hvg) {
+    feat_vars <- fast_col_vars(mat)
+    top_feats <- order(feat_vars, decreasing = TRUE)[seq_len(n_hvg)]
+    mat <- mat[, top_feats, drop = FALSE]
+  }
+  rank_use <- min(n_pcs, nrow(mat) - 1, ncol(mat) - 1)
+  if (rank_use < 2) return(as.matrix(mat)[, seq_len(min(1, ncol(mat))), drop = FALSE])
+  
+  min_dim <- min(nrow(mat), ncol(mat))
+  if (requireNamespace("irlba", quietly = TRUE) && rank_use >= 3 && min_dim > 50 && rank_use < 0.5 * min_dim) {
+    res <- tryCatch(suppressWarnings(irlba::prcomp_irlba(as.matrix(mat), n = rank_use, scale. = scale)), error = function(e) NULL)
+    if (!is.null(res)) return(res$x)
+  }
+  stats::prcomp(as.matrix(mat), rank. = rank_use, scale. = scale)$x
+}
+
+#' Subsample Large Vectors for Accelerated Distributional Distance Estimation
+#' @param x Numeric vector.
+#' @param max_n Maximum sample size (default 3000).
+#' @return Subsampled numeric vector if length(x) > max_n, else x.
+#' @export
+subsample_dist_vector <- function(x, max_n = 3000) {
+  x <- stats::na.omit(as.numeric(x))
+  if (length(x) > max_n) {
+    sample(x, max_n)
+  } else {
+    x
+  }
+}
+
 

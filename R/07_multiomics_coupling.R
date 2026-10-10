@@ -37,18 +37,33 @@ calc_cross_modality_correlation <- function(
   
   if (is.null(feature_pairs)) {
     n_pairs <- min(nrow(ref_mod1), nrow(ref_mod2), nrow(sim_mod1), nrow(sim_mod2))
-    idx1 <- seq_len(n_pairs)
-    idx2 <- seq_len(n_pairs)
+    max_p <- min(n_pairs, 2000)
+    if (n_pairs > max_p) {
+      idx1 <- sample(seq_len(n_pairs), max_p)
+      idx2 <- idx1
+    } else {
+      idx1 <- seq_len(n_pairs)
+      idx2 <- seq_len(n_pairs)
+    }
   } else {
     feature_pairs <- as.data.frame(feature_pairs)
     idx1 <- feature_pairs[[1]]
     idx2 <- feature_pairs[[2]]
+    if (length(idx1) > 2000) {
+      p_sub <- sample(seq_along(idx1), 2000)
+      idx1 <- idx1[p_sub]
+      idx2 <- idx2[p_sub]
+    }
   }
+  
+  # Subsample cells if large for faster cross-correlation estimation
+  n_cells <- min(ncol(ref_mod1), ncol(ref_mod2), ncol(sim_mod1), ncol(sim_mod2))
+  cell_idx <- if (n_cells > 1000) sample(seq_len(n_cells), 1000) else seq_len(n_cells)
   
   # Compute pairwise correlations in reference
   ref_cors <- vapply(seq_along(idx1), function(i) {
-    x <- ref_mod1[idx1[i], ]
-    y <- ref_mod2[idx2[i], ]
+    x <- ref_mod1[idx1[i], cell_idx]
+    y <- ref_mod2[idx2[i], cell_idx]
     if (stats::sd(x) > 0 && stats::sd(y) > 0) {
       stats::cor(x, y, method = method)
     } else {
@@ -58,8 +73,8 @@ calc_cross_modality_correlation <- function(
 
   # Compute pairwise correlations in simulation
   sim_cors <- vapply(seq_along(idx1), function(i) {
-    x <- sim_mod1[idx1[i], ]
-    y <- sim_mod2[idx2[i], ]
+    x <- sim_mod1[idx1[i], cell_idx]
+    y <- sim_mod2[idx2[i], cell_idx]
     if (stats::sd(x) > 0 && stats::sd(y) > 0) {
       stats::cor(x, y, method = method)
     } else {
