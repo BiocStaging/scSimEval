@@ -405,7 +405,7 @@ reference:
       - calc_local_structure_metric
 
   - title: "Category 5: Differential Expression & Signal Preservation"
-    desc: "Recovery of biological contrast, differential gene detection accuracy, and cell-cycle phase fidelity."
+    desc: "Recovery of biological contrast, differential gene detection accuracy, and cell-type deconvolution fidelity."
     contents:
       - calc_signal_de
       - calc_signal_dv
@@ -413,7 +413,6 @@ reference:
       - calc_signal_dp
       - calc_signal_bd
       - calc_delta_variance
-      - calc_cell_cycle_phase_fidelity
       - calc_deconvolution_accuracy
       - calc_variance_decomposition
       - calc_intraclass_correlation

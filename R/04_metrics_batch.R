@@ -35,16 +35,7 @@ calc_cms <- function(
   batch_info <- as.factor(batch_info)
   
   if (is.null(coords)) {
-    if (is.null(data)) stop("Either 'data' or 'coords' must be provided.")
-    sub_mat <- as.matrix(data)
-    n_cells <- ncol(sub_mat)
-    gene_vars <- apply(sub_mat, 1, stats::var)
-    n_hvg <- min(2000, length(gene_vars))
-    hvg_idx <- order(gene_vars, decreasing = TRUE)[seq_len(n_hvg)]
-    pca_res <- stats::prcomp(t(sub_mat[hvg_idx, , drop = FALSE]),
-                             center = TRUE, scale. = FALSE,
-                             rank. = min(n_pcs, n_cells - 1))
-    coords <- pca_res$x
+    coords <- fast_pca(t(data), n_pcs = n_pcs, n_hvg = 2000, scale = FALSE)
   }
   
   n_cells <- nrow(coords)

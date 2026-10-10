@@ -221,7 +221,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -255,6 +255,31 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.99.5" id="scsimeval-0995">scSimEval 0.99.5<a class="anchor" aria-label="anchor" href="#scsimeval-0995"></a></h2>
+<div class="section level3">
+<h3 id="major-improvements-0-99-5">Major Improvements<a class="anchor" aria-label="anchor" href="#major-improvements-0-99-5"></a></h3>
+<ul><li>
+<strong>Minimalist &amp; Streamlined Shiny Studio Interface:</strong>
+<ul><li>Modernized the web interface across all tabs with a clean, clutter-free scientific layout, removing redundant controls in the Home, Data Hub, and Bubble Matrix panels.</li>
+<li>Simplified comparative metric filtering into two intuitive modes: <strong>All 62 Measures</strong> and <strong>Custom Selection</strong> (with direct category dropdown and measure toggles).</li>
+<li>Streamlined Data Hub ingestion controls and enhanced navigation linking directly to the methodology guide.</li>
+</ul></li>
+<li>
+<strong>Refined Multiomics Scope &amp; Natural Language:</strong>
+<ul><li>Clearly unified application terminology to emphasize simulation evaluation across single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) against empirical references across 62 ground-truth-free measures.</li>
+<li>Replaced complex technical jargon with direct, human-friendly scientific explanations across all tabs.</li>
+</ul></li>
+<li>
+<strong>Methodology Guide &amp; Normalization Pipeline:</strong>
+<ul><li>Integrated the comprehensive <strong>Score Normalization Pipeline</strong> workflow figure (Figure 2) and structured methodology cards detailing directional transformation, min-max feature scaling, outlier winsorization, and composite rankings.</li>
+</ul></li>
+<li>
+<strong>Package &amp; Visualization Synchronization:</strong>
+<ul><li>Fully synchronized standalone Shiny Studio visualization components with core package routines, ensuring complete integration of low-dimensional cell embedding algorithms (<code><a href="../reference/compute_dataset_embeddings.html">compute_dataset_embeddings()</a></code>, <code><a href="../reference/plot_dataset_embeddings.html">plot_dataset_embeddings()</a></code>, <code><a href="../reference/compute_embedding_quality_metrics.html">compute_embedding_quality_metrics()</a></code>).</li>
+</ul></li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.99.4" id="scsimeval-0994">scSimEval 0.99.4<a class="anchor" aria-label="anchor" href="#scsimeval-0994"></a></h2>
 <div class="section level3">
 <h3 id="bug-fixes--improvements-0-99-4">Bug Fixes &amp; Improvements<a class="anchor" aria-label="anchor" href="#bug-fixes--improvements-0-99-4"></a></h3>
@@ -262,6 +287,15 @@
 <strong><code><a href="../reference/compute_method_leaderboard.html">compute_method_leaderboard()</a></code> &amp; <code>.ingest_bubble_data()</code> Robustness:</strong>
 <ul><li>Added automatic fallback to <code>Method = "Simulation"</code> and <code>Category = "Uncategorized"</code> when evaluating single simulation accuracy results (<code><a href="../reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy()</a></code>) or pre-formed benchmark data frames lacking explicit method labels.</li>
 <li>Resolved <code>R CMD check</code> example failure in <code>man/compute_method_leaderboard.Rd</code>.</li>
+</ul></li>
+<li>
+<strong>Expanded Upload Size Limit (10 GB):</strong>
+<ul><li>Increased <code>shiny.maxRequestSize</code> from 500 MB to 10 GB (<code>10 * 1024^3</code> bytes) in <code>inst/shiny/scSimEvalApp/app.R</code> to accommodate large-scale single-cell and single-nucleus multiomics count matrices.</li>
+<li>Added configurable <code>maxRequestSize</code> argument to <code><a href="../reference/launch_scSimEval_app.html">launch_scSimEval_app()</a></code> in <code>R/11_shiny_app.R</code> (defaulting to 10 GB).</li>
+</ul></li>
+<li>
+<strong>Organism-Agnostic Metric Harmonization:</strong>
+<ul><li>Removed <code>calc_cell_cycle_phase_fidelity()</code> which was reliant on species-specific cell-cycle phase definitions and marker genes (primarily human and mouse). All 62 core evaluation metrics across the 8 categories are verified to operate purely on mathematical, distributional, and machine-learning properties of single-cell matrices without species or organism-specific priors, guaranteeing universal applicability to plant (e.g. soybean, rice, Arabidopsis) and animal datasets alike.</li>
 </ul></li>
 <li>
 <strong>Dependency &amp; Package Best Practices:</strong>
@@ -403,7 +437,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Kabilan S, Dr Dwijesh Chandra Mishra, Dr Shashi Bhushan Lal, Dr Sudhir Srivastava, Dr Krishna Kumar Chaturvedi.</p>
+  <p>Developed by Kabilan Sakthivel, Dr Dwijesh Chandra Mishra, Dr Shashi Bhushan Lal, Dr Sudhir Srivastava, Dr Krishna Kumar Chaturvedi.</p>
 </div>
 
 <div class="pkgdown-footer-right">

@@ -1,6 +1,6 @@
 # Changelog
 
-## scSimEval 0.99.4
+## scSimEval 0.99.5
 
 ### Bug Fixes & Improvements
 

@@ -1,9 +1,16 @@
-test_that("Shiny application files exist and structure is valid", {
-  app_dir <- system.file("shiny", "scSimEvalApp", package = "scSimEval")
-  if (app_dir == "") {
-    app_dir <- file.path("..", "..", "inst", "shiny", "scSimEvalApp")
+find_test_app_dir <- function() {
+  local_cand <- c(
+    file.path("..", "..", "inst", "shiny", "scSimEvalApp"),
+    file.path("inst", "shiny", "scSimEvalApp")
+  )
+  for (cand in local_cand) {
+    if (dir.exists(cand)) return(normalizePath(cand, winslash = "/"))
   }
-  
+  system.file("shiny", "scSimEvalApp", package = "scSimEval")
+}
+
+test_that("Shiny application files exist and structure is valid", {
+  app_dir <- find_test_app_dir()
   expect_true(dir.exists(app_dir))
   expect_true(file.exists(file.path(app_dir, "app.R")))
   
@@ -22,11 +29,16 @@ test_that("Shiny app object instantiates cleanly", {
   skip_if_not_installed("bslib")
   skip_if_not_installed("DT")
   
-  app_dir <- system.file("shiny", "scSimEvalApp", package = "scSimEval")
-  if (app_dir == "") {
-    app_dir <- file.path("..", "..", "inst", "shiny", "scSimEvalApp")
-  }
-  
+  app_dir <- find_test_app_dir()
   app <- shiny::shinyAppDir(app_dir)
   expect_s3_class(app, "shiny.appobj")
+})
+
+test_that("Shiny app and package launcher configure maxRequestSize to 10 GB", {
+  app_dir <- find_test_app_dir()
+  app_lines <- readLines(file.path(app_dir, "app.R"))
+  expect_true(any(grepl("shiny\\.maxRequestSize\\s*=\\s*10\\s*\\*\\s*1024\\^3", app_lines)))
+  
+  # Check default argument in launch_scSimEval_app
+  expect_equal(formals(launch_scSimEval_app)$maxRequestSize, quote(10 * 1024^3))
 })

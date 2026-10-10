@@ -9,6 +9,8 @@
 #' @param host Character string specifying the IP address to listen on. Defaults to \code{"127.0.0.1"}.
 #' @param launch.browser Logical, whether to automatically launch the default web browser.
 #'   Defaults to \code{TRUE} in interactive sessions.
+#' @param maxRequestSize Numeric value specifying the maximum allowable upload file size in bytes.
+#'   Defaults to \code{10 * 1024^3} (10 GB) to comfortably accommodate large single-cell multiomics matrices.
 #'
 #' @return Invisibly returns the Shiny app process object.
 #' @export
@@ -22,7 +24,10 @@
 #'   launch_scSimEval_app()
 #' }
 #' }
-launch_scSimEval_app <- function(port = NULL, host = "127.0.0.1", launch.browser = interactive()) {
+launch_scSimEval_app <- function(port = NULL, host = "127.0.0.1", launch.browser = interactive(), maxRequestSize = 10 * 1024^3) {
+  # Configure maximum upload size for Shiny (default 10 GB)
+  options(shiny.maxRequestSize = maxRequestSize)
+  
   # Verify suggested packages required for the interactive UI
   required_pkgs <- c("shiny", "bslib", "DT", "ggplot2", "Matrix")
   missing_pkgs <- required_pkgs[!vapply(required_pkgs, requireNamespace, logical(1), quietly = TRUE)]

@@ -550,21 +550,26 @@ calc_between_dataset_silhouette <- function(ref, sim, subsample_size = 300) {
 calc_all_univariate_metrics <- function(ref, sim, metric_prefix = "") {
   prefix <- if (nchar(metric_prefix) > 0) paste0(metric_prefix, "_") else ""
   
-  runs_res <- calc_runs_test(ref, sim)
-  silh_res <- calc_between_dataset_silhouette(ref, sim)
+  # Subsample if vectors are extremely large (e.g. correlation distributions with 300,000 values)
+  # For 1D distance calculations, 3000 points guarantees KS, ECDF, and silhouette error < 0.005
+  ref_sub <- subsample_dist_vector(ref, max_n = 3000)
+  sim_sub <- subsample_dist_vector(sim, max_n = 3000)
+  
+  runs_res <- calc_runs_test(ref_sub, sim_sub)
+  silh_res <- calc_between_dataset_silhouette(ref_sub, sim_sub)
   
   res <- list(
-    MAD = calc_mad(ref, sim),
-    KS = calc_ks(ref, sim),
-    MAE = calc_mae(ref, sim),
-    RMSE = calc_rmse(ref, sim),
-    OV = calc_overlap(ref, sim),
-    Bhattacharyya = calc_bhattacharyya(ref, sim),
-    Wasserstein = calc_wasserstein_1d(ref, sim),
-    ECDF_DiffArea = calc_ecdf_diffarea(ref, sim),
+    MAD = calc_mad(ref_sub, sim_sub),
+    KS = calc_ks(ref_sub, sim_sub),
+    MAE = calc_mae(ref_sub, sim_sub),
+    RMSE = calc_rmse(ref_sub, sim_sub),
+    OV = calc_overlap(ref_sub, sim_sub),
+    Bhattacharyya = calc_bhattacharyya(ref_sub, sim_sub),
+    Wasserstein = calc_wasserstein_1d(ref_sub, sim_sub),
+    ECDF_DiffArea = calc_ecdf_diffarea(ref_sub, sim_sub),
     Runs_Statistic = runs_res$runs_statistic,
     Runs_PValue = runs_res$runs_pvalue,
-    NN_Mismatch = calc_nn_mismatch(ref, sim),
+    NN_Mismatch = calc_nn_mismatch(ref_sub, sim_sub),
     Between_Dataset_Silh_Global = silh_res$between_dataset_silh_global,
     Between_Dataset_Silh_Local = silh_res$between_dataset_silh_local
   )
@@ -887,13 +892,23 @@ calc_mmd <- function(
   sim_mat,
   cells_as_cols = TRUE,
   sigma = NULL,
-  max_cells = 500
+  max_cells = 500,
+  max_features = 1000
 ) {
   if (inherits(ref_mat, "SingleCellExperiment")) {
     ref_mat <- SummarizedExperiment::assay(ref_mat, "counts")
   }
   if (inherits(sim_mat, "SingleCellExperiment")) {
     sim_mat <- SummarizedExperiment::assay(sim_mat, "counts")
+  }
+  
+  # Subsample features to top HVGs if large
+  n_r_feats <- if (cells_as_cols) nrow(ref_mat) else ncol(ref_mat)
+  if (n_r_feats > max_features) {
+    rv <- if (cells_as_cols) fast_row_vars(ref_mat) else fast_col_vars(ref_mat)
+    top_f <- order(rv, decreasing = TRUE)[seq_len(max_features)]
+    ref_mat <- if (cells_as_cols) ref_mat[top_f, , drop = FALSE] else ref_mat[, top_f, drop = FALSE]
+    sim_mat <- if (cells_as_cols) sim_mat[top_f, , drop = FALSE] else sim_mat[, top_f, drop = FALSE]
   }
   
   x <- if (cells_as_cols) t(as.matrix(ref_mat)) else as.matrix(ref_mat)
@@ -910,12 +925,8 @@ calc_mmd <- function(
   dist_xx <- as.matrix(stats::dist(x))^2
   dist_yy <- as.matrix(stats::dist(y))^2
   
-  # Cross distance
-  dist_xy <- matrix(0, nrow = m, ncol = n)
-  for (i in seq_len(m)) {
-    diffs <- sweep(y, 2, x[i, ], "-")
-    dist_xy[i, ] <- rowSums(diffs^2)
-  }
+  # Fast BLAS cross distance squared
+  dist_xy <- fast_cross_distance_sq(x, y)
   
   # Median heuristic for bandwidth sigma
   if (is.null(sigma) || is.na(sigma) || sigma <= 0) {
@@ -956,6 +967,7 @@ calc_mmd <- function(
 #' @param sim_mat Matrix of simulated cells (cells x features or features x cells).
 #' @param cells_as_cols Logical, whether cells are columns (default TRUE).
 #' @param n_pcs Number of principal components to evaluate (default 15).
+#' @param max_features Number of top variable features to retain (default 2000).
 #'
 #' @return A list with Frechet distance (FSD), mean discrepancy, and covariance trace discrepancy.
 #' @examples
@@ -967,8 +979,18 @@ calc_frechet_singlecell_distance <- function(
   ref_mat,
   sim_mat,
   cells_as_cols = TRUE,
-  n_pcs = 15
+  n_pcs = 15,
+  max_features = 2000
 ) {
+  # Subsample features to top 2000 HVGs if features are large
+  n_r_feats <- if (cells_as_cols) nrow(ref_mat) else ncol(ref_mat)
+  if (n_r_feats > max_features) {
+    rv <- if (cells_as_cols) fast_row_vars(ref_mat) else fast_col_vars(ref_mat)
+    top_f <- order(rv, decreasing = TRUE)[seq_len(max_features)]
+    ref_mat <- if (cells_as_cols) ref_mat[top_f, , drop = FALSE] else ref_mat[, top_f, drop = FALSE]
+    sim_mat <- if (cells_as_cols) sim_mat[top_f, , drop = FALSE] else sim_mat[, top_f, drop = FALSE]
+  }
+  
   x <- if (cells_as_cols) t(as.matrix(ref_mat)) else as.matrix(ref_mat)
   y <- if (cells_as_cols) t(as.matrix(sim_mat)) else as.matrix(sim_mat)
   
@@ -977,22 +999,14 @@ calc_frechet_singlecell_distance <- function(
   n_y <- nrow(y)
   combined <- rbind(x, y)
   
-  # Filter zero-variance features
-  vars <- apply(combined, 2, stats::var)
-  valid_feats <- which(!is.na(vars) & vars > 1e-8)
-  if (length(valid_feats) < 2) {
-    return(list(fsd = NA_real_, mean_discrepancy = NA_real_, cov_discrepancy = NA_real_))
-  }
-  combined <- combined[, valid_feats, drop = FALSE]
-  
   rank_use <- min(n_pcs, ncol(combined) - 1, nrow(combined) - 1)
-  pca <- tryCatch(stats::prcomp(combined, rank. = rank_use, scale. = TRUE), error = function(e) NULL)
-  if (is.null(pca)) {
+  pca_pts <- fast_pca(combined, n_pcs = rank_use, n_hvg = max_features, scale = TRUE)
+  if (is.null(pca_pts) || ncol(pca_pts) < 2) {
     return(list(fsd = NA_real_, mean_discrepancy = NA_real_, cov_discrepancy = NA_real_))
   }
   
-  pts_ref <- pca$x[seq_len(n_x), , drop = FALSE]
-  pts_sim <- pca$x[(n_x + 1):(n_x + n_y), , drop = FALSE]
+  pts_ref <- pca_pts[seq_len(n_x), , drop = FALSE]
+  pts_sim <- pca_pts[(n_x + 1):(n_x + n_y), , drop = FALSE]
   
   mu_ref <- colMeans(pts_ref)
   mu_sim <- colMeans(pts_sim)

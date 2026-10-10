@@ -24,3 +24,8 @@ scratch/
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Google Analytics credentials and runtime cache
+*google_key.json
+*.key.json
+pageviews_cache.rds

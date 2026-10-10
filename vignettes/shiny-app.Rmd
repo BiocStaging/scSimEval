@@ -31,8 +31,8 @@ library(scSimEval)
 launch_scSimEval_app()          # opens at http://127.0.0.1:<port>
 ```
 
-> **File size limit:** The app accepts uploads up to **500 MB** per file, which handles most
-> real-world single-cell datasets.
+> **File size limit:** The app accepts uploads up to **10 GB** per file, which comfortably handles
+> large-scale single-cell and multiomics datasets.
 
 The studio is organized into **six primary navigation tabs** in the top bar, plus an
 **eight-panel Visualizations module** inside Tab 4. The sections below document every tab,
@@ -42,20 +42,13 @@ every control, and all export options in the order they appear in the applicatio
 
 ## Tab 1 — Home
 
-The landing page gives a quick orientation and provides **one-click jump buttons** to any part
-of the workflow:
+The landing page introduces **scSimEval Studio**, explicitly highlighting simulation evaluation across single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) datasets against real biological references across 62 evaluation measures without requiring known ground truth.
 
-| Button | Destination |
-|--------|-------------|
-| **1. Data Upload & Evaluation** | Data Hub tab |
-| **2. Comparative Bubble Matrix** | Bubble Matrix tab |
-| **3. Diagnostic Visualizations** | Visualizations tab |
-| **4. Download Results** | Download Results tab |
-| **5. Help & Manual** | Help & Getting Started tab |
-| **6. Team & Contact** | Team & Contact tab |
+The four **KPI cards** below the hero section display: 62 evaluation measures, 8 biological dimensions, 3 modalities (RNA / ATAC / Co-Assay), and the [0, 1] normalized fidelity scale.
 
-The four **KPI cards** below the hero section display: 62 curated evaluation measures,
-8 canonical categories, 3 supported modalities, and the [0, 1] standardized fidelity scale.
+Two balanced scientific cards summarize:
+1. **Evaluation Framework (8 Biological Categories):** An overview of the 62 measures grouped across Distributional Properties, Correlations & Zeros, Cellular Structure, Batch & Technical Mixing, Biological Downstream DEGs, Lineage Dynamics, Cross-Modal Coupling, and Scalability.
+2. **Benchmarking Pipeline:** A 3-step pipeline summary (Data Ingestion, Evaluation & Ranking, and Visual Analytics & Export) with a direct action link to the Data Hub.
 
 ---
 
@@ -77,10 +70,10 @@ Evaluate one or more unimodal count-matrix simulators.
 | Step | Control | Notes |
 |------|---------|-------|
 | **1** | **Reference Count Matrix** | Real empirical cells. Formats: `.rds`, `.csv`, `.tsv`, `.txt`, `SingleCellExperiment`, `Seurat`. |
-| **2** | **Simulated Count Matrices** (multi-select) | One file per simulator. Same formats. |
-| **3** | **Simulator Name / Runtime (s) / Memory (MiB)** | Enter for each uploaded simulator. |
-| **4** | **Cell Type Labels** (optional) | `.rds` (factor / vector / data.frame) or `.csv`/`.tsv`. |
-| **4** | **Batch Annotations** (optional) | Same formats as cell types. |
+| **2** | **Number of Single-Cell Simulators** | 1 – 6. Generates matching upload and configuration cards. |
+| **2** | **Per-Simulator Fields** | Simulator Name, simulated count matrix, runtime (s), memory (MiB). |
+| **3** | **Cell Type Labels** (optional) | `.rds` (factor / vector / data.frame) or `.csv`/`.tsv`. |
+| **3** | **Batch Annotations** (optional) | Same formats as cell types. |
 | — | **Append to current benchmark** | Adds new results alongside existing ones. |
 | — | **Evaluate Single-Cell Simulators** | Triggers the full 50+ metric pipeline. |
 
@@ -138,7 +131,7 @@ The main panel organizes content into two dedicated subtabs:
 
 | Control | Options | Default |
 |---------|---------|---------|
-| **Category Filter** | All 62 · (I) Distributional Properties · (II) Correlations & Zero-Inflation · (III) Cellular Structure & Concordance · (IV) Batch Effects & Confounder Mixing · (V) Biological Signal & Downstream Fidelity · (VI) Trajectory & Lineage Dynamics · (VII) Cross-Modal Coupling & Modularity · (VIII) Computational Scalability | All |
+| **Filter Mode** | **All 62 Measures** · **Custom Selection** (Category picker dropdown + dynamic metric checklist with All/Clear buttons) | All 62 Measures |
 | **Method Selector** | Dynamic checkboxes per simulator | All selected |
 | **Matrix Display Width (px)** | 1 200 – 3 200 (step 50) | 2 200 |
 | **Matrix Display Height (px)** | 450 – 1 100 (step 20) | 680 |

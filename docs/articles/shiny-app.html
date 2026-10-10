@@ -244,7 +244,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -306,8 +306,8 @@ package — without writing a single line of R code.</p>
 <span><span class="fu"><a href="../reference/launch_scSimEval_app.html">launch_scSimEval_app</a></span><span class="op">(</span><span class="op">)</span>          <span class="co"># opens at http://127.0.0.1:&lt;port&gt;</span></span></code></pre></div>
 <blockquote>
 <p><strong>File size limit:</strong> The app accepts uploads up to
-<strong>500 MB</strong> per file, which handles most real-world
-single-cell datasets.</p>
+<strong>10 GB</strong> per file, which comfortably handles large-scale
+single-cell and multiomics datasets.</p>
 </blockquote>
 <p>The studio is organized into <strong>six primary navigation
 tabs</strong> in the top bar, plus an <strong>eight-panel Visualizations
@@ -319,43 +319,23 @@ application.</p>
 <div class="section level2">
 <h2 id="tab-1-home">Tab 1 — Home<a class="anchor" aria-label="anchor" href="#tab-1-home"></a>
 </h2>
-<p>The landing page gives a quick orientation and provides
-<strong>one-click jump buttons</strong> to any part of the workflow:</p>
-<table class="table">
-<thead><tr class="header">
-<th>Button</th>
-<th>Destination</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><strong>1. Data Upload &amp; Evaluation</strong></td>
-<td>Data Hub tab</td>
-</tr>
-<tr class="even">
-<td><strong>2. Comparative Bubble Matrix</strong></td>
-<td>Bubble Matrix tab</td>
-</tr>
-<tr class="odd">
-<td><strong>3. Diagnostic Visualizations</strong></td>
-<td>Visualizations tab</td>
-</tr>
-<tr class="even">
-<td><strong>4. Download Results</strong></td>
-<td>Download Results tab</td>
-</tr>
-<tr class="odd">
-<td><strong>5. Help &amp; Manual</strong></td>
-<td>Help &amp; Getting Started tab</td>
-</tr>
-<tr class="even">
-<td><strong>6. Team &amp; Contact</strong></td>
-<td>Team &amp; Contact tab</td>
-</tr>
-</tbody>
-</table>
+<p>The landing page introduces <strong>scSimEval Studio</strong>,
+explicitly highlighting simulation evaluation across single-cell RNA-seq
+(scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell
+multiomics (scRNA-seq + scATAC-seq) datasets against real biological
+references across 62 evaluation measures without requiring known ground
+truth.</p>
 <p>The four <strong>KPI cards</strong> below the hero section display:
-62 curated evaluation measures, 8 canonical categories, 3 supported
-modalities, and the [0, 1] standardized fidelity scale.</p>
+62 evaluation measures, 8 biological dimensions, 3 modalities (RNA /
+ATAC / Co-Assay), and the [0, 1] normalized fidelity scale.</p>
+<p>Two balanced scientific cards summarize: 1. <strong>Evaluation
+Framework (8 Biological Categories):</strong> An overview of the 62
+measures grouped across Distributional Properties, Correlations &amp;
+Zeros, Cellular Structure, Batch &amp; Technical Mixing, Biological
+Downstream DEGs, Lineage Dynamics, Cross-Modal Coupling, and
+Scalability. 2. <strong>Benchmarking Pipeline:</strong> A 3-step
+pipeline summary (Data Ingestion, Evaluation &amp; Ranking, and Visual
+Analytics &amp; Export) with a direct action link to the Data Hub.</p>
 <hr>
 </div>
 <div class="section level2">
@@ -399,17 +379,17 @@ measures. No file uploads required.</p>
 </tr>
 <tr class="even">
 <td><strong>2</strong></td>
-<td>
-<strong>Simulated Count Matrices</strong> (multi-select)</td>
-<td>One file per simulator. Same formats.</td>
+<td><strong>Number of Single-Cell Simulators</strong></td>
+<td>1 – 6. Generates matching upload and configuration cards.</td>
 </tr>
 <tr class="odd">
-<td><strong>3</strong></td>
-<td><strong>Simulator Name / Runtime (s) / Memory (MiB)</strong></td>
-<td>Enter for each uploaded simulator.</td>
+<td><strong>2</strong></td>
+<td><strong>Per-Simulator Fields</strong></td>
+<td>Simulator Name, simulated count matrix, runtime (s), memory
+(MiB).</td>
 </tr>
 <tr class="even">
-<td><strong>4</strong></td>
+<td><strong>3</strong></td>
 <td>
 <strong>Cell Type Labels</strong> (optional)</td>
 <td>
@@ -417,7 +397,7 @@ measures. No file uploads required.</p>
 <code>.csv</code>/<code>.tsv</code>.</td>
 </tr>
 <tr class="odd">
-<td><strong>4</strong></td>
+<td><strong>3</strong></td>
 <td>
 <strong>Batch Annotations</strong> (optional)</td>
 <td>Same formats as cell types.</td>
@@ -588,13 +568,12 @@ export button.</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><strong>Category Filter</strong></td>
-<td>All 62 · (I) Distributional Properties · (II) Correlations &amp;
-Zero-Inflation · (III) Cellular Structure &amp; Concordance · (IV) Batch
-Effects &amp; Confounder Mixing · (V) Biological Signal &amp; Downstream
-Fidelity · (VI) Trajectory &amp; Lineage Dynamics · (VII) Cross-Modal
-Coupling &amp; Modularity · (VIII) Computational Scalability</td>
-<td>All</td>
+<td><strong>Filter Mode</strong></td>
+<td>
+<strong>All 62 Measures</strong> · <strong>Custom Selection</strong>
+(Category picker dropdown + dynamic metric checklist with All/Clear
+buttons)</td>
+<td>All 62 Measures</td>
 </tr>
 <tr class="even">
 <td><strong>Method Selector</strong></td>
@@ -1354,8 +1333,8 @@ vectors, saved files</li>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
 <span><span class="co">#&gt;  [1] digest_0.6.39     desc_1.4.3        R6_2.6.1          fastmap_1.2.0    </span></span>
-<span><span class="co">#&gt;  [5] xfun_0.60         cachem_1.1.0      knitr_1.51        htmltools_0.5.9  </span></span>
-<span><span class="co">#&gt;  [9] rmarkdown_2.31    lifecycle_1.0.5   cli_3.6.6         sass_0.4.10      </span></span>
+<span><span class="co">#&gt;  [5] xfun_0.60         cachem_1.1.0      knitr_1.52        htmltools_0.5.9  </span></span>
+<span><span class="co">#&gt;  [9] rmarkdown_2.32    lifecycle_1.0.5   cli_3.6.6         sass_0.4.10      </span></span>
 <span><span class="co">#&gt; [13] pkgdown_2.2.1     textshaping_1.0.5 jquerylib_0.1.4   systemfonts_1.3.2</span></span>
 <span><span class="co">#&gt; [17] compiler_4.6.1    tools_4.6.1       ragg_1.5.2        bslib_0.12.0     </span></span>
 <span><span class="co">#&gt; [21] evaluate_1.0.5    yaml_2.3.12       otel_0.2.0        jsonlite_2.0.0   </span></span>
@@ -1368,7 +1347,7 @@ vectors, saved files</li>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Kabilan S, Dr Dwijesh Chandra Mishra, Dr Shashi Bhushan Lal, Dr Sudhir Srivastava, Dr Krishna Kumar Chaturvedi.</p>
+  <p>Developed by Kabilan Sakthivel, Dr Dwijesh Chandra Mishra, Dr Shashi Bhushan Lal, Dr Sudhir Srivastava, Dr Krishna Kumar Chaturvedi.</p>
 </div>
 
 <div class="pkgdown-footer-right">

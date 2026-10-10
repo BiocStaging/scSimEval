@@ -26,30 +26,25 @@ extract_cell_properties <- function(data, max_cells_cor = 1000, n_top_hvgs = 500
   log_lib_size <- log(lib_size + 1)
   
   if (verbose) message("Extracting cell zero fraction & detection rate...")
-  if (inherits(data, "dgCMatrix")) {
-    n_features <- nrow(data)
-    non_zeros <- diff(data@p)
-    zero_fraction_cell <- (n_features - non_zeros) / n_features
-  } else {
-    zero_fraction_cell <- as.numeric(colMeans(data == 0))
-  }
+  zero_fraction_cell <- fast_sparse_zero_fraction_cell(data)
   detection_freq_cell <- 1 - zero_fraction_cell
   
-  # Normalize to log2(CPM+1) for correlation and PCA
+  # Normalize to log2(CPM+1) for correlation and PCA using top HVGs directly
   if (verbose) message("Extracting cell-cell correlations on top HVGs...")
   lib_adj <- lib_size
   lib_adj[lib_adj == 0] <- 1
-  cpm <- t(t(as.matrix(data)) / lib_adj) * 1e6
-  log_cpm <- log2(cpm + 1)
   
-  gene_vars <- apply(log_cpm, 1, stats::var)
+  # Select top variable genes directly from sparse matrix
+  gene_vars <- fast_row_vars(data)
   n_hvg <- min(n_top_hvgs, length(gene_vars))
   top_hvg_idx <- order(gene_vars, decreasing = TRUE)[seq_len(n_hvg)]
-  sub_cpm <- log_cpm[top_hvg_idx, , drop = FALSE]
+  sub_counts <- as.matrix(data[top_hvg_idx, , drop = FALSE])
+  sub_cpm <- log2(t(t(sub_counts) / lib_adj) * 1e6 + 1)
   
   n_cells <- ncol(data)
-  if (n_cells > max_cells_cor) {
-    sub_cell_idx <- sample(seq_len(n_cells), max_cells_cor)
+  max_cor_cells <- min(n_cells, min(max_cells_cor, 500))
+  if (n_cells > max_cor_cells) {
+    sub_cell_idx <- sample(seq_len(n_cells), max_cor_cells)
     cor_cpm <- sub_cpm[, sub_cell_idx, drop = FALSE]
   } else {
     cor_cpm <- sub_cpm
@@ -63,8 +58,7 @@ extract_cell_properties <- function(data, max_cells_cor = 1000, n_top_hvgs = 500
   pca_dist <- numeric(0)
   knn_hubness <- numeric(0)
   tryCatch({
-    pca_res <- stats::prcomp(t(sub_cpm), rank. = min(20, ncol(sub_cpm) - 1, nrow(sub_cpm)))
-    pca_pts <- pca_res$x
+    pca_pts <- fast_pca(t(sub_cpm), n_pcs = min(20, ncol(sub_cpm) - 1, nrow(sub_cpm)))
     
     # Subsample for distance if large
     if (n_cells > 200) {
@@ -74,18 +68,18 @@ extract_cell_properties <- function(data, max_cells_cor = 1000, n_top_hvgs = 500
       pca_dist <- as.numeric(stats::dist(pca_pts))
     }
     
-    # k-NN hubness (count how often a cell is in the 5% nearest neighbors)
+    # Fast k-NN hubness (count how often a cell is in the 5% nearest neighbors)
     k_val <- max(2, round(0.05 * n_cells))
     if (requireNamespace("RANN", quietly = TRUE)) {
       nn <- RANN::nn2(pca_pts, k = k_val + 1)
       idx_nn <- nn$nn.idx[, seq(2, k_val + 1)]
-      knn_hubness <- vapply(seq_len(n_cells), function(i) sum(idx_nn == i), numeric(1))
+      knn_hubness <- as.numeric(tabulate(idx_nn, nbins = n_cells))
     }
   }, error = function(e) NULL)
   
   # TMM normalization factor & effective library size (countsimQC & simpipe)
   tmm_factors <- rep(1, n_cells)
-  if (requireNamespace("edgeR", quietly = TRUE)) {
+  if (requireNamespace("edgeR", quietly = TRUE) && n_cells <= 1000 && nrow(data) <= 2000) {
     tryCatch({
       dge <- suppressMessages(suppressWarnings(edgeR::DGEList(counts = data)))
       dge <- suppressMessages(suppressWarnings(edgeR::calcNormFactors(dge, method = "TMM")))
@@ -135,51 +129,58 @@ extract_feature_properties <- function(data, n_top_cor = 400, verbose = FALSE) {
   raw_mat <- as.matrix(data)
   
   if (verbose) message("Extracting feature zero fraction...")
-  zero_fraction_feature <- as.numeric(rowMeans(raw_mat == 0))
+  zero_fraction_feature <- fast_sparse_zero_fraction_feature(data)
   detection_freq_feature <- 1 - zero_fraction_feature
   
-  # log2(CPM+1)
-  lib_sizes <- colSums(raw_mat)
+  lib_sizes <- as.numeric(Matrix::colSums(data))
   lib_sizes[lib_sizes == 0] <- 1
-  cpm <- t(t(raw_mat) / lib_sizes) * 1e6
-  norm_mat <- log2(cpm + 1)
   
   if (verbose) message("Extracting mean, variance, and SD...")
-  mean_val <- as.numeric(rowMeans(norm_mat))
-  var_val <- apply(norm_mat, 1, stats::var)
-  sd_val <- sqrt(var_val)
+  raw_mean <- as.numeric(Matrix::rowMeans(data))
+  raw_var <- fast_row_vars(data)
+  raw_sd <- sqrt(raw_var)
   
-  raw_mean <- as.numeric(rowMeans(raw_mat))
-  raw_sd <- apply(raw_mat, 1, stats::sd)
   cv_val <- ifelse(raw_mean > 0, (raw_sd / raw_mean) * 100, 0)
-  dispersion_val <- ifelse(raw_mean > 0, (raw_sd^2) / raw_mean, 0)
+  dispersion_val <- ifelse(raw_mean > 0, (raw_var) / raw_mean, 0)
   
-  # Biological Coefficient of Variation (BCV) from countsimQC
+  # Log-normalized mean and variance (computed without full dense matrix conversion)
+  n_genes_cor <- min(n_top_cor, length(raw_var))
+  top_g_idx <- order(raw_var, decreasing = TRUE)[seq_len(n_genes_cor)]
+  
+  if (inherits(data, "dgCMatrix")) {
+    norm_sparse <- data
+    cell_factors <- 1e6 / lib_sizes
+    col_idx <- rep(seq_len(ncol(data)), diff(data@p))
+    norm_sparse@x <- log2(norm_sparse@x * cell_factors[col_idx] + 1)
+    mean_val <- as.numeric(Matrix::rowMeans(norm_sparse))
+    var_val <- fast_row_vars(norm_sparse)
+    sd_val <- sqrt(var_val)
+    sub_g_mat <- as.matrix(norm_sparse[top_g_idx, , drop = FALSE])
+  } else {
+    raw_mat <- as.matrix(data)
+    cpm <- t(t(raw_mat) / lib_sizes) * 1e6
+    norm_mat <- log2(cpm + 1)
+    mean_val <- as.numeric(rowMeans(norm_mat))
+    var_val <- fast_row_vars(norm_mat)
+    sd_val <- sqrt(var_val)
+    sub_g_mat <- norm_mat[top_g_idx, , drop = FALSE]
+  }
+  
+  # Biological Coefficient of Variation (BCV) via fast empirical Negative Binomial approximation
   if (verbose) message("Extracting Biological Coefficient of Variation (BCV)...")
-  bcv_val <- numeric(0)
-  if (requireNamespace("edgeR", quietly = TRUE)) {
-    tryCatch({
-      dge <- suppressMessages(suppressWarnings(edgeR::DGEList(counts = raw_mat)))
-      dge <- suppressMessages(suppressWarnings(edgeR::calcNormFactors(dge)))
-      dge <- suppressMessages(suppressWarnings(edgeR::estimateDisp(dge)))
-      bcv_val <- sqrt(dge$tagwise.dispersion)
-    }, error = function(e) NULL)
-  }
-  if (length(bcv_val) == 0) {
-    # Fallback empirical BCV approximation
-    bcv_val <- sqrt(pmax(0, dispersion_val - 1) / pmax(1e-6, raw_mean))
-  }
+  bcv_val <- sqrt(pmax(0, dispersion_val - 1) / pmax(1e-6, raw_mean))
   
-  # Gene-gene correlation on top variable genes (SimBench, countsimQC, & HelenaLC)
+  # Gene-gene correlation on top variable genes
   if (verbose) message("Extracting gene-gene correlation...")
-  n_genes_cor <- min(n_top_cor, length(var_val))
-  top_g_idx <- order(var_val, decreasing = TRUE)[seq_len(n_genes_cor)]
-  sub_g_mat <- norm_mat[top_g_idx, , drop = FALSE]
-  
-  g_cor_mat <- stats::cor(t(sub_g_mat), method = "spearman")
+  if (ncol(sub_g_mat) > 500) {
+    cor_cells_sub <- sample(seq_len(ncol(sub_g_mat)), 500)
+    g_cor_mat <- stats::cor(t(sub_g_mat[, cor_cells_sub, drop = FALSE]), method = "spearman")
+  } else {
+    g_cor_mat <- stats::cor(t(sub_g_mat), method = "spearman")
+  }
   gene_cor <- g_cor_mat[upper.tri(g_cor_mat)]
   
-  prop_outliers_feature <- calc_outlier_proportion(as.numeric(rowSums(raw_mat)))
+  prop_outliers_feature <- calc_outlier_proportion(as.numeric(Matrix::rowSums(data)))
   
   list(
     mean_expression = mean_val,
@@ -214,9 +215,8 @@ calc_zero_probability_curve <- function(counts) {
   if (inherits(counts, "SingleCellExperiment")) {
     counts <- SummarizedExperiment::assay(counts, "counts")
   }
-  raw_mat <- as.matrix(counts)
-  gene_means <- rowMeans(raw_mat)
-  p0 <- rowMeans(raw_mat == 0)
+  gene_means <- as.numeric(Matrix::rowMeans(counts))
+  p0 <- fast_sparse_zero_fraction_feature(counts)
   
   # Filter genes with non-trivial means and dropouts strictly between 0 and 1
   valid <- gene_means > 0 & p0 > 0 & p0 < 1
@@ -287,10 +287,9 @@ calc_excess_zero_weights <- function(counts) {
   if (inherits(counts, "SingleCellExperiment")) {
     counts <- SummarizedExperiment::assay(counts, "counts")
   }
-  raw_mat <- as.matrix(counts)
-  gene_means <- rowMeans(raw_mat)
-  gene_vars <- apply(raw_mat, 1, stats::var)
-  p0_obs <- rowMeans(raw_mat == 0)
+  gene_means <- as.numeric(Matrix::rowMeans(counts))
+  gene_vars <- fast_row_vars(counts)
+  p0_obs <- fast_sparse_zero_fraction_feature(counts)
   
   # Method of moments estimate of NB size / dispersion: theta = mu^2 / (var - mu)
   theta <- ifelse(gene_vars > gene_means,

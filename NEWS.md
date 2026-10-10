@@ -1,3 +1,23 @@
+# scSimEval 0.99.5
+
+## Major Improvements
+
+* **Minimalist & Streamlined Shiny Studio Interface:**
+  - Modernized the web interface across all tabs with a clean, clutter-free scientific layout, removing redundant controls in the Home, Data Hub, and Bubble Matrix panels.
+  - Simplified comparative metric filtering into two intuitive modes: **All 62 Measures** and **Custom Selection** (with direct category dropdown and measure toggles).
+  - Streamlined Data Hub ingestion controls and enhanced navigation linking directly to the methodology guide.
+
+* **Refined Multiomics Scope & Natural Language:**
+  - Clearly unified application terminology to emphasize simulation evaluation across single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) against empirical references across 62 ground-truth-free measures.
+  - Replaced complex technical jargon with direct, human-friendly scientific explanations across all tabs.
+
+* **Methodology Guide & Normalization Pipeline:**
+  - Integrated the comprehensive **Score Normalization Pipeline** workflow figure (Figure 2) and structured methodology cards detailing directional transformation, min-max feature scaling, outlier winsorization, and composite rankings.
+
+* **Package & Visualization Synchronization:**
+  - Fully synchronized standalone Shiny Studio visualization components with core package routines, ensuring complete integration of low-dimensional cell embedding algorithms (`compute_dataset_embeddings()`, `plot_dataset_embeddings()`, `compute_embedding_quality_metrics()`).
+
+
 # scSimEval 0.99.4
 
 ## Bug Fixes & Improvements
@@ -5,6 +25,13 @@
 * **`compute_method_leaderboard()` & `.ingest_bubble_data()` Robustness:**
   - Added automatic fallback to `Method = "Simulation"` and `Category = "Uncategorized"` when evaluating single simulation accuracy results (`evaluate_simulation_accuracy()`) or pre-formed benchmark data frames lacking explicit method labels.
   - Resolved `R CMD check` example failure in `man/compute_method_leaderboard.Rd`.
+
+* **Expanded Upload Size Limit (10 GB):**
+  - Increased `shiny.maxRequestSize` from 500 MB to 10 GB (`10 * 1024^3` bytes) in `inst/shiny/scSimEvalApp/app.R` to accommodate large-scale single-cell and single-nucleus multiomics count matrices.
+  - Added configurable `maxRequestSize` argument to `launch_scSimEval_app()` in `R/11_shiny_app.R` (defaulting to 10 GB).
+
+* **Organism-Agnostic Metric Harmonization:**
+  - Removed `calc_cell_cycle_phase_fidelity()` which was reliant on species-specific cell-cycle phase definitions and marker genes (primarily human and mouse). All 62 core evaluation metrics across the 8 categories are verified to operate purely on mathematical, distributional, and machine-learning properties of single-cell matrices without species or organism-specific priors, guaranteeing universal applicability to plant (e.g. soybean, rice, Arabidopsis) and animal datasets alike.
 
 * **Dependency & Package Best Practices:**
   - Added `irlba` to `Suggests:` in `DESCRIPTION` to properly declare conditional SVD acceleration in `compute_dataset_embeddings()`.
