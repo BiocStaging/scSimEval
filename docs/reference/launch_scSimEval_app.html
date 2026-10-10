@@ -276,7 +276,8 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">launch_scSimEval_app</span><span class="op">(</span></span>
 <span>  port <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  host <span class="op">=</span> <span class="st">"127.0.0.1"</span>,</span>
-<span>  launch.browser <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  launch.browser <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  maxRequestSize <span class="op">=</span> <span class="fl">10</span> <span class="op">*</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">3</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -296,6 +297,11 @@
 <dd><p>Logical, whether to automatically launch the default web browser.
 Defaults to <code>TRUE</code> in interactive sessions.</p></dd>
 
+
+<dt id="arg-maxrequestsize">maxRequestSize<a class="anchor" aria-label="anchor" href="#arg-maxrequestsize"></a></dt>
+<dd><p>Numeric value specifying the maximum allowable upload file size in bytes.
+Defaults to <code>10 * 1024^3</code> (10 GB) to comfortably accommodate large single-cell multiomics matrices.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -306,7 +312,7 @@ Defaults to <code>TRUE</code> in interactive sessions.</p></dd>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Locate the embedded Shiny app directory bundled with the package</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"shiny"</span>, <span class="st">"scSimEvalApp"</span>, package <span class="op">=</span> <span class="st">"scSimEval"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "C:/Users/kabil/AppData/Local/Temp/RtmpOCLiYd/temp_libpath3ec478163ce/scSimEval/shiny/scSimEvalApp"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "D:/IARI_NEW DELHI/Ph.D/Research/Work - Objective 1/Simulation_techniques_comparison/Benchmarking/scSimEval/inst/shiny/scSimEvalApp"</span>
 <span class="r-in"><span><span class="co"># \donttest{</span></span></span>
 <span class="r-in"><span><span class="co"># Launch the interactive studio (interactive sessions only)</span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
@@ -320,7 +326,7 @@ Defaults to <code>TRUE</code> in interactive sessions.</p></dd>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Kabilan S, Dr Dwijesh Chandra Mishra, Dr Shashi Bhushan Lal, Dr Sudhir Srivastava, Dr Krishna Kumar Chaturvedi.</p>
+  <p>Developed by Kabilan Sakthivel, Dr Dwijesh Chandra Mishra, Dr Shashi Bhushan Lal, Dr Sudhir Srivastava, Dr Krishna Kumar Chaturvedi.</p>
 </div>
 
 <div class="pkgdown-footer-right">

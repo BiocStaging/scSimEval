@@ -530,9 +530,9 @@
         </dt>
         <dd>Extract Dataset Dimensional Properties and Summary Statistics</dd>
       </dl></div><div class="section level2">
-      <h2 id="example-multiomics-datasets">Example Multiomics Datasets<a class="anchor" aria-label="anchor" href="#example-multiomics-datasets"></a></h2>
+      <h2 id="example-multiomics-datasets-metadata">Example Multiomics Datasets &amp; Metadata<a class="anchor" aria-label="anchor" href="#example-multiomics-datasets-metadata"></a></h2>
 
-      <div class="section-desc"><p>Pre-packaged synthetic and empirical single-cell multiomics benchmark datasets.</p></div>
+      <div class="section-desc"><p>Pre-packaged synthetic and empirical single-cell multiomics benchmark datasets and metadata annotation templates.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -559,6 +559,78 @@
 
         </dt>
         <dd>Synthetic Example Multiomics Benchmarking Dataset</dd>
+
+        <dt>
+
+          <code><a href="example_cell_types.html">example_cell_types</a></code>
+
+        </dt>
+        <dd>Example Cell-Type Annotations Vector</dd>
+
+        <dt>
+
+          <code><a href="example_batch_info.html">example_batch_info</a></code>
+
+        </dt>
+        <dd>Example Batch Annotations Vector</dd>
+      </dl></div><div class="section level2">
+      <h2 id="computational-utilities-fast-kernels">Computational Utilities &amp; Fast Kernels<a class="anchor" aria-label="anchor" href="#computational-utilities-fast-kernels"></a></h2>
+
+      <div class="section-desc"><p>High-performance matrix calculation helpers and internal dimension-reduction utilities.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="fast_row_vars.html">fast_row_vars()</a></code>
+
+        </dt>
+        <dd>Fast Row-Wise Variances for Dense or Sparse Single-Cell Matrices</dd>
+
+        <dt>
+
+          <code><a href="fast_col_vars.html">fast_col_vars()</a></code>
+
+        </dt>
+        <dd>Fast Column-Wise Variances for Dense or Sparse Single-Cell Matrices</dd>
+
+        <dt>
+
+          <code><a href="fast_sparse_zero_fraction_cell.html">fast_sparse_zero_fraction_cell()</a></code>
+
+        </dt>
+        <dd>Fast Zero Fraction per Cell (Column-wise)</dd>
+
+        <dt>
+
+          <code><a href="fast_sparse_zero_fraction_feature.html">fast_sparse_zero_fraction_feature()</a></code>
+
+        </dt>
+        <dd>Fast Zero Fraction per Feature (Row-wise)</dd>
+
+        <dt>
+
+          <code><a href="fast_cross_distance_sq.html">fast_cross_distance_sq()</a></code>
+
+        </dt>
+        <dd>Fast BLAS-Accelerated Cross-Distance Squared Matrix</dd>
+
+        <dt>
+
+          <code><a href="fast_pca.html">fast_pca()</a></code>
+
+        </dt>
+        <dd>Fast Truncated PCA on Top Highly Variable Features</dd>
+
+        <dt>
+
+          <code><a href="subsample_dist_vector.html">subsample_dist_vector()</a></code>
+
+        </dt>
+        <dd>Subsample Large Vectors for Accelerated Distributional Distance Estimation</dd>
       </dl></div><div class="section level2">
       <h2 id="category-global-marginal-distributions">Category 1: Global &amp; Marginal Distributions<a class="anchor" aria-label="anchor" href="#category-global-marginal-distributions"></a></h2>
 
@@ -948,7 +1020,7 @@
       </dl></div><div class="section level2">
       <h2 id="category-differential-expression-signal-preservation">Category 5: Differential Expression &amp; Signal Preservation<a class="anchor" aria-label="anchor" href="#category-differential-expression-signal-preservation"></a></h2>
 
-      <div class="section-desc"><p>Recovery of biological contrast, differential gene detection accuracy, and cell-cycle phase fidelity.</p></div>
+      <div class="section-desc"><p>Recovery of biological contrast, differential gene detection accuracy, and cell-type deconvolution fidelity.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -996,13 +1068,6 @@
 
         </dt>
         <dd>Calculate Delta Variance (Pseudoreplication Bias Metric)</dd>
-
-        <dt>
-
-          <code><a href="calc_cell_cycle_phase_fidelity.html">calc_cell_cycle_phase_fidelity()</a></code>
-
-        </dt>
-        <dd>Evaluate Cell Cycle Phase Distribution Fidelity</dd>
 
         <dt>
 
@@ -1169,7 +1234,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Kabilan S, Dr Dwijesh Chandra Mishra, Dr Shashi Bhushan Lal, Dr Sudhir Srivastava, Dr Krishna Kumar Chaturvedi.</p>
+  <p>Developed by Kabilan Sakthivel, Dr Dwijesh Chandra Mishra, Dr Shashi Bhushan Lal, Dr Sudhir Srivastava, Dr Krishna Kumar Chaturvedi.</p>
 </div>
 
 <div class="pkgdown-footer-right">
