@@ -257,51 +257,30 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.99.5" id="scsimeval-0995">scSimEval 0.99.5<a class="anchor" aria-label="anchor" href="#scsimeval-0995"></a></h2>
 <div class="section level3">
-<h3 id="ui--user-experience-enhancements-0-99-5">UI &amp; User Experience Enhancements<a class="anchor" aria-label="anchor" href="#ui--user-experience-enhancements-0-99-5"></a></h3>
+<h3 id="major-improvements-0-99-5">Major Improvements<a class="anchor" aria-label="anchor" href="#major-improvements-0-99-5"></a></h3>
 <ul><li>
-<strong>Streamlined &amp; Minimalist Home Tab:</strong>
-<ul><li>Redesigned the Home tab hero banner with a clean, modern scientific aesthetic.</li>
-<li>Removed redundant nested action button boxes inside the main <em>scSimEval Studio</em> hero card, decluttering the initial landing view and relying on the intuitive top navigation bar.</li>
-<li>Symmetrically balanced card paddings and layout typography.</li>
+<strong>Minimalist &amp; Streamlined Shiny Studio Interface:</strong>
+<ul><li>Modernized the web interface across all tabs with a clean, clutter-free scientific layout, removing redundant controls in the Home, Data Hub, and Bubble Matrix panels.</li>
+<li>Simplified comparative metric filtering into two intuitive modes: <strong>All 62 Measures</strong> and <strong>Custom Selection</strong> (with direct category dropdown and measure toggles).</li>
+<li>Streamlined Data Hub ingestion controls and enhanced navigation linking directly to the methodology guide.</li>
 </ul></li>
 <li>
-<strong>Clear, Accessible &amp; Human Language Refinement:</strong>
-<ul><li>Rewrote application copy across all tabs to replace technical jargon and buzzwords with clear, direct scientific explanations.</li>
-<li>Clearly articulated the core purpose of scSimEval: evaluating simulations of single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) datasets against real biological reference data across 62 evaluation measures without requiring known ground truth.</li>
+<strong>Refined Multiomics Scope &amp; Natural Language:</strong>
+<ul><li>Clearly unified application terminology to emphasize simulation evaluation across single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) against empirical references across 62 ground-truth-free measures.</li>
+<li>Replaced complex technical jargon with direct, human-friendly scientific explanations across all tabs.</li>
 </ul></li>
 <li>
-<strong>Data Hub Improvements &amp; Bug Fixes:</strong>
-<ul><li>Fixed the empty-state <strong>“Open User Guide”</strong> button (<code>btn_empty_help</code>) to properly navigate directly to the <em>Help &amp; Getting Started</em> tab.</li>
-<li>Wired the empty-state <strong>“Load Example Benchmark (6 Simulators)”</strong> button (<code>btn_empty_load_demo</code>) for instant one-click demonstration data loading.</li>
-<li>Streamlined Data Hub inputs by removing redundant metadata fields (such as taxonomic ranges and ingestion schemas), creating a focused, user-friendly data import workflow.</li>
-<li>Added helpful capacity guidance badges for cloud vs. local package execution.</li>
+<strong>Methodology Guide &amp; Normalization Pipeline:</strong>
+<ul><li>Integrated the comprehensive <strong>Score Normalization Pipeline</strong> workflow figure (Figure 2) and structured methodology cards detailing directional transformation, min-max feature scaling, outlier winsorization, and composite rankings.</li>
 </ul></li>
 <li>
-<strong>Comparative Bubble Matrix Metric Filtering:</strong>
-<ul><li>Simplified the metric filtering interface into two clean options: <strong>“All 62 Measures”</strong> and <strong>“Custom Selection”</strong>.</li>
-<li>Added an intuitive category picker dropdown and dynamic metric checklist with convenient “All” and “Clear” toggles.</li>
-</ul></li>
-<li>
-<strong>Help &amp; Methodology Documentation Updates:</strong>
-<ul><li>Restored <strong>Figure 2 | Score Normalization Pipeline</strong> (<code>score_normalization_workflow.png</code>) in Section 3 of the <em>Help &amp; Getting Started</em> tab, accompanied by 4 structured methodology cards explaining directional transformation, min-max feature scaling, outlier winsorization, and overall fidelity calculation.</li>
-</ul></li>
-<li>
-<strong>Team, Authorship &amp; Contact Tab Refinement:</strong>
-<ul><li>Retained a single official ICAR emblem on the Contact page.</li>
-<li>Updated author name to <strong>Kabilan Sakthivel</strong> and designation of <strong>Dr. Dwijesh Chandra Mishra</strong> to <strong>Principal Scientist</strong>.</li>
-</ul></li>
-</ul></div>
-<div class="section level3">
-<h3 id="architecture--code-alignment-0-99-5">Architecture &amp; Code Alignment<a class="anchor" aria-label="anchor" href="#architecture--code-alignment-0-99-5"></a></h3>
-<ul><li>
-<strong>Full Parity Between Package &amp; Deployment Apps:</strong>
-<ul><li>Synchronized <code>inst/shiny/scSimEvalApp/10_visualizations.R</code> with package core <code>R/10_visualizations.R</code>, providing full access to dataset embedding algorithms (<code><a href="../reference/compute_dataset_embeddings.html">compute_dataset_embeddings()</a></code>, <code><a href="../reference/plot_dataset_embeddings.html">plot_dataset_embeddings()</a></code>, <code><a href="../reference/compute_embedding_quality_metrics.html">compute_embedding_quality_metrics()</a></code>).</li>
-<li>Aligned <code>app.R</code> between the local package (<code>inst/shiny/scSimEvalApp/app.R</code>) and Posit Connect Cloud deployment (<code>scSimEval_shiny/app.R</code>) with exact line-for-line parity, maintaining Google Analytics tracking solely in the cloud deployment.</li>
+<strong>Package &amp; Visualization Synchronization:</strong>
+<ul><li>Fully synchronized standalone Shiny Studio visualization components with core package routines, ensuring complete integration of low-dimensional cell embedding algorithms (<code><a href="../reference/compute_dataset_embeddings.html">compute_dataset_embeddings()</a></code>, <code><a href="../reference/plot_dataset_embeddings.html">plot_dataset_embeddings()</a></code>, <code><a href="../reference/compute_embedding_quality_metrics.html">compute_embedding_quality_metrics()</a></code>).</li>
 </ul></li>
 </ul></div>
 </div>
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.99.5" id="scsimeval-0994">scSimEval 0.99.5<a class="anchor" aria-label="anchor" href="#scsimeval-0994"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.99.4" id="scsimeval-0994">scSimEval 0.99.4<a class="anchor" aria-label="anchor" href="#scsimeval-0994"></a></h2>
 <div class="section level3">
 <h3 id="bug-fixes--improvements-0-99-4">Bug Fixes &amp; Improvements<a class="anchor" aria-label="anchor" href="#bug-fixes--improvements-0-99-4"></a></h3>
 <ul><li>

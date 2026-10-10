@@ -1,38 +1,21 @@
 # scSimEval 0.99.5
 
-## UI & User Experience Enhancements
+## Major Improvements
 
-* **Streamlined & Minimalist Home Tab:**
-  - Redesigned the Home tab hero banner with a clean, modern scientific aesthetic.
-  - Removed redundant nested action button boxes inside the main *scSimEval Studio* hero card, decluttering the initial landing view and relying on the intuitive top navigation bar.
-  - Symmetrically balanced card paddings and layout typography.
+* **Minimalist & Streamlined Shiny Studio Interface:**
+  - Modernized the web interface across all tabs with a clean, clutter-free scientific layout, removing redundant controls in the Home, Data Hub, and Bubble Matrix panels.
+  - Simplified comparative metric filtering into two intuitive modes: **All 62 Measures** and **Custom Selection** (with direct category dropdown and measure toggles).
+  - Streamlined Data Hub ingestion controls and enhanced navigation linking directly to the methodology guide.
 
-* **Clear, Accessible & Human Language Refinement:**
-  - Rewrote application copy across all tabs to replace technical jargon and buzzwords with clear, direct scientific explanations.
-  - Clearly articulated the core purpose of scSimEval: evaluating simulations of single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) datasets against real biological reference data across 62 evaluation measures without requiring known ground truth.
+* **Refined Multiomics Scope & Natural Language:**
+  - Clearly unified application terminology to emphasize simulation evaluation across single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) against empirical references across 62 ground-truth-free measures.
+  - Replaced complex technical jargon with direct, human-friendly scientific explanations across all tabs.
 
-* **Data Hub Improvements & Bug Fixes:**
-  - Fixed the empty-state **"Open User Guide"** button (`btn_empty_help`) to properly navigate directly to the *Help & Getting Started* tab.
-  - Wired the empty-state **"Load Example Benchmark (6 Simulators)"** button (`btn_empty_load_demo`) for instant one-click demonstration data loading.
-  - Streamlined Data Hub inputs by removing redundant metadata fields (such as taxonomic ranges and ingestion schemas), creating a focused, user-friendly data import workflow.
-  - Added helpful capacity guidance badges for cloud vs. local package execution.
+* **Methodology Guide & Normalization Pipeline:**
+  - Integrated the comprehensive **Score Normalization Pipeline** workflow figure (Figure 2) and structured methodology cards detailing directional transformation, min-max feature scaling, outlier winsorization, and composite rankings.
 
-* **Comparative Bubble Matrix Metric Filtering:**
-  - Simplified the metric filtering interface into two clean options: **"All 62 Measures"** and **"Custom Selection"**.
-  - Added an intuitive category picker dropdown and dynamic metric checklist with convenient "All" and "Clear" toggles.
-
-* **Help & Methodology Documentation Updates:**
-  - Restored **Figure 2 | Score Normalization Pipeline** (`score_normalization_workflow.png`) in Section 3 of the *Help & Getting Started* tab, accompanied by 4 structured methodology cards explaining directional transformation, min-max feature scaling, outlier winsorization, and overall fidelity calculation.
-
-* **Team, Authorship & Contact Tab Refinement:**
-  - Retained a single official ICAR emblem on the Contact page.
-  - Updated author name to **Kabilan Sakthivel** and designation of **Dr. Dwijesh Chandra Mishra** to **Principal Scientist**.
-
-## Architecture & Code Alignment
-
-* **Full Parity Between Package & Deployment Apps:**
-  - Synchronized `inst/shiny/scSimEvalApp/10_visualizations.R` with package core `R/10_visualizations.R`, providing full access to dataset embedding algorithms (`compute_dataset_embeddings()`, `plot_dataset_embeddings()`, `compute_embedding_quality_metrics()`).
-  - Aligned `app.R` between the local package (`inst/shiny/scSimEvalApp/app.R`) and Posit Connect Cloud deployment (`scSimEval_shiny/app.R`) with exact line-for-line parity, maintaining Google Analytics tracking solely in the cloud deployment.
+* **Package & Visualization Synchronization:**
+  - Fully synchronized standalone Shiny Studio visualization components with core package routines, ensuring complete integration of low-dimensional cell embedding algorithms (`compute_dataset_embeddings()`, `plot_dataset_embeddings()`, `compute_embedding_quality_metrics()`).
 
 
 # scSimEval 0.99.4
