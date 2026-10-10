@@ -399,55 +399,6 @@ calc_delta_variance <- function(
   )
 }
 
-#' Evaluate Cell Cycle Phase Distribution Fidelity
-#'
-#' Compares cell cycle phase proportions (e.g. G0/G1, S, G2/M) between reference
-#' and simulated single-cell populations.
-#'
-#' @param ref_phases Factor or character vector of cell cycle phase assignments in reference.
-#' @param sim_phases Factor or character vector of cell cycle phase assignments in simulation.
-#'
-#' @return A list with phase proportions, Jensen-Shannon divergence, and chi-squared test p-value.
-#' @examples
-#' data(example_scrna, package = "scSimEval")
-#' calc_cell_cycle_phase_fidelity(example_scrna$cell_types, example_scrna$cell_types)
-#' @export
-calc_cell_cycle_phase_fidelity <- function(ref_phases, sim_phases) {
-  all_phases <- union(unique(ref_phases), unique(sim_phases))
-  all_phases <- all_phases[!is.na(all_phases)]
-  
-  t_ref <- table(factor(ref_phases, levels = all_phases))
-  t_sim <- table(factor(sim_phases, levels = all_phases))
-  
-  p_ref <- as.numeric(prop.table(t_ref))
-  p_sim <- as.numeric(prop.table(t_sim))
-  names(p_ref) <- all_phases
-  names(p_sim) <- all_phases
-  
-  mae <- mean(abs(p_ref - p_sim))
-  
-  # Jensen-Shannon Divergence
-  m <- 0.5 * (p_ref + p_sim)
-  kl <- function(p, q) {
-    terms <- ifelse(p > 0, p * log(p / pmax(1e-12, q)), 0)
-    sum(terms)
-  }
-  jsd <- 0.5 * kl(p_ref, m) + 0.5 * kl(p_sim, m)
-  
-  # Chi-squared test of independence
-  cont_tab <- rbind(t_ref, t_sim)
-  chisq_res <- tryCatch(suppressWarnings(stats::chisq.test(cont_tab)), error = function(e) NULL)
-  p_val <- if (!is.null(chisq_res)) chisq_res$p.value else NA_real_
-  
-  list(
-    ref_proportions = p_ref,
-    sim_proportions = p_sim,
-    phase_mae = mae,
-    phase_jsd = jsd,
-    homogeneity_pvalue = p_val
-  )
-}
-
 # -----------------------------------------------------------------------------
 # Single-Cell Mixture & Deconvolution Accuracy
 # -----------------------------------------------------------------------------

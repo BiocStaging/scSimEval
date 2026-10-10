@@ -675,8 +675,6 @@ and cell-cycle phase fidelity.
   : Detect Bimodal Distribution (BD) Genes (Bimodal Separation Index)
 - [`calc_delta_variance()`](https://kabilanbio.github.io/scSimEval/reference/calc_delta_variance.md)
   : Calculate Delta Variance (Pseudoreplication Bias Metric)
-- [`calc_cell_cycle_phase_fidelity()`](https://kabilanbio.github.io/scSimEval/reference/calc_cell_cycle_phase_fidelity.md)
-  : Evaluate Cell Cycle Phase Distribution Fidelity
 - [`calc_deconvolution_accuracy()`](https://kabilanbio.github.io/scSimEval/reference/calc_deconvolution_accuracy.md)
   : Evaluate Cell-Type Deconvolution & Mixture Proportion Accuracy
 - [`calc_variance_decomposition()`](https://kabilanbio.github.io/scSimEval/reference/calc_variance_decomposition.md)

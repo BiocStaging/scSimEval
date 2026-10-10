@@ -17,8 +17,8 @@ for (p in c("10_visualizations.R", "R/10_visualizations.R", "../../R/10_visualiz
   }
 }
 
-# Set max upload size to 500 MB for large single-cell datasets
-options(shiny.maxRequestSize = 500 * 1024^2)
+# Set max upload size to 10 GB for large single-cell datasets
+options(shiny.maxRequestSize = 10 * 1024^3)
 
 # Register static resource directory for documentation figures
 fig_dirs <- c(
@@ -832,6 +832,48 @@ ui <- page_navbar(
           )
         )
       )
+    ),
+    
+    fluidRow(
+      column(
+        12,
+        div(
+          class = "alert alert-warning",
+          style = "border-left: 5px solid #F59E0B; background-color: #FFFBEB; color: #78350F; border-radius: 9px; padding: 18px 22px; margin-top: 15px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);",
+          div(
+            style = "display: flex; align-items: flex-start;",
+            div(style = "font-size: 1.6rem; color: #D97706; margin-right: 16px; margin-top: 2px;", icon("server")),
+            div(
+              h5(tags$b("Computational Scalability & Multiomics Guidelines: Cloud Hosting vs. Local R Package"), style = "margin-top: 0; margin-bottom: 8px; color: #92400E; font-weight: 800;"),
+              p(
+                "The web-hosted studio on Posit Connect Cloud operates on a server container allocated with ", tags$b("4 GB RAM and 1 CPU core"), ". It is optimized for interactive benchmarking, exploring the pre-computed 6-simulator results, and evaluating small-to-moderate datasets:",
+                style = "margin-bottom: 6px; font-size: 0.93rem; line-height: 1.5;"
+              ),
+              tags$ul(
+                style = "margin-bottom: 8px; padding-left: 20px; font-size: 0.91rem;",
+                tags$li(tags$b("Unimodal scRNA-seq: "), "recommended up to ~3,000 – 4,000 cells and ~2,000 – 3,000 genes (or top variable genes / HVGs)."),
+                tags$li(tags$b("Unimodal scATAC-seq: "), "recommended up to ~2,000 – 3,000 cells and ~5,000 – 8,000 accessible peaks.")
+              ),
+              div(
+                style = "background: rgba(245, 158, 11, 0.12); border: 1px dashed #D97706; border-radius: 6px; padding: 10px 14px; margin: 10px 0 12px 0;",
+                h6(tags$b("Single-Cell Multiomics (scRNA-seq + scATAC-seq) Possibilities & Architectural Limits:"), style = "margin: 0 0 6px 0; color: #B45309; font-weight: 700; font-size: 0.92rem;"),
+                p(tags$b("• Computational Possibilities: "), "Supports paired co-assays (e.g. 10x Multiome, SHARE-seq, SNARE-seq), unpaired profiling (separate cells from same tissue), and mosaic designs. Seamlessly computes Category 7 cross-modal coupling measures (peak-to-gene linkages, TF regulatory fidelity, cross-modal cell concordance, and RNA-ATAC cluster agreement) alongside all 8 unimodal evaluation categories for each biological layer.", style = "margin-bottom: 4px; font-size: 0.88rem;"),
+                p(tags$b("• Multiomics Memory Bottleneck: "), "Evaluating multiomics datasets requires loading ", tags$b("four simultaneous high-dimensional matrices"), " (Real RNA, Real ATAC, Simulated RNA, Simulated ATAC). Because chromatin accessibility peaksets typically feature 50,000–100,000+ genomic regions with extreme sparsity (>95–99% zeros), analyzing unfiltered genome-wide peaksets easily exceeds the 4GB RAM ceiling.", style = "margin-bottom: 4px; font-size: 0.88rem;"),
+                p(tags$b("• Cloud Multiomics Sizing Guide: "), "For smooth execution on this cloud instance, filter peak matrices to the top ", tags$b("5,000 – 8,000 promoter / enhancer / variable peaks"), " and keep cell counts to ", tags$b("~2,000 – 3,000 cells"), ". Filter out ultra-rare peaks (<1-2% cells) prior to upload to prevent out-of-memory crashes.", style = "margin-bottom: 0; font-size: 0.88rem;")
+              ),
+              p(
+                tags$b("For large-scale single-cell & multiomics datasets "),
+                "(>5,000 – 50,000+ cells, 20,000+ genes, or full genome-wide peaksets with 50,000–150,000+ peaks), please use the inbuilt Shiny application in the ", tags$b("scSimEval"), " R package locally. Running locally leverages your workstation's full physical RAM (16–64+ GB) and multi-core CPU without cloud timeout or memory ceilings:",
+                style = "margin-bottom: 6px; font-size: 0.92rem; line-height: 1.5;"
+              ),
+              tags$pre(
+                style = "background: #FEF3C7; color: #78350F; border: 1px solid #FDE68A; padding: 8px 14px; border-radius: 6px; margin-bottom: 0; font-size: 0.85rem; font-family: monospace;",
+                '# Install and launch scSimEval Shiny Studio locally in R:\nremotes::install_github("kabilanbio/scSimEval")\nscSimEval::launch_scSimEval_app()'
+              )
+            )
+          )
+        )
+      )
     )
   ),
   
@@ -867,6 +909,13 @@ ui <- page_navbar(
         # Mode 2: Single-Cell Evaluation (scRNA-seq or scATAC-seq) - 1 or multiple simulators
         conditionalPanel(
           condition = "input.opt_data_mode == 'unimodal'",
+          div(
+            class = "alert alert-warning py-2 px-3",
+            style = "font-size: 0.81rem; margin-bottom: 12px; border-left: 3px solid #F59E0B; background-color: #FFFBEB; color: #92400E;",
+            icon("info-circle"), tags$b(" Cloud Capacity Notice (4GB RAM / 1 CPU): "),
+            "Best for up to ~3,000–4,000 cells & 2,000–3,000 genes. For large datasets, run locally via ",
+            tags$code("scSimEval::launch_scSimEval_app()"), "."
+          ),
           h6(tags$b("1. Reference Biological Dataset (Real Cells)")),
           fileInput("file_uni_ref", "Reference Count Matrix (.rds / .csv / .tsv / .txt):", accept = c(".rds", ".csv", ".tsv", ".txt")),
           uiOutput("ui_uni_ref_badge"),
@@ -889,6 +938,15 @@ ui <- page_navbar(
         # Mode 3: Multiomics Evaluation (scRNA-seq + scATAC-seq) - 1 or multiple simulators
         conditionalPanel(
           condition = "input.opt_data_mode == 'multiomics'",
+          div(
+            class = "alert alert-warning py-2 px-3",
+            style = "font-size: 0.81rem; margin-bottom: 12px; border-left: 3px solid #F59E0B; background-color: #FFFBEB; color: #92400E;",
+            div(style = "font-weight: 700; margin-bottom: 3px;", icon("exclamation-triangle"), " Multiomics Sizing & Memory Notice (Cloud 4GB RAM / 1 CPU):"),
+            p("• ", tags$b("Quad-Matrix Load: "), "Evaluates 4 matrices concurrently (Real RNA + ATAC, Simulated RNA + ATAC).", style = "margin-bottom: 2px;"),
+            p("• ", tags$b("Recommended Limits: "), "Up to ~2,000–3,000 cells, 2,000–3,000 genes, and 5,000–8,000 peaks.", style = "margin-bottom: 2px;"),
+            p("• ", tags$b("Peak Filtering Tip: "), "Pre-filter rare peaks (detected in <1-2% cells) before upload to avoid memory limits.", style = "margin-bottom: 2px;"),
+            p("• ", tags$b("Full Genome Peaksets (50k+ peaks): "), "Run locally via ", tags$code("scSimEval::launch_scSimEval_app()"), " to utilize full workstation RAM.", style = "margin-bottom: 0;")
+          ),
           radioButtons(
             "opt_multi_pairing", "Multiomics Dataset Type:",
             choices = c(
@@ -926,33 +984,7 @@ ui <- page_navbar(
         )
       ),
       
-      card(
-        card_header(
-          span(icon("database"), " Active Benchmark & Dataset Summary")
-        ),
-        card_body(
-          uiOutput("ui_status_banner"),
-          
-          div(
-            class = "dataset-summary-box mb-4",
-            h5(icon("list-check"), " Uploaded Dataset Properties & Extraction Summary", style = "font-weight: 700; color: #1B4F72; margin-top: 10px;"),
-            p("Basic biological and technical summary properties extracted across the uploaded reference and simulated single-cell/multiomics count matrices (Number of cells, features, sparsity, biological groups, and technical batches).", style = "font-size: 0.88rem; color: #64748B; margin-bottom: 14px;"),
-            uiOutput("ui_dataset_summary_kpis"),
-            div(style = "margin-top: 14px; border: 1px solid #E2E8F0; border-radius: 8px; padding: 6px; background: #FFFFFF;",
-                DTOutput("table_dataset_summary")),
-            div(class = "d-flex justify-content-end mt-2 pt-1",
-                uiOutput("ui_dataset_summary_download_btn"))
-          ),
-          
-          hr(style = "margin: 22px 0; border-color: #CBD5E1;"),
-          
-          div(
-            h5(icon("chart-bar"), " Benchmark Summary Table Preview", style = "font-weight: 700; color: #1B4F72;"),
-            p("Displaying evaluated metrics across simulation methods. Column 'Score' represents direction-aware normalized fidelity in [0, 1].", style = "font-size: 0.88rem; color: #7F8C8D; margin-bottom: 12px;"),
-            DTOutput("table_active_data_preview")
-          )
-        )
-      )
+      uiOutput("ui_datahub_main_panel")
     )
   ),
   
@@ -1975,6 +2007,86 @@ ui <- page_navbar(
                   )
                 )
               )
+            ),
+            
+            # ------------------------------------------------------------------
+            # Section 6: Computational Sizing Guide: Cloud Hosting vs. Local Package
+            # ------------------------------------------------------------------
+            div(
+              style = "margin-top: 26px; padding: 22px 24px; background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);",
+              h5(tags$b("Computational Resources & Dataset Sizing Guidelines"), style = "color: #1E3A8A; margin-top: 0; margin-bottom: 10px; font-weight: 800;"),
+              p(
+                "Depending on your dataset dimensionality (cells, genes, and peaks), choose between the hosted cloud app and the local R package Shiny application:",
+                style = "color: #475569; font-size: 0.93rem; margin-bottom: 14px;"
+              ),
+              tags$div(
+                class = "table-responsive",
+                tags$table(
+                  class = "table table-bordered table-sm",
+                  style = "font-size: 0.88rem; vertical-align: middle;",
+                  tags$thead(
+                    style = "background-color: #F8FAFC;",
+                    tags$tr(
+                      tags$th("Environment"),
+                      tags$th("Hardware Allocation"),
+                      tags$th("Recommended Dataset Dimensions"),
+                      tags$th("Best Use Case")
+                    )
+                  ),
+                  tags$tbody(
+                    tags$tr(
+                      tags$td(tags$b("Hosted Web App (Cloud)")),
+                      tags$td("4 GB RAM, 1 vCPU"),
+                      tags$td(
+                        tags$ul(
+                          style = "margin-bottom: 0; padding-left: 18px;",
+                          tags$li(tags$b("scRNA-seq: "), "Up to ~3,000 – 4,000 cells × ~2,000 – 3,000 genes"),
+                          tags$li(tags$b("scATAC / Multiomics: "), "Up to ~2,000 – 3,000 cells × ~5,000 – 8,000 peaks")
+                        )
+                      ),
+                      tags$td("Instant exploration, reviewing pre-computed 6-simulator benchmarks, pilot evaluations without installing R.")
+                    ),
+                    tags$tr(
+                      tags$td(tags$b("Inbuilt App in Local R Package")),
+                      tags$td("User's Workstation (e.g. 16–128 GB RAM, multi-core CPU)"),
+                      tags$td(
+                        tags$ul(
+                          style = "margin-bottom: 0; padding-left: 18px;",
+                          tags$li(tags$b("Scalable: "), "5,000 – 50,000+ cells, 20,000+ genes, genome-wide peaksets"),
+                          tags$li(tags$b("No memory ceilings: "), "Full hardware RAM utilization")
+                        )
+                      ),
+                      tags$td("Production benchmarking, large multiomics atlases, publication-grade high-throughput evaluation.")
+                    )
+                  )
+                )
+              ),
+              tags$div(
+                style = "margin-top: 14px; background: #F8FAFC; border-radius: 8px; padding: 12px 16px; border: 1px solid #E2E8F0;",
+                tags$b("How to launch the local R package Shiny app:"),
+                tags$pre(
+                  style = "background: #1E293B; color: #F8FAFC; padding: 10px 14px; border-radius: 6px; margin: 8px 0 0 0; font-size: 0.85rem; font-family: monospace;",
+                  '# Install and launch scSimEval locally in R:\nremotes::install_github("kabilanbio/scSimEval")\nscSimEval::launch_scSimEval_app()'
+                )
+              ),
+              hr(),
+              h6(tags$b("6.2 Single-Cell Multiomics (scRNA-seq + scATAC-seq): Possibilities & Architectural Constraints"), style = "color: #0369A1; font-weight: 800; margin-top: 14px; margin-bottom: 8px;"),
+              p(
+                "Single-cell multiomics simulation benchmarking poses unique computational considerations compared to unimodal RNA-seq:",
+                style = "color: #334155; font-size: 0.91rem; margin-bottom: 8px;"
+              ),
+              tags$ul(
+                style = "color: #334155; font-size: 0.90rem; padding-left: 20px; margin-bottom: 10px;",
+                tags$li(tags$b("Evaluation Possibilities: "), "scSimEval supports paired co-assays (10x Multiome, SHARE-seq, SNARE-seq), unpaired multiomics (separate cells from same tissue), and mosaic co-measurement. It systematically quantifies Category 7: Multiomics Coupling (peak-to-gene linkage preservation, TF regulatory consistency, cross-modal cell correlation, and cross-layer cluster concordance ARI/NMI), alongside all 8 unimodal evaluation categories for each layer."),
+                tags$li(tags$b("Quad-Matrix Memory Footprint: "), "Unlike unimodal workflows that load 2 matrices (real + simulated), multiomics benchmarking requires loading at least 4 high-dimensional matrices simultaneously (Real RNA, Real ATAC, Simulated RNA, Simulated ATAC). With multiple simulators, memory scales by 2 matrices per additional method."),
+                tags$li(tags$b("Peak Dimension & Sparsity Bottleneck: "), "scATAC-seq peaksets typically contain 50,000–150,000+ genomic regions with >95–99% zero counts. Evaluating uncompressed, unfiltered peak matrices for thousands of cells will exceed the 4 GB server RAM limit and cause an out-of-memory (OOM) termination on the cloud host."),
+                tags$li(tags$b("Algorithmic Complexity: "), "Calculating cell-cell distance matrices and cross-modal peak-to-gene linkages scales quadratically O(N^2) or bi-linearly O(G x P), leading to CPU throttling on a shared 1 vCPU cloud environment.")
+              ),
+              p(
+                tags$b("Recommended Best Practice: "),
+                "On this cloud instance, pre-filter peaksets to the top 5,000 – 8,000 most accessible / promoter / variable peaks and keep cell counts <= 3,000 cells. For full genome-wide peaksets (50,000+ peaks) or large multiomics atlases (>5,000 cells), use the inbuilt Shiny app in the local scSimEval R package (", tags$code("scSimEval::launch_scSimEval_app()"), ") where sparse Matrix (dgCMatrix) handling and multi-core processing leverage your full workstation memory.",
+                style = "color: #334155; font-size: 0.91rem; margin-bottom: 0;"
+              )
             )
           )
         )
@@ -2171,16 +2283,17 @@ ui <- page_navbar(
 server <- function(input, output, session) {
   
   # Reactive state container
+  # Reactive state container (Data loaded on-demand via options on sidebar)
   rv <- reactiveValues(
-    benchmark_df = if (!is.null(initial_demo)) initial_demo$benchmark_summary_table else NULL,
-    methods = if (!is.null(initial_demo)) initial_demo$methods else NULL,
-    toy_ref = if (!is.null(initial_demo)) initial_demo$toy_data$ref else NULL,
-    toy_sim = if (!is.null(initial_demo)) initial_demo$toy_data$sim else NULL,
-    sim_matrices = if (!is.null(initial_demo)) init_demo_sim_matrices(initial_demo) else list(),
-    cell_types = if (!is.null(initial_demo)) initial_demo$toy_data$cell_types else NULL,
-    batch = if (!is.null(initial_demo)) initial_demo$toy_data$batch else NULL,
-    source_name = if (!is.null(initial_demo)) "Demo Benchmark (Splatter, scDesign3, SCRIP, SymSim, dyngen, simATAC)" else "No Data Loaded",
-    dataset_summary_df = if (!is.null(initial_demo)) init_demo_summary(initial_demo) else NULL
+    benchmark_df = NULL,
+    methods = NULL,
+    toy_ref = NULL,
+    toy_sim = NULL,
+    sim_matrices = list(),
+    cell_types = NULL,
+    batch = NULL,
+    source_name = "No Data Loaded",
+    dataset_summary_df = NULL
   )
   
   # Navigation triggers
@@ -2667,164 +2780,382 @@ server <- function(input, output, session) {
   )
   
   # ----------------------------------------------------------------------------
-  # Status Banner & Data Preview
   # ----------------------------------------------------------------------------
-  output$ui_status_banner <- renderUI({
-    if (is.null(rv$benchmark_df)) {
-      return(div(class = "alert alert-warning", "No benchmark data loaded yet. Please select an option on the left."))
+  # Data Hub: Main Panel UI & Dynamic Explorer
+  # ----------------------------------------------------------------------------
+  observeEvent(input$btn_jump_to_bubble, {
+    nav_select("nav_active", "Comparative Bubble Matrix")
+  })
+
+  output$ui_datahub_main_panel <- renderUI({
+    if (is.null(rv$benchmark_df) && is.null(rv$toy_ref)) {
+      # Minimalist Empty State Card
+      card(
+        card_header(
+          div(
+            class = "d-flex justify-content-between align-items-center",
+            span(icon("database"), " Data Hub • Benchmark & Dataset Overview"),
+            span(class = "badge bg-secondary", "Awaiting Data Selection")
+          )
+        ),
+        card_body(
+          div(
+            style = "text-align: center; padding: 35px 20px 25px 20px;",
+            div(
+              style = "width: 72px; height: 72px; margin: 0 auto 16px auto; border-radius: 50%; background: #EFF6FF; display: flex; align-items: center; justify-content: center;",
+              icon("cloud-arrow-up", class = "fa-2x", style = "color: #2563EB;")
+            ),
+            h4("Welcome to scSimEval Data Hub", style = "font-weight: 700; color: #1E293B; margin-bottom: 8px;"),
+            p("Choose an evaluation or data exploration mode from the left sidebar to get started.",
+              style = "color: #64748B; font-size: 0.95rem; max-width: 650px; margin: 0 auto 28px auto;")
+          ),
+          fluidRow(
+            column(
+              3,
+              div(
+                class = "stat-card",
+                style = "border-left: 4px solid #10B981; padding: 14px 16px; min-height: 140px; background: #F8FAFC;",
+                div(tags$b("Option 1: Demo Benchmark"), style = "color: #065F46; font-size: 0.92rem; margin-bottom: 6px;"),
+                p("Pre-computed evaluation across 6 simulators (Splatter, scDesign3, SCRIP, SymSim, dyngen, simATAC) and 62 metrics.", style = "font-size: 0.82rem; color: #475569; margin: 0;")
+              )
+            ),
+            column(
+              3,
+              div(
+                class = "stat-card",
+                style = "border-left: 4px solid #3B82F6; padding: 14px 16px; min-height: 140px; background: #F8FAFC;",
+                div(tags$b("Option 2: Single-Cell"), style = "color: #1E40AF; font-size: 0.92rem; margin-bottom: 6px;"),
+                p("Upload reference and simulated count matrices (scRNA-seq or scATAC-seq) for multi-simulator evaluation.", style = "font-size: 0.82rem; color: #475569; margin: 0;")
+              )
+            ),
+            column(
+              3,
+              div(
+                class = "stat-card",
+                style = "border-left: 4px solid #8B5CF6; padding: 14px 16px; min-height: 140px; background: #F8FAFC;",
+                div(tags$b("Option 3: Multiomics"), style = "color: #5B21B6; font-size: 0.92rem; margin-bottom: 6px;"),
+                p("Quad-matrix evaluation for paired co-assays (10x Multiome, SHARE-seq) or unpaired scRNA + scATAC profiling.", style = "font-size: 0.82rem; color: #475569; margin: 0;")
+              )
+            ),
+            column(
+              3,
+              div(
+                class = "stat-card",
+                style = "border-left: 4px solid #F59E0B; padding: 14px 16px; min-height: 140px; background: #F8FAFC;",
+                div(tags$b("Option 4: Saved Results"), style = "color: #92400E; font-size: 0.92rem; margin-bottom: 6px;"),
+                p("Upload previously saved .rds or .csv benchmark files to immediately restore figures and summaries.", style = "font-size: 0.82rem; color: #475569; margin: 0;")
+              )
+            )
+          ),
+          div(
+            style = "margin-top: 24px; padding: 12px 16px; background: #F1F5F9; border-radius: 8px; font-size: 0.82rem; color: #475569;",
+            icon("circle-info", class = "text-primary"),
+            tags$b(" Universal Capability: "),
+            "Universal organism scope (human, mouse, rice, soybean, Arabidopsis, yeast). Supports up to 10 GB file uploads and sparse ", tags$code("dgCMatrix"), ", .rds, .csv, .tsv, and .txt formats."
+          )
+        )
+      )
+    } else {
+      # Active Loaded State: Clean Tabset Layout
+      navset_card_tab(
+        title = div(
+          class = "d-flex align-items-center justify-content-between w-100",
+          span(icon("database"), " Active Data & Benchmark Hub"),
+          span(class = "badge bg-success", style = "font-size: 0.8rem; font-weight: 500;", "Data Loaded")
+        ),
+        selected = "Dataset Overview & Properties",
+        
+        # Subtab 1: Dataset Overview & Properties
+        nav_panel(
+          title = span(icon("table-list"), " Dataset Overview & Properties"),
+          div(
+            style = "padding: 8px 4px;",
+            uiOutput("ui_status_banner"),
+            div(
+              class = "dataset-summary-box mb-3",
+              h5(icon("list-check"), " Extracted Dataset Properties Summary", style = "font-weight: 700; color: #1B4F72; margin-top: 8px;"),
+              p("Biological and technical parameters extracted across uploaded count matrices:", style = "font-size: 0.86rem; color: #64748B; margin-bottom: 12px;"),
+              uiOutput("ui_dataset_summary_kpis"),
+              div(style = "margin-top: 14px; border: 1px solid #E2E8F0; border-radius: 8px; padding: 6px; background: #FFFFFF;",
+                  DTOutput("table_dataset_summary")),
+              div(class = "d-flex justify-content-end mt-2 pt-1",
+                  uiOutput("ui_dataset_summary_download_btn"))
+            ),
+            uiOutput("ui_datahub_annotations_breakdown")
+          )
+        ),
+        
+        # Subtab 2: Count Matrix & Metadata Explorer
+        nav_panel(
+          title = span(icon("magnifying-glass-chart"), " Count Matrix & Metadata Explorer"),
+          div(
+            style = "padding: 8px 4px;",
+            div(
+              style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px; margin-bottom: 16px;",
+              fluidRow(
+                column(4, uiOutput("ui_inspect_dataset_selector")),
+                column(
+                  5,
+                  radioButtons(
+                    "opt_inspect_view_mode", "Inspection View:",
+                    choices = c(
+                      "Count Matrix (Head)" = "matrix_head",
+                      "Feature Statistics" = "feature_stats",
+                      "Cell Statistics & Metadata" = "cell_stats"
+                    ),
+                    selected = "matrix_head",
+                    inline = TRUE
+                  )
+                ),
+                column(
+                  3,
+                  div(
+                    style = "margin-top: 24px; text-align: right;",
+                    downloadButton("download_inspect_data_csv", "Export View (CSV)", class = "btn btn-sm btn-outline-secondary", icon = icon("file-csv"))
+                  )
+                )
+              )
+            ),
+            uiOutput("ui_inspect_matrix_kpis"),
+            div(
+              style = "margin-top: 14px; border: 1px solid #E2E8F0; border-radius: 8px; padding: 6px; background: #FFFFFF;",
+              DTOutput("table_inspect_matrix_view")
+            )
+          )
+        ),
+        
+        # Subtab 3: Benchmark Scores Preview
+        nav_panel(
+          title = span(icon("chart-simple"), " Benchmark Scores Preview"),
+          div(
+            style = "padding: 8px 4px;",
+            div(
+              class = "d-flex justify-content-between align-items-center mb-3",
+              div(
+                h6(tags$b("Evaluated Simulation Fidelity Records"), style = "color: #1E293B; margin-bottom: 2px;"),
+                p("Displaying evaluated metrics across simulation methods. Column 'Score' represents direction-aware normalized fidelity in [0, 1].",
+                  style = "font-size: 0.85rem; color: #64748B; margin: 0;")
+              ),
+              actionButton("btn_jump_to_bubble", "Explore Comparative Bubble Matrix (Tab 3) →", class = "btn btn-outline-primary btn-sm", icon = icon("arrow-right"))
+            ),
+            div(
+              style = "border: 1px solid #E2E8F0; border-radius: 8px; padding: 6px; background: #FFFFFF;",
+              DTOutput("table_active_data_preview")
+            )
+          )
+        )
+      )
     }
-    
-    n_methods <- length(unique(rv$benchmark_df$Method))
-    n_metrics <- length(unique(rv$benchmark_df$Metric))
-    n_records <- nrow(rv$benchmark_df)
+  })
+
+  output$ui_status_banner <- renderUI({
+    if (is.null(rv$benchmark_df) && is.null(rv$toy_ref)) {
+      return(NULL)
+    }
+    n_methods <- if (!is.null(rv$benchmark_df)) length(unique(rv$benchmark_df$Method)) else length(rv$methods)
+    n_metrics <- if (!is.null(rv$benchmark_df)) length(unique(rv$benchmark_df$Metric)) else 0
+    n_records <- if (!is.null(rv$benchmark_df)) nrow(rv$benchmark_df) else 0
+    methods_str <- if (!is.null(rv$methods)) paste(rv$methods, collapse = ", ") else "None"
     
     div(
-      class = "alert alert-success",
-      h6(tags$b("Active Benchmark: "), rv$source_name),
-      p(sprintf("Total Evaluated Records: %d | Simulators: %d (%s) | Unique Metrics Evaluated: %d",
-                n_records, n_methods, paste(rv$methods, collapse = ", "), n_metrics), style = "margin-bottom: 0;")
+      class = "alert alert-success py-2 px-3 mb-3",
+      div(style = "font-weight: 700; font-size: 0.95rem;", icon("circle-check"), " Active Benchmark: ", rv$source_name),
+      div(style = "font-size: 0.84rem; color: #166534; margin-top: 3px;",
+          sprintf("Total Records: %s | Simulators (%d): %s | Metrics: %d",
+                  formatC(n_records, format = "d", big.mark = ","), n_methods, methods_str, n_metrics))
     )
   })
-  
+
+  output$ui_datahub_annotations_breakdown <- renderUI({
+    has_ct <- !is.null(rv$cell_types) && length(rv$cell_types) > 0
+    has_bt <- !is.null(rv$batch) && length(rv$batch) > 0
+    if (!has_ct && !has_bt) return(NULL)
+    
+    fluidRow(
+      style = "margin-top: 14px;",
+      if (has_ct) {
+        ct_tbl <- as.data.frame(table(Cell_Type = rv$cell_types))
+        ct_tbl$Percentage <- sprintf("%.1f%%", ct_tbl$Freq / sum(ct_tbl$Freq) * 100)
+        colnames(ct_tbl) <- c("Cell Type / Cluster", "Cell Count", "Percentage")
+        column(
+          if (has_bt) 6 else 12,
+          div(
+            style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px;",
+            h6(tags$b(icon("layer-group"), " Cell Type Distribution"), style = "color: #1E3A8A; margin-bottom: 8px;"),
+            renderTable(ct_tbl, striped = TRUE, hover = TRUE, bordered = TRUE, spacing = "s")
+          )
+        )
+      },
+      if (has_bt) {
+        bt_tbl <- as.data.frame(table(Batch = rv$batch))
+        bt_tbl$Percentage <- sprintf("%.1f%%", bt_tbl$Freq / sum(bt_tbl$Freq) * 100)
+        colnames(bt_tbl) <- c("Technical Batch", "Cell Count", "Percentage")
+        column(
+          if (has_ct) 6 else 12,
+          div(
+            style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px;",
+            h6(tags$b(icon("boxes-stacked"), " Batch Distribution"), style = "color: #0D9488; margin-bottom: 8px;"),
+            renderTable(bt_tbl, striped = TRUE, hover = TRUE, bordered = TRUE, spacing = "s")
+          )
+        )
+      }
+    )
+  })
+
+  output$ui_inspect_dataset_selector <- renderUI({
+    choices <- list()
+    if (!is.null(rv$toy_ref)) {
+      choices[["Empirical Reference (Real Cells)"]] <- "ref"
+    }
+    if (!is.null(rv$sim_matrices) && length(rv$sim_matrices) > 0) {
+      for (sname in names(rv$sim_matrices)) {
+        choices[[paste0("Simulated: ", sname)]] <- paste0("sim_", sname)
+      }
+    } else if (!is.null(rv$toy_sim)) {
+      choices[["Simulated Matrix"]] <- "toy_sim"
+    }
+    if (length(choices) == 0) choices[["No Matrix Available"]] <- "none"
+    selectInput("sel_inspect_matrix_choice", "Select Dataset / Matrix:", choices = choices, selected = choices[[1]])
+  })
+
+  active_inspect_data <- reactive({
+    choice <- input$sel_inspect_matrix_choice
+    mode <- input$opt_inspect_view_mode
+    
+    mat <- NULL
+    if (identical(choice, "ref") && !is.null(rv$toy_ref)) {
+      mat <- rv$toy_ref
+    } else if (identical(choice, "toy_sim") && !is.null(rv$toy_sim)) {
+      mat <- rv$toy_sim
+    } else if (!is.null(choice) && startsWith(choice, "sim_") && !is.null(rv$sim_matrices)) {
+      sname <- sub("^sim_", "", choice)
+      mat <- rv$sim_matrices[[sname]]
+    } else if (!is.null(rv$toy_ref)) {
+      mat <- rv$toy_ref
+    } else if (!is.null(rv$toy_sim)) {
+      mat <- rv$toy_sim
+    }
+    if (is.null(mat)) return(NULL)
+    
+    if (identical(mode, "matrix_head")) {
+      nr <- min(50, nrow(mat))
+      nc <- min(25, ncol(mat))
+      sub_mat <- as.matrix(mat[1:nr, 1:nc, drop = FALSE])
+      df <- as.data.frame(sub_mat)
+      feat_names <- rownames(sub_mat)
+      if (is.null(feat_names)) feat_names <- paste0("Feature_", seq_len(nr))
+      df <- cbind(Feature_ID = feat_names, df)
+      rownames(df) <- NULL
+      list(df = df, mat = mat, type = "matrix_head")
+    } else if (identical(mode, "feature_stats")) {
+      mean_expr <- Matrix::rowMeans(mat)
+      det_rate <- Matrix::rowMeans(mat > 0)
+      if (inherits(mat, "dgCMatrix")) {
+        sq_means <- Matrix::rowMeans(mat^2)
+        vars <- (sq_means - mean_expr^2) * (ncol(mat) / max(1, ncol(mat) - 1))
+        vars[vars < 0] <- 0
+      } else {
+        vars <- apply(mat, 1, stats::var)
+      }
+      feat_names <- rownames(mat)
+      if (is.null(feat_names)) feat_names <- paste0("Feature_", seq_len(nrow(mat)))
+      df <- data.frame(
+        Feature = feat_names,
+        Mean_Expression = round(as.numeric(mean_expr), 4),
+        Variance = round(as.numeric(vars), 4),
+        Detection_Rate_Pct = round(as.numeric(det_rate) * 100, 2),
+        Dropout_Rate_Pct = round((1 - as.numeric(det_rate)) * 100, 2),
+        stringsAsFactors = FALSE
+      )
+      df <- df[order(-df$Mean_Expression), ]
+      rownames(df) <- NULL
+      list(df = df, mat = mat, type = "feature_stats")
+    } else {
+      lib_sizes <- Matrix::colSums(mat)
+      det_genes <- Matrix::colSums(mat > 0)
+      cell_names <- colnames(mat)
+      if (is.null(cell_names)) cell_names <- paste0("Cell_", seq_len(ncol(mat)))
+      df <- data.frame(
+        Cell_ID = cell_names,
+        Library_Size = as.numeric(lib_sizes),
+        Detected_Features = as.integer(det_genes),
+        Sparsity_Pct = round((1 - as.numeric(det_genes) / max(1, nrow(mat))) * 100, 2),
+        stringsAsFactors = FALSE
+      )
+      if (!is.null(rv$cell_types) && length(rv$cell_types) == ncol(mat)) {
+        df$Cell_Type <- rv$cell_types
+      }
+      if (!is.null(rv$batch) && length(rv$batch) == ncol(mat)) {
+        df$Batch <- rv$batch
+      }
+      rownames(df) <- NULL
+      list(df = df, mat = mat, type = "cell_stats")
+    }
+  })
+
+  output$ui_inspect_matrix_kpis <- renderUI({
+    res <- active_inspect_data()
+    if (is.null(res) || is.null(res$mat)) return(NULL)
+    mat <- res$mat
+    n_cells <- ncol(mat)
+    n_feats <- nrow(mat)
+    sparsity_val <- round(mean(mat == 0, na.rm = TRUE) * 100, 1)
+    med_depth <- round(stats::median(Matrix::colSums(mat)))
+    
+    fluidRow(
+      column(3, div(class = "stat-card", style = "border-left: 4px solid #1E3A8A; padding: 10px 14px; margin-bottom: 0;",
+                    div(class = "stat-number", style = "color: #1E3A8A; font-size: 1.35rem;", formatC(n_cells, format = "d", big.mark = ",")),
+                    div(class = "stat-label", "Inspected Cells"))),
+      column(3, div(class = "stat-card", style = "border-left: 4px solid #0D9488; padding: 10px 14px; margin-bottom: 0;",
+                    div(class = "stat-number", style = "color: #0D9488; font-size: 1.35rem;", formatC(n_feats, format = "d", big.mark = ",")),
+                    div(class = "stat-label", "Features (Genes/Peaks)"))),
+      column(3, div(class = "stat-card", style = "border-left: 4px solid #D97706; padding: 10px 14px; margin-bottom: 0;",
+                    div(class = "stat-number", style = "color: #D97706; font-size: 1.35rem;", sprintf("%.1f%%", sparsity_val)),
+                    div(class = "stat-label", "Matrix Sparsity (% Zeros)"))),
+      column(3, div(class = "stat-card", style = "border-left: 4px solid #7C3AED; padding: 10px 14px; margin-bottom: 0;",
+                    div(class = "stat-number", style = "color: #7C3AED; font-size: 1.35rem;", formatC(med_depth, format = "d", big.mark = ",")),
+                    div(class = "stat-label", "Median Library Size")))
+    )
+  })
+
+  output$table_inspect_matrix_view <- renderDT({
+    res <- active_inspect_data()
+    req(res, res$df)
+    datatable(
+      res$df,
+      options = list(
+        pageLength = 10,
+        scrollX = TRUE,
+        autoWidth = TRUE,
+        dom = "ftip"
+      ),
+      rownames = FALSE,
+      class = "compact stripe hover"
+    )
+  })
+
+  output$download_inspect_data_csv <- downloadHandler(
+    filename = function() {
+      choice <- input$sel_inspect_matrix_choice %||% "matrix"
+      mode <- input$opt_inspect_view_mode %||% "data"
+      paste0("scSimEval_", choice, "_", mode, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".csv")
+    },
+    content = function(file) {
+      res <- active_inspect_data()
+      req(res, res$df)
+      utils::write.csv(res$df, file, row.names = FALSE)
+    }
+  )
+
   output$table_active_data_preview <- renderDT({
     req(rv$benchmark_df)
     datatable(
-      head(rv$benchmark_df, 50),
+      head(rv$benchmark_df, 100),
       options = list(pageLength = 10, scrollX = TRUE, autoWidth = TRUE),
       rownames = FALSE,
       class = "compact stripe hover"
-    ) %>% formatRound(columns = which(sapply(head(rv$benchmark_df, 50), is.numeric)), digits = 4)
+    ) %>% formatRound(columns = which(sapply(head(rv$benchmark_df, 100), is.numeric)), digits = 4)
   })
-  
-  # ----------------------------------------------------------------------------
-  # Tab 3: Comparative Bubble Matrix
-  # ----------------------------------------------------------------------------
-  output$ui_bubble_method_picker <- renderUI({
-    req(rv$methods)
-    checkboxGroupInput(
-      "sel_bubble_methods", "Select Simulators:",
-      choices = rv$methods,
-      selected = rv$methods
-    )
-  })
-  
-  filtered_bubble_data <- reactive({
-    req(rv$benchmark_df)
-    df <- rv$benchmark_df
-    
-    if (!is.null(input$sel_bubble_methods) && length(input$sel_bubble_methods) > 0) {
-      df <- df[df$Method %in% input$sel_bubble_methods, , drop = FALSE]
-    }
-    
-    if (!is.null(input$sel_bubble_cat) && input$sel_bubble_cat != "all") {
-      if ("Category" %in% colnames(df)) {
-        df <- df[df$Category == input$sel_bubble_cat, , drop = FALSE]
-      }
-    }
-    df
-  })
-  
-  bubble_plot_reactive <- reactive({
-    req(filtered_bubble_data())
-    df <- filtered_bubble_data()
-    req(nrow(df) > 0)
-    df <- standardize_benchmark_categories(df)
-    
-    p <- plot_benchmark_bubble_matrix(
-      data              = df,
-      base_size         = 11,
-      compact_strips    = TRUE,
-      show_missing_dots = FALSE,
-      normalize_scores  = TRUE
-    )
-    
-    n_metrics <- length(unique(df$Metric))
-    p + ggplot2::labs(
-      caption = paste0(
-        "Circle: standard performance (< 0.96)  |  Square: top performer (>= 0.96).\n",
-        "All ", n_metrics, " metrics direction-normalized: for error/distance metrics, scores are inverted as 1 - norm(x) so 1.0 always indicates closest agreement to empirical reference."
-      )
-    )
-  })
-  
-  output$ui_bubble_plot_render <- renderUI({
-    w <- if (!is.null(input$sld_bubble_width)) paste0(input$sld_bubble_width, "px") else "2200px"
-    h <- if (!is.null(input$sld_bubble_height)) paste0(input$sld_bubble_height, "px") else "680px"
-    plotOutput("plot_bubble_matrix", width = w, height = h)
-  })
-  
-  output$plot_bubble_matrix <- renderPlot({
-    bubble_plot_reactive()
-  })
-  
-  # Method Ranking Leaderboard
-  leaderboard_reactive <- reactive({
-    req(rv$benchmark_df)
-    if (exists("compute_method_leaderboard", mode = "function")) {
-      compute_method_leaderboard(rv$benchmark_df)
-    } else if (requireNamespace("scSimEval", quietly = TRUE) && exists("compute_method_leaderboard", where = asNamespace("scSimEval"))) {
-      scSimEval::compute_method_leaderboard(rv$benchmark_df)
-    } else {
-      # Robust inline fallback
-      .ingest_data <- .ingest_bubble_data(rv$benchmark_df)
-      .norm_data <- .normalize_bubble_scores(.ingest_data)
-      agg <- stats::aggregate(Normalized_Score ~ Method, data = .norm_data, FUN = mean, na.rm = TRUE)
-      agg <- agg[order(-agg$Normalized_Score), ]
-      data.frame(
-        Overall_Rank = seq_len(nrow(agg)),
-        Method = as.character(agg$Method),
-        Average_Fidelity = paste0(sprintf("%.1f", agg$Normalized_Score * 100), "%"),
-        Fidelity_Score = round(agg$Normalized_Score, 4),
-        stringsAsFactors = FALSE
-      )
-    }
-  })
-
-  output$table_leaderboard_dt <- renderDT({
-    req(rv$benchmark_df)
-    lb <- leaderboard_reactive()
-    display_df <- lb
-    colnames(display_df) <- c("Overall Rank", "Method", "Average Fidelity", "Fidelity Score")
-    
-    datatable(
-      display_df,
-      options = list(
-        dom = "t",
-        pageLength = 25,
-        ordering = FALSE,
-        columnDefs = list(list(className = "dt-center", targets = "_all"))
-      ),
-      rownames = FALSE,
-      class = "compact stripe hover border"
-    ) %>%
-      formatStyle(
-        "Overall Rank",
-        fontWeight = "bold",
-        backgroundColor = styleEqual(
-          c(1, 2, 3),
-          c("#FFF9DB", "#F1F3F5", "#FFF4E6")
-        )
-      ) %>%
-      formatStyle(
-        "Average Fidelity",
-        fontWeight = "bold",
-        color = "#1D72B8"
-      ) %>%
-      formatStyle(
-        "Fidelity Score",
-        fontFamily = "monospace",
-        fontWeight = "bold"
-      )
-  })
-
-  output$download_leaderboard_csv <- downloadHandler(
-    filename = function() { paste0("scSimEval_benchmark_leaderboard_", Sys.Date(), ".csv") },
-    content = function(file) {
-      lb <- leaderboard_reactive()
-      colnames(lb) <- c("Overall Rank", "Method", "Average Fidelity", "Fidelity Score")
-      utils::write.csv(lb, file, row.names = FALSE)
-    }
-  )
 
   output$download_leaderboard_csv_side <- downloadHandler(
     filename = function() { paste0("scSimEval_benchmark_leaderboard_", Sys.Date(), ".csv") },

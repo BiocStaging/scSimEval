@@ -6,6 +6,13 @@
   - Added automatic fallback to `Method = "Simulation"` and `Category = "Uncategorized"` when evaluating single simulation accuracy results (`evaluate_simulation_accuracy()`) or pre-formed benchmark data frames lacking explicit method labels.
   - Resolved `R CMD check` example failure in `man/compute_method_leaderboard.Rd`.
 
+* **Expanded Upload Size Limit (10 GB):**
+  - Increased `shiny.maxRequestSize` from 500 MB to 10 GB (`10 * 1024^3` bytes) in `inst/shiny/scSimEvalApp/app.R` to accommodate large-scale single-cell and single-nucleus multiomics count matrices.
+  - Added configurable `maxRequestSize` argument to `launch_scSimEval_app()` in `R/11_shiny_app.R` (defaulting to 10 GB).
+
+* **Organism-Agnostic Metric Harmonization:**
+  - Removed `calc_cell_cycle_phase_fidelity()` which was reliant on species-specific cell-cycle phase definitions and marker genes (primarily human and mouse). All 62 core evaluation metrics across the 8 categories are verified to operate purely on mathematical, distributional, and machine-learning properties of single-cell matrices without species or organism-specific priors, guaranteeing universal applicability to plant (e.g. soybean, rice, Arabidopsis) and animal datasets alike.
+
 * **Dependency & Package Best Practices:**
   - Added `irlba` to `Suggests:` in `DESCRIPTION` to properly declare conditional SVD acceleration in `compute_dataset_embeddings()`.
   - Replaced direct `set.seed()` invocation with RNG-safe execution that preserves and restores `.Random.seed` on function exit in accordance with Bioconductor guidelines.

@@ -7,7 +7,8 @@
 launch_scSimEval_app(
   port = NULL,
   host = "127.0.0.1",
-  launch.browser = interactive()
+  launch.browser = interactive(),
+  maxRequestSize = 10 * 1024^3
 )
 }
 \arguments{
@@ -17,6 +18,9 @@ launch_scSimEval_app(
 
 \item{launch.browser}{Logical, whether to automatically launch the default web browser.
 Defaults to \code{TRUE} in interactive sessions.}
+
+\item{maxRequestSize}{Numeric value specifying the maximum allowable upload file size in bytes.
+Defaults to \code{10 * 1024^3} (10 GB) to comfortably accommodate large single-cell multiomics matrices.}
 }
 \value{
 Invisibly returns the Shiny app process object.

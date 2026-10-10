@@ -23,3 +23,8 @@
 
 # man/figures (images embedded in README, not needed in package)
 ^man/figures$
+
+# Google Analytics credentials and runtime cache
+^.*google_key\.json$
+^.*\.key\.json$
+^pageviews_cache\.rds$
