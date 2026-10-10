@@ -72,8 +72,8 @@ Evaluate one or more unimodal count-matrix simulators.
 | **1** | **Reference Count Matrix** | Real empirical cells. Formats: `.rds`, `.csv`, `.tsv`, `.txt`, `SingleCellExperiment`, `Seurat`. |
 | **2** | **Number of Single-Cell Simulators** | 1 – 6. Generates matching upload and configuration cards. |
 | **2** | **Per-Simulator Fields** | Simulator Name, simulated count matrix, runtime (s), memory (MiB). |
-| **3** | **Cell Type Labels** (optional) | `.rds` (factor / vector / data.frame) or `.csv`/`.tsv`. |
-| **3** | **Batch Annotations** (optional) | Same formats as cell types. |
+| **3** | **Cell Type Labels** (optional) | `.rds` (factor / vector / data.frame) or `.csv`/`.tsv`. Click **Format Guide & Example CSV** or **Download sample CSV** to inspect and download sample templates (`Cell_ID,Cell_Type`). |
+| **3** | **Batch Annotations** (optional) | Same formats as cell types (`Cell_ID,Batch`). Downloadable sample CSV templates are provided. |
 | — | **Append to current benchmark** | Adds new results alongside existing ones. |
 | — | **Evaluate Single-Cell Simulators** | Triggers the full 50+ metric pipeline. |
 
@@ -363,7 +363,7 @@ An in-app reference guide structured into seven sections:
 2. **Eight Evaluation Categories** — tabular reference for all 62 metrics
 3. **Score Normalization Pipeline** — direction inversion → min-max scaling diagrams
 4. **Studio Navigation Guide** — accordion-style guide to each tab
-5. **Accepted Input Formats** — matrix types, annotation vectors, saved files
+5. **Input Data Formats & Metadata Templates** — matrix structures (genes × cells), cell-type and batch annotation vectors, two-column CSV formats (`Cell_ID,Cell_Type` and `Cell_ID,Batch`), and direct download buttons for `example_cell_types.csv` and `example_batch_annotations.csv`
 6. **Frequently Asked Questions**
 7. **Team, Contact & Citation**
 

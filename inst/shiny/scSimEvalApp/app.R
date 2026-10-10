@@ -138,10 +138,30 @@ read_uploaded_labels <- function(file_path, file_name) {
   if (ext == "rds") {
     obj <- readRDS(file_path)
     if (is.vector(obj) || is.factor(obj)) return(as.factor(obj))
-    if (is.data.frame(obj)) return(as.factor(obj[[1]]))
+    if (is.data.frame(obj)) {
+      if (ncol(obj) >= 2) {
+        c1_name <- tolower(colnames(obj)[1])
+        c2_name <- tolower(colnames(obj)[2])
+        if (any(grepl("cell|barcode|id", c1_name)) || any(grepl("type|cluster|batch|group|label", c2_name))) {
+          res <- as.factor(obj[[2]])
+          names(res) <- as.character(obj[[1]])
+          return(res)
+        }
+      }
+      return(as.factor(obj[[1]]))
+    }
   } else if (ext %in% c("csv", "tsv", "txt")) {
-    sep <- if (ext == "csv") "," else "\t"
-    df <- utils::read.table(file_path, sep = sep, header = TRUE, stringsAsFactors = FALSE)
+    sep <- if (ext == "csv") "," else "	"
+    df <- utils::read.table(file_path, sep = sep, header = TRUE, stringsAsFactors = FALSE, check.names = FALSE)
+    if (ncol(df) >= 2) {
+      c1_name <- tolower(colnames(df)[1])
+      c2_name <- tolower(colnames(df)[2])
+      if (any(grepl("cell|barcode|id", c1_name)) || any(grepl("type|cluster|batch|group|label", c2_name))) {
+        res <- as.factor(df[[2]])
+        names(res) <- as.character(df[[1]])
+        return(res)
+      }
+    }
     return(as.factor(df[[1]]))
   }
   return(NULL)
@@ -998,6 +1018,11 @@ ui <- page_navbar(
           tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 10px; margin-bottom: 4px;", "4. Cell Types & Batches (Optional)"),
           fileInput("file_uni_celltypes", NULL, placeholder = "Cell type labels (.rds / .csv / .txt)", accept = c(".rds", ".csv", ".tsv", ".txt")),
           fileInput("file_uni_batch", NULL, placeholder = "Batch annotations (.rds / .csv / .txt)", accept = c(".rds", ".csv", ".tsv", ".txt")),
+          div(
+            class = "d-flex justify-content-between align-items-center mt-1 mb-2",
+            actionLink("btn_show_metadata_format", span(icon("circle-info", class = "me-1"), "Format guide & templates"), style = "font-size: 0.76rem; font-weight: 600; text-decoration: none;"),
+            downloadLink("dl_sample_celltypes_csv", span(icon("download", class = "me-1"), "Sample CSV"), style = "font-size: 0.74rem; text-decoration: none;")
+          ),
           
           checkboxInput("chk_append_uni", "Add to current benchmark results", value = FALSE),
           actionButton("btn_run_uni_eval", "Calculate Single-Cell Metrics", class = "btn btn-primary w-100", icon = icon("play"))
@@ -1034,6 +1059,11 @@ ui <- page_navbar(
           tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 10px; margin-bottom: 4px;", "3. Cell Types & Batches (Optional)"),
           fileInput("file_multi_celltypes", NULL, placeholder = "Cell types (.rds / .csv / .txt)", accept = c(".rds", ".csv", ".tsv", ".txt")),
           fileInput("file_multi_batch", NULL, placeholder = "Batches (.rds / .csv / .txt)", accept = c(".rds", ".csv", ".tsv", ".txt")),
+          div(
+            class = "d-flex justify-content-between align-items-center mt-1 mb-2",
+            actionLink("btn_show_metadata_format_multi", span(icon("circle-info", class = "me-1"), "Format guide & templates"), style = "font-size: 0.76rem; font-weight: 600; text-decoration: none;"),
+            downloadLink("dl_sample_celltypes_csv_multi", span(icon("download", class = "me-1"), "Sample CSV"), style = "font-size: 0.74rem; text-decoration: none;")
+          ),
           
           checkboxInput("chk_append_multi", "Add to current benchmark results", value = FALSE),
           actionButton("btn_run_multi_eval", "Calculate Multiomics Metrics", class = "btn btn-primary w-100", icon = icon("play"))
@@ -1219,7 +1249,7 @@ ui <- page_navbar(
           ),
           card_body(
             fluidRow(
-              column(4, selectInput("sel_dist_layout", "QC Layout:", choices = c("Comprehensive" = "comprehensive", "Density Curves Only" = "density"), selected = "comprehensive")),
+              column(4, selectInput("sel_dist_layout", "QC Layout:", choices = c("Comprehensive (14 Panels)" = "full", "Density Curves Only" = "density_only"), selected = "full")),
               column(4, p("Compares gene expression, library sizes, and zeros between real reference data and simulated cells.", style = "font-size: 0.82rem; color: #64748B; margin-bottom: 0;")),
               column(4,
                      downloadButton("download_dist_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2"),
@@ -1436,7 +1466,7 @@ ui <- page_navbar(
                        selected = "all"
                      )
               ),
-              column(3, selectInput("sel_pca_panel", "PCA Panel:", choices = c("All Panels (Biplot + Loadings + Scores + Variance)" = "all", "Biplot Only" = "biplot", "Metric Loadings Only" = "loadings", "Simulator Scores Only" = "scores", "Variance Explained Only" = "scree"), selected = "all")),
+              column(3, selectInput("sel_pca_panel", "PCA Panel:", choices = c("Both (Simulators & Metric Loadings)" = "both", "Simulator Ordination Only" = "methods", "Metric Loadings Only" = "loadings"), selected = "both")),
               column(3, numericInput("num_pca_top_metrics", "Top Metrics to Label:", value = 8, min = 3, max = 25, step = 1)),
               column(3,
                      downloadButton("download_pca_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2"),
@@ -1496,7 +1526,7 @@ ui <- page_navbar(
                        selected = "all"
                      )
               ),
-              column(3, selectInput("sel_mds_by", "Compare By:", choices = c("By Simulators" = "simulators", "By Metric Summaries" = "summaries"), selected = "simulators")),
+              column(3, selectInput("sel_mds_by", "Compare By:", choices = c("By Simulators" = "methods", "By Metric Summaries" = "metrics"), selected = "methods")),
               column(3,
                      sliderInput("sld_mds_height", "MDS Height (px):", min = 400, max = 1300, value = 620, step = 20)
               ),
@@ -2145,6 +2175,54 @@ ui <- page_navbar(
             ),
             
             # ------------------------------------------------------------------
+            # ------------------------------------------------------------------
+            # Section 5: Input Data Formats & Metadata Templates
+            # ------------------------------------------------------------------
+            div(
+              style = "margin-top: 24px; padding: 22px 24px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);",
+              div(
+                class = "d-flex justify-content-between align-items-center mb-2",
+                h5(tags$b("Input Data Formats & Metadata Templates"), style = "color: #1E3A8A; margin: 0; font-size: 1.05rem;"),
+                span(class = "badge bg-light text-primary border", "Required & Optional Inputs")
+              ),
+              p("scSimEval accepts standard single-cell matrix and annotation files in R object (.rds) or comma-/tab-delimited (.csv / .tsv / .txt) text formats:", style = "color: #475569; font-size: 0.85rem; margin-bottom: 16px;"),
+              
+              fluidRow(
+                column(
+                  4,
+                  div(
+                    style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 14px; height: 100%;",
+                    h6(tags$b(icon("table-cells", class = "me-1 text-primary"), " 1. Count Matrices"), style = "color: #0F172A; margin-bottom: 6px; font-size: 0.88rem;"),
+                    p(tags$b("Orientation: "), "Genes/Peaks in rows, Cells in columns.", style = "font-size: 0.79rem; color: #475569; margin-bottom: 6px;"),
+                    p(tags$b("Formats: "), ".rds (dgCMatrix, matrix, SingleCellExperiment, Seurat) or .csv / .tsv with gene names in first column and cell barcodes in header.", style = "font-size: 0.77rem; color: #64748B; margin-bottom: 0;")
+                  )
+                ),
+                column(
+                  4,
+                  div(
+                    style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 14px; height: 100%; display: flex; flex-direction: column; justify-content: space-between;",
+                    div(
+                      h6(tags$b(icon("layer-group", class = "me-1 text-primary"), " 2. Cell Types (Optional)"), style = "color: #0F172A; margin-bottom: 6px; font-size: 0.88rem;"),
+                      p("Used for clustering fidelity (ARI, NMI, Silhouette), marker gene DEGs, and embedding colors.", style = "font-size: 0.77rem; color: #64748B; margin-bottom: 8px;"),
+                      tags$pre("Cell_ID,Cell_Type\nCell_01,TypeA\nCell_02,TypeA\nCell_03,TypeB\n...", style = "font-size: 0.73rem; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 6px 8px; border-radius: 4px; margin-bottom: 10px;")
+                    ),
+                    downloadButton("dl_help_sample_celltypes_csv", "Download Example Cell Types (.csv)", class = "btn btn-sm btn-outline-primary w-100", icon = icon("download"))
+                  )
+                ),
+                column(
+                  4,
+                  div(
+                    style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 14px; height: 100%; display: flex; flex-direction: column; justify-content: space-between;",
+                    div(
+                      h6(tags$b(icon("boxes-stacked", class = "me-1 text-teal"), " 3. Batch Labels (Optional)"), style = "color: #0F172A; margin-bottom: 6px; font-size: 0.88rem;"),
+                      p("Used for Category 4 batch mixing (kBET, CMS, LISI, variance decomposition).", style = "font-size: 0.77rem; color: #64748B; margin-bottom: 8px;"),
+                      tags$pre("Cell_ID,Batch\nCell_01,Batch1\nCell_02,Batch2\nCell_03,Batch1\n...", style = "font-size: 0.73rem; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 6px 8px; border-radius: 4px; margin-bottom: 10px;")
+                    ),
+                    downloadButton("dl_help_sample_batch_csv", "Download Example Batch (.csv)", class = "btn btn-sm btn-outline-success w-100", icon = icon("download"))
+                  )
+                )
+              )
+            ),
             # Section 5: Online Documentation Box
             # ------------------------------------------------------------------
             div(
@@ -2431,6 +2509,82 @@ server <- function(input, output, session) {
   observeEvent(input$btn_go_help, { nav_select("nav_active", "Help & Getting Started") })
   observeEvent(input$btn_go_contact, { nav_select("nav_active", "Contact") })
   observeEvent(input$btn_empty_help, { nav_select("nav_active", "Help & Getting Started") })
+  # Modal format guide for cell types and batches
+  show_metadata_format_modal <- function() {
+    showModal(modalDialog(
+      title = div(icon("table-list", class = "me-2 text-primary"), tags$strong("Metadata Input Formats (Cell Types & Batches)")),
+      size = "l",
+      easyClose = TRUE,
+      footer = modalButton("Close"),
+      div(
+        p("Cell-type and batch annotations are optional inputs used to compute clustering metrics (ARI, NMI, Silhouette), marker gene DEGs, and batch mixing confounder alignment:"),
+        fluidRow(
+          column(6,
+            div(style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 14px; margin-bottom: 12px;",
+              h6(tags$b(icon("layer-group", class = "me-1 text-primary"), " 1. Cell Types Format"), style = "color: #1E3A8A; margin-bottom: 6px; font-size: 0.90rem;"),
+              p("Upload a 2-column CSV/TSV table with ", tags$code("Cell_ID"), " and ", tags$code("Cell_Type"), " (or a 1-column vector in the same cell order as the count matrix):", style = "font-size: 0.80rem; color: #475569; margin-bottom: 8px;"),
+              tags$pre("Cell_ID,Cell_Type\nCell_01,TypeA\nCell_02,TypeA\nCell_03,TypeB\nCell_04,TypeB\n...", style = "font-size: 0.76rem; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 8px; border-radius: 4px; margin-bottom: 10px;"),
+              downloadButton("dl_modal_celltypes_csv", "Download Example Cell Types (.csv)", class = "btn btn-sm btn-outline-primary w-100", icon = icon("download"))
+            )
+          ),
+          column(6,
+            div(style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 14px; margin-bottom: 12px;",
+              h6(tags$b(icon("boxes-stacked", class = "me-1 text-teal"), " 2. Batch Annotations Format"), style = "color: #0D9488; margin-bottom: 6px; font-size: 0.90rem;"),
+              p("Upload a 2-column CSV/TSV table with ", tags$code("Cell_ID"), " and ", tags$code("Batch"), " (or a 1-column vector in the same cell order as the count matrix):", style = "font-size: 0.80rem; color: #475569; margin-bottom: 8px;"),
+              tags$pre("Cell_ID,Batch\nCell_01,Batch1\nCell_02,Batch2\nCell_03,Batch1\nCell_04,Batch2\n...", style = "font-size: 0.76rem; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 8px; border-radius: 4px; margin-bottom: 10px;"),
+              downloadButton("dl_modal_batch_csv", "Download Example Batch (.csv)", class = "btn btn-sm btn-outline-success w-100", icon = icon("download"))
+            )
+          )
+        )
+      )
+    ))
+  }
+  observeEvent(input$btn_show_metadata_format, { show_metadata_format_modal() })
+  observeEvent(input$btn_show_metadata_format_multi, { show_metadata_format_modal() })
+
+  # Helper function to generate sample metadata data.frame
+  get_sample_celltypes_df <- function() {
+    data(example_scrna, package = "scSimEval")
+    data.frame(
+      Cell_ID = names(example_scrna$cell_types),
+      Cell_Type = as.character(example_scrna$cell_types),
+      stringsAsFactors = FALSE
+    )
+  }
+  get_sample_batch_df <- function() {
+    data(example_scrna, package = "scSimEval")
+    data.frame(
+      Cell_ID = names(example_scrna$batch_info),
+      Batch = as.character(example_scrna$batch_info),
+      stringsAsFactors = FALSE
+    )
+  }
+
+  # Download Handlers for sample metadata files
+  output$dl_sample_celltypes_csv <- downloadHandler(
+    filename = function() { "example_cell_types.csv" },
+    content = function(file) { utils::write.csv(get_sample_celltypes_df(), file, row.names = FALSE) }
+  )
+  output$dl_sample_celltypes_csv_multi <- downloadHandler(
+    filename = function() { "example_cell_types.csv" },
+    content = function(file) { utils::write.csv(get_sample_celltypes_df(), file, row.names = FALSE) }
+  )
+  output$dl_modal_celltypes_csv <- downloadHandler(
+    filename = function() { "example_cell_types.csv" },
+    content = function(file) { utils::write.csv(get_sample_celltypes_df(), file, row.names = FALSE) }
+  )
+  output$dl_help_sample_celltypes_csv <- downloadHandler(
+    filename = function() { "example_cell_types.csv" },
+    content = function(file) { utils::write.csv(get_sample_celltypes_df(), file, row.names = FALSE) }
+  )
+  output$dl_modal_batch_csv <- downloadHandler(
+    filename = function() { "example_batch_annotations.csv" },
+    content = function(file) { utils::write.csv(get_sample_batch_df(), file, row.names = FALSE) }
+  )
+  output$dl_help_sample_batch_csv <- downloadHandler(
+    filename = function() { "example_batch_annotations.csv" },
+    content = function(file) { utils::write.csv(get_sample_batch_df(), file, row.names = FALSE) }
+  )
   
   # ----------------------------------------------------------------------------
   # Data Hub: Mode 1 - Load Demo Benchmark
@@ -3617,15 +3771,22 @@ server <- function(input, output, session) {
   
   # 2. Distribution QC
   output$ui_dist_qc_plot <- renderUI({
-    plot_h <- if (identical(input$sel_dist_layout, "comprehensive")) "850px" else "550px"
+    plot_h <- if (identical(input$sel_dist_layout, "density_only") || identical(input$sel_dist_layout, "density")) "550px" else "850px"
     plotOutput("plot_dist_qc", height = plot_h)
   })
   dist_qc_reactive <- reactive({
     req(rv$toy_ref, rv$toy_sim)
+    lay <- if (!is.null(input$sel_dist_layout) && input$sel_dist_layout %in% c("full", "density_only", "grid_compact")) {
+      input$sel_dist_layout
+    } else if (identical(input$sel_dist_layout, "density")) {
+      "density_only"
+    } else {
+      "full"
+    }
     plot_distribution_qc(
       ref_data = rv$toy_ref,
       sim_data = rv$toy_sim,
-      layout   = input$sel_dist_layout,
+      layout   = lay,
       base_size = 13
     )
   })
@@ -3859,7 +4020,7 @@ server <- function(input, output, session) {
   
   # 6. PCA Ordination (6 Category-wise options & All Categories Combined)
   observeEvent(input$sel_pca_panel, {
-    if (identical(input$sel_pca_panel, "both")) {
+    if (identical(input$sel_pca_panel, "both") || identical(input$sel_pca_panel, "all")) {
       updateSliderInput(session, "sld_pca_height", value = 1100)
     } else {
       updateSliderInput(session, "sld_pca_height", value = 600)
@@ -3876,10 +4037,19 @@ server <- function(input, output, session) {
     req(rv$benchmark_df)
     cat_sel <- if (identical(input$sel_pca_cat, "all")) NULL else input$sel_pca_cat
     n_top <- if (!is.null(input$num_pca_top_metrics) && is.finite(input$num_pca_top_metrics)) input$num_pca_top_metrics else 14
+    p_panel <- if (!is.null(input$sel_pca_panel) && input$sel_pca_panel %in% c("both", "methods", "loadings")) {
+      input$sel_pca_panel
+    } else if (identical(input$sel_pca_panel, "methods") || identical(input$sel_pca_panel, "scores") || identical(input$sel_pca_panel, "simulators")) {
+      "methods"
+    } else if (identical(input$sel_pca_panel, "loadings") || identical(input$sel_pca_panel, "scree")) {
+      "loadings"
+    } else {
+      "both"
+    }
     plot_metric_pca(
       benchmark_data = rv$benchmark_df,
       category = cat_sel,
-      panel = input$sel_pca_panel,
+      panel = p_panel,
       top_n_loadings = n_top,
       base_size = 12
     )
@@ -3914,10 +4084,17 @@ server <- function(input, output, session) {
   metric_mds_reactive <- reactive({
     req(rv$benchmark_df)
     cat_sel <- if (identical(input$sel_mds_cat, "all")) NULL else input$sel_mds_cat
+    ord_by <- if (!is.null(input$sel_mds_by) && input$sel_mds_by %in% c("methods", "metrics")) {
+      input$sel_mds_by
+    } else if (identical(input$sel_mds_by, "summaries")) {
+      "metrics"
+    } else {
+      "methods"
+    }
     plot_metric_mds(
       benchmark_data = rv$benchmark_df,
       category = cat_sel,
-      ordination_by = input$sel_mds_by,
+      ordination_by = ord_by,
       base_size = 13
     )
   })
@@ -4055,10 +4232,16 @@ server <- function(input, output, session) {
   })
   
   output$plot_cell_embeddings_out <- renderPlot({
+    validate(
+      need(!is.null(rv$toy_ref), "Cell embeddings require single-cell count matrices. Please run an evaluation or load demo benchmark data in Data Hub.")
+    )
     reactive_emb_plot()
   })
   
   output$table_emb_quality_metrics <- renderDT({
+    validate(
+      need(!is.null(rv$toy_ref), "Quality metrics require count matrices. Please upload matrices or load demo benchmark data.")
+    )
     emb_data <- reactive_cell_embeddings()
     req(emb_data, nrow(emb_data) > 0)
     

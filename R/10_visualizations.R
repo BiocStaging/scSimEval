@@ -483,7 +483,20 @@ plot_distribution_qc <- function(
   cell_types    = NULL,
   base_size     = 9
 ) {
-  layout <- match.arg(layout)
+  if (is.null(layout) || length(layout) == 0) {
+    layout <- "full"
+  } else {
+    lay_val <- tolower(as.character(layout[1]))
+    if (lay_val %in% c("full", "comprehensive")) {
+      layout <- "full"
+    } else if (lay_val %in% c("density_only", "density")) {
+      layout <- "density_only"
+    } else if (lay_val %in% c("grid_compact", "compact")) {
+      layout <- "grid_compact"
+    } else {
+      layout <- match.arg(layout, c("full", "density_only", "grid_compact"))
+    }
+  }
   ref_mat <- as.matrix(ref_data)
 
   if (!is.list(sim_data) || is.data.frame(sim_data)) {
@@ -1907,7 +1920,18 @@ plot_metric_mds <- function(
   base_size          = 11,
   ncol               = 2
 ) {
-  ordination_by <- match.arg(ordination_by)
+  if (is.null(ordination_by) || length(ordination_by) == 0) {
+    ordination_by <- "methods"
+  } else {
+    ord_val <- tolower(as.character(ordination_by[1]))
+    if (ord_val %in% c("methods", "simulators")) {
+      ordination_by <- "methods"
+    } else if (ord_val %in% c("metrics", "summaries")) {
+      ordination_by <- "metrics"
+    } else {
+      ordination_by <- match.arg(ordination_by, c("methods", "metrics"))
+    }
+  }
   df <- .ingest_bubble_data(benchmark_data)
 
   if (!is.null(category) && !identical(category, "all")) {
@@ -2258,7 +2282,20 @@ plot_metric_pca <- function(
   top_n_loadings     = 14,
   base_size          = 11
 ) {
-  panel <- match.arg(panel)
+  if (is.null(panel) || length(panel) == 0) {
+    panel <- "both"
+  } else {
+    panel_val <- tolower(as.character(panel[1]))
+    if (panel_val %in% c("both", "all", "biplot")) {
+      panel <- "both"
+    } else if (panel_val %in% c("methods", "scores", "simulators")) {
+      panel <- "methods"
+    } else if (panel_val %in% c("loadings", "scree", "metrics")) {
+      panel <- "loadings"
+    } else {
+      panel <- match.arg(panel, c("both", "methods", "loadings"))
+    }
+  }
   df <- .ingest_bubble_data(benchmark_data)
 
   if (by_category) {

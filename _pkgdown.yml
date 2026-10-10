@@ -331,12 +331,25 @@ reference:
       - extract_feature_properties
       - extract_dataset_summary
 
-  - title: "Example Multiomics Datasets"
-    desc: "Pre-packaged synthetic and empirical single-cell multiomics benchmark datasets."
+  - title: "Example Multiomics Datasets & Metadata"
+    desc: "Pre-packaged synthetic and empirical single-cell multiomics benchmark datasets and metadata annotation templates."
     contents:
       - example_scrna
       - example_scatac
       - example_multiomics
+      - example_cell_types
+      - example_batch_info
+
+  - title: "Computational Utilities & Fast Kernels"
+    desc: "High-performance matrix calculation helpers and internal dimension-reduction utilities."
+    contents:
+      - fast_row_vars
+      - fast_col_vars
+      - fast_sparse_zero_fraction_cell
+      - fast_sparse_zero_fraction_feature
+      - fast_cross_distance_sq
+      - fast_pca
+      - subsample_dist_vector
 
   - title: "Category 1: Global & Marginal Distributions"
     desc: "Evaluation functions assessing univariate and bivariate distribution divergence."

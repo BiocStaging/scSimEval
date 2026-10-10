@@ -72,4 +72,45 @@
 #' data(example_multiomics)
 #' names(example_multiomics$ref_multi)
 #' names(example_multiomics$sim_multi)
+#' @export
 "example_multiomics"
+
+#' Example Cell-Type Annotations Vector
+#'
+#' A named factor vector containing discrete cell-type labels ("TypeA", "TypeB")
+#' for 80 single cells, matching the column names of \code{\link{example_scrna}} and
+#' \code{\link{example_scatac}}. Useful as a reference template for formatting cell-type
+#' metadata inputs in \code{scSimEval}.
+#'
+#' @docType data
+#' @name example_cell_types
+#' @usage data(example_cell_types)
+#' @format A named factor with 80 elements across 2 levels: "TypeA" (40 cells) and "TypeB" (40 cells).
+#'   Names correspond to individual cell barcodes (\code{"Cell_01"} to \code{"Cell_80"}).
+#' @source Derived from \code{example_scrna$cell_types}.
+#' @examples
+#' data(example_cell_types)
+#' head(example_cell_types)
+#' table(example_cell_types)
+#' @export
+"example_cell_types"
+
+#' Example Batch Annotations Vector
+#'
+#' A named factor vector containing technical batch annotations ("Batch1", "Batch2")
+#' for 80 single cells, matching the column names of \code{\link{example_scrna}} and
+#' \code{\link{example_scatac}}. Useful as a reference template for formatting batch
+#' metadata inputs in \code{scSimEval}.
+#'
+#' @docType data
+#' @name example_batch_info
+#' @usage data(example_batch_info)
+#' @format A named factor with 80 elements across 2 levels: "Batch1" (40 cells) and "Batch2" (40 cells).
+#'   Names correspond to individual cell barcodes (\code{"Cell_01"} to \code{"Cell_80"}).
+#' @source Derived from \code{example_scrna$batch_info}.
+#' @examples
+#' data(example_batch_info)
+#' head(example_batch_info)
+#' table(example_batch_info)
+#' @export
+"example_batch_info"

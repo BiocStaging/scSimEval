@@ -64,6 +64,65 @@ The evaluation process follows four simple steps:
 ### Step 1: Input Real and Simulated Data
 Provide your real experimental reference and simulated count matrices (`ref_rna`, `sim_rna`, `ref_atac`, `sim_atac`), along with cell type labels (`cell_types`), batch labels (`batch_info`), and computer resource records (runtime in seconds and peak RAM in MiB).
 
+### 2.1 Input Data Formats & Metadata Requirements (Cell Types & Batch Labels)
+
+To evaluate your datasets, `scSimEval` accepts standard single-cell matrices and optional metadata:
+
+1. **Count Matrices (`ref`, `sim`):**
+   - **Dimensions:** Features (Genes or ATAC Peaks) in **rows** $\times$ Cells in **columns**.
+   - **Data Types:** R sparse matrices (`dgCMatrix`), standard numeric matrices, `data.frame`, or Bioconductor count containers (`SingleCellExperiment`, `Seurat`).
+
+2. **Cell-Type Annotations (`cell_types`, optional):**
+   - Used for computing clustering fidelity metrics (Adjusted Rand Index, Normalized Mutual Information, Silhouette width), marker gene preservation, and cell-type coloring in embedding projections.
+   - **Format in R:** A character vector or factor whose length and ordering strictly match the cells (columns) in the reference count matrix:
+     ```r
+     # Built-in reference template in scSimEval:
+     data(example_cell_types, package = "scSimEval")
+     head(example_cell_types)
+     # Cell_01 Cell_02 Cell_03 Cell_04 Cell_05 
+     #   TypeA   TypeA   TypeA   TypeA   TypeA 
+     # Levels: TypeA TypeB
+     ```
+   - **Format in CSV/TSV:** A 2-column table with `Cell_ID` and `Cell_Type` (or a single-column file ordered identically to the count matrix):
+     ```csv
+     Cell_ID,Cell_Type
+     Cell_01,TypeA
+     Cell_02,TypeA
+     Cell_03,TypeB
+     ```
+
+3. **Batch Annotations (`batch_info`, optional):**
+   - Used for Category 4 batch mixing and technical confounder alignment metrics (kBET, CMS, LISI, variance decomposition).
+   - **Format in R:** A character vector or factor matching cell columns:
+     ```r
+     data(example_batch_info, package = "scSimEval")
+     head(example_batch_info)
+     # Cell_01 Cell_02 Cell_03 Cell_04 Cell_05 
+     #  Batch1  Batch2  Batch1  Batch2  Batch1 
+     # Levels: Batch1 Batch2
+     ```
+   - **Format in CSV/TSV:** A 2-column table with `Cell_ID` and `Batch`:
+     ```csv
+     Cell_ID,Batch
+     Cell_01,Batch1
+     Cell_02,Batch2
+     Cell_03,Batch1
+     ```
+
+4. **Exporting Annotations from Seurat or SingleCellExperiment:**
+   ```r
+   # From a Seurat object:
+   cell_types_df <- data.frame(Cell_ID = colnames(seurat_obj), Cell_Type = as.character(Idents(seurat_obj)))
+   write.csv(cell_types_df, "cell_types.csv", row.names = FALSE)
+   
+   batch_df <- data.frame(Cell_ID = colnames(seurat_obj), Batch = as.character(seurat_obj$batch))
+   write.csv(batch_df, "batch_annotations.csv", row.names = FALSE)
+
+   # From a SingleCellExperiment object:
+   cell_types_df <- data.frame(Cell_ID = colnames(sce), Cell_Type = as.character(colData(sce)$cell_type))
+   write.csv(cell_types_df, "cell_types.csv", row.names = FALSE)
+   ```
+
 ### Step 2: Calculate Evaluation Measures
 `scSimEval` calculates 62 evaluation measures across 8 core categories without needing any artificial ground truth.
 

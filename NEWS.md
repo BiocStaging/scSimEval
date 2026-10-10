@@ -17,6 +17,12 @@
 * **Package & Visualization Synchronization:**
   - Fully synchronized standalone Shiny Studio visualization components with core package routines, ensuring complete integration of low-dimensional cell embedding algorithms (`compute_dataset_embeddings()`, `plot_dataset_embeddings()`, `compute_embedding_quality_metrics()`).
 
+* **Example Metadata Inputs & Data Format Documentation:**
+  - Added export of example metadata datasets `example_cell_types` and `example_batch_info` matching the package's benchmark reference matrices (`example_scrna`).
+  - Added interactive metadata format modals and direct sample CSV template downloads (`example_cell_types.csv`, `example_batch_annotations.csv`) in Data Hub (Modes 2 & 3) and Help & Getting Started (Section 5) of scSimEval Studio.
+  - Enhanced in-app parser `read_uploaded_labels()` to automatically parse both 1-column vectors and standard 2-column tables (`Cell_ID`, `Cell_Type` or `Batch`) exported from Seurat and SingleCellExperiment.
+  - Added dedicated documentation and code recipes in vignettes and help panels detailing exact count matrix, cell-type, and batch input specifications.
+
 
 # scSimEval 0.99.4
 
