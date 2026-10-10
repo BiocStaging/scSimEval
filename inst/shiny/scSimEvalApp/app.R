@@ -1249,7 +1249,7 @@ ui <- page_navbar(
           ),
           card_body(
             fluidRow(
-              column(4, selectInput("sel_dist_layout", "QC Layout:", choices = c("Comprehensive" = "comprehensive", "Density Curves Only" = "density"), selected = "comprehensive")),
+              column(4, selectInput("sel_dist_layout", "QC Layout:", choices = c("Comprehensive (14 Panels)" = "full", "Density Curves Only" = "density_only"), selected = "full")),
               column(4, p("Compares gene expression, library sizes, and zeros between real reference data and simulated cells.", style = "font-size: 0.82rem; color: #64748B; margin-bottom: 0;")),
               column(4,
                      downloadButton("download_dist_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2"),
@@ -1466,7 +1466,7 @@ ui <- page_navbar(
                        selected = "all"
                      )
               ),
-              column(3, selectInput("sel_pca_panel", "PCA Panel:", choices = c("All Panels (Biplot + Loadings + Scores + Variance)" = "all", "Biplot Only" = "biplot", "Metric Loadings Only" = "loadings", "Simulator Scores Only" = "scores", "Variance Explained Only" = "scree"), selected = "all")),
+              column(3, selectInput("sel_pca_panel", "PCA Panel:", choices = c("Both (Simulators & Metric Loadings)" = "both", "Simulator Ordination Only" = "methods", "Metric Loadings Only" = "loadings"), selected = "both")),
               column(3, numericInput("num_pca_top_metrics", "Top Metrics to Label:", value = 8, min = 3, max = 25, step = 1)),
               column(3,
                      downloadButton("download_pca_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2"),
@@ -1526,7 +1526,7 @@ ui <- page_navbar(
                        selected = "all"
                      )
               ),
-              column(3, selectInput("sel_mds_by", "Compare By:", choices = c("By Simulators" = "simulators", "By Metric Summaries" = "summaries"), selected = "simulators")),
+              column(3, selectInput("sel_mds_by", "Compare By:", choices = c("By Simulators" = "methods", "By Metric Summaries" = "metrics"), selected = "methods")),
               column(3,
                      sliderInput("sld_mds_height", "MDS Height (px):", min = 400, max = 1300, value = 620, step = 20)
               ),
@@ -3787,15 +3787,22 @@ server <- function(input, output, session) {
   
   # 2. Distribution QC
   output$ui_dist_qc_plot <- renderUI({
-    plot_h <- if (identical(input$sel_dist_layout, "comprehensive")) "850px" else "550px"
+    plot_h <- if (identical(input$sel_dist_layout, "density_only") || identical(input$sel_dist_layout, "density")) "550px" else "850px"
     plotOutput("plot_dist_qc", height = plot_h)
   })
   dist_qc_reactive <- reactive({
     req(rv$toy_ref, rv$toy_sim)
+    lay <- if (!is.null(input$sel_dist_layout) && input$sel_dist_layout %in% c("full", "density_only", "grid_compact")) {
+      input$sel_dist_layout
+    } else if (identical(input$sel_dist_layout, "density")) {
+      "density_only"
+    } else {
+      "full"
+    }
     plot_distribution_qc(
       ref_data = rv$toy_ref,
       sim_data = rv$toy_sim,
-      layout   = input$sel_dist_layout,
+      layout   = lay,
       base_size = 13
     )
   })
@@ -4029,7 +4036,7 @@ server <- function(input, output, session) {
   
   # 6. PCA Ordination (6 Category-wise options & All Categories Combined)
   observeEvent(input$sel_pca_panel, {
-    if (identical(input$sel_pca_panel, "both")) {
+    if (identical(input$sel_pca_panel, "both") || identical(input$sel_pca_panel, "all")) {
       updateSliderInput(session, "sld_pca_height", value = 1100)
     } else {
       updateSliderInput(session, "sld_pca_height", value = 600)
@@ -4046,10 +4053,19 @@ server <- function(input, output, session) {
     req(rv$benchmark_df)
     cat_sel <- if (identical(input$sel_pca_cat, "all")) NULL else input$sel_pca_cat
     n_top <- if (!is.null(input$num_pca_top_metrics) && is.finite(input$num_pca_top_metrics)) input$num_pca_top_metrics else 14
+    p_panel <- if (!is.null(input$sel_pca_panel) && input$sel_pca_panel %in% c("both", "methods", "loadings")) {
+      input$sel_pca_panel
+    } else if (identical(input$sel_pca_panel, "methods") || identical(input$sel_pca_panel, "scores") || identical(input$sel_pca_panel, "simulators")) {
+      "methods"
+    } else if (identical(input$sel_pca_panel, "loadings") || identical(input$sel_pca_panel, "scree")) {
+      "loadings"
+    } else {
+      "both"
+    }
     plot_metric_pca(
       benchmark_data = rv$benchmark_df,
       category = cat_sel,
-      panel = input$sel_pca_panel,
+      panel = p_panel,
       top_n_loadings = n_top,
       base_size = 12
     )
@@ -4084,10 +4100,17 @@ server <- function(input, output, session) {
   metric_mds_reactive <- reactive({
     req(rv$benchmark_df)
     cat_sel <- if (identical(input$sel_mds_cat, "all")) NULL else input$sel_mds_cat
+    ord_by <- if (!is.null(input$sel_mds_by) && input$sel_mds_by %in% c("methods", "metrics")) {
+      input$sel_mds_by
+    } else if (identical(input$sel_mds_by, "summaries")) {
+      "metrics"
+    } else {
+      "methods"
+    }
     plot_metric_mds(
       benchmark_data = rv$benchmark_df,
       category = cat_sel,
-      ordination_by = input$sel_mds_by,
+      ordination_by = ord_by,
       base_size = 13
     )
   })
@@ -4225,10 +4248,16 @@ server <- function(input, output, session) {
   })
   
   output$plot_cell_embeddings_out <- renderPlot({
+    validate(
+      need(!is.null(rv$toy_ref), "Cell embeddings require single-cell count matrices. Please run an evaluation or load demo benchmark data in Data Hub.")
+    )
     reactive_emb_plot()
   })
   
   output$table_emb_quality_metrics <- renderDT({
+    validate(
+      need(!is.null(rv$toy_ref), "Quality metrics require count matrices. Please upload matrices or load demo benchmark data.")
+    )
     emb_data <- reactive_cell_embeddings()
     req(emb_data, nrow(emb_data) > 0)
     
