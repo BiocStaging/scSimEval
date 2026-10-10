@@ -363,7 +363,7 @@ An in-app reference guide structured into seven sections:
 2. **Eight Evaluation Categories** — tabular reference for all 62 metrics
 3. **Score Normalization Pipeline** — direction inversion → min-max scaling diagrams
 4. **Studio Navigation Guide** — accordion-style guide to each tab
-5. **Input Data Formats & Metadata Templates** — matrix structures (genes × cells), cell-type and batch annotation vectors, two-column CSV formats (`Cell_ID,Cell_Type` and `Cell_ID,Batch`), extract recipes from Seurat and SingleCellExperiment, and direct download buttons for `example_cell_types.csv` and `example_batch_annotations.csv`
+5. **Input Data Formats & Metadata Templates** — matrix structures (genes × cells), cell-type and batch annotation vectors, two-column CSV formats (`Cell_ID,Cell_Type` and `Cell_ID,Batch`), and direct download buttons for `example_cell_types.csv` and `example_batch_annotations.csv`
 6. **Frequently Asked Questions**
 7. **Team, Contact & Citation**
 
