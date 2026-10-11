@@ -1040,7 +1040,6 @@ ui <- page_navbar(
         title = div(icon("database", class = "me-2"), "Input Controls"),
         
         radioButtons(
-        radioButtons(
           "opt_data_mode", tags$b("Choose Data Mode:"),
           choices = c(
             "Example Benchmark (6 Simulators)" = "demo",
@@ -1049,8 +1048,6 @@ ui <- page_navbar(
             "Multiomics (scRNA + scATAC)" = "multiomics",
             "Upload Saved Results (.rds / .csv)" = "upload_bench"
           ),
-          selected = "demo"
-        ),
           selected = "demo"
         ),
         hr(style = "margin: 10px 0;"),
