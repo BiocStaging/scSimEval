@@ -355,6 +355,24 @@ instantly populate the app with pre-computed results for
 measures. No file uploads required.</p>
 </div>
 <div class="section level3">
+<h3 id="mode-1b-multi-dataset-study-16-datasets-6-simulators">Mode 1B — Multi-Dataset Study (16 Datasets × 6 Simulators)<a class="anchor" aria-label="anchor" href="#mode-1b-multi-dataset-study-16-datasets-6-simulators"></a>
+</h3>
+<p>Ideal for benchmark studies evaluating simulators across diverse
+biological contexts (e.g. 16 datasets × 6 simulators = 96 evaluation
+runs, 5,952 metric scores). * <strong>Load Example Benchmark (16
+Datasets × 6 Simulators):</strong> Instantly loads a comprehensive study
+across 16 single-cell reference datasets. * <strong>Ingest Multi-Dataset
+Results:</strong> Upload one or multiple pre-computed <code>.rds</code>
+or <code>.csv</code> files produced locally or on HPC nodes. *
+<strong>Cross-Dataset Averaged Visualization:</strong> In the
+Comparative Bubble Matrix (Tab 3), all 62 measures are automatically
+averaged across all evaluated datasets per simulator, displaying
+strictly the simulators on the axis for a clear, uncluttered comparison.
+* <strong>HPC Execution:</strong> Generate input files seamlessly on
+compute clusters via
+<code>benchmark_simulation_suite(references, simulators, threads = 8)</code>.</p>
+</div>
+<div class="section level3">
 <h3 id="mode-2-single-cell-evaluation-scrna-seq-scatac-seq">Mode 2 — Single-Cell Evaluation (scRNA-seq / scATAC-seq)<a class="anchor" aria-label="anchor" href="#mode-2-single-cell-evaluation-scrna-seq-scatac-seq"></a>
 </h3>
 <p>Evaluate one or more unimodal count-matrix simulators.</p>
@@ -555,6 +573,16 @@ resolution. 2. <strong>Fidelity Leaderboard</strong>: Positioned right
 after the figure subtab, displaying the complete rankings table (Overall
 Rank, Method, Average Fidelity %, Fidelity Score) with an instant CSV
 export button.</p>
+<blockquote>
+<p><strong>Multi-Dataset Studies:</strong> When evaluating multi-dataset
+studies (e.g. 16 datasets × 6 simulators), the Comparative Bubble Matrix
+automatically averages fidelity scores across all datasets for each
+simulator. The vertical axis displays strictly the simulators (no
+dataset names on axes), with a dynamic subtitle indicating that scores
+represent cross-dataset averages across all
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math>
+benchmark datasets.</p>
+</blockquote>
 <div class="section level3">
 <h3 id="sidebar-controls">Sidebar Controls<a class="anchor" aria-label="anchor" href="#sidebar-controls"></a>
 </h3>

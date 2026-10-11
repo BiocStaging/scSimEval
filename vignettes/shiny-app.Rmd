@@ -63,6 +63,14 @@ Click **Load Demo Benchmark (6 Simulators)** to instantly populate the app with 
 results for **Splatter**, **scDesign3**, **SCRIP**, **SymSim**, **dyngen**, and **simATAC**
 across all 62 measures. No file uploads required.
 
+### Mode 1B — Multi-Dataset Study (16 Datasets × 6 Simulators)
+
+Ideal for benchmark studies evaluating simulators across diverse biological contexts (e.g. 16 datasets × 6 simulators = 96 evaluation runs, 5,952 metric scores).
+* **Load Example Benchmark (16 Datasets × 6 Simulators):** Instantly loads a comprehensive study across 16 single-cell reference datasets.
+* **Ingest Multi-Dataset Results:** Upload one or multiple pre-computed `.rds` or `.csv` files produced locally or on HPC nodes.
+* **Cross-Dataset Averaged Visualization:** In the Comparative Bubble Matrix (Tab 3), all 62 measures are automatically averaged across all evaluated datasets per simulator, displaying strictly the simulators on the axis for a clear, uncluttered comparison.
+* **HPC Execution:** Generate input files seamlessly on compute clusters via `benchmark_simulation_suite(references, simulators, threads = 8)`.
+
 ### Mode 2 — Single-Cell Evaluation (scRNA-seq / scATAC-seq)
 
 Evaluate one or more unimodal count-matrix simulators.
@@ -126,6 +134,8 @@ Simulators are rank-ordered top-to-bottom by composite average score.
 The main panel organizes content into two dedicated subtabs:
 1. **Comparative Bubble Matrix Figure**: Displays the full 62-metric matrix figure with smooth horizontal panning at publication resolution.
 2. **Fidelity Leaderboard**: Positioned right after the figure subtab, displaying the complete rankings table (Overall Rank, Method, Average Fidelity %, Fidelity Score) with an instant CSV export button.
+
+> **Multi-Dataset Studies:** When evaluating multi-dataset studies (e.g. 16 datasets × 6 simulators), the Comparative Bubble Matrix automatically averages fidelity scores across all datasets for each simulator. The vertical axis displays strictly the simulators (no dataset names on axes), with a dynamic subtitle indicating that scores represent cross-dataset averages across all $N$ benchmark datasets.
 
 ### Sidebar Controls
 

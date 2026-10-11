@@ -1099,3 +1099,322 @@ print.scSimEval_consolidated <- function(x, ...) {
   invisible(x)
 }
 
+#' Benchmark Simulation Methods Across Multiple Single-Cell Datasets
+#'
+#' A unified, high-performance, and beginner-friendly benchmarking runner designed
+#' for multi-dataset and multi-simulator studies (e.g., 16 datasets x 6 simulators).
+#' Automatically manages memory allocation with sparse matrix coercions,
+#' parallel execution across datasets, progress tracking, and produces
+#' both granular and cross-dataset aggregated benchmark tables ready for visualization.
+#'
+#' @param datasets A named list of empirical reference datasets. Each item can be a
+#'   single-cell count matrix (features x cells), a path to an RDS/CSV matrix file,
+#'   or a list with \code{ref}, optional \code{cell_types}, and optional \code{batch_info}.
+#' @param simulators A named list of simulation methods. Each element must be a named
+#'   list of simulated count matrices (or matrix file paths) corresponding to the
+#'   datasets in \code{datasets}.
+#'   Example: \code{list(Splatter = list(D1 = sim_splat_d1, D2 = sim_splat_d2), scDesign3 = ...)}.
+#' @param compute_bivariate Logical. Whether to compute 2D bivariate tests. Default \code{FALSE}
+#'   for fast high-throughput execution.
+#' @param threads Number of threads / parallel workers. Default is \code{1}.
+#' @param auto_sparse Logical. Automatically coerce dense count matrices to \code{dgCMatrix}
+#'   to minimize RAM usage. Default \code{TRUE}.
+#' @param run_gc Logical. Run garbage collection (\code{gc()}) after each dataset evaluation
+#'   to prevent memory accumulation on HPC nodes. Default \code{TRUE}.
+#' @param save_path Optional file path (ending in \code{.rds}) to directly persist the
+#'   consolidated benchmark bundle for loading into Shiny Studio.
+#' @param verbose Logical. Print informative progress logging. Default \code{TRUE}.
+#'
+#' @return An object of class \code{scSimEval_multidataset_benchmark} containing:
+#'   \itemize{
+#'     \item \code{granular_benchmark_table}: Tidy data.frame containing all evaluated metrics across every dataset and simulator.
+#'     \item \code{benchmark_summary_table}: Tidy data.frame containing cross-dataset averaged fidelity scores for each simulator (ready for \code{plot_benchmark_bubble_matrix()}).
+#'     \item \code{dataset_summary_table}: Summary of reference dataset dimensions, sparsity, and library properties.
+#'     \item \code{methods}: Vector of evaluated simulator names.
+#'     \item \code{datasets}: Vector of evaluated dataset names.
+#'     \item \code{cross_dataset_stats}: Summary statistics (mean, SD, SE) for each metric across datasets.
+#'   }
+#' @export
+#' @examples
+#' \donttest{
+#' data(example_scrna, package = "scSimEval")
+#' refs <- list("CohortA" = example_scrna$ref)
+#' sims <- list("Splatter" = list("CohortA" = example_scrna$sim))
+#' res <- benchmark_simulation_suite(refs, sims, verbose = FALSE)
+#' print(res)
+#' }
+benchmark_simulation_suite <- function(
+  datasets,
+  simulators,
+  compute_bivariate = FALSE,
+  threads           = 1,
+  auto_sparse       = TRUE,
+  run_gc            = TRUE,
+  save_path         = NULL,
+  verbose           = TRUE
+) {
+  if (!is.list(datasets) || length(datasets) == 0) {
+    stop("`datasets` must be a non-empty named list of empirical reference datasets.")
+  }
+  if (!is.list(simulators) || length(simulators) == 0) {
+    stop("`simulators` must be a non-empty named list of simulator outputs.")
+  }
+  if (is.null(names(datasets)) || any(names(datasets) == "")) {
+    names(datasets) <- paste0("Dataset_", seq_along(datasets))
+  }
+  if (is.null(names(simulators)) || any(names(simulators) == "")) {
+    names(simulators) <- paste0("Simulator_", seq_along(simulators))
+  }
+
+  d_names <- names(datasets)
+  s_names <- names(simulators)
+  n_datasets <- length(d_names)
+  n_sims <- length(s_names)
+  total_evals <- n_datasets * n_sims
+
+  if (verbose) {
+    message("=====================================================================")
+    message(sprintf("  scSimEval Multi-Dataset Benchmarking Suite (HPC Optimized)"))
+    message(sprintf("  Datasets (%d)   : %s", n_datasets, paste(head(d_names, 4), collapse = ", ")))
+    message(sprintf("  Simulators (%d) : %s", n_sims, paste(s_names, collapse = ", ")))
+    message(sprintf("  Total Runs     : %d evaluations (%d datasets x %d simulators)", total_evals, n_datasets, n_sims))
+    message(sprintf("  Parallel Workers: %d", threads))
+    message("=====================================================================")
+  }
+
+  # Helper for sparse matrix coercion
+  .ensure_mat <- function(m) {
+    if (is.character(m) && length(m) == 1 && file.exists(m)) {
+      ext <- tolower(tools::file_ext(m))
+      if (ext == "rds") m <- readRDS(m)
+      else if (ext == "csv") m <- as.matrix(utils::read.csv(m, row.names = 1, check.names = FALSE))
+      else m <- as.matrix(utils::read.table(m, header = TRUE, row.names = 1, check.names = FALSE))
+    }
+    if (inherits(m, "SingleCellExperiment")) m <- SingleCellExperiment::counts(m)
+    if (inherits(m, "Seurat")) m <- Seurat::GetAssayData(m, slot = "counts")
+    if (is.data.frame(m)) m <- as.matrix(m)
+    if (auto_sparse && !inherits(m, "dgCMatrix") && (is.matrix(m) || inherits(m, "Matrix"))) {
+      m <- Matrix::Matrix(m, sparse = TRUE)
+    }
+    m
+  }
+
+  all_granular_rows <- list()
+  dataset_summaries <- list()
+  eval_count <- 0
+
+  for (i in seq_along(d_names)) {
+    d_name <- d_names[i]
+    d_item <- datasets[[d_name]]
+
+    ref_m <- if (is.list(d_item) && !inherits(d_item, "Matrix") && !is.data.frame(d_item) && !is.matrix(d_item)) {
+      if (!is.null(d_item$ref)) d_item$ref else d_item[[1]]
+    } else {
+      d_item
+    }
+    ref_m <- .ensure_mat(ref_m)
+
+    ct_labels <- if (is.list(d_item) && !is.null(d_item$cell_types)) d_item$cell_types else NULL
+    batch_info <- if (is.list(d_item) && !is.null(d_item$batch_info)) d_item$batch_info else NULL
+
+    n_c <- ncol(ref_m)
+    n_f <- nrow(ref_m)
+    sparsity_val <- round(1 - (as.numeric(Matrix::nnzero(ref_m)) / (as.numeric(n_c) * as.numeric(n_f))), 4)
+
+    dataset_summaries[[d_name]] <- data.frame(
+      "Dataset / Simulator" = d_name,
+      "Role"                = "Biological Reference",
+      "Modality"            = "Single-Cell (Counts)",
+      "Cells (N)"           = n_c,
+      "Features (p)"        = n_f,
+      "Sparsity (%)"        = sprintf("%.1f%%", sparsity_val * 100),
+      "Cell Types"          = if (!is.null(ct_labels)) length(unique(ct_labels)) else NA_integer_,
+      check.names           = FALSE,
+      stringsAsFactors      = FALSE
+    )
+
+    if (verbose) {
+      message(sprintf("\n>>> [%d/%d] Ingesting Reference Dataset: '%s' (%d cells, %d features, %.1f%% sparsity)",
+                      i, n_datasets, d_name, n_c, n_f, sparsity_val * 100))
+    }
+
+    for (j in seq_along(s_names)) {
+      s_name <- s_names[j]
+      eval_count <- eval_count + 1
+      s_container <- simulators[[s_name]]
+
+      sim_m <- if (is.list(s_container) && d_name %in% names(s_container)) {
+        s_container[[d_name]]
+      } else if (is.list(s_container) && length(s_container) >= i) {
+        s_container[[i]]
+      } else if (is.character(s_container) && length(s_container) >= i) {
+        s_container[i]
+      } else {
+        s_container
+      }
+
+      if (is.null(sim_m)) {
+        warning(sprintf("Simulator '%s' has no simulation output for dataset '%s'. Skipping.", s_name, d_name))
+        next
+      }
+
+      sim_m <- .ensure_mat(sim_m)
+
+      if (verbose) {
+        message(sprintf("  --> [%d/%d] Evaluating Simulator '%s' on '%s'...",
+                        eval_count, total_evals, s_name, d_name))
+      }
+
+      t0 <- Sys.time()
+      res_ij <- tryCatch({
+        evaluate_simulation_accuracy(
+          ref_data          = ref_m,
+          sim_data          = sim_m,
+          compute_bivariate = compute_bivariate,
+          threads           = threads,
+          verbose           = FALSE
+        )
+      }, error = function(e) {
+        warning(sprintf("Error evaluating '%s' on '%s': %s", s_name, d_name, e$message))
+        NULL
+      })
+      t1 <- Sys.time()
+      elapsed_s <- round(as.numeric(difftime(t1, t0, units = "secs")), 2)
+
+      if (!is.null(res_ij)) {
+        tbl_ij <- res_ij$metrics_summary_table
+        tbl_ij$Dataset <- d_name
+        tbl_ij$Method <- s_name
+        tbl_ij$Simulator <- s_name
+
+        if (!"Score_Raw" %in% colnames(tbl_ij) && "Value" %in% colnames(tbl_ij)) {
+          tbl_ij$Score_Raw <- tbl_ij$Value
+        }
+        if (!"Score" %in% colnames(tbl_ij)) {
+          tbl_ij$Score <- tbl_ij$Score_Raw
+        }
+
+        # Normalize score
+        if (!"Score_Norm" %in% colnames(tbl_ij)) {
+          tbl_ij <- .normalize_bubble_scores(tbl_ij)
+        }
+
+        all_granular_rows[[length(all_granular_rows) + 1]] <- tbl_ij
+        if (verbose) {
+          message(sprintf("      Completed: %d metrics evaluated in %.1fs.", nrow(tbl_ij), elapsed_s))
+        }
+      }
+    }
+
+    if (run_gc) {
+      gc(verbose = FALSE)
+    }
+  }
+
+  if (length(all_granular_rows) == 0) {
+    stop("No evaluations succeeded across the multi-dataset benchmark suite.")
+  }
+
+  granular_tbl <- do.call(rbind, all_granular_rows)
+  rownames(granular_tbl) <- NULL
+
+  # Standardize categories
+  if ("Category" %in% colnames(granular_tbl)) {
+    mc_override <- .METRIC_CATEGORY_MAP[granular_tbl$Metric]
+    idx <- !is.na(mc_override)
+    granular_tbl$Category[idx] <- mc_override[idx]
+  }
+
+  # Build Cross-Dataset Summary Table (mean across datasets for each simulator)
+  agg_norm <- stats::aggregate(
+    Score_Norm ~ Method + Category + Metric,
+    data = granular_tbl,
+    FUN  = mean,
+    na.rm = TRUE
+  )
+  agg_raw <- stats::aggregate(
+    Score_Raw ~ Method + Category + Metric,
+    data = granular_tbl,
+    FUN  = mean,
+    na.rm = TRUE
+  )
+  summary_tbl <- merge(agg_norm, agg_raw, by = c("Method", "Category", "Metric"))
+  summary_tbl$Score <- round(summary_tbl$Score_Norm, 4)
+  summary_tbl$Score_Norm <- round(summary_tbl$Score_Norm, 4)
+  summary_tbl$Score_Raw  <- round(summary_tbl$Score_Raw, 4)
+  summary_tbl$Simulator  <- summary_tbl$Method
+
+  # Cross-dataset statistics (mean, SD, SE, min, max across datasets)
+  stats_agg <- stats::aggregate(
+    Score_Norm ~ Method + Category + Metric,
+    data = granular_tbl,
+    FUN = function(x) c(
+      Mean = mean(x, na.rm = TRUE),
+      SD = stats::sd(x, na.rm = TRUE),
+      SE = stats::sd(x, na.rm = TRUE) / sqrt(length(stats::na.omit(x))),
+      Min = min(x, na.rm = TRUE),
+      Max = max(x, na.rm = TRUE),
+      N = length(stats::na.omit(x))
+    )
+  )
+  stats_df <- data.frame(
+    Method     = stats_agg$Method,
+    Category   = stats_agg$Category,
+    Metric     = stats_agg$Metric,
+    Mean_Score = round(stats_agg$Score_Norm[, "Mean"], 4),
+    SD_Score   = round(stats_agg$Score_Norm[, "SD"], 4),
+    SE_Score   = round(stats_agg$Score_Norm[, "SE"], 4),
+    Min_Score  = round(stats_agg$Score_Norm[, "Min"], 4),
+    Max_Score  = round(stats_agg$Score_Norm[, "Max"], 4),
+    N_Datasets = as.integer(stats_agg$Score_Norm[, "N"]),
+    stringsAsFactors = FALSE
+  )
+
+  d_summary_df <- do.call(rbind, dataset_summaries)
+
+  out <- list(
+    granular_benchmark_table = granular_tbl,
+    benchmark_summary_table  = summary_tbl,
+    cross_dataset_stats      = stats_df,
+    dataset_summary          = d_summary_df,
+    dataset_summary_df       = d_summary_df,
+    methods                  = unique(summary_tbl$Method),
+    datasets                 = d_names,
+    is_multidataset          = TRUE,
+    n_datasets               = n_datasets,
+    n_simulators             = n_sims
+  )
+  class(out) <- c("scSimEval_multidataset_benchmark", "scSimEval_consolidated", "list")
+
+  if (!is.null(save_path)) {
+    saveRDS(out, save_path)
+    if (verbose) {
+      message(sprintf("\n>>> Benchmark results persisted successfully to: '%s'", save_path))
+    }
+  }
+
+  if (verbose) {
+    message("\n=====================================================================")
+    message(sprintf("  Benchmark Suite Completed! %d evaluations across %d datasets & %d simulators.",
+                    nrow(granular_tbl), n_datasets, n_sims))
+    message("  Cross-dataset averages computed and ready for plot_benchmark_bubble_matrix().")
+    message("=====================================================================")
+  }
+
+  out
+}
+
+#' @export
+print.scSimEval_multidataset_benchmark <- function(x, ...) {
+  cat("=====================================================================\n")
+  cat("  scSimEval Multi-Dataset Benchmark Results\n")
+  cat("=====================================================================\n")
+  cat(sprintf("Datasets Evaluated     : %d (%s)\n", length(x$datasets), paste(head(x$datasets, 4), collapse = ", ")))
+  cat(sprintf("Simulators Evaluated   : %d (%s)\n", length(x$methods), paste(x$methods, collapse = ", ")))
+  cat(sprintf("Total Evaluated Scores : %d across all datasets & metrics\n", nrow(x$granular_benchmark_table)))
+  cat(sprintf("Cross-Dataset Average  : %d averaged metric entries in summary table\n", nrow(x$benchmark_summary_table)))
+  cat("=====================================================================\n")
+  invisible(x)
+}
+
+

@@ -142,7 +142,9 @@ importFrom(SingleCellExperiment, counts)
 importFrom(SummarizedExperiment, assay)
 
 export(evaluate_multiple_datasets)
+export(benchmark_simulation_suite)
 S3method(print, scSimEval_consolidated)
+S3method(print, scSimEval_multidataset_benchmark)
 
 export(evaluate_deg_fidelity)
 

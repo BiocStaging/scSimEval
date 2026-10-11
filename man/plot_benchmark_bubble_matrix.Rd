@@ -17,8 +17,7 @@ plot_benchmark_bubble_matrix(
   show_missing_dots = TRUE,
   bubble_size_range = c(2, 7.8),
   title = NULL,
-  subtitle =
-    "Standardized Direction-Aware Fidelity Scores [0, 1] Across 8 Canonical Evaluation Categories",
+  subtitle = NULL,
   base_size = 11,
   show_score_labels = FALSE
 )
@@ -35,8 +34,7 @@ plot_bubble_matrix(
   show_missing_dots = TRUE,
   bubble_size_range = c(2, 7.8),
   title = NULL,
-  subtitle =
-    "Standardized Direction-Aware Fidelity Scores [0, 1] Across 8 Canonical Evaluation Categories",
+  subtitle = NULL,
   base_size = 11,
   show_score_labels = FALSE
 )

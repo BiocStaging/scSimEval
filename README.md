@@ -160,6 +160,48 @@ consolidated <- evaluate_multiple_datasets(
 print(consolidated$dataset_overview)
 ```
 
+### 4. Large-Scale Multi-Dataset Benchmark on HPC (`benchmark_simulation_suite`)
+
+For benchmarking studies evaluating multiple simulators across multiple independent single-cell datasets (e.g. 16 diverse cell types or tissues × 6 simulators = 96 evaluation runs):
+
+```R
+# 1. Define named list of reference datasets (supports matrices or RDS file paths)
+references <- list(
+  "PBMC_10k"       = pbmc_ref,
+  "Pancreas_Baron" = pancreas_ref,
+  "Brain_Cortex"   = cortex_ref
+  # ... up to 16 datasets
+)
+
+# 2. Define named list of simulators and their simulated matrices per dataset
+simulators <- list(
+  "Splatter"  = list("PBMC_10k" = splat_pbmc, "Pancreas_Baron" = splat_panc, "Brain_Cortex" = splat_cortex),
+  "scDesign3" = list("PBMC_10k" = scd3_pbmc,  "Pancreas_Baron" = scd3_panc,  "Brain_Cortex" = scd3_cortex),
+  "SCRIP"     = list("PBMC_10k" = scrip_pbmc, "Pancreas_Baron" = scrip_panc, "Brain_Cortex" = scrip_cortex),
+  "SymSim"    = list("PBMC_10k" = sym_pbmc,   "Pancreas_Baron" = sym_panc,   "Brain_Cortex" = sym_cortex),
+  "dyngen"    = list("PBMC_10k" = dyn_pbmc,   "Pancreas_Baron" = dyn_panc,   "Brain_Cortex" = dyn_cortex),
+  "simATAC"   = list("PBMC_10k" = sima_pbmc,  "Pancreas_Baron" = sima_panc,  "Brain_Cortex" = sima_cortex)
+)
+
+# 3. Run high-performance evaluation with automatic sparse matrix coercion (dgCMatrix),
+# multi-threading, and proactive memory management for HPC clusters
+suite_res <- benchmark_simulation_suite(
+  datasets    = references,
+  simulators  = simulators,
+  threads     = 8,        # multi-core HPC parallelism
+  auto_sparse = TRUE,     # dgCMatrix minimizes RAM consumption
+  run_gc      = TRUE,     # gc() after each run prevents memory bloat
+  save_path   = "multi_dataset_benchmark.rds" # persist for Shiny Studio
+)
+
+# 4. Plot comparative bubble matrix:
+# Automatically averages metrics across all 16 datasets under each simulator!
+# Only simulator names appear on the axis; no cluttered dataset axes.
+plot_benchmark_bubble_matrix(suite_res)
+```
+
+In the interactive **scSimEval Studio** (`launch_scSimEval_app()`), users can navigate to **Data Hub**, choose **Multi-Dataset Study (16 Datasets × 6 Simulators)**, and click **Load Example Benchmark (16 Datasets × 6 Simulators)** or upload their HPC-generated RDS files.
+
 ---
 
 ## Score Normalization in Benchmark Bubble Plots

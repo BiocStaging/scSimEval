@@ -641,9 +641,52 @@ evaluate_simulation_accuracy(ref_atac_full, sim_atac_full)
 > See the dedicated **[Multiomics Vignette](demo-multiomics.html)** for complete
 > step-by-step workflows and code examples for all three data types.
 
+## 16. Large-Scale Multi-Dataset Benchmarking on HPC Clusters
+
+In comprehensive simulation benchmark studies, researchers often evaluate simulation tools across multiple diverse biological tissues, cell lines, or conditions (e.g., evaluating 6 simulators across 16 distinct single-cell datasets, producing $16 \times 6 = 96$ simulation comparisons and 5,952 metric observations across all 62 measures).
+
+To enable seamless, beginner-friendly execution of such studies without crashing computer memory, `scSimEval` provides `benchmark_simulation_suite()`:
+
+```r
+# Define reference datasets (supports matrices or RDS file paths on disk)
+refs <- list(
+  "PBMC_10k"       = pbmc_ref,
+  "Pancreas_Baron" = pancreas_ref,
+  "Brain_Cortex"   = cortex_ref
+  # ... up to 16 datasets
+)
+
+# Define simulator outputs per dataset
+sims <- list(
+  "Splatter"  = list("PBMC_10k" = splat_pbmc, "Pancreas_Baron" = splat_panc, "Brain_Cortex" = splat_cortex),
+  "scDesign3" = list("PBMC_10k" = scd3_pbmc,  "Pancreas_Baron" = scd3_panc,  "Brain_Cortex" = scd3_cortex),
+  "SCRIP"     = list("PBMC_10k" = scrip_pbmc, "Pancreas_Baron" = scrip_panc, "Brain_Cortex" = scrip_cortex),
+  "SymSim"    = list("PBMC_10k" = sym_pbmc,   "Pancreas_Baron" = sym_panc,   "Brain_Cortex" = sym_cortex),
+  "dyngen"    = list("PBMC_10k" = dyn_pbmc,   "Pancreas_Baron" = dyn_panc,   "Brain_Cortex" = dyn_cortex),
+  "simATAC"   = list("PBMC_10k" = sima_pbmc,  "Pancreas_Baron" = sima_panc,  "Brain_Cortex" = sima_cortex)
+)
+
+# Run high-performance evaluation
+mset_bench <- benchmark_simulation_suite(
+  datasets    = refs,
+  simulators  = sims,
+  threads     = 8,        # multi-core HPC acceleration
+  auto_sparse = TRUE,     # coerces dense matrices to dgCMatrix to minimize RAM
+  run_gc      = TRUE,     # garbage collection after each run prevents memory bloat
+  save_path   = "my_multidataset_benchmark.rds" # direct Shiny-ready bundle
+)
+
+# Render comparative bubble matrix:
+# Automatically averages metrics across all 16 datasets under each simulator.
+# Simulators are shown on the vertical axis; no cluttered dataset axes.
+plot_benchmark_bubble_matrix(mset_bench)
+```
+
+In the interactive **scSimEval Studio** (`launch_scSimEval_app()`), users can navigate to **Data Hub**, choose **Multi-Dataset Study (16 Datasets × 6 Simulators)**, and click **Load Example Benchmark (16 Datasets × 6 Simulators)** or upload their HPC-generated RDS files.
+
 ---
 
-## 16. Extension to Other Single-Cell Data Types
+## 17. Extension to Other Single-Cell Data Types
 
 While `scSimEval` is primarily optimized and demonstrated for **scRNA-seq**, **scATAC-seq**, and **paired scRNA-seq + scATAC-seq multiomics**, all 62 evaluation measures operate on standard numeric count or continuous matrices. 
 
@@ -654,13 +697,13 @@ Consequently, the package can be readily extended to benchmark simulations acros
 
 ---
 
-## 16. Summary
+## 18. Summary
 
 `scSimEval` provides a unified, objective, and ground-truth-free evaluation toolkit for benchmarking single-cell and multiomics simulation methods. With 62 metrics organized into 8 clear categories, automated score normalization, and intuitive visualizations, it enables researchers to select and validate simulation methods with confidence.
 
 ---
 
-## 17. Authors and Maintainers
+## 19. Authors and Maintainers
 
 `scSimEval` is developed and maintained by:
 

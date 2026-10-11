@@ -6,7 +6,7 @@
 \usage{
 plot_metric_mds(
   benchmark_data,
-  ordination_by = c("summaries", "simulators"),
+  ordination_by = c("simulators", "summaries"),
   by_category = FALSE,
   as_list = FALSE,
   category = NULL,

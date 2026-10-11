@@ -2,6 +2,20 @@
 
 ## Major Improvements
 
+* **Multi-Dataset Benchmarking Study Support (16 Datasets × 6 Simulators):**
+  - Added dedicated support for multi-dataset benchmark studies (e.g., evaluating 6 single-cell simulators across 16 diverse experimental datasets or cell types, yielding 5,952 metric observations across all 62 canonical measures).
+  - Implemented `benchmark_simulation_suite()`: high-performance R function engineered for beginner users and high-throughput HPC clusters with automatic sparse matrix coercion (`dgCMatrix`), proactive garbage collection (`gc()`) per dataset to prevent RAM accumulation, and multi-threading.
+  - Automatically calculates both a consolidated granular benchmark table (`granular_benchmark_table`) and a cross-dataset averaged summary table (`benchmark_summary_table`).
+
+* **Cross-Dataset Averaged Comparative Bubble Matrix:**
+  - In `plot_benchmark_bubble_matrix()` and Shiny Studio Tab 3, multi-dataset inputs automatically average fidelity scores across all evaluated datasets for each simulator.
+  - Keeps the flagship bubble plot uncluttered by displaying strictly simulators on the axis (no dataset names on axes), with a dynamic subtitle indicating the number of datasets averaged.
+  - Extended cross-dataset averaging to heatmaps, PCA, and MDS ordination plots.
+
+* **Shiny App Data Hub Multi-Dataset Ingestion:**
+  - Added "Multi-Dataset Study (16 Datasets × 6 Simulators)" mode with an instant demo loader (`demo_multidataset_benchmark.rds`), multi-file benchmark uploader (`multiple = TRUE`), and HPC batch execution guide.
+  - Added interactive Dataset Preview Switcher in Subtab 3 allowing toggling between overall cross-dataset averages and granular dataset tables, with direct CSV export.
+
 * **Minimalist & Streamlined Shiny Studio Interface:**
   - Modernized the web interface across all tabs with a clean, clutter-free scientific layout, removing redundant controls in the Home, Data Hub, and Bubble Matrix panels.
   - Simplified comparative metric filtering into two intuitive modes: **All 62 Measures** and **Custom Selection** (with direct category dropdown and measure toggles).

@@ -379,9 +379,9 @@
 <p><code>scSimEval</code> organizes 62 evaluation measures into eight foundational categories:</p>
 <ol style="list-style-type: decimal">
 <li><p><strong>Category 1: Distribution Properties (14 metrics)</strong> — Compares single-cell count distributions (such as library size, average expression, gene variance, and zero fraction) and data manifolds between real and simulated data using statistical distance measures (Kolmogorov-Smirnov, Wasserstein, Median Absolute Deviation, RMSE, Density Overlap, Bhattacharyya distance, ECDF area, Runs test, Maximum Mean Discrepancy, and Fréchet distance).</p></li>
-<li><p><strong>Category 2: Correlations and Zero Patterns (8 metrics)</strong> — Checks biological variation, dropout curves, cell-to-cell correlations, and gene-gene co-expression relationships.</p></li>
-<li><p><strong>Category 3: Cell Structure and Clustering (9 metrics)</strong> — Evaluates whether simulated data preserves distinct cell types in unsupervised clustering (Silhouette width, Dunn index, Davies-Bouldin, Calinski-Harabasz) and supervised group matching (Adjusted Rand Index, Normalized Mutual Information, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>V</mi><annotation encoding="application/x-tex">V</annotation></semantics></math>-measure, Neighborhood Purity, and Hungarian matching accuracy).</p></li>
-<li><p><strong>Category 4: Batch Effects and Technical Confounders (6 metrics)</strong> — Tests whether technical batch differences are well-mixed without erasing true biological differences (CellMixS, batch Shannon entropy, Principal Component Regression <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>, Seurat mixing metric, LISI, and cross-batch cell prediction accuracy).</p></li>
+<li><p><strong>Category 2: Correlations &amp; Zero-Inflation (6 metrics)</strong> — Checks biological variation (BCV), logistic dropout curves (midpoint <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>0</mn></msub><annotation encoding="application/x-tex">x_0</annotation></semantics></math>, slope <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>), cell-to-cell correlations, and gene co-expression networks.</p></li>
+<li><p><strong>Category 3: Cellular Structure &amp; Concordance (10 metrics)</strong> — Evaluates whether simulated data preserves distinct cell types in unsupervised clustering (Silhouette width, Dunn index, Davies-Bouldin, Calinski-Harabasz) and supervised group matching (Adjusted Rand Index, Normalized Mutual Information, Adjusted Mutual Information, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>V</mi><annotation encoding="application/x-tex">V</annotation></semantics></math>-measure, Neighborhood Purity, and Hungarian optimal matching precision).</p></li>
+<li><p><strong>Category 4: Batch Effects &amp; Technical Confounders (7 metrics)</strong> — Tests whether technical batch differences are well-mixed without erasing true biological differences (Batch ASW, batch Shannon entropy, Principal Component Regression <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msubsup><mi>R</mi><mtext mathvariant="normal">batch</mtext><mn>2</mn></msubsup><annotation encoding="application/x-tex">R^2_{\text{batch}}</annotation></semantics></math>, CellMixS CMS, LISI, Seurat mixing metric, and local density factor discrepancy ldfDiff).</p></li>
 <li><p><strong>Category 5: Marker Genes and Biological Signals (15 metrics)</strong> — Assesses differentially expressed gene (DEG) fidelity across three established benchmarking frameworks: Simpipe, SimBench, and Shaky Foundations (effect size errors, fold-change correlations, top-marker overlap, and cell classification accuracy).</p></li>
 <li><p><strong>Category 6: Trajectory and Lineage Dynamics (2 metrics)</strong> — Evaluates developmental timelines (pseudotime rank correlation) and cell lineage tree branching (branch height RMSE), inferred directly from scRNA-seq counts.</p></li>
 <li><p><strong>Category 7: Cross-Modal Coupling and Modularity (6 metrics)</strong> — Evaluates the connection between chromatin accessibility and gene expression in multiomics data, including cell-to-cell matching (FOSCTTM, <a href="mailto:Match@1" class="email">Match@1</a>), cross-modal cell type transfer, and peak-to-gene regulatory links (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>R</mi><mi>V</mi></msub><annotation encoding="application/x-tex">R_V</annotation></semantics></math> coefficient).</p></li>
@@ -454,6 +454,46 @@
 <span></span>
 <span><span class="co"># View dataset overview table</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">consolidated</span><span class="op">$</span><span class="va">dataset_overview</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="id_4-large-scale-multi-dataset-benchmark-on-hpc-benchmark_simulation_suite">4. Large-Scale Multi-Dataset Benchmark on HPC (<code>benchmark_simulation_suite</code>)<a class="anchor" aria-label="anchor" href="#id_4-large-scale-multi-dataset-benchmark-on-hpc-benchmark_simulation_suite"></a>
+</h3>
+<p>For benchmarking studies evaluating multiple simulators across multiple independent single-cell datasets (e.g. 16 diverse cell types or tissues × 6 simulators = 96 evaluation runs):</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># 1. Define named list of reference datasets (supports matrices or RDS file paths)</span></span>
+<span><span class="va">references</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  <span class="st">"PBMC_10k"</span>       <span class="op">=</span> <span class="va">pbmc_ref</span>,</span>
+<span>  <span class="st">"Pancreas_Baron"</span> <span class="op">=</span> <span class="va">pancreas_ref</span>,</span>
+<span>  <span class="st">"Brain_Cortex"</span>   <span class="op">=</span> <span class="va">cortex_ref</span></span>
+<span>  <span class="co"># ... up to 16 datasets</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 2. Define named list of simulators and their simulated matrices per dataset</span></span>
+<span><span class="va">simulators</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Splatter"</span>  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"PBMC_10k"</span> <span class="op">=</span> <span class="va">splat_pbmc</span>, <span class="st">"Pancreas_Baron"</span> <span class="op">=</span> <span class="va">splat_panc</span>, <span class="st">"Brain_Cortex"</span> <span class="op">=</span> <span class="va">splat_cortex</span><span class="op">)</span>,</span>
+<span>  <span class="st">"scDesign3"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"PBMC_10k"</span> <span class="op">=</span> <span class="va">scd3_pbmc</span>,  <span class="st">"Pancreas_Baron"</span> <span class="op">=</span> <span class="va">scd3_panc</span>,  <span class="st">"Brain_Cortex"</span> <span class="op">=</span> <span class="va">scd3_cortex</span><span class="op">)</span>,</span>
+<span>  <span class="st">"SCRIP"</span>     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"PBMC_10k"</span> <span class="op">=</span> <span class="va">scrip_pbmc</span>, <span class="st">"Pancreas_Baron"</span> <span class="op">=</span> <span class="va">scrip_panc</span>, <span class="st">"Brain_Cortex"</span> <span class="op">=</span> <span class="va">scrip_cortex</span><span class="op">)</span>,</span>
+<span>  <span class="st">"SymSim"</span>    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"PBMC_10k"</span> <span class="op">=</span> <span class="va">sym_pbmc</span>,   <span class="st">"Pancreas_Baron"</span> <span class="op">=</span> <span class="va">sym_panc</span>,   <span class="st">"Brain_Cortex"</span> <span class="op">=</span> <span class="va">sym_cortex</span><span class="op">)</span>,</span>
+<span>  <span class="st">"dyngen"</span>    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"PBMC_10k"</span> <span class="op">=</span> <span class="va">dyn_pbmc</span>,   <span class="st">"Pancreas_Baron"</span> <span class="op">=</span> <span class="va">dyn_panc</span>,   <span class="st">"Brain_Cortex"</span> <span class="op">=</span> <span class="va">dyn_cortex</span><span class="op">)</span>,</span>
+<span>  <span class="st">"simATAC"</span>   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"PBMC_10k"</span> <span class="op">=</span> <span class="va">sima_pbmc</span>,  <span class="st">"Pancreas_Baron"</span> <span class="op">=</span> <span class="va">sima_panc</span>,  <span class="st">"Brain_Cortex"</span> <span class="op">=</span> <span class="va">sima_cortex</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 3. Run high-performance evaluation with automatic sparse matrix coercion (dgCMatrix),</span></span>
+<span><span class="co"># multi-threading, and proactive memory management for HPC clusters</span></span>
+<span><span class="va">suite_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/benchmark_simulation_suite.html">benchmark_simulation_suite</a></span><span class="op">(</span></span>
+<span>  datasets    <span class="op">=</span> <span class="va">references</span>,</span>
+<span>  simulators  <span class="op">=</span> <span class="va">simulators</span>,</span>
+<span>  threads     <span class="op">=</span> <span class="fl">8</span>,        <span class="co"># multi-core HPC parallelism</span></span>
+<span>  auto_sparse <span class="op">=</span> <span class="cn">TRUE</span>,     <span class="co"># dgCMatrix minimizes RAM consumption</span></span>
+<span>  run_gc      <span class="op">=</span> <span class="cn">TRUE</span>,     <span class="co"># gc() after each run prevents memory bloat</span></span>
+<span>  save_path   <span class="op">=</span> <span class="st">"multi_dataset_benchmark.rds"</span> <span class="co"># persist for Shiny Studio</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 4. Plot comparative bubble matrix:</span></span>
+<span><span class="co"># Automatically averages metrics across all 16 datasets under each simulator!</span></span>
+<span><span class="co"># Only simulator names appear on the axis; no cluttered dataset axes.</span></span>
+<span><span class="fu"><a href="reference/plot_benchmark_bubble_matrix.html">plot_benchmark_bubble_matrix</a></span><span class="op">(</span><span class="va">suite_res</span><span class="op">)</span></span></code></pre></div>
+<p>In the interactive <strong>scSimEval Studio</strong> (<code><a href="reference/launch_scSimEval_app.html">launch_scSimEval_app()</a></code>), users can navigate to <strong>Data Hub</strong>, choose <strong>Multi-Dataset Study (16 Datasets × 6 Simulators)</strong>, and click <strong>Load Example Benchmark (16 Datasets × 6 Simulators)</strong> or upload their HPC-generated RDS files.</p>
 <hr>
 </div>
 </div>
@@ -504,7 +544,7 @@
 <li>
 <strong>PCA Biplot &amp; MDS Ordination (<code>plot_metric_pca</code>, <code>plot_metric_mds</code>)</strong>: Dimension reduction of simulator metric profiles.</li>
 </ul>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 1. Master benchmark bubble matrix</span></span>
 <span><span class="fu"><a href="reference/plot_benchmark_bubble_matrix.html">plot_benchmark_bubble_matrix</a></span><span class="op">(</span></span>
 <span>  data <span class="op">=</span> <span class="va">consolidated</span>,</span>
@@ -537,7 +577,7 @@
 <h2 id="interactive-graphical-user-interface-shiny-app-studio">Interactive Graphical User Interface (Shiny App Studio)<a class="anchor" aria-label="anchor" href="#interactive-graphical-user-interface-shiny-app-studio"></a>
 </h2>
 <p>For researchers who prefer an interactive visual interface rather than writing code, <code>scSimEval</code> includes an embedded <strong>Interactive Shiny App Studio (<code>scSimEvalApp</code>)</strong>. This standalone web application enables you to explore benchmarking results across all 62 metrics, inspect live dataset structural summaries, toggle between paired and unpaired multiomics evaluation modes, explore 8 diagnostic visualization panels (including UMAP/t-SNE cell embeddings), and export publication-ready figures (at 600 DPI) and multi-sheet Excel workbooks directly from your browser:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval">scSimEval</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Launch the interactive Shiny app in your default web browser</span></span>

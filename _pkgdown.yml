@@ -284,6 +284,7 @@ reference:
       - evaluate_simulation_accuracy
       - evaluate_multiomics_accuracy
       - evaluate_multiple_datasets
+      - benchmark_simulation_suite
 
   - title: "High-Resolution Visualization Suite (600 DPI)"
     desc: "Publication-grade visualization functions designed for multi-metric and cross-simulator benchmarking."

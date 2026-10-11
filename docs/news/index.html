@@ -259,6 +259,23 @@
 <div class="section level3">
 <h3 id="major-improvements-0-99-5">Major Improvements<a class="anchor" aria-label="anchor" href="#major-improvements-0-99-5"></a></h3>
 <ul><li>
+<strong>Multi-Dataset Benchmarking Study Support (16 Datasets × 6 Simulators):</strong>
+<ul><li>Added dedicated support for multi-dataset benchmark studies (e.g., evaluating 6 single-cell simulators across 16 diverse experimental datasets or cell types, yielding 5,952 metric observations across all 62 canonical measures).</li>
+<li>Implemented <code><a href="../reference/benchmark_simulation_suite.html">benchmark_simulation_suite()</a></code>: high-performance R function engineered for beginner users and high-throughput HPC clusters with automatic sparse matrix coercion (<code>dgCMatrix</code>), proactive garbage collection (<code><a href="https://rdrr.io/r/base/gc.html" class="external-link">gc()</a></code>) per dataset to prevent RAM accumulation, and multi-threading.</li>
+<li>Automatically calculates both a consolidated granular benchmark table (<code>granular_benchmark_table</code>) and a cross-dataset averaged summary table (<code>benchmark_summary_table</code>).</li>
+</ul></li>
+<li>
+<strong>Cross-Dataset Averaged Comparative Bubble Matrix:</strong>
+<ul><li>In <code><a href="../reference/plot_benchmark_bubble_matrix.html">plot_benchmark_bubble_matrix()</a></code> and Shiny Studio Tab 3, multi-dataset inputs automatically average fidelity scores across all evaluated datasets for each simulator.</li>
+<li>Keeps the flagship bubble plot uncluttered by displaying strictly simulators on the axis (no dataset names on axes), with a dynamic subtitle indicating the number of datasets averaged.</li>
+<li>Extended cross-dataset averaging to heatmaps, PCA, and MDS ordination plots.</li>
+</ul></li>
+<li>
+<strong>Shiny App Data Hub Multi-Dataset Ingestion:</strong>
+<ul><li>Added “Multi-Dataset Study (16 Datasets × 6 Simulators)” mode with an instant demo loader (<code>demo_multidataset_benchmark.rds</code>), multi-file benchmark uploader (<code>multiple = TRUE</code>), and HPC batch execution guide.</li>
+<li>Added interactive Dataset Preview Switcher in Subtab 3 allowing toggling between overall cross-dataset averages and granular dataset tables, with direct CSV export.</li>
+</ul></li>
+<li>
 <strong>Minimalist &amp; Streamlined Shiny Studio Interface:</strong>
 <ul><li>Modernized the web interface across all tabs with a clean, clutter-free scientific layout, removing redundant controls in the Home, Data Hub, and Bubble Matrix panels.</li>
 <li>Simplified comparative metric filtering into two intuitive modes: <strong>All 62 Measures</strong> and <strong>Custom Selection</strong> (with direct category dropdown and measure toggles).</li>
