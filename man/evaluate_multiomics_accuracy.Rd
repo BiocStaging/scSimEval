@@ -73,6 +73,34 @@ using strictly the user's provided inputs:
 }
 \details{
 \if{html}{\figure{workflow_diagram.png}{options: width="800" alt="scSimEval Unified Benchmarking Workflow Diagram"}}
+
+
+\strong{Multiomics Metric Measurement Capacity by Experimental Design & Metadata:}
+\itemize{
+  \item \strong{Paired Multiomics (e.g. 10x Chromium Multiome, SHARE-seq, SNARE-seq):}
+    \itemize{
+      \item \emph{Count Matrices Alone (RNA + ATAC):} Measures approximately 48 metrics spanning
+        both unimodal distribution layers (Categories I, II, VI, VIII across both modalities)
+        plus Category VII Cross-Modal Coupling (FOSCTTM alignment score, Match@1 nearest neighbor
+        accuracy, cross-modal generative prediction accuracy/F1, RV coefficient, and peak-to-gene
+        regulatory correlation).
+      \item \emph{+ Cell Types:} Unlocks 15–20 additional metrics for cross-modal cell-type
+        concordance and cell-type specific epigenetic promoter/enhancer activity.
+      \item \emph{+ Batch Info:} Unlocks 10–14 additional metrics evaluating technical confounder
+        integration across both RNA and ATAC modalities.
+      \item \emph{+ Both (Full Metadata):} Unlocks the complete multiomics suite of all 62 metrics
+        across all 8 categories.
+    }
+  \item \strong{Unpaired Multiomics (independent scRNA and scATAC from separate cells):}
+    \itemize{
+      \item \emph{Count Matrices Alone (RNA + ATAC):} Measures approximately 38–42 metrics spanning
+        unimodal distributions for both layers plus population-level cross-modal metrics
+        (co-expression module fidelity, Network Jaccard similarity, cross-modality correlation).
+      \item \emph{+ Cell Types (Crucial for Unpaired):} Unlocks 15–20 additional metrics for
+        cluster-matched label transfer concordance and cell-type matched regulatory linkage.
+      \item \emph{+ Batch Info:} Unlocks 7–12 additional metrics evaluating batch integration.
+    }
+}
 }
 \examples{
 data(example_multiomics, package = "scSimEval")

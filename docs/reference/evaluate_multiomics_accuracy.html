@@ -239,7 +239,7 @@ Trajectory features inferred directly from scRNA-seq counts.
 
     <a class="navbar-brand me-2" href="../index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -374,7 +374,27 @@ accessibility profile concordance) are computed alongside all unimodal metrics.<
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><img src="figures/workflow_diagram.png" width="800" alt="scSimEval Unified Benchmarking Workflow Diagram"></p>
-    </div>
+
+<p><strong>Multiomics Metric Measurement Capacity by Experimental Design &amp; Metadata:</strong></p><ul><li><p><strong>Paired Multiomics (e.g. 10x Chromium Multiome, SHARE-seq, SNARE-seq):</strong></p><ul><li><p><em>Count Matrices Alone (RNA + ATAC):</em> Measures approximately 48 metrics spanning
+        both unimodal distribution layers (Categories I, II, VI, VIII across both modalities)
+        plus Category VII Cross-Modal Coupling (FOSCTTM alignment score, Match@1 nearest neighbor
+        accuracy, cross-modal generative prediction accuracy/F1, RV coefficient, and peak-to-gene
+        regulatory correlation).</p></li>
+<li><p><em>+ Cell Types:</em> Unlocks 15–20 additional metrics for cross-modal cell-type
+        concordance and cell-type specific epigenetic promoter/enhancer activity.</p></li>
+<li><p><em>+ Batch Info:</em> Unlocks 10–14 additional metrics evaluating technical confounder
+        integration across both RNA and ATAC modalities.</p></li>
+<li><p><em>+ Both (Full Metadata):</em> Unlocks the complete multiomics suite of all 62 metrics
+        across all 8 categories.</p></li>
+</ul></li>
+<li><p><strong>Unpaired Multiomics (independent scRNA and scATAC from separate cells):</strong></p><ul><li><p><em>Count Matrices Alone (RNA + ATAC):</em> Measures approximately 38–42 metrics spanning
+        unimodal distributions for both layers plus population-level cross-modal metrics
+        (co-expression module fidelity, Network Jaccard similarity, cross-modality correlation).</p></li>
+<li><p><em>+ Cell Types (Crucial for Unpaired):</em> Unlocks 15–20 additional metrics for
+        cluster-matched label transfer concordance and cell-type matched regulatory linkage.</p></li>
+<li><p><em>+ Batch Info:</em> Unlocks 7–12 additional metrics evaluating batch integration.</p></li>
+</ul></li>
+</ul></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

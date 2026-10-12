@@ -41,6 +41,27 @@ zero-inflation curves, and manifold distances between reference and simulated da
 }
 \details{
 \if{html}{\figure{workflow_diagram.png}{options: width="800" alt="scSimEval Unified Benchmarking Workflow Diagram"}}
+
+
+\strong{Metric Measurement Capacity by Data & Metadata Mode:}
+\itemize{
+  \item \strong{Count Matrix Alone (No Metadata):} Measures approximately 23 baseline metrics
+    spanning Category I (Distributional Properties: KS, Wasserstein, MAD, MAE, RMSE, OV,
+    Bhattacharyya, ECDF difference, Runs test, 2D Fasano-Franceschini, 2D Peacock, KDE test,
+    MMD, Fréchet distance), Category II (Correlations & Zero-Inflation: BCV discrepancy, dropout
+    curve midpoint/slope, mean-variance R², cell/gene Pearson correlations), and Category VI
+    (Trajectory & Lineage Dynamics: pseudotime correlation, tree height RMSE).
+  \item \strong{+ Cell Types (Optional):} Unlocks 12–15 additional metrics spanning Category III
+    (Cellular Structure & Concordance: ARI, NMI, AMI, Silhouette width, Dunn, Davies-Bouldin,
+    Calinski-Harabasz, V-measure, Neighborhood Purity, Generative Precision/Recall) and Category V
+    (Biological Signal & Downstream Fidelity: SimBench DE/DP/DM/DB/DV signal fidelity, top DEG
+    Jaccard overlap, Log2FC correlation, classifier accuracy and Macro-F1).
+  \item \strong{+ Batch Annotations (Optional):} Unlocks 7 additional metrics spanning Category IV
+    (Batch Effects & Confounder Mixing: Batch Silhouette width, local neighborhood Shannon Entropy,
+    PCR R², CMS CellMixS, Inverse Simpson Index ISI, Seurat Mixing Metric, LDF difference).
+  \item \strong{Full Metadata (Count Matrix + Cell Types + Batch):} Unlocks the complete unimodal
+    benchmarking suite of up to 55 metrics.
+}
 }
 \examples{
 data(example_scrna, package = "scSimEval")

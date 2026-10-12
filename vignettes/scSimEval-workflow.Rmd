@@ -123,6 +123,21 @@ To evaluate your datasets, `scSimEval` accepts standard single-cell matrices and
    write.csv(cell_types_df, "cell_types.csv", row.names = FALSE)
    ```
 
+### 2.2 Metric Measurement Capacity by Data & Metadata Mode
+
+`scSimEval` dynamically scales its evaluation depth based on the experimental data layers and metadata files provided:
+
+| Experiment Mode | Uploaded Inputs | Metrics Measured | Active Evaluation Categories & Scope |
+| :--- | :--- | :---: | :--- |
+| **Single-Cell** *(scRNA / scATAC)* | Count Matrix alone *(no metadata)* | **~23 Metrics** | **Cat I** (Distributional Properties, 14 metrics), **Cat II** (Correlations & Zeroes, 6 metrics), **Cat VI** (Trajectory, 2 metrics), **Cat VIII** (Scalability, 2 metrics). Evaluates basic statistical distributions, library sizes, and sparsity curves. |
+| **Single-Cell** *(scRNA / scATAC)* | Matrix + Cell Types | **~35–38 Metrics** | *Adds +12–15 metrics:* Unlocks **Cat III** (Cellular Structure & Clustering / ARI, NMI, AMI, Silhouette) and **Cat V** (Biological Signal / SimBench DE, DP, DV, top DEG Jaccard overlap). |
+| **Single-Cell** *(scRNA / scATAC)* | Matrix + Batch Info | **~30 Metrics** | *Adds +7 metrics:* Unlocks **Cat IV** (Batch Effects & Confounder Mixing / Batch Silhouette, Shannon Entropy, PCR $R^2$, CMS, ISI, Seurat mixing). |
+| **Single-Cell** *(scRNA / scATAC)* | **Full Metadata** *(Matrix + Cell Types + Batch)* | **Up to ~55 Metrics** | Unlocks the complete unimodal suite across **Categories I, II, III, IV, V, VI, and VIII**. |
+| **Paired Multiomics** *(scRNA + scATAC)* | RNA + ATAC Matrices alone | **~48 Metrics** | Unimodal distributions for both modalities (~40 metrics) PLUS **Cat VII** (Cross-Modal Coupling: FOSCTTM cell alignment, Match@1, cross-modal generation, $R_V$ coefficient, peak-to-gene linkage). |
+| **Paired Multiomics** *(scRNA + scATAC)* | **Full Metadata** *(RNA + ATAC + Cell Types + Batch)* | **All 62 Metrics** | Complete multiomics benchmark suite across all 8 canonical categories (**Categories I–VIII**). |
+| **Unpaired Multiomics** *(Independent cells)* | RNA + ATAC Matrices alone | **~38–42 Metrics** | Both unimodal distributions plus population-level coupling (co-expression module fidelity, Network Jaccard, cross-modality correlation). |
+| **Unpaired Multiomics** *(Independent cells)* | **RNA + ATAC + Cell Types (+ Batch)** | **Up to ~58 Metrics** | *Essential for unpaired designs:* Unlocks cluster-matched cross-modal label transfer concordance, cell-type regulatory linkage, and technical donor integration. |
+
 ### Step 2: Calculate Evaluation Measures
 `scSimEval` calculates 62 evaluation measures across 8 core categories without needing any artificial ground truth.
 

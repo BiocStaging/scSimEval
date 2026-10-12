@@ -244,7 +244,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -302,16 +302,16 @@ access to all 62 evaluation measures and every visualization in the
 package — without writing a single line of R code.</p>
 <p>Launch it locally in R with:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval">scSimEval</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval/">scSimEval</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/launch_scSimEval_app.html">launch_scSimEval_app</a></span><span class="op">(</span><span class="op">)</span>          <span class="co"># opens in your default browser</span></span></code></pre></div>
 <blockquote>
 <p><strong>File size limit:</strong> The app accepts uploads up to
 <strong>10 GB</strong> per file, which comfortably handles large-scale
 single-cell and multiomics datasets.</p>
 </blockquote>
-<p>The studio is organized into <strong>eight primary navigation
+<p>The studio is organized into <strong>seven primary navigation
 tabs</strong> in the top navigation bar, plus an <strong>eight-panel
-Visualizations module</strong> inside Tab 5. The sections below document
+Visualizations module</strong> inside Tab 4. The sections below document
 every tab, every control, and all export options in the order they
 appear in the application.</p>
 <hr>
@@ -325,6 +325,10 @@ explicitly highlighting simulation evaluation across single-cell RNA-seq
 multiomics (scRNA-seq + scATAC-seq) datasets against real biological
 references across 62 evaluation measures without requiring synthetic
 ground truth.</p>
+<p>In the standalone web deployment (<code>scSimEval_shiny</code>), a
+floating Google Analytics all-time pageview counter badge appears at the
+bottom-right corner, continuously reporting container-lifetime visits
+without UI latency.</p>
 <p>The four <strong>KPI cards</strong> below the hero section display:
 62 evaluation measures, 8 biological dimensions, 3 modalities (RNA /
 ATAC / Co-Assay), and the [0, 1] normalized fidelity scale.</p>
@@ -342,12 +346,16 @@ calculated benchmark tables for reporting.</p>
 <div class="section level2">
 <h2 id="tab-2-data-hub">Tab 2 — Data Hub<a class="anchor" aria-label="anchor" href="#tab-2-data-hub"></a>
 </h2>
-<p>Data ingestion and evaluation control centre. Choose one of
-<strong>four evaluation modes</strong> from the radio button panel on
-the left sidebar:</p>
+<p>Data ingestion and evaluation control centre. It features three
+comprehensive subtabs:</p>
 <div class="section level3">
-<h3 id="mode-1-pre-computed-benchmark-demo-data">Mode 1 — Pre-Computed Benchmark (Demo Data)<a class="anchor" aria-label="anchor" href="#mode-1-pre-computed-benchmark-demo-data"></a>
+<h3 id="subtab-1-data-ingestion-benchmark-studio">Subtab 1: Data Ingestion &amp; Benchmark Studio<a class="anchor" aria-label="anchor" href="#subtab-1-data-ingestion-benchmark-studio"></a>
 </h3>
+<p>Choose one of <strong>four evaluation modes</strong> from the radio
+button panel on the left sidebar:</p>
+<div class="section level4">
+<h4 id="mode-1-pre-computed-benchmark-demo-data">Mode 1 — Pre-Computed Benchmark (Demo Data)<a class="anchor" aria-label="anchor" href="#mode-1-pre-computed-benchmark-demo-data"></a>
+</h4>
 <p>Click <strong>Load Demo Benchmark</strong> to instantly populate the
 app with pre-computed multi-dataset results across <strong>Simulator 1
 to Simulator 6</strong> across all 62 measures. No file uploads
@@ -363,209 +371,230 @@ App Demo Data (<code>inst/shiny/scSimEvalApp/data/</code>):</strong> A
 rich pre-computed benchmark results archive (6 simulators × 62 metrics ×
 2 datasets = 744 metric observations) accompanied by reference and
 simulated count matrices (100 genes × 50 cells). This gives web users an
-immediate, zero-latency tour of all 8 tabs, ranking leaderboards, bubble
+immediate, zero-latency tour of all tabs, ranking leaderboards, bubble
 matrices, and 8 visualization panels without requiring computationally
 intensive matrix evaluations.</p>
 </blockquote>
 </div>
-<div class="section level3">
-<h3 id="mode-2-single-cell-evaluation-scrna-seq-scatac-seq">Mode 2 — Single-Cell Evaluation (scRNA-seq / scATAC-seq)<a class="anchor" aria-label="anchor" href="#mode-2-single-cell-evaluation-scrna-seq-scatac-seq"></a>
-</h3>
+<div class="section level4">
+<h4 id="mode-2-single-cell-evaluation-scrna-seq-scatac-seq">Mode 2 — Single-Cell Evaluation (scRNA-seq / scATAC-seq)<a class="anchor" aria-label="anchor" href="#mode-2-single-cell-evaluation-scrna-seq-scatac-seq"></a>
+</h4>
 <p>Evaluate one or more unimodal count-matrix simulators across single
-or multiple experimental datasets.</p>
+or multiple experimental datasets. * <strong>Reference Count
+Matrix:</strong> Real empirical cells. Formats: <code>.rds</code>,
+<code>.csv</code>, <code>.tsv</code>, <code>.txt</code>,
+<code>.xlsx</code>. * <strong>Number of Single-Cell Simulators
+(1–6):</strong> Generates matching upload cards with simulator name,
+simulated count matrix, runtime (seconds), and peak RAM (MiB). *
+<strong>Cell Type Labels (Optional):</strong> Vector / factor / 2-column
+table (<code>Cell_ID,Cell_Type</code>). Unlocks +12–15 clustering and
+biological signal metrics. * <strong>Batch Annotations
+(Optional):</strong> Vector / factor / 2-column table
+(<code>Cell_ID,Batch</code>). Unlocks +7 batch mixing metrics.</p>
+</div>
+<div class="section level4">
+<h4 id="mode-3-multiomics-evaluation-scrna-seq-scatac-seq">Mode 3 — Multiomics Evaluation (scRNA-seq + scATAC-seq)<a class="anchor" aria-label="anchor" href="#mode-3-multiomics-evaluation-scrna-seq-scatac-seq"></a>
+</h4>
+<ul>
+<li>
+<strong>Paired Co-assay:</strong> Same individual cells in both
+modalities (10x Multiome, SHARE-seq). All 62 metrics including FOSCTTM,
+<a href="mailto:Match@1" class="email">Match@1</a>, and peak-to-gene
+linkage.</li>
+<li>
+<strong>Unpaired Profiling:</strong> Separate cells from the same
+tissue. Population-level cross-modal metrics evaluated; cell-pairing
+metrics safely skipped.</li>
+</ul>
+</div>
+<div class="section level4">
+<h4 id="metric-measurement-capacity-by-upload-configuration">Metric Measurement Capacity by Upload Configuration<a class="anchor" aria-label="anchor" href="#metric-measurement-capacity-by-upload-configuration"></a>
+</h4>
+<p>The Shiny app dynamically scales the number of quantitative metrics
+measured based on the uploaded files:</p>
 <table class="table">
 <colgroup>
-<col width="27%">
-<col width="40%">
-<col width="31%">
+<col width="23%">
+<col width="23%">
+<col width="29%">
+<col width="23%">
 </colgroup>
 <thead><tr class="header">
-<th>Step</th>
-<th>Control</th>
-<th>Notes</th>
+<th align="left">Experiment Mode</th>
+<th align="left">Uploaded Inputs</th>
+<th align="center">Metrics Measured</th>
+<th align="left">Active Evaluation Categories &amp; Scope</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><strong>1</strong></td>
-<td><strong>Reference Count Matrix</strong></td>
-<td>Real empirical cells. Formats: <code>.rds</code>, <code>.csv</code>,
-<code>.tsv</code>, <code>.txt</code>, <code>SingleCellExperiment</code>,
-<code>Seurat</code>.</td>
+<td align="left">
+<strong>Single-Cell</strong> <em>(scRNA /
+scATAC)</em>
+</td>
+<td align="left">Count Matrix alone <em>(no metadata)</em>
+</td>
+<td align="center"><strong>~23 Metrics</strong></td>
+<td align="left">
+<strong>Cat I</strong> (Distributional, 14 metrics),
+<strong>Cat II</strong> (Correlations &amp; Zeroes, 6 metrics),
+<strong>Cat VI</strong> (Trajectory, 2 metrics), <strong>Cat
+VIII</strong> (Scalability, 2 metrics).</td>
 </tr>
 <tr class="even">
-<td><strong>2</strong></td>
-<td><strong>Number of Single-Cell Simulators</strong></td>
-<td>1 – 6. Generates matching upload and configuration cards.</td>
+<td align="left">
+<strong>Single-Cell</strong> <em>(scRNA /
+scATAC)</em>
+</td>
+<td align="left">Matrix + Cell Types</td>
+<td align="center"><strong>~35–38 Metrics</strong></td>
+<td align="left">
+<em>Adds +12–15 metrics:</em> Unlocks <strong>Cat
+III</strong> (Cellular Structure / ARI, NMI, AMI, Silhouette) and
+<strong>Cat V</strong> (Biological Signal / SimBench DE, DP, DV, top DEG
+Jaccard).</td>
 </tr>
 <tr class="odd">
-<td><strong>2</strong></td>
-<td><strong>Per-Simulator Fields</strong></td>
-<td>Simulator Name, simulated count matrix, runtime (seconds), peak RAM
-(MiB).</td>
+<td align="left">
+<strong>Single-Cell</strong> <em>(scRNA /
+scATAC)</em>
+</td>
+<td align="left">Matrix + Batch Info</td>
+<td align="center"><strong>~30 Metrics</strong></td>
+<td align="left">
+<em>Adds +7 metrics:</em> Unlocks <strong>Cat
+IV</strong> (Batch Mixing / Batch Silhouette, Shannon Entropy, PCR
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>,
+CMS, ISI, Seurat mixing).</td>
 </tr>
 <tr class="even">
-<td><strong>3</strong></td>
-<td>
-<strong>Cell Type Labels</strong> (optional)</td>
-<td>
-<code>.rds</code> (factor / vector / data.frame) or
-<code>.csv</code>/<code>.tsv</code>. Downloadable sample templates
-(<code>Cell_ID,Cell_Type</code>) provided.</td>
+<td align="left">
+<strong>Single-Cell</strong> <em>(scRNA /
+scATAC)</em>
+</td>
+<td align="left">
+<strong>Full Metadata</strong> <em>(Matrix + Cell Types
++ Batch)</em>
+</td>
+<td align="center"><strong>Up to ~55 Metrics</strong></td>
+<td align="left">Unlocks the complete unimodal suite across
+<strong>Categories I, II, III, IV, V, VI, and VIII</strong>.</td>
 </tr>
 <tr class="odd">
-<td><strong>3</strong></td>
-<td>
-<strong>Batch Annotations</strong> (optional)</td>
-<td>Same formats as cell types (<code>Cell_ID,Batch</code>).
-Downloadable sample CSV templates provided.</td>
+<td align="left">
+<strong>Paired Multiomics</strong> <em>(scRNA +
+scATAC)</em>
+</td>
+<td align="left">RNA + ATAC Matrices alone</td>
+<td align="center"><strong>~48 Metrics</strong></td>
+<td align="left">Unimodal distributions for both modalities (~40
+metrics) PLUS <strong>Cat VII</strong> (Cross-Modal Coupling: FOSCTTM,
+<a href="mailto:Match@1" class="email">Match@1</a>, generation,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>R</mi><mi>V</mi></msub><annotation encoding="application/x-tex">R_V</annotation></semantics></math>,
+peak-to-gene linkage).</td>
 </tr>
 <tr class="even">
-<td>—</td>
-<td><strong>Append to current benchmark</strong></td>
-<td>Adds new results alongside existing ones.</td>
+<td align="left">
+<strong>Paired Multiomics</strong> <em>(scRNA +
+scATAC)</em>
+</td>
+<td align="left">
+<strong>Full Metadata</strong> <em>(RNA + ATAC + Cell
+Types + Batch)</em>
+</td>
+<td align="center"><strong>All 62 Metrics</strong></td>
+<td align="left">Complete multiomics benchmark suite across all 8
+canonical categories (<strong>Categories I–VIII</strong>).</td>
 </tr>
 <tr class="odd">
-<td>—</td>
-<td><strong>Evaluate Single-Cell Simulators</strong></td>
-<td>Triggers the full 50+ metric pipeline.</td>
+<td align="left">
+<strong>Unpaired Multiomics</strong> <em>(Independent
+cells)</em>
+</td>
+<td align="left">RNA + ATAC Matrices alone</td>
+<td align="center"><strong>~38–42 Metrics</strong></td>
+<td align="left">Both unimodal distributions plus population coupling
+(co-expression module fidelity, Network Jaccard, cross-modality
+correlation).</td>
+</tr>
+<tr class="even">
+<td align="left">
+<strong>Unpaired Multiomics</strong> <em>(Independent
+cells)</em>
+</td>
+<td align="left"><strong>RNA + ATAC + Cell Types (+ Batch)</strong></td>
+<td align="center"><strong>Up to ~58 Metrics</strong></td>
+<td align="left">
+<em>Essential for unpaired:</em> Unlocks
+cluster-matched label transfer, cell-type regulatory linkage, and
+technical donor integration.</td>
 </tr>
 </tbody>
 </table>
 </div>
-<div class="section level3">
-<h3 id="mode-3-multiomics-evaluation-scrna-seq-scatac-seq">Mode 3 — Multiomics Evaluation (scRNA-seq + scATAC-seq)<a class="anchor" aria-label="anchor" href="#mode-3-multiomics-evaluation-scrna-seq-scatac-seq"></a>
-</h3>
-<table class="table">
-<colgroup>
-<col width="40%">
-<col width="59%">
-</colgroup>
-<thead><tr class="header">
-<th>Subtype</th>
-<th>Description</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><strong>Paired Co-assay</strong></td>
-<td>Same individual cells in both modalities (10x Multiome, SHARE-seq).
-All 62 metrics including FOSCTTM and <a href="mailto:Match@1" class="email">Match@1</a>.</td>
-</tr>
-<tr class="even">
-<td><strong>Unpaired Profiling</strong></td>
-<td>Separate cells from same tissue. Population-level cross-modal
-metrics evaluated; cell-pairing metrics safely skipped.</td>
-</tr>
-</tbody>
-</table>
-<table class="table">
-<colgroup>
-<col width="27%">
-<col width="40%">
-<col width="31%">
-</colgroup>
-<thead><tr class="header">
-<th>Step</th>
-<th>Control</th>
-<th>Notes</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><strong>1</strong></td>
-<td><strong>Reference RNA Count Matrix</strong></td>
-<td>Genes × cells.</td>
-</tr>
-<tr class="even">
-<td><strong>1</strong></td>
-<td><strong>Reference ATAC Count Matrix</strong></td>
-<td>Peaks × cells.</td>
-</tr>
-<tr class="odd">
-<td><strong>2</strong></td>
-<td><strong>Number of Multiomics Simulators</strong></td>
-<td>1 – 5. Generates matching upload fields.</td>
-</tr>
-<tr class="even">
-<td><strong>2</strong></td>
-<td><strong>Per-Simulator Fields</strong></td>
-<td>Simulated RNA matrix, simulated ATAC matrix, name, runtime
-(seconds), peak RAM (MiB).</td>
-</tr>
-<tr class="odd">
-<td><strong>3</strong></td>
-<td>
-<strong>Cell Type Labels / Batch</strong> (optional)</td>
-<td>Applied to RNA modality.</td>
-</tr>
-<tr class="even">
-<td>—</td>
-<td><strong>Evaluate Multiomics Simulators</strong></td>
-<td>Runs the full 62-metric multiomics pipeline.</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level3">
-<h3 id="mode-4-upload-pre-computed-benchmark-table--rds--csv">Mode 4 — Upload Pre-Computed Benchmark Table (.rds / .csv)<a class="anchor" aria-label="anchor" href="#mode-4-upload-pre-computed-benchmark-table--rds--csv"></a>
-</h3>
+<div class="section level4">
+<h4 id="mode-4-upload-pre-computed-benchmark-table--rds--csv">Mode 4 — Upload Pre-Computed Benchmark Table (.rds / .csv)<a class="anchor" aria-label="anchor" href="#mode-4-upload-pre-computed-benchmark-table--rds--csv"></a>
+</h4>
 <p>Load output previously saved from
 <code><a href="../reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy()</a></code>,
 <code><a href="../reference/evaluate_multiomics_accuracy.html">evaluate_multiomics_accuracy()</a></code>, or
 <code><a href="../reference/evaluate_multiple_datasets.html">evaluate_multiple_datasets()</a></code>.</p>
 </div>
+</div>
 <div class="section level3">
-<h3 id="main-panel-utilities">Main Panel Utilities<a class="anchor" aria-label="anchor" href="#main-panel-utilities"></a>
+<h3 id="subtab-2-view-uploaded-data-matrices">Subtab 2: View Uploaded Data &amp; Matrices<a class="anchor" aria-label="anchor" href="#subtab-2-view-uploaded-data-matrices"></a>
 </h3>
-<table class="table">
-<colgroup>
-<col width="50%">
-<col width="50%">
-</colgroup>
-<thead><tr class="header">
-<th>Section</th>
-<th>Content</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><strong>Status Banner</strong></td>
-<td>Number of simulators loaded and total metrics computed</td>
-</tr>
-<tr class="even">
-<td><strong>Dataset Properties Summary Table</strong></td>
-<td>Comprehensive per-matrix QC: Cells (N), Features (P), Sparsity (%),
-Cell Types, Batches, Median Library Size, Median Detected Features, Mean
-Expression</td>
-</tr>
-<tr class="odd">
-<td><strong>HPC Cluster Batch Script Generator</strong></td>
-<td>Export automated SLURM, PBS, or Bash cluster execution scripts to
-run heavy benchmarks offline on compute nodes</td>
-</tr>
-<tr class="even">
-<td><strong>Download Dataset Summary</strong></td>
-<td>Export properties table as CSV</td>
-</tr>
-</tbody>
-</table>
+<p>Interactive matrix viewer supporting browsing, filtering, and summary
+statistics across all loaded biological reference and simulated count
+matrices.</p>
+</div>
+<div class="section level3">
+<h3 id="subtab-3-dataset-properties-summary-hpc-cluster-execution">Subtab 3: Dataset Properties Summary &amp; HPC Cluster
+Execution<a class="anchor" aria-label="anchor" href="#subtab-3-dataset-properties-summary-hpc-cluster-execution"></a>
+</h3>
+<ul>
+<li>
+<strong>Dataset Properties Summary Table:</strong> Comprehensive
+per-matrix QC: Cells (N), Features (P), Sparsity (%), Cell Types,
+Batches, Median Library Size, Median Detected Features, Mean
+Expression.</li>
+<li>
+<strong>HPC Cluster Batch Script Generator:</strong> Export
+automated SLURM, PBS, or Bash cluster execution scripts to run heavy
+benchmarks offline on compute nodes.</li>
+</ul>
 <hr>
 </div>
 </div>
 <div class="section level2">
-<h2 id="tab-3-leaderboard-simulator-rankings">Tab 3 — Leaderboard &amp; Simulator Rankings<a class="anchor" aria-label="anchor" href="#tab-3-leaderboard-simulator-rankings"></a>
+<h2 id="tab-3-comparative-bubble-matrix-leaderboard">Tab 3 — Comparative Bubble Matrix &amp; Leaderboard<a class="anchor" aria-label="anchor" href="#tab-3-comparative-bubble-matrix-leaderboard"></a>
 </h2>
-<p>Comprehensive composite fidelity leaderboard across all 8 evaluation
-categories:</p>
+<div class="section level3">
+<h3 id="subtab-1-comparative-bubble-matrix-figure">Subtab 1: Comparative Bubble Matrix Figure<a class="anchor" aria-label="anchor" href="#subtab-1-comparative-bubble-matrix-figure"></a>
+</h3>
+<p>The flagship visualization: every simulator × all 62 metrics in one
+colour-coded matrix. Bubble <strong>diameter</strong> is proportional to
+the normalized fidelity score. Scores ≥ 0.96 are rendered as bold square
+glyphs. Simulators are rank-ordered top-to-bottom by composite average
+score. * <strong>Multi-Dataset Selector Bar:</strong> Switch seamlessly
+between <strong>All Datasets (Cross-Dataset Average)</strong> or inspect
+individual datasets (<strong>Dataset 1</strong>, <strong>Dataset
+2</strong>, …, <strong>Dataset N</strong>) separately. *
+<strong>Minimalist vs Publication Matrix:</strong> Toggle between a
+sleek, dot-matrix view and a fully annotated publication matrix. *
+<strong>Confirmation &amp; Plot Action Button:</strong> Click
+<strong>Confirm &amp; Generate Plot</strong> to render with app-wide
+loading indicators. * <strong>High-Resolution Exports &amp; R
+Script:</strong> Download 600 DPI JPEG, vector PDF, or a
+<strong>Download R Script</strong> providing the complete analytical
+workflow with ggplot2 code.</p>
+</div>
+<div class="section level3">
+<h3 id="subtab-2-fidelity-leaderboard">Subtab 2: Fidelity Leaderboard<a class="anchor" aria-label="anchor" href="#subtab-2-fidelity-leaderboard"></a>
+</h3>
 <ul>
 <li>
 <strong>Simulator Ranking Cards &amp; Podiums:</strong> Visual
 podium ranking simulators by overall composite fidelity.</li>
-<li>
-<strong>Category Score Breakdown:</strong> Detailed breakdown of
-performance per simulator across each individual category
-(Distributional Properties, Clustering, Biological Signal, Scalability,
-etc.).</li>
-<li>
-<strong>Radar / Star Composite Plots:</strong> Multi-axis radial
-plots highlighting simulator trade-offs, strengths, and weaknesses.</li>
 <li>
 <strong>Custom Category Weight Sliders:</strong> Interactively
 adjust the relative importance of each category to recalculate composite
@@ -576,106 +605,62 @@ table as CSV.</li>
 </ul>
 <hr>
 </div>
-<div class="section level2">
-<h2 id="tab-4-comparative-bubble-matrix">Tab 4 — Comparative Bubble Matrix<a class="anchor" aria-label="anchor" href="#tab-4-comparative-bubble-matrix"></a>
-</h2>
-<p>The flagship visualization: every simulator × all 62 metrics in one
-colour-coded matrix. Bubble <strong>diameter</strong> is proportional to
-the normalized fidelity score. Scores ≥ 0.96 are rendered as bold square
-glyphs. Simulators are rank-ordered top-to-bottom by composite average
-score.</p>
-<ul>
-<li>
-<strong>Multi-Dataset Selector Bar:</strong> Switch seamlessly
-between <strong>All Datasets (Cross-Dataset Average)</strong> or inspect
-individual datasets (<strong>Dataset 1</strong>, <strong>Dataset
-2</strong>, …, <strong>Dataset N</strong>) separately.</li>
-<li>
-<strong>Minimalist vs Publication Matrix:</strong> Toggle between a
-sleek, dot-matrix view and a fully annotated publication matrix.</li>
-<li>
-<strong>Category &amp; Modality Filtering:</strong> Filter metrics
-by modality (All Categories, RNA-Specific, ATAC-Specific, or Cross-Modal
-Coupling).</li>
-<li>
-<strong>High-Resolution Exports:</strong> Export publication figures
-in 600 DPI JPEG or vectorized PDF.</li>
-<li>
-<strong>Download Standalone R Script:</strong> Generate a 100%
-self-contained R script with embedded data and custom ggplot2 code to
-reproduce the exact bubble matrix in standalone R outside Shiny.</li>
-</ul>
-<hr>
 </div>
 <div class="section level2">
-<h2 id="tab-5-visualizations">Tab 5 — Visualizations<a class="anchor" aria-label="anchor" href="#tab-5-visualizations"></a>
+<h2 id="tab-4-visualizations">Tab 4 — Visualizations<a class="anchor" aria-label="anchor" href="#tab-4-visualizations"></a>
 </h2>
 <p>Eight diagnostic sub-panels accessed via the <strong>pill navigation
 bar</strong>. Every sub-panel is equipped with the <strong>Global
 Multi-Dataset Selector Bar</strong> (allowing inspection of All Datasets
-Average or specific datasets), active dataset badges, 600 DPI JPEG / PDF
-downloads, and a <strong>Download R Script</strong> button for instant
-reproducibility:</p>
-<div class="section level3">
-<h3 id="sub-panel-1-evaluation-summary">Sub-panel 1 — Evaluation Summary<a class="anchor" aria-label="anchor" href="#sub-panel-1-evaluation-summary"></a>
-</h3>
-<p><code><a href="../reference/plot_evaluation_summary.html">plot_evaluation_summary()</a></code> — rank-ordered horizontal bar
-chart across all 8 categories and composite score.</p>
-</div>
-<div class="section level3">
-<h3 id="sub-panel-2-distribution-qc">Sub-panel 2 — Distribution QC<a class="anchor" aria-label="anchor" href="#sub-panel-2-distribution-qc"></a>
-</h3>
-<p><code><a href="../reference/plot_distribution_qc.html">plot_distribution_qc()</a></code> — grid comparing expression
+Average or specific datasets), active dataset badges, <strong>Confirm
+&amp; Generate Plot</strong> buttons, app-wide processing overlays, 600
+DPI JPEG / PDF downloads, and a <strong>Download R Script</strong>
+workflow generator:</p>
+<ul>
+<li>
+<strong>Sub-panel 1 — Evaluation Summary:</strong>
+<code><a href="../reference/plot_evaluation_summary.html">plot_evaluation_summary()</a></code> — rank-ordered horizontal bar
+chart across all 8 categories and composite score.</li>
+<li>
+<strong>Sub-panel 2 — Distribution QC:</strong>
+<code><a href="../reference/plot_distribution_qc.html">plot_distribution_qc()</a></code> — grid comparing expression
 densities, ECDF curves, KS distances, library sizes, and zero-inflation
-curves between reference and simulated cells.</p>
-</div>
-<div class="section level3">
-<h3 id="sub-panel-3-scalability-benchmark">Sub-panel 3 — Scalability Benchmark<a class="anchor" aria-label="anchor" href="#sub-panel-3-scalability-benchmark"></a>
-</h3>
-<p><code><a href="../reference/plot_scalability_benchmark.html">plot_scalability_benchmark()</a></code> — runtime (seconds) and
-memory (peak RAM in <strong>MiB</strong>) dashboards with Pareto
-efficiency frontiers, throughput (cells/sec), and resource cost
-index.</p>
-</div>
-<div class="section level3">
-<h3 id="sub-panel-4-metric-plots">Sub-panel 4 — Metric Plots<a class="anchor" aria-label="anchor" href="#sub-panel-4-metric-plots"></a>
-</h3>
-<p><code><a href="../reference/plot_metric_boxplots.html">plot_metric_boxplots()</a></code> /
+curves between reference and simulated cells.</li>
+<li>
+<strong>Sub-panel 3 — Scalability Benchmark:</strong>
+<code><a href="../reference/plot_scalability_benchmark.html">plot_scalability_benchmark()</a></code> — runtime (seconds) and memory
+(peak RAM in <strong>MiB</strong>) dashboards with Pareto efficiency
+frontiers, throughput (cells/sec), and resource cost index.</li>
+<li>
+<strong>Sub-panel 4 — Metric Plots:</strong>
+<code><a href="../reference/plot_metric_boxplots.html">plot_metric_boxplots()</a></code> /
 <code><a href="../reference/plot_category_metric_bars.html">plot_category_metric_bars()</a></code> /
 <code><a href="../reference/plot_individual_metric_bar.html">plot_individual_metric_bar()</a></code> — score distribution boxplots
-and barplots across categories with Raw vs Normalized view toggles.</p>
-</div>
-<div class="section level3">
-<h3 id="sub-panel-5-metric-heatmap">Sub-panel 5 — Metric Heatmap<a class="anchor" aria-label="anchor" href="#sub-panel-5-metric-heatmap"></a>
-</h3>
-<p><code><a href="../reference/plot_metric_heatmap.html">plot_metric_heatmap()</a></code> — method × metric grid with exact
+and barplots across categories with Raw vs Normalized view toggles.</li>
+<li>
+<strong>Sub-panel 5 — Metric Heatmap:</strong>
+<code><a href="../reference/plot_metric_heatmap.html">plot_metric_heatmap()</a></code> — method × metric grid with exact
 scores in bold text, direction-aware fill colours, and unsupervised
-hierarchical clustering.</p>
-</div>
-<div class="section level3">
-<h3 id="sub-panel-6-pca-ordination">Sub-panel 6 — PCA Ordination<a class="anchor" aria-label="anchor" href="#sub-panel-6-pca-ordination"></a>
-</h3>
-<p><code><a href="../reference/plot_metric_pca.html">plot_metric_pca()</a></code> — simulators projected into
-performance space with discriminating metric vector loadings.</p>
-</div>
-<div class="section level3">
-<h3 id="sub-panel-7-mds-metric-space">Sub-panel 7 — MDS Metric Space<a class="anchor" aria-label="anchor" href="#sub-panel-7-mds-metric-space"></a>
-</h3>
-<p><code><a href="../reference/plot_metric_mds.html">plot_metric_mds()</a></code> — Multi-Dimensional Scaling ordination
-mapping simulator algorithmic proximity.</p>
-</div>
-<div class="section level3">
-<h3 id="sub-panel-8-cell-embeddings-umap-t-sne-pca">Sub-panel 8 — Cell Embeddings (UMAP, t-SNE &amp; PCA)<a class="anchor" aria-label="anchor" href="#sub-panel-8-cell-embeddings-umap-t-sne-pca"></a>
-</h3>
-<p><code><a href="../reference/compute_dataset_embeddings.html">compute_dataset_embeddings()</a></code> +
+hierarchical clustering.</li>
+<li>
+<strong>Sub-panel 6 — PCA Ordination:</strong>
+<code><a href="../reference/plot_metric_pca.html">plot_metric_pca()</a></code> — simulators projected into performance
+space with discriminating metric vector loadings.</li>
+<li>
+<strong>Sub-panel 7 — MDS Metric Space:</strong>
+<code><a href="../reference/plot_metric_mds.html">plot_metric_mds()</a></code> — Multi-Dimensional Scaling ordination
+mapping simulator algorithmic proximity.</li>
+<li>
+<strong>Sub-panel 8 — Cell Embeddings (UMAP, t-SNE &amp;
+PCA):</strong> <code><a href="../reference/compute_dataset_embeddings.html">compute_dataset_embeddings()</a></code> +
 <code><a href="../reference/plot_dataset_embeddings.html">plot_dataset_embeddings()</a></code> — dimension reduction comparing
 reference cells directly to simulated cells, with cell-type cluster
-fidelity metrics.</p>
+fidelity metrics.</li>
+</ul>
 <hr>
 </div>
-</div>
 <div class="section level2">
-<h2 id="tab-6-benchmark-results-export">Tab 6 — Benchmark Results &amp; Export<a class="anchor" aria-label="anchor" href="#tab-6-benchmark-results-export"></a>
+<h2 id="tab-5-benchmark-results-export">Tab 5 — Benchmark Results &amp; Export<a class="anchor" aria-label="anchor" href="#tab-5-benchmark-results-export"></a>
 </h2>
 <p>The central hub for data exploration and multi-format exports:</p>
 <div class="section level3">
@@ -694,72 +679,35 @@ where 1.0 represents top fidelity.</p>
 <div class="section level3">
 <h3 id="multi-format-exports">Multi-Format Exports<a class="anchor" aria-label="anchor" href="#multi-format-exports"></a>
 </h3>
-<table class="table">
-<colgroup>
-<col width="27%">
-<col width="27%">
-<col width="44%">
-</colgroup>
-<thead><tr class="header">
-<th>Button</th>
-<th>Format</th>
-<th>Description</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><strong>Excel Workbook (.xlsx)</strong></td>
-<td>Multi-sheet workbook (<code>.xlsx</code>)</td>
-<td>Full benchmark scores, method rankings, dataset metadata, and
-scalability metrics</td>
-</tr>
-<tr class="even">
-<td><strong>CSV Table (.csv)</strong></td>
-<td>Flat tidy table (<code>.csv</code>)</td>
-<td>Comma-separated values for Python (pandas), Excel, or R</td>
-</tr>
-<tr class="odd">
-<td><strong>Tab-delimited (.tsv)</strong></td>
-<td>Tab-delimited table (<code>.tsv</code>)</td>
-<td>Clean TSV export for command-line bioinformatics workflows</td>
-</tr>
-<tr class="even">
-<td><strong>R Data Object (.rds)</strong></td>
-<td>Native R serialized object (<code>.rds</code>)</td>
-<td>Ready for <code><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS()</a></code> in downstream R pipelines</td>
-</tr>
-<tr class="odd">
-<td><strong>Complete Archive (.zip)</strong></td>
-<td>Full ZIP data archive (<code>.zip</code>)</td>
-<td>All tables, rankings, dataset QC summaries, and explanatory README
-documentation</td>
-</tr>
-</tbody>
-</table>
+<p>Export benchmark results in <strong>Excel Workbook (.xlsx)</strong>,
+<strong>CSV Table (.csv)</strong>, <strong>Tab-delimited
+(.tsv)</strong>, <strong>R Data Object (.rds)</strong>, or
+<strong>Complete Archive (.zip)</strong>.</p>
 <hr>
 </div>
 </div>
 <div class="section level2">
-<h2 id="tab-7-help-getting-started">Tab 7 — Help &amp; Getting Started<a class="anchor" aria-label="anchor" href="#tab-7-help-getting-started"></a>
+<h2 id="tab-6-help-getting-started">Tab 6 — Help &amp; Getting Started<a class="anchor" aria-label="anchor" href="#tab-6-help-getting-started"></a>
 </h2>
 <p>An in-app reference guide structured into seven sections: 1.
 <strong>Workflow Architecture &amp; Pipeline</strong> — 4-step pipeline
 diagram and multi-dataset processing. 2. <strong>The Eight Evaluation
 Categories</strong> — tabular reference for all 62 metrics, highlighting
-peak RAM in <strong>MiB</strong>. 3. <strong>Score Normalization
-Pipeline</strong> — direction inversion, min-max scaling, and raw vs
-normalized score reporting. 4. <strong>Comprehensive Guide to the 8 App
-Tabs</strong> — detailed walkthrough of each application module. 5.
+peak RAM in <strong>MiB</strong>. 3. <strong>Metric Measurement Capacity
+by Data &amp; Metadata Mode</strong> — detailed reference table
+documenting metric numbers and unlocked categories. 4. <strong>Score
+Normalization Pipeline</strong> — direction inversion, min-max scaling,
+and raw vs normalized score reporting. 5. <strong>Comprehensive Guide to
+App Tabs</strong> — detailed walkthrough of each application module. 6.
 <strong>Input Data Formats &amp; Metadata Templates</strong> — matrix
 structures (genes × cells), cell-type and batch annotation vectors, and
-sample CSV downloads. 6. <strong>Online Documentation Links</strong> —
-direct link to the GitHub Pages site (<a href="https://kabilanbio.github.io/scSimEval" class="uri">https://kabilanbio.github.io/scSimEval</a>). 7.
-<strong>Computational Sizing, RAM (MiB/GiB), &amp; Guidelines</strong> —
-hardware recommendations contrasting Cloud, Local Workstation, and HPC
-clusters.</p>
+sample CSV downloads. 7. <strong>Computational Sizing, RAM (MiB/GiB),
+&amp; Guidelines</strong> — hardware recommendations contrasting Cloud,
+Local Workstation, and HPC clusters.</p>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="tab-8-contact">Tab 8 — Contact<a class="anchor" aria-label="anchor" href="#tab-8-contact"></a>
+<h2 id="tab-7-contact">Tab 7 — Contact<a class="anchor" aria-label="anchor" href="#tab-7-contact"></a>
 </h2>
 <p>Information regarding the development team at Division of
 Agricultural Bioinformatics, ICAR-IASRI, maintainer contacts, GitHub

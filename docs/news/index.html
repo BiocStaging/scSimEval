@@ -221,7 +221,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -254,6 +254,38 @@
       <small>Source: <a href="https://github.com/kabilanbio/scSimEval/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.99.7" id="scsimeval-0997">scSimEval 0.99.7<a class="anchor" aria-label="anchor" href="#scsimeval-0997"></a></h2>
+<div class="section level3">
+<h3 id="major-improvements-0-99-7">Major Improvements<a class="anchor" aria-label="anchor" href="#major-improvements-0-99-7"></a></h3>
+<ul><li>
+<strong>Comprehensive Metric Measurement Capacity Guidance Across All Interfaces:</strong>
+<ul><li>Embedded rigorous, multi-layered guidance documenting the exact quantitative metric measurement capacity across single-cell and multiomics experiment modes based on uploaded inputs:
+<ul><li>
+<strong>Single-cell count matrix alone:</strong> Evaluates <strong>~23 baseline metrics</strong> spanning Category I (Distributional Properties: KS, Wasserstein, MAD, MAE, RMSE, OV, Bhattacharyya, ECDF diff, Runs test, 2D Fasano-Franceschini, 2D Peacock, KDE test, MMD, Fréchet single-cell distance), Category II (Correlations &amp; Zeroes: BCV discrepancy, dropout curve midpoint/slope, mean-variance <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>, cell/gene Pearson correlations), Category VI (Trajectory Dynamics), and Category VIII (Scalability).</li>
+<li>
+<strong>+ Cell Types (Optional):</strong> Adds <strong>+12–15 metrics</strong> unlocking Category III (Cellular Structure &amp; Clustering / ARI, NMI, AMI, Silhouette width, Dunn index) and Category V (Biological Signal Fidelity / SimBench DE, DP, DV, top DEG Jaccard overlap, log2FC correlation).</li>
+<li>
+<strong>+ Batch Annotations (Optional):</strong> Adds <strong>+7 metrics</strong> unlocking Category IV (Batch Mixing &amp; Technical Confounders / Batch Silhouette, Shannon Entropy, PCR <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>, CMS CellMixS, ISI, Seurat mixing metric, LDF difference).</li>
+<li>
+<strong>Full Single-Cell Metadata:</strong> Unlocks up to <strong>~55 metrics</strong> across Categories I–VI and VIII.</li>
+<li>
+<strong>Paired Multiomics (RNA + ATAC alone):</strong> Evaluates <strong>~48 metrics</strong> across unimodal layers plus Category VII Cross-Modal Coupling (FOSCTTM cell alignment score, <a href="mailto:Match@1" class="email">Match@1</a> nearest neighbor accuracy, cross-modal generative prediction accuracy/F1, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>R</mi><mi>V</mi></msub><annotation encoding="application/x-tex">R_V</annotation></semantics></math> matrix correlation, peak-to-gene regulatory linkage), scaling to the <strong>full suite of 62 metrics</strong> with metadata.</li>
+<li>
+<strong>Unpaired Multiomics:</strong> Evaluates <strong>~38–42 metrics</strong> baseline, with cell-type labels unlocking cluster-matched label transfer and cell-type regulatory linkage (up to ~58 metrics).</li>
+</ul></li>
+</ul></li>
+<li>
+<strong>End-to-End Analytical Workflow R Script Generators:</strong>
+<ul><li>Upgraded the standalone R script downloaders across all 8 diagnostic visualization panels and the Comparative Bubble Matrix. Rather than outputting pre-computed static plot scripts, generated scripts now provide the complete logical workflow of the analysis: reading uploaded or built-in count matrices, executing metric calculations, standardizing benchmark scores, and rendering publication-ready ggplot2 figures with custom styling and export parameters.</li>
+</ul></li>
+<li>
+<strong>Inbuilt and Standalone Shiny Studio Ecosystem Alignment:</strong>
+<ul><li>Fully synchronized the package’s inbuilt Shiny application (<code><a href="../reference/launch_scSimEval_app.html">launch_scSimEval_app()</a></code>) and the standalone deployment repository (<code>scSimEval_shiny</code>) to complete feature parity, including the four-mode Data Hub, confirmation buttons, app-wide loading indicators, and HPC batch execution script generators.</li>
+<li>Retained the standalone application’s Google Analytics 4 pageview counter with persistent container-lifetime session tracking initialized to 0 views.</li>
+</ul></li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.99.6" id="scsimeval-0996">scSimEval 0.99.6<a class="anchor" aria-label="anchor" href="#scsimeval-0996"></a></h2>
 <div class="section level3">

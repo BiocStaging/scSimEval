@@ -6,6 +6,27 @@
 #'
 #' \if{html}{\figure{workflow_diagram.png}{options: width="800" alt="scSimEval Unified Benchmarking Workflow Diagram"}}
 #'
+#' @details
+#' \strong{Metric Measurement Capacity by Data & Metadata Mode:}
+#' \itemize{
+#'   \item \strong{Count Matrix Alone (No Metadata):} Measures approximately 23 baseline metrics
+#'     spanning Category I (Distributional Properties: KS, Wasserstein, MAD, MAE, RMSE, OV,
+#'     Bhattacharyya, ECDF difference, Runs test, 2D Fasano-Franceschini, 2D Peacock, KDE test,
+#'     MMD, Fréchet distance), Category II (Correlations & Zero-Inflation: BCV discrepancy, dropout
+#'     curve midpoint/slope, mean-variance R², cell/gene Pearson correlations), and Category VI
+#'     (Trajectory & Lineage Dynamics: pseudotime correlation, tree height RMSE).
+#'   \item \strong{+ Cell Types (Optional):} Unlocks 12–15 additional metrics spanning Category III
+#'     (Cellular Structure & Concordance: ARI, NMI, AMI, Silhouette width, Dunn, Davies-Bouldin,
+#'     Calinski-Harabasz, V-measure, Neighborhood Purity, Generative Precision/Recall) and Category V
+#'     (Biological Signal & Downstream Fidelity: SimBench DE/DP/DM/DB/DV signal fidelity, top DEG
+#'     Jaccard overlap, Log2FC correlation, classifier accuracy and Macro-F1).
+#'   \item \strong{+ Batch Annotations (Optional):} Unlocks 7 additional metrics spanning Category IV
+#'     (Batch Effects & Confounder Mixing: Batch Silhouette width, local neighborhood Shannon Entropy,
+#'     PCR R², CMS CellMixS, Inverse Simpson Index ISI, Seurat Mixing Metric, LDF difference).
+#'   \item \strong{Full Metadata (Count Matrix + Cell Types + Batch):} Unlocks the complete unimodal
+#'     benchmarking suite of up to 55 metrics.
+#' }
+#'
 #' @param ref_data Reference count matrix (features x cells).
 #' @param sim_data Simulated count matrix (features x cells).
 #' @param compute_bivariate Logical, whether to compute 2D bivariate tests. Default is TRUE.
@@ -270,6 +291,34 @@ evaluate_simulation_accuracy <- function(
 #' }
 #'
 #' \if{html}{\figure{workflow_diagram.png}{options: width="800" alt="scSimEval Unified Benchmarking Workflow Diagram"}}
+#'
+#' @details
+#' \strong{Multiomics Metric Measurement Capacity by Experimental Design & Metadata:}
+#' \itemize{
+#'   \item \strong{Paired Multiomics (e.g. 10x Chromium Multiome, SHARE-seq, SNARE-seq):}
+#'     \itemize{
+#'       \item \emph{Count Matrices Alone (RNA + ATAC):} Measures approximately 48 metrics spanning
+#'         both unimodal distribution layers (Categories I, II, VI, VIII across both modalities)
+#'         plus Category VII Cross-Modal Coupling (FOSCTTM alignment score, Match@1 nearest neighbor
+#'         accuracy, cross-modal generative prediction accuracy/F1, RV coefficient, and peak-to-gene
+#'         regulatory correlation).
+#'       \item \emph{+ Cell Types:} Unlocks 15–20 additional metrics for cross-modal cell-type
+#'         concordance and cell-type specific epigenetic promoter/enhancer activity.
+#'       \item \emph{+ Batch Info:} Unlocks 10–14 additional metrics evaluating technical confounder
+#'         integration across both RNA and ATAC modalities.
+#'       \item \emph{+ Both (Full Metadata):} Unlocks the complete multiomics suite of all 62 metrics
+#'         across all 8 categories.
+#'     }
+#'   \item \strong{Unpaired Multiomics (independent scRNA and scATAC from separate cells):}
+#'     \itemize{
+#'       \item \emph{Count Matrices Alone (RNA + ATAC):} Measures approximately 38–42 metrics spanning
+#'         unimodal distributions for both layers plus population-level cross-modal metrics
+#'         (co-expression module fidelity, Network Jaccard similarity, cross-modality correlation).
+#'       \item \emph{+ Cell Types (Crucial for Unpaired):} Unlocks 15–20 additional metrics for
+#'         cluster-matched label transfer concordance and cell-type matched regulatory linkage.
+#'       \item \emph{+ Batch Info:} Unlocks 7–12 additional metrics evaluating batch integration.
+#'     }
+#' }
 #'
 #' @param ref_multi Named list of reference matrices for Modality 1 and 2.
 #' @param sim_multi Named list of simulated matrices for Modality 1 and 2.

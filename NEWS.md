@@ -1,3 +1,23 @@
+# scSimEval 0.99.7
+
+## Major Improvements
+
+* **Comprehensive Metric Measurement Capacity Guidance Across All Interfaces:**
+  - Embedded rigorous, multi-layered guidance documenting the exact quantitative metric measurement capacity across single-cell and multiomics experiment modes based on uploaded inputs:
+    - **Single-cell count matrix alone:** Evaluates **~23 baseline metrics** spanning Category I (Distributional Properties: KS, Wasserstein, MAD, MAE, RMSE, OV, Bhattacharyya, ECDF diff, Runs test, 2D Fasano-Franceschini, 2D Peacock, KDE test, MMD, Fréchet single-cell distance), Category II (Correlations & Zeroes: BCV discrepancy, dropout curve midpoint/slope, mean-variance $R^2$, cell/gene Pearson correlations), Category VI (Trajectory Dynamics), and Category VIII (Scalability).
+    - **+ Cell Types (Optional):** Adds **+12–15 metrics** unlocking Category III (Cellular Structure & Clustering / ARI, NMI, AMI, Silhouette width, Dunn index) and Category V (Biological Signal Fidelity / SimBench DE, DP, DV, top DEG Jaccard overlap, log2FC correlation).
+    - **+ Batch Annotations (Optional):** Adds **+7 metrics** unlocking Category IV (Batch Mixing & Technical Confounders / Batch Silhouette, Shannon Entropy, PCR $R^2$, CMS CellMixS, ISI, Seurat mixing metric, LDF difference).
+    - **Full Single-Cell Metadata:** Unlocks up to **~55 metrics** across Categories I–VI and VIII.
+    - **Paired Multiomics (RNA + ATAC alone):** Evaluates **~48 metrics** across unimodal layers plus Category VII Cross-Modal Coupling (FOSCTTM cell alignment score, Match@1 nearest neighbor accuracy, cross-modal generative prediction accuracy/F1, $R_V$ matrix correlation, peak-to-gene regulatory linkage), scaling to the **full suite of 62 metrics** with metadata.
+    - **Unpaired Multiomics:** Evaluates **~38–42 metrics** baseline, with cell-type labels unlocking cluster-matched label transfer and cell-type regulatory linkage (up to ~58 metrics).
+
+* **End-to-End Analytical Workflow R Script Generators:**
+  - Upgraded the standalone R script downloaders across all 8 diagnostic visualization panels and the Comparative Bubble Matrix. Rather than outputting pre-computed static plot scripts, generated scripts now provide the complete logical workflow of the analysis: reading uploaded or built-in count matrices, executing metric calculations, standardizing benchmark scores, and rendering publication-ready ggplot2 figures with custom styling and export parameters.
+
+* **Inbuilt and Standalone Shiny Studio Ecosystem Alignment:**
+  - Fully synchronized the package's inbuilt Shiny application (`launch_scSimEval_app()`) and the standalone deployment repository (`scSimEval_shiny`) to complete feature parity, including the four-mode Data Hub, confirmation buttons, app-wide loading indicators, and HPC batch execution script generators.
+  - Retained the standalone application's Google Analytics 4 pageview counter with persistent container-lifetime session tracking initialized to 0 views.
+
 # scSimEval 0.99.6
 
 ## Major Improvements

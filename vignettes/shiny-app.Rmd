@@ -34,8 +34,8 @@ launch_scSimEval_app()          # opens in your default browser
 > **File size limit:** The app accepts uploads up to **10 GB** per file, which comfortably handles
 > large-scale single-cell and multiomics datasets.
 
-The studio is organized into **eight primary navigation tabs** in the top navigation bar, plus an
-**eight-panel Visualizations module** inside Tab 5. The sections below document every tab,
+The studio is organized into **seven primary navigation tabs** in the top navigation bar, plus an
+**eight-panel Visualizations module** inside Tab 4. The sections below document every tab,
 every control, and all export options in the order they appear in the application.
 
 ---
@@ -43,6 +43,8 @@ every control, and all export options in the order they appear in the applicatio
 ## Tab 1 — Home
 
 The landing page introduces **scSimEval Studio**, explicitly highlighting simulation evaluation across single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) datasets against real biological references across 62 evaluation measures without requiring synthetic ground truth.
+
+In the standalone web deployment (`scSimEval_shiny`), a floating Google Analytics all-time pageview counter badge appears at the bottom-right corner, continuously reporting container-lifetime visits without UI latency.
 
 The four **KPI cards** below the hero section display: 62 evaluation measures, 8 biological dimensions, 3 modalities (RNA / ATAC / Co-Assay), and the [0, 1] normalized fidelity scale.
 
@@ -56,122 +58,88 @@ Interactive operational mode cards showcase:
 
 ## Tab 2 — Data Hub
 
-Data ingestion and evaluation control centre. Choose one of **four evaluation modes**
-from the radio button panel on the left sidebar:
+Data ingestion and evaluation control centre. It features three comprehensive subtabs:
 
-### Mode 1 — Pre-Computed Benchmark (Demo Data)
+### Subtab 1: Data Ingestion & Benchmark Studio
+Choose one of **four evaluation modes** from the radio button panel on the left sidebar:
 
-Click **Load Demo Benchmark** to instantly populate the app with pre-computed
-multi-dataset results across **Simulator 1 to Simulator 6** across all 62 measures. No file uploads required.
+#### Mode 1 — Pre-Computed Benchmark (Demo Data)
+Click **Load Demo Benchmark** to instantly populate the app with pre-computed multi-dataset results across **Simulator 1 to Simulator 6** across all 62 measures. No file uploads required.
 
 > **Package Example Datasets vs. Shiny App Demo Data:**
 > * **R Package Example Datasets (`data/`):** Lightweight, runnable count matrices (`example_scrna`, `example_scatac`, `example_multiomics`, 60 features × 80 cells) designed for rapid command-line testing of individual evaluation functions in R console sessions.
-> * **Shiny App Demo Data (`inst/shiny/scSimEvalApp/data/`):** A rich pre-computed benchmark results archive (6 simulators × 62 metrics × 2 datasets = 744 metric observations) accompanied by reference and simulated count matrices (100 genes × 50 cells). This gives web users an immediate, zero-latency tour of all 8 tabs, ranking leaderboards, bubble matrices, and 8 visualization panels without requiring computationally intensive matrix evaluations.
+> * **Shiny App Demo Data (`inst/shiny/scSimEvalApp/data/`):** A rich pre-computed benchmark results archive (6 simulators × 62 metrics × 2 datasets = 744 metric observations) accompanied by reference and simulated count matrices (100 genes × 50 cells). This gives web users an immediate, zero-latency tour of all tabs, ranking leaderboards, bubble matrices, and 8 visualization panels without requiring computationally intensive matrix evaluations.
 
-### Mode 2 — Single-Cell Evaluation (scRNA-seq / scATAC-seq)
-
+#### Mode 2 — Single-Cell Evaluation (scRNA-seq / scATAC-seq)
 Evaluate one or more unimodal count-matrix simulators across single or multiple experimental datasets.
+* **Reference Count Matrix:** Real empirical cells. Formats: `.rds`, `.csv`, `.tsv`, `.txt`, `.xlsx`.
+* **Number of Single-Cell Simulators (1–6):** Generates matching upload cards with simulator name, simulated count matrix, runtime (seconds), and peak RAM (MiB).
+* **Cell Type Labels (Optional):** Vector / factor / 2-column table (`Cell_ID,Cell_Type`). Unlocks +12–15 clustering and biological signal metrics.
+* **Batch Annotations (Optional):** Vector / factor / 2-column table (`Cell_ID,Batch`). Unlocks +7 batch mixing metrics.
 
-| Step | Control | Notes |
-|------|---------|-------|
-| **1** | **Reference Count Matrix** | Real empirical cells. Formats: `.rds`, `.csv`, `.tsv`, `.txt`, `SingleCellExperiment`, `Seurat`. |
-| **2** | **Number of Single-Cell Simulators** | 1 – 6. Generates matching upload and configuration cards. |
-| **2** | **Per-Simulator Fields** | Simulator Name, simulated count matrix, runtime (seconds), peak RAM (MiB). |
-| **3** | **Cell Type Labels** (optional) | `.rds` (factor / vector / data.frame) or `.csv`/`.tsv`. Downloadable sample templates (`Cell_ID,Cell_Type`) provided. |
-| **3** | **Batch Annotations** (optional) | Same formats as cell types (`Cell_ID,Batch`). Downloadable sample CSV templates provided. |
-| — | **Append to current benchmark** | Adds new results alongside existing ones. |
-| — | **Evaluate Single-Cell Simulators** | Triggers the full 50+ metric pipeline. |
+#### Mode 3 — Multiomics Evaluation (scRNA-seq + scATAC-seq)
+* **Paired Co-assay:** Same individual cells in both modalities (10x Multiome, SHARE-seq). All 62 metrics including FOSCTTM, Match@1, and peak-to-gene linkage.
+* **Unpaired Profiling:** Separate cells from the same tissue. Population-level cross-modal metrics evaluated; cell-pairing metrics safely skipped.
 
-### Mode 3 — Multiomics Evaluation (scRNA-seq + scATAC-seq)
+#### Metric Measurement Capacity by Upload Configuration
 
-| Subtype | Description |
-|---------|-------------|
-| **Paired Co-assay** | Same individual cells in both modalities (10x Multiome, SHARE-seq). All 62 metrics including FOSCTTM and Match@1. |
-| **Unpaired Profiling** | Separate cells from same tissue. Population-level cross-modal metrics evaluated; cell-pairing metrics safely skipped. |
+The Shiny app dynamically scales the number of quantitative metrics measured based on the uploaded files:
 
-| Step | Control | Notes |
-|------|---------|-------|
-| **1** | **Reference RNA Count Matrix** | Genes × cells. |
-| **1** | **Reference ATAC Count Matrix** | Peaks × cells. |
-| **2** | **Number of Multiomics Simulators** | 1 – 5. Generates matching upload fields. |
-| **2** | **Per-Simulator Fields** | Simulated RNA matrix, simulated ATAC matrix, name, runtime (seconds), peak RAM (MiB). |
-| **3** | **Cell Type Labels / Batch** (optional) | Applied to RNA modality. |
-| — | **Evaluate Multiomics Simulators** | Runs the full 62-metric multiomics pipeline. |
+| Experiment Mode | Uploaded Inputs | Metrics Measured | Active Evaluation Categories & Scope |
+| :--- | :--- | :---: | :--- |
+| **Single-Cell** *(scRNA / scATAC)* | Count Matrix alone *(no metadata)* | **~23 Metrics** | **Cat I** (Distributional, 14 metrics), **Cat II** (Correlations & Zeroes, 6 metrics), **Cat VI** (Trajectory, 2 metrics), **Cat VIII** (Scalability, 2 metrics). |
+| **Single-Cell** *(scRNA / scATAC)* | Matrix + Cell Types | **~35–38 Metrics** | *Adds +12–15 metrics:* Unlocks **Cat III** (Cellular Structure / ARI, NMI, AMI, Silhouette) and **Cat V** (Biological Signal / SimBench DE, DP, DV, top DEG Jaccard). |
+| **Single-Cell** *(scRNA / scATAC)* | Matrix + Batch Info | **~30 Metrics** | *Adds +7 metrics:* Unlocks **Cat IV** (Batch Mixing / Batch Silhouette, Shannon Entropy, PCR $R^2$, CMS, ISI, Seurat mixing). |
+| **Single-Cell** *(scRNA / scATAC)* | **Full Metadata** *(Matrix + Cell Types + Batch)* | **Up to ~55 Metrics** | Unlocks the complete unimodal suite across **Categories I, II, III, IV, V, VI, and VIII**. |
+| **Paired Multiomics** *(scRNA + scATAC)* | RNA + ATAC Matrices alone | **~48 Metrics** | Unimodal distributions for both modalities (~40 metrics) PLUS **Cat VII** (Cross-Modal Coupling: FOSCTTM, Match@1, generation, $R_V$, peak-to-gene linkage). |
+| **Paired Multiomics** *(scRNA + scATAC)* | **Full Metadata** *(RNA + ATAC + Cell Types + Batch)* | **All 62 Metrics** | Complete multiomics benchmark suite across all 8 canonical categories (**Categories I–VIII**). |
+| **Unpaired Multiomics** *(Independent cells)* | RNA + ATAC Matrices alone | **~38–42 Metrics** | Both unimodal distributions plus population coupling (co-expression module fidelity, Network Jaccard, cross-modality correlation). |
+| **Unpaired Multiomics** *(Independent cells)* | **RNA + ATAC + Cell Types (+ Batch)** | **Up to ~58 Metrics** | *Essential for unpaired:* Unlocks cluster-matched label transfer, cell-type regulatory linkage, and technical donor integration. |
 
-### Mode 4 — Upload Pre-Computed Benchmark Table (.rds / .csv)
+#### Mode 4 — Upload Pre-Computed Benchmark Table (.rds / .csv)
+Load output previously saved from `evaluate_simulation_accuracy()`, `evaluate_multiomics_accuracy()`, or `evaluate_multiple_datasets()`.
 
-Load output previously saved from `evaluate_simulation_accuracy()`,
-`evaluate_multiomics_accuracy()`, or `evaluate_multiple_datasets()`.
+### Subtab 2: View Uploaded Data & Matrices
+Interactive matrix viewer supporting browsing, filtering, and summary statistics across all loaded biological reference and simulated count matrices.
 
-### Main Panel Utilities
-
-| Section | Content |
-|---------|---------|
-| **Status Banner** | Number of simulators loaded and total metrics computed |
-| **Dataset Properties Summary Table** | Comprehensive per-matrix QC: Cells (N), Features (P), Sparsity (%), Cell Types, Batches, Median Library Size, Median Detected Features, Mean Expression |
-| **HPC Cluster Batch Script Generator** | Export automated SLURM, PBS, or Bash cluster execution scripts to run heavy benchmarks offline on compute nodes |
-| **Download Dataset Summary** | Export properties table as CSV |
+### Subtab 3: Dataset Properties Summary & HPC Cluster Execution
+* **Dataset Properties Summary Table:** Comprehensive per-matrix QC: Cells (N), Features (P), Sparsity (%), Cell Types, Batches, Median Library Size, Median Detected Features, Mean Expression.
+* **HPC Cluster Batch Script Generator:** Export automated SLURM, PBS, or Bash cluster execution scripts to run heavy benchmarks offline on compute nodes.
 
 ---
 
-## Tab 3 — Leaderboard & Simulator Rankings
+## Tab 3 — Comparative Bubble Matrix & Leaderboard
 
-Comprehensive composite fidelity leaderboard across all 8 evaluation categories:
+### Subtab 1: Comparative Bubble Matrix Figure
+The flagship visualization: every simulator × all 62 metrics in one colour-coded matrix. Bubble **diameter** is proportional to the normalized fidelity score. Scores ≥ 0.96 are rendered as bold square glyphs. Simulators are rank-ordered top-to-bottom by composite average score.
+* **Multi-Dataset Selector Bar:** Switch seamlessly between **All Datasets (Cross-Dataset Average)** or inspect individual datasets (**Dataset 1**, **Dataset 2**, ..., **Dataset N**) separately.
+* **Minimalist vs Publication Matrix:** Toggle between a sleek, dot-matrix view and a fully annotated publication matrix.
+* **Confirmation & Plot Action Button:** Click **Confirm & Generate Plot** to render with app-wide loading indicators.
+* **High-Resolution Exports & R Script:** Download 600 DPI JPEG, vector PDF, or a **Download R Script** providing the complete analytical workflow with ggplot2 code.
 
+### Subtab 2: Fidelity Leaderboard
 * **Simulator Ranking Cards & Podiums:** Visual podium ranking simulators by overall composite fidelity.
-* **Category Score Breakdown:** Detailed breakdown of performance per simulator across each individual category (Distributional Properties, Clustering, Biological Signal, Scalability, etc.).
-* **Radar / Star Composite Plots:** Multi-axis radial plots highlighting simulator trade-offs, strengths, and weaknesses.
 * **Custom Category Weight Sliders:** Interactively adjust the relative importance of each category to recalculate composite rankings according to specific biological priorities.
 * **Export Leaderboard:** Download the tidy rankings table as CSV.
 
 ---
 
-## Tab 4 — Comparative Bubble Matrix
+## Tab 4 — Visualizations
 
-The flagship visualization: every simulator × all 62 metrics in one colour-coded matrix.
-Bubble **diameter** is proportional to the normalized fidelity score.
-Scores ≥ 0.96 are rendered as bold square glyphs.
-Simulators are rank-ordered top-to-bottom by composite average score.
+Eight diagnostic sub-panels accessed via the **pill navigation bar**. Every sub-panel is equipped with the **Global Multi-Dataset Selector Bar** (allowing inspection of All Datasets Average or specific datasets), active dataset badges, **Confirm & Generate Plot** buttons, app-wide processing overlays, 600 DPI JPEG / PDF downloads, and a **Download R Script** workflow generator:
 
-* **Multi-Dataset Selector Bar:** Switch seamlessly between **All Datasets (Cross-Dataset Average)** or inspect individual datasets (**Dataset 1**, **Dataset 2**, ..., **Dataset N**) separately.
-* **Minimalist vs Publication Matrix:** Toggle between a sleek, dot-matrix view and a fully annotated publication matrix.
-* **Category & Modality Filtering:** Filter metrics by modality (All Categories, RNA-Specific, ATAC-Specific, or Cross-Modal Coupling).
-* **High-Resolution Exports:** Export publication figures in 600 DPI JPEG or vectorized PDF.
-* **Download Standalone R Script:** Generate a 100% self-contained R script with embedded data and custom ggplot2 code to reproduce the exact bubble matrix in standalone R outside Shiny.
-
----
-
-## Tab 5 — Visualizations
-
-Eight diagnostic sub-panels accessed via the **pill navigation bar**. Every sub-panel is equipped with the **Global Multi-Dataset Selector Bar** (allowing inspection of All Datasets Average or specific datasets), active dataset badges, 600 DPI JPEG / PDF downloads, and a **Download R Script** button for instant reproducibility:
-
-### Sub-panel 1 — Evaluation Summary
-`plot_evaluation_summary()` — rank-ordered horizontal bar chart across all 8 categories and composite score.
-
-### Sub-panel 2 — Distribution QC
-`plot_distribution_qc()` — grid comparing expression densities, ECDF curves, KS distances, library sizes, and zero-inflation curves between reference and simulated cells.
-
-### Sub-panel 3 — Scalability Benchmark
-`plot_scalability_benchmark()` — runtime (seconds) and memory (peak RAM in **MiB**) dashboards with Pareto efficiency frontiers, throughput (cells/sec), and resource cost index.
-
-### Sub-panel 4 — Metric Plots
-`plot_metric_boxplots()` / `plot_category_metric_bars()` / `plot_individual_metric_bar()` — score distribution boxplots and barplots across categories with Raw vs Normalized view toggles.
-
-### Sub-panel 5 — Metric Heatmap
-`plot_metric_heatmap()` — method × metric grid with exact scores in bold text, direction-aware fill colours, and unsupervised hierarchical clustering.
-
-### Sub-panel 6 — PCA Ordination
-`plot_metric_pca()` — simulators projected into performance space with discriminating metric vector loadings.
-
-### Sub-panel 7 — MDS Metric Space
-`plot_metric_mds()` — Multi-Dimensional Scaling ordination mapping simulator algorithmic proximity.
-
-### Sub-panel 8 — Cell Embeddings (UMAP, t-SNE & PCA)
-`compute_dataset_embeddings()` + `plot_dataset_embeddings()` — dimension reduction comparing reference cells directly to simulated cells, with cell-type cluster fidelity metrics.
+* **Sub-panel 1 — Evaluation Summary:** `plot_evaluation_summary()` — rank-ordered horizontal bar chart across all 8 categories and composite score.
+* **Sub-panel 2 — Distribution QC:** `plot_distribution_qc()` — grid comparing expression densities, ECDF curves, KS distances, library sizes, and zero-inflation curves between reference and simulated cells.
+* **Sub-panel 3 — Scalability Benchmark:** `plot_scalability_benchmark()` — runtime (seconds) and memory (peak RAM in **MiB**) dashboards with Pareto efficiency frontiers, throughput (cells/sec), and resource cost index.
+* **Sub-panel 4 — Metric Plots:** `plot_metric_boxplots()` / `plot_category_metric_bars()` / `plot_individual_metric_bar()` — score distribution boxplots and barplots across categories with Raw vs Normalized view toggles.
+* **Sub-panel 5 — Metric Heatmap:** `plot_metric_heatmap()` — method × metric grid with exact scores in bold text, direction-aware fill colours, and unsupervised hierarchical clustering.
+* **Sub-panel 6 — PCA Ordination:** `plot_metric_pca()` — simulators projected into performance space with discriminating metric vector loadings.
+* **Sub-panel 7 — MDS Metric Space:** `plot_metric_mds()` — Multi-Dimensional Scaling ordination mapping simulator algorithmic proximity.
+* **Sub-panel 8 — Cell Embeddings (UMAP, t-SNE & PCA):** `compute_dataset_embeddings()` + `plot_dataset_embeddings()` — dimension reduction comparing reference cells directly to simulated cells, with cell-type cluster fidelity metrics.
 
 ---
 
-## Tab 6 — Benchmark Results & Export
+## Tab 5 — Benchmark Results & Export
 
 The central hub for data exploration and multi-format exports:
 
@@ -182,31 +150,24 @@ Explicitly displays:
 * **Score:** Direction-aware normalized score $[0, 1]$ where 1.0 represents top fidelity.
 
 ### Multi-Format Exports
-
-| Button | Format | Description |
-|--------|--------|-------------|
-| **Excel Workbook (.xlsx)** | Multi-sheet workbook (`.xlsx`) | Full benchmark scores, method rankings, dataset metadata, and scalability metrics |
-| **CSV Table (.csv)** | Flat tidy table (`.csv`) | Comma-separated values for Python (pandas), Excel, or R |
-| **Tab-delimited (.tsv)** | Tab-delimited table (`.tsv`) | Clean TSV export for command-line bioinformatics workflows |
-| **R Data Object (.rds)** | Native R serialized object (`.rds`) | Ready for `readRDS()` in downstream R pipelines |
-| **Complete Archive (.zip)** | Full ZIP data archive (`.zip`) | All tables, rankings, dataset QC summaries, and explanatory README documentation |
+Export benchmark results in **Excel Workbook (.xlsx)**, **CSV Table (.csv)**, **Tab-delimited (.tsv)**, **R Data Object (.rds)**, or **Complete Archive (.zip)**.
 
 ---
 
-## Tab 7 — Help & Getting Started
+## Tab 6 — Help & Getting Started
 
 An in-app reference guide structured into seven sections:
 1. **Workflow Architecture & Pipeline** — 4-step pipeline diagram and multi-dataset processing.
 2. **The Eight Evaluation Categories** — tabular reference for all 62 metrics, highlighting peak RAM in **MiB**.
-3. **Score Normalization Pipeline** — direction inversion, min-max scaling, and raw vs normalized score reporting.
-4. **Comprehensive Guide to the 8 App Tabs** — detailed walkthrough of each application module.
-5. **Input Data Formats & Metadata Templates** — matrix structures (genes × cells), cell-type and batch annotation vectors, and sample CSV downloads.
-6. **Online Documentation Links** — direct link to the GitHub Pages site (<https://kabilanbio.github.io/scSimEval>).
+3. **Metric Measurement Capacity by Data & Metadata Mode** — detailed reference table documenting metric numbers and unlocked categories.
+4. **Score Normalization Pipeline** — direction inversion, min-max scaling, and raw vs normalized score reporting.
+5. **Comprehensive Guide to App Tabs** — detailed walkthrough of each application module.
+6. **Input Data Formats & Metadata Templates** — matrix structures (genes × cells), cell-type and batch annotation vectors, and sample CSV downloads.
 7. **Computational Sizing, RAM (MiB/GiB), & Guidelines** — hardware recommendations contrasting Cloud, Local Workstation, and HPC clusters.
 
 ---
 
-## Tab 8 — Contact
+## Tab 7 — Contact
 
 Information regarding the development team at Division of Agricultural Bioinformatics, ICAR-IASRI, maintainer contacts, GitHub issues link, and recommended citations.
 
