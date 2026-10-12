@@ -14,7 +14,7 @@ benchmark_resource_usage <- function(expr) {
   res <- tryCatch(
     eval.parent(substitute(expr)),
     error = function(e) {
-      message("Expression failed with error: ", e$message)
+      message("Expression evaluation failed: ", e$message)
       NULL
     }
   )

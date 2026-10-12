@@ -239,9 +239,11 @@ calc_peacock_2d <- function(ref_mat, sim_mat) {
   sim_mat <- as.matrix(stats::na.omit(sim_mat))
   if (ncol(ref_mat) != 2 || ncol(sim_mat) != 2) stop("Requires 2-column matrices.")
   
-  if (requireNamespace("Peacock.test", quietly = TRUE)) {
+  pkg <- "Peacock.test"
+  if (requireNamespace(pkg, quietly = TRUE)) {
+    peacock_fn <- getExportedValue(pkg, "peacock2")
     res <- tryCatch(
-      as.numeric(Peacock.test::peacock2(ref_mat, sim_mat)),
+      as.numeric(peacock_fn(ref_mat, sim_mat)),
       error = function(e) NA_real_
     )
     return(res)
@@ -880,6 +882,7 @@ calc_likelihood_ratio_test <- function(alter_model, null_model, df_alter = NULL,
 #'   the matrix is transposed so rows represent cells.
 #' @param sigma Optional kernel bandwidth. If NULL, uses the median pairwise distance heuristic.
 #' @param max_cells Maximum number of cells to subsample for speed (default 500).
+#' @param max_features Maximum number of features to retain for speed (default 1000).
 #'
 #' @return A list with MMD, squared MMD, and the kernel bandwidth sigma used.
 #' @examples

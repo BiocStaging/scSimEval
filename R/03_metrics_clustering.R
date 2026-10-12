@@ -732,6 +732,7 @@ evaluate_clustering_metrics <- function(
 #' @param cells_as_cols Logical, whether cells are columns (default TRUE).
 #' @param k Number of nearest neighbors to define the local manifold radius (default 5).
 #' @param max_cells Maximum number of cells to subsample (default 500).
+#' @param max_features Maximum number of features to retain for speed (default 1000).
 #'
 #' @return A list containing Generative Precision, Generative Recall, and Generative F1.
 #' @examples

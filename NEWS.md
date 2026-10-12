@@ -1,20 +1,42 @@
+# scSimEval 0.99.6
+
+## Major Improvements
+
+* **Multi-Dataset Options & Standalone Reproducible R Scripts Across All Visualizations:**
+  - Extended multi-dataset selection options to all 8 diagnostic visualization panels in the Visualizations tab (Evaluation Summary, Distribution QC, Scalability Benchmark, Metric Boxplots, Metric Heatmap, PCA Ordination, MDS Metric Space, and Cell Embeddings). Users can seamlessly toggle between **All Datasets Combined (Cross-Dataset Average)** and individual datasets (`Dataset 1`, `Dataset 2`, ..., `Dataset N`) with live active dataset badge synchronization.
+  - Added dedicated **Download Standalone R Script** (`download_*_r_script`) buttons to all 8 visualization subpanels and the Comparative Bubble Matrix. These generate 100% self-contained, reproducible R scripts with embedded benchmark data, user choices, and publication-ready ggplot2 code that can be executed independently outside of Shiny.
+
+* **Standardization to MiB for Peak RAM & Dual-Value Reporting in Master Benchmark Scores Table:**
+  - Standardized computational scalability memory measurement to **MiB RAM** ($1\text{ MiB} = 1,048,576\text{ bytes}$) across all scalability plots, selectors, table wordings, confirmation dialogs, and documentation, resolving ambiguity with decimal megabytes (MB).
+  - Enhanced the Master Benchmark Scores Table to explicitly report both unnormalized raw measurements (`Score_Raw` in native statistical and physical units: KS distance, runtime in seconds, peak RAM in MiB, Chi-Square values, etc.) alongside direction-aware normalized scores (`Score` in $[0, 1]$ where 1.0 represents best performance), equipped with per-column dropdown filtering.
+
+* **Modernized Help & Getting Started Tab and Ecosystem-Wide Documentation Alignment:**
+  - Fully restructured the in-app **Help & Getting Started** tab to reflect the updated **8-tab architecture** (Home, Data Hub, Leaderboard & Simulator Rankings, Comparative Bubble Matrix, Visualizations, Benchmark Results & Export, Help & Getting Started, and Contact).
+  - Synchronized all documentation across the R package vignettes, manuals, README, and the GitHub Pages site (https://kabilanbio.github.io/scSimEval), explicitly clarifying the distinction between the lightweight command-line testing datasets (`example_scrna`, `example_scatac`, `example_multiomics`) and the rich pre-computed multi-dataset benchmark suite bundled in the Shiny application.
+
+
 # scSimEval 0.99.5
 
 ## Major Improvements
 
-* **Multi-Dataset Benchmarking Study Support (16 Datasets × 6 Simulators):**
+* **Multi-Dataset Benchmarking Study Support (e.g., 16 Datasets × 6 Simulators):**
   - Added dedicated support for multi-dataset benchmark studies (e.g., evaluating 6 single-cell simulators across 16 diverse experimental datasets or cell types, yielding 5,952 metric observations across all 62 canonical measures).
   - Implemented `benchmark_simulation_suite()`: high-performance R function engineered for beginner users and high-throughput HPC clusters with automatic sparse matrix coercion (`dgCMatrix`), proactive garbage collection (`gc()`) per dataset to prevent RAM accumulation, and multi-threading.
   - Automatically calculates both a consolidated granular benchmark table (`granular_benchmark_table`) and a cross-dataset averaged summary table (`benchmark_summary_table`).
 
 * **Cross-Dataset Averaged Comparative Bubble Matrix:**
-  - In `plot_benchmark_bubble_matrix()` and Shiny Studio Tab 3, multi-dataset inputs automatically average fidelity scores across all evaluated datasets for each simulator.
+  - In `plot_benchmark_bubble_matrix()` and Shiny Studio Tab 4 (Comparative Bubble Matrix), multi-dataset evaluations automatically average fidelity scores across all evaluated datasets for each simulator.
   - Keeps the flagship bubble plot uncluttered by displaying strictly simulators on the axis (no dataset names on axes), with a dynamic subtitle indicating the number of datasets averaged.
   - Extended cross-dataset averaging to heatmaps, PCA, and MDS ordination plots.
 
-* **Shiny App Data Hub Multi-Dataset Ingestion:**
-  - Added "Multi-Dataset Study (16 Datasets × 6 Simulators)" mode with an instant demo loader (`demo_multidataset_benchmark.rds`), multi-file benchmark uploader (`multiple = TRUE`), and HPC batch execution guide.
-  - Added interactive Dataset Preview Switcher in Subtab 3 allowing toggling between overall cross-dataset averages and granular dataset tables, with direct CSV export.
+* **Streamlined Data Hub Ingestion (Four Canonical Modes):**
+  - Redesigned the Data Hub tab to offer strictly four clear, uncluttered dataset options:
+    1. **Example dataset analysis**: Instant 1-click loading of pre-computed benchmark results across 6 simulators (Splatter, scDesign3, SCRIP, SymSim, dyngen, simATAC) evaluated on all 62 canonical measures.
+    2. **Single-Cell (scRNA or scATAC)**: Evaluates 1 or multiple original reference datasets (e.g., up to 50 datasets) against multiple simulators with per-simulator simulated dataset uploads, tracking runtime and peak RAM.
+    3. **Multiomics (scRNA + scATAC)**: Evaluates 1 or multiple original reference multiomics datasets (RNA + ATAC, paired or unpaired) against multiple simulators with per-simulator simulated RNA and ATAC dataset uploads.
+    4. **Upload Saved Results (.rds / .csv)**: Instant loading of previously computed benchmark files (.rds or .csv) from scSimEval or HPC batch runs, supporting both single-dataset and multi-dataset benchmarks.
+  - Interactive Dataset Preview in Subtab 3 allowing toggling between overall cross-dataset averages and granular dataset tables, with direct CSV export.
+  - Direct matrix inspection in Subtab 2 supporting browsing through all loaded reference and simulated count matrices.
 
 * **Minimalist & Streamlined Shiny Studio Interface:**
   - Modernized the web interface across all tabs with a clean, clutter-free scientific layout, removing redundant controls in the Home, Data Hub, and Bubble Matrix panels.

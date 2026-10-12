@@ -225,7 +225,7 @@ captured by the simulation method compared to the empirical reference."><meta pr
 
     <a class="navbar-brand me-2" href="../index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -317,11 +317,12 @@ captured by the simulation method compared to the empirical reference.</p>
 <span class="r-in"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="va">example_multiomics</span></span></span>
 <span class="r-in"><span><span class="fu">calc_cross_modality_correlation</span><span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="va">ref_multi</span><span class="op">$</span><span class="va">rna</span>, <span class="va">m</span><span class="op">$</span><span class="va">ref_multi</span><span class="op">$</span><span class="va">atac</span>,</span></span>
 <span class="r-in"><span>                                <span class="va">m</span><span class="op">$</span><span class="va">sim_multi</span><span class="op">$</span><span class="va">rna</span>, <span class="va">m</span><span class="op">$</span><span class="va">sim_multi</span><span class="op">$</span><span class="va">atac</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $cross_modality_cor_MAD</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.06236202</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $cross_modality_cor_KS</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.3166667</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.3096934</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $cross_modality_cor_MAE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.06352891</span>
@@ -330,7 +331,7 @@ captured by the simulation method compared to the empirical reference.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.06626403</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $cross_modality_cor_OV</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.7340243</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.7564079</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $cross_modality_cor_Bhattacharyya</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.001537345</span>

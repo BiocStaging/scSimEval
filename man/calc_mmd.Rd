@@ -24,6 +24,8 @@ the matrix is transposed so rows represent cells.}
 \item{sigma}{Optional kernel bandwidth. If NULL, uses the median pairwise distance heuristic.}
 
 \item{max_cells}{Maximum number of cells to subsample for speed (default 500).}
+
+\item{max_features}{Maximum number of features to retain for speed (default 1000).}
 }
 \value{
 A list with MMD, squared MMD, and the kernel bandwidth sigma used.

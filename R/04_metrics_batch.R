@@ -416,11 +416,12 @@ evaluate_batch_metrics <- function(
   # 1. Batch Silhouette Width (kBET::batch_sil or cluster::silhouette)
   if (verbose) message("Calculating batch silhouette width...")
   batch_sil <- NA_real_
-  if (requireNamespace("kBET", quietly = TRUE)) {
-    batch_sil <- tryCatch(
-      kBET::batch_sil(pca.data = pca_res, batch = batch_info, nPCs = min(n_pcs, ncol(pca_coords))),
-      error = function(e) NA_real_
-    )
+  pkg_kbet <- "kBET"
+  if (requireNamespace(pkg_kbet, quietly = TRUE)) {
+    batch_sil <- tryCatch({
+      kbet_batch_sil <- getExportedValue(pkg_kbet, "batch_sil")
+      kbet_batch_sil(pca.data = pca_res, batch = batch_info, nPCs = min(n_pcs, ncol(pca_coords)))
+    }, error = function(e) NA_real_)
   } else if (requireNamespace("cluster", quietly = TRUE)) {
     dist_pca <- stats::dist(pca_coords)
     sil_res <- cluster::silhouette(as.numeric(batch_info), dist_pca)
@@ -444,11 +445,11 @@ evaluate_batch_metrics <- function(
   # 3. Principal Component Regression (PCR) R2
   if (verbose) message("Calculating principal component regression (PCR)...")
   pcr_r2 <- NA_real_
-  if (requireNamespace("kBET", quietly = TRUE)) {
-    pcr_res <- tryCatch(
-      kBET::pcRegression(pca.data = pca_res, batch = as.character(batch_info), n_top = min(n_pcs, ncol(pca_coords))),
-      error = function(e) NULL
-    )
+  if (requireNamespace(pkg_kbet, quietly = TRUE)) {
+    pcr_res <- tryCatch({
+      kbet_pcr <- getExportedValue(pkg_kbet, "pcRegression")
+      kbet_pcr(pca.data = pca_res, batch = as.character(batch_info), n_top = min(n_pcs, ncol(pca_coords)))
+    }, error = function(e) NULL)
     if (!is.null(pcr_res)) pcr_r2 <- pcr_res$R2Var
   } else {
     r2_vals <- vapply(seq_len(ncol(pca_coords)), function(pc_idx) {
@@ -495,12 +496,12 @@ evaluate_batch_metrics <- function(
   
   # 8. kBET Rejection Rate
   kbet_rejection <- NA_real_
-  if (requireNamespace("kBET", quietly = TRUE)) {
+  if (requireNamespace(pkg_kbet, quietly = TRUE)) {
     if (verbose) message("Calculating kBET rejection rate...")
-    kbet_res <- tryCatch(
-      kBET::kBET(df = t(sub_mat), batch = batch_info, k0 = k, plot = FALSE),
-      error = function(e) NULL
-    )
+    kbet_res <- tryCatch({
+      kbet_fn <- getExportedValue(pkg_kbet, "kBET")
+      kbet_fn(df = t(sub_mat), batch = batch_info, k0 = k, plot = FALSE)
+    }, error = function(e) NULL)
     if (!is.null(kbet_res)) {
       kbet_rejection <- mean(kbet_res$results$kBET.observed, na.rm = TRUE)
     }
@@ -508,13 +509,14 @@ evaluate_batch_metrics <- function(
   
   # 9. LISI (Local Inverse Simpson Index)
   lisi_batch <- NA_real_
-  if (requireNamespace("lisi", quietly = TRUE)) {
+  pkg_lisi <- "lisi"
+  if (requireNamespace(pkg_lisi, quietly = TRUE)) {
     if (verbose) message("Calculating LISI...")
     meta_df <- data.frame(batch = batch_info)
-    lisi_res <- tryCatch(
-      lisi::compute_lisi(pca_coords, meta_data = meta_df, label_colnames = "batch", perplexity = k),
-      error = function(e) NULL
-    )
+    lisi_res <- tryCatch({
+      lisi_fn <- getExportedValue(pkg_lisi, "compute_lisi")
+      lisi_fn(pca_coords, meta_data = meta_df, label_colnames = "batch", perplexity = k)
+    }, error = function(e) NULL)
     if (!is.null(lisi_res)) lisi_batch <- mean(lisi_res$batch, na.rm = TRUE)
   }
   
