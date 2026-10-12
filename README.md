@@ -217,7 +217,7 @@ suite_res <- benchmark_simulation_suite(
 plot_benchmark_bubble_matrix(suite_res)
 ```
 
-In the interactive **scSimEval Studio** (`launch_scSimEval_app()`), users can navigate to **Data Hub**, choose **Multi-Dataset Study (16 Datasets × 6 Simulators)**, and click **Load Example Benchmark (16 Datasets × 6 Simulators)** or upload their HPC-generated RDS files.
+In the interactive **scSimEval Studio** (`launch_scSimEval_app()`), users can navigate to **Data Hub**, choose **Mode 1 (Pre-Computed Benchmark)** or **Mode 4 (Upload Saved Results)** to instantly load multi-dataset studies or upload HPC-generated RDS files.
 
 ---
 
@@ -301,28 +301,27 @@ library(scSimEval)
 launch_scSimEval_app()
 ```
 
-### The 8 Modular Application Tabs:
-- **Tab 1: Home** — Executive overview of the 62 evaluation measures, biological KPI dimensions, and an interactive operational tour across the 4 ingestion modes.
+### The 7 Modular Application Tabs:
+- **Tab 1: Home** — Executive overview of the 62 evaluation measures, biological KPI dimensions, and an interactive operational tour across the four ingestion modes (with all-time pageview tracking in the cloud app).
 - **Tab 2: Data Hub** — Comprehensive data ingestion centre featuring 4 operational modes:
-  1. *Pre-Computed Demo Benchmarks*: Instant loading of a pre-computed 6-simulator multi-dataset study (744 metric observations) for zero-wait exploration (contrasting with the lightweight `data(example_*)` matrices provided for console testing).
-  2. *Single-Cell RNA/ATAC Evaluation*: Evaluates custom empirical reference against simulated count matrices.
-  3. *Multi-Omics Co-Assays*: Evaluates multimodal simulations assessing cross-modal coupling and feature alignment.
-  4. *Pre-Computed Benchmark Table Upload*: Direct upload of previous benchmark CSV or RDS runs. Supports unified multi-dataset studies (Dataset 1 to Dataset N), an automated Dataset Properties Summary QC table (cells, features, sparsity %, sequencing depth, dropouts), and an automated HPC Batch Script Generator (SLURM / PBS / Bash) for offline cluster execution.
-- **Tab 3: Leaderboard & Simulator Rankings** — Visual simulator ranking podiums, composite fidelity rankings across all 8 canonical categories, category performance breakdowns, radar/star composite plots, and custom category weight sliders.
-- **Tab 4: Comparative Bubble Matrix** — Flagship 62-metric comparative matrix with a multi-dataset selector bar (`All Datasets (Average)` vs. individual datasets `Dataset 1`, `Dataset 2`, ...), Minimalist vs. Publication layout toggles, modality-specific filtering (All, RNA-Specific, ATAC-Specific, Cross-Modal), 600 DPI figure downloads, and **Download Standalone R Script** for 100% reproducible figure generation outside Shiny.
-- **Tab 5: Visualizations** — 8 dedicated diagnostic panels equipped with global multi-dataset pill selectors and active dataset badges:
+  1. *Mode 1: Pre-Computed Benchmark (Demo Data)*: Instant 1-click loading of a multi-dataset benchmark study across 6 simulators (744 metric observations) for zero-wait exploration (contrasting with the lightweight `data(example_*)` matrices provided for quick console testing).
+  2. *Mode 2: Single-Cell RNA/ATAC Evaluation*: Evaluates empirical reference against simulated count matrices with optional cell-type and batch metadata.
+  3. *Mode 3: Multi-Omics Co-Assays*: Evaluates paired or unpaired multiomics simulations assessing cross-modal coupling and feature alignment.
+  4. *Mode 4: Upload Pre-Computed Benchmark Table*: Instant loading of previously calculated benchmark CSV or RDS files.
+  *Includes an interactive matrix inspector (Subtab 2), a live **Dataset Properties Summary** QC table (cells, features, sparsity %, library sizes), and an automated **HPC Batch Script Generator** (SLURM / PBS / Bash) for cluster execution.*
+- **Tab 3: Comparative Bubble Matrix & Leaderboard** — Flagship 62-metric comparative matrix with a multi-dataset selector bar (`All Datasets (Average)` vs. individual datasets `Dataset 1`, `Dataset 2`, ...), Minimalist vs. Publication layout toggles, confirmation plot buttons, 600 DPI figure downloads, and **Download Standalone R Script** for reproducible analysis workflows outside Shiny. Subtab 2 provides visual simulator ranking podiums, composite fidelity rankings, and custom category weight sliders.
+- **Tab 4: Visualizations** — 8 dedicated diagnostic panels equipped with global multi-dataset selectors, active dataset badges, confirmation controls, and workflow R script downloads:
   1. *Evaluation Summary*: Category horizontal bar ranking and composite metrics.
   2. *Distribution QC*: Comparative ECDF curves, KS distances, and gene/cell mean-variance trends.
   3. *Scalability Benchmark*: Runtime (seconds) vs. Peak RAM (**MiB**), resource cost index, and cell throughput rate.
   4. *Metric Plots*: Category and metric score boxplots/barplots with Raw vs. Normalized view toggles.
-  5. *Metric Heatmap*: Unsupervised hierarchical clustering of simulators and metrics.
+  5. *Metric Heatmap*: Unsupervised hierarchical clustering of simulators and metrics with exact numbers in bold.
   6. *PCA Ordination*: Principal component biplots projecting simulators in metric space.
   7. *MDS Metric Space*: Multidimensional scaling projection of simulator algorithmic proximity.
   8. *Cell Embeddings*: Dimension reduction projections (UMAP, t-SNE, PCA) comparing reference cells to simulated cells, with quantitative cluster fidelity tables.
-  *Every panel includes a **Download R Script** button for instant reproducibility with self-contained benchmark data.*
-- **Tab 6: Benchmark Results & Export** — Master Benchmark Scores Table featuring per-column dropdown filtering, explicit dual-value reporting (`Score_Raw` in statistical units, runtime in seconds, peak RAM in **MiB**, and normalized `Score` [0, 1]), alongside exports for Excel (`.xlsx`), CSV, TSV, RDS, and full ZIP archives.
-- **Tab 7: Help & Getting Started** — In-app reference guide, formula glossary, input file templates, and memory guidelines.
-- **Tab 8: Contact** — ICAR-IASRI institutional details, author profiles, and citation information.
+- **Tab 5: Benchmark Results & Export** — Master Benchmark Scores Table featuring per-column dropdown filtering, explicit dual-value reporting (`Score_Raw` in native statistical units, runtime in seconds, peak RAM in **MiB**, and normalized `Score` in [0, 1]), alongside exports for Excel (`.xlsx`), CSV, TSV, RDS, and full ZIP archives.
+- **Tab 6: Help & Getting Started** — Comprehensive user manual, formula glossary, metric measurement capacity reference table, hardware sizing guidelines, and input file templates.
+- **Tab 7: Contact** — ICAR-IASRI institutional details, author profiles, and citation information.
 
 ## Documentation
 

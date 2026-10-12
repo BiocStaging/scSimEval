@@ -571,32 +571,30 @@ For researchers who prefer an interactive graphical interface rather than writin
 launch_scSimEval_app()
 ```
 
-### 14.1 The 8 Modular Application Tabs
+### 14.1 The 7 Modular Application Tabs
 
-The Shiny app provides a unified, production-ready graphical workspace structured into eight dedicated tabs:
+The Shiny app provides a unified, production-ready graphical workspace structured into seven primary navigation tabs:
 
-1. **Tab 1: Home** — Executive summary of the 62 evaluation measures, biological dimensions, and an interactive operational tour across the four ingestion modes.
+1. **Tab 1: Home** — Executive overview of the 62 evaluation measures, biological KPI dimensions, and an interactive operational tour across the four ingestion modes (with all-time pageview tracking in the cloud app).
 2. **Tab 2: Data Hub** — Comprehensive data ingestion centre featuring 4 operational modes:
-   - *Mode 1: Pre-Computed Benchmark (Demo Data)*: Instant multi-dataset 6-simulator demonstration.
+   - *Mode 1: Pre-Computed Benchmark (Demo Data)*: Instant 1-click loading of a multi-dataset benchmark study across 6 simulators (744 metric observations) for zero-wait exploration.
    - *Mode 2: Single-Cell RNA/ATAC Evaluation*: Evaluates empirical reference against simulated count matrices with optional cell-type and batch metadata.
    - *Mode 3: Multi-Omics Co-Assays*: Evaluates paired or unpaired multiomics simulations assessing cross-modal coupling and feature alignment.
-   - *Mode 4: Upload Pre-Computed Benchmark Table*: Instant visualization of previously calculated benchmark CSV or RDS files.
-   - *Utilities*: Includes multi-dataset study naming (Dataset 1 to Dataset N), a live **Dataset Properties Summary** table (cells, features, sparsity %, sequencing depth, dropouts), and an automated **HPC Batch Script Generator** (SLURM / PBS / Bash).
-3. **Tab 3: Leaderboard & Simulator Rankings** — Visual simulator ranking podiums, composite fidelity rankings across all 8 canonical categories, category performance breakdowns, radar/star composite plots, and custom category weight sliders.
-4. **Tab 4: Comparative Bubble Matrix** — Flagship 62-metric comparative matrix with a multi-dataset selector bar (`All Datasets (Average)` vs. individual datasets `Dataset 1`, `Dataset 2`, ...), Minimalist vs. Publication layout toggles, modality-specific filtering (All, RNA-Specific, ATAC-Specific, Cross-Modal), 600 DPI figure downloads, and **Download Standalone R Script** for 100% reproducible figure generation outside Shiny.
-5. **Tab 5: Visualizations** — 8 dedicated diagnostic panels equipped with global multi-dataset pill selectors and active dataset badges:
+   - *Mode 4: Upload Pre-Computed Benchmark Table*: Instant loading of previously calculated benchmark CSV or RDS files.
+   *Includes an interactive matrix inspector (Subtab 2), a live **Dataset Properties Summary** QC table (cells, features, sparsity %, library sizes), and an automated **HPC Batch Script Generator** (SLURM / PBS / Bash) for cluster execution.*
+3. **Tab 3: Comparative Bubble Matrix & Leaderboard** — Flagship 62-metric comparative matrix with a multi-dataset selector bar (`All Datasets (Average)` vs. individual datasets `Dataset 1`, `Dataset 2`, ...), Minimalist vs. Publication layout toggles, confirmation plot buttons, 600 DPI figure downloads, and **Download Standalone R Script** for reproducible analysis workflows outside Shiny. Subtab 2 provides visual simulator ranking podiums, composite fidelity rankings, and custom category weight sliders.
+4. **Tab 4: Visualizations** — 8 dedicated diagnostic panels equipped with global multi-dataset selectors, active dataset badges, confirmation controls, and workflow R script downloads:
    - *1. Evaluation Summary*: Horizontal bar chart ranking simulators across categories and composite fidelity.
-   - *2. Distribution QC*: 14-panel comparative expression density, library size, and zero-inflation curves.
-   - *3. Scalability Benchmark*: Runtime in seconds vs. Peak RAM in **MiB**, cell throughput rate, and resource cost index.
-   - *4. Metric Plots*: Category distribution boxplots, faceted category metric barplots, and ranked individual metric bar charts with Raw vs. Normalized view toggles.
-   - *5. Metric Heatmap*: Method-by-metric grid showing exact scores in bold text with standardized fill and hierarchical clustering.
-   - *6. PCA Ordination*: Principal Component Analysis of simulator performance profiles.
-   - *7. MDS Metric Space*: Multi-Dimensional Scaling ordination.
-   - *8. Cell Embeddings (t-SNE, UMAP & PCA)*: Interactive low-dimensional projections across reference and simulated datasets with multi-simulator grid or 1-to-1 comparison layouts, flexible coloring, and an integrated quantitative quality metrics table (Silhouette, ARI, library size deviation).
-   *Every panel includes a **Download R Script** button for instant reproducibility with self-contained benchmark data.*
-6. **Tab 6: Benchmark Results & Export** — Master Benchmark Scores Table featuring per-column dropdown filtering, explicit dual-value reporting (`Score_Raw` in statistical units, runtime in seconds, peak RAM in **MiB**, and normalized `Score` [0, 1]), alongside exports for Excel (`.xlsx`), CSV, TSV, RDS, and full ZIP archives.
-7. **Tab 7: Help & Getting Started** — In-app reference guide with metric descriptions, normalization formulas, hardware guidelines, and input file templates.
-8. **Tab 8: Contact** — Information regarding ICAR-IASRI authors, maintainers, bug reporting, and recommended citations.
+   - *2. Distribution QC*: Comparative ECDF curves, KS distances, and gene/cell mean-variance trends.
+   - *3. Scalability Benchmark*: Runtime (seconds) vs. Peak RAM (**MiB**), resource cost index, and cell throughput rate.
+   - *4. Metric Plots*: Category and metric score boxplots/barplots with Raw vs. Normalized view toggles.
+   - *5. Metric Heatmap*: Unsupervised hierarchical clustering of simulators and metrics with exact numbers in bold.
+   - *6. PCA Ordination*: Principal component biplots projecting simulators in metric space.
+   - *7. MDS Metric Space*: Multidimensional scaling projection of simulator algorithmic proximity.
+   - *8. Cell Embeddings*: Dimension reduction projections (UMAP, t-SNE, PCA) comparing reference cells to simulated cells, with quantitative cluster fidelity tables.
+5. **Tab 5: Benchmark Results & Export** — Master Benchmark Scores Table featuring per-column dropdown filtering, explicit dual-value reporting (`Score_Raw` in native statistical units, runtime in seconds, peak RAM in **MiB**, and normalized `Score` in [0, 1]), alongside exports for Excel (`.xlsx`), CSV, TSV, RDS, and full ZIP archives.
+6. **Tab 6: Help & Getting Started** — Comprehensive user manual, formula glossary, metric measurement capacity reference table, hardware sizing guidelines, and input file templates.
+7. **Tab 7: Contact** — ICAR-IASRI institutional details, author profiles, and citation information.
 
 ---
 
@@ -711,7 +709,7 @@ mset_bench <- benchmark_simulation_suite(
 plot_benchmark_bubble_matrix(mset_bench)
 ```
 
-In the interactive **scSimEval Studio** (`launch_scSimEval_app()`), users can navigate to **Data Hub**, choose **Multi-Dataset Study (16 Datasets × 6 Simulators)**, and click **Load Example Benchmark (16 Datasets × 6 Simulators)** or upload their HPC-generated RDS files.
+In the interactive **scSimEval Studio** (`launch_scSimEval_app()`), users can navigate to **Data Hub**, choose **Mode 1 (Pre-Computed Benchmark)** or **Mode 4 (Upload Saved Results)** to instantly load multi-dataset studies or upload HPC-generated RDS files.
 
 ---
 

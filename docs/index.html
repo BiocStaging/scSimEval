@@ -588,7 +588,7 @@
 <span><span class="co"># Automatically averages metrics across all 16 datasets under each simulator!</span></span>
 <span><span class="co"># Only simulator names appear on the axis; no cluttered dataset axes.</span></span>
 <span><span class="fu"><a href="reference/plot_benchmark_bubble_matrix.html">plot_benchmark_bubble_matrix</a></span><span class="op">(</span><span class="va">suite_res</span><span class="op">)</span></span></code></pre></div>
-<p>In the interactive <strong>scSimEval Studio</strong> (<code><a href="reference/launch_scSimEval_app.html">launch_scSimEval_app()</a></code>), users can navigate to <strong>Data Hub</strong>, choose <strong>Multi-Dataset Study (16 Datasets × 6 Simulators)</strong>, and click <strong>Load Example Benchmark (16 Datasets × 6 Simulators)</strong> or upload their HPC-generated RDS files.</p>
+<p>In the interactive <strong>scSimEval Studio</strong> (<code><a href="reference/launch_scSimEval_app.html">launch_scSimEval_app()</a></code>), users can navigate to <strong>Data Hub</strong>, choose <strong>Mode 1 (Pre-Computed Benchmark)</strong> or <strong>Mode 4 (Upload Saved Results)</strong> to instantly load multi-dataset studies or upload HPC-generated RDS files.</p>
 <hr>
 </div>
 </div>
@@ -678,30 +678,29 @@
 <span><span class="co"># Launch the interactive Shiny app in your default web browser</span></span>
 <span><span class="fu"><a href="reference/launch_scSimEval_app.html">launch_scSimEval_app</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <div class="section level3">
-<h3 id="the-8-modular-application-tabs">The 8 Modular Application Tabs:<a class="anchor" aria-label="anchor" href="#the-8-modular-application-tabs"></a>
+<h3 id="the-7-modular-application-tabs">The 7 Modular Application Tabs:<a class="anchor" aria-label="anchor" href="#the-7-modular-application-tabs"></a>
 </h3>
 <ul>
 <li>
-<strong>Tab 1: Home</strong> — Executive overview of the 62 evaluation measures, biological KPI dimensions, and an interactive operational tour across the 4 ingestion modes.</li>
+<strong>Tab 1: Home</strong> — Executive overview of the 62 evaluation measures, biological KPI dimensions, and an interactive operational tour across the four ingestion modes (with all-time pageview tracking in the cloud app).</li>
 <li>
 <strong>Tab 2: Data Hub</strong> — Comprehensive data ingestion centre featuring 4 operational modes:
 <ol style="list-style-type: decimal">
 <li>
-<em>Pre-Computed Demo Benchmarks</em>: Instant loading of a pre-computed 6-simulator multi-dataset study (744 metric observations) for zero-wait exploration (contrasting with the lightweight <code>data(example_*)</code> matrices provided for console testing).</li>
+<em>Mode 1: Pre-Computed Benchmark (Demo Data)</em>: Instant 1-click loading of a multi-dataset benchmark study across 6 simulators (744 metric observations) for zero-wait exploration (contrasting with the lightweight <code>data(example_*)</code> matrices provided for quick console testing).</li>
 <li>
-<em>Single-Cell RNA/ATAC Evaluation</em>: Evaluates custom empirical reference against simulated count matrices.</li>
+<em>Mode 2: Single-Cell RNA/ATAC Evaluation</em>: Evaluates empirical reference against simulated count matrices with optional cell-type and batch metadata.</li>
 <li>
-<em>Multi-Omics Co-Assays</em>: Evaluates multimodal simulations assessing cross-modal coupling and feature alignment.</li>
+<em>Mode 3: Multi-Omics Co-Assays</em>: Evaluates paired or unpaired multiomics simulations assessing cross-modal coupling and feature alignment.</li>
 <li>
-<em>Pre-Computed Benchmark Table Upload</em>: Direct upload of previous benchmark CSV or RDS runs. Supports unified multi-dataset studies (Dataset 1 to Dataset N), an automated Dataset Properties Summary QC table (cells, features, sparsity %, sequencing depth, dropouts), and an automated HPC Batch Script Generator (SLURM / PBS / Bash) for offline cluster execution.</li>
+<em>Mode 4: Upload Pre-Computed Benchmark Table</em>: Instant loading of previously calculated benchmark CSV or RDS files. <em>Includes an interactive matrix inspector (Subtab 2), a live <strong>Dataset Properties Summary</strong> QC table (cells, features, sparsity %, library sizes), and an automated <strong>HPC Batch Script Generator</strong> (SLURM / PBS / Bash) for cluster execution.</em>
+</li>
 </ol>
 </li>
 <li>
-<strong>Tab 3: Leaderboard &amp; Simulator Rankings</strong> — Visual simulator ranking podiums, composite fidelity rankings across all 8 canonical categories, category performance breakdowns, radar/star composite plots, and custom category weight sliders.</li>
+<strong>Tab 3: Comparative Bubble Matrix &amp; Leaderboard</strong> — Flagship 62-metric comparative matrix with a multi-dataset selector bar (<code>All Datasets (Average)</code> vs. individual datasets <code>Dataset 1</code>, <code>Dataset 2</code>, …), Minimalist vs. Publication layout toggles, confirmation plot buttons, 600 DPI figure downloads, and <strong>Download Standalone R Script</strong> for reproducible analysis workflows outside Shiny. Subtab 2 provides visual simulator ranking podiums, composite fidelity rankings, and custom category weight sliders.</li>
 <li>
-<strong>Tab 4: Comparative Bubble Matrix</strong> — Flagship 62-metric comparative matrix with a multi-dataset selector bar (<code>All Datasets (Average)</code> vs. individual datasets <code>Dataset 1</code>, <code>Dataset 2</code>, …), Minimalist vs. Publication layout toggles, modality-specific filtering (All, RNA-Specific, ATAC-Specific, Cross-Modal), 600 DPI figure downloads, and <strong>Download Standalone R Script</strong> for 100% reproducible figure generation outside Shiny.</li>
-<li>
-<strong>Tab 5: Visualizations</strong> — 8 dedicated diagnostic panels equipped with global multi-dataset pill selectors and active dataset badges:
+<strong>Tab 4: Visualizations</strong> — 8 dedicated diagnostic panels equipped with global multi-dataset selectors, active dataset badges, confirmation controls, and workflow R script downloads:
 <ol style="list-style-type: decimal">
 <li>
 <em>Evaluation Summary</em>: Category horizontal bar ranking and composite metrics.</li>
@@ -712,22 +711,21 @@
 <li>
 <em>Metric Plots</em>: Category and metric score boxplots/barplots with Raw vs. Normalized view toggles.</li>
 <li>
-<em>Metric Heatmap</em>: Unsupervised hierarchical clustering of simulators and metrics.</li>
+<em>Metric Heatmap</em>: Unsupervised hierarchical clustering of simulators and metrics with exact numbers in bold.</li>
 <li>
 <em>PCA Ordination</em>: Principal component biplots projecting simulators in metric space.</li>
 <li>
 <em>MDS Metric Space</em>: Multidimensional scaling projection of simulator algorithmic proximity.</li>
 <li>
-<em>Cell Embeddings</em>: Dimension reduction projections (UMAP, t-SNE, PCA) comparing reference cells to simulated cells, with quantitative cluster fidelity tables. <em>Every panel includes a <strong>Download R Script</strong> button for instant reproducibility with self-contained benchmark data.</em>
-</li>
+<em>Cell Embeddings</em>: Dimension reduction projections (UMAP, t-SNE, PCA) comparing reference cells to simulated cells, with quantitative cluster fidelity tables.</li>
 </ol>
 </li>
 <li>
-<strong>Tab 6: Benchmark Results &amp; Export</strong> — Master Benchmark Scores Table featuring per-column dropdown filtering, explicit dual-value reporting (<code>Score_Raw</code> in statistical units, runtime in seconds, peak RAM in <strong>MiB</strong>, and normalized <code>Score</code> [0, 1]), alongside exports for Excel (<code>.xlsx</code>), CSV, TSV, RDS, and full ZIP archives.</li>
+<strong>Tab 5: Benchmark Results &amp; Export</strong> — Master Benchmark Scores Table featuring per-column dropdown filtering, explicit dual-value reporting (<code>Score_Raw</code> in native statistical units, runtime in seconds, peak RAM in <strong>MiB</strong>, and normalized <code>Score</code> in [0, 1]), alongside exports for Excel (<code>.xlsx</code>), CSV, TSV, RDS, and full ZIP archives.</li>
 <li>
-<strong>Tab 7: Help &amp; Getting Started</strong> — In-app reference guide, formula glossary, input file templates, and memory guidelines.</li>
+<strong>Tab 6: Help &amp; Getting Started</strong> — Comprehensive user manual, formula glossary, metric measurement capacity reference table, hardware sizing guidelines, and input file templates.</li>
 <li>
-<strong>Tab 8: Contact</strong> — ICAR-IASRI institutional details, author profiles, and citation information.</li>
+<strong>Tab 7: Contact</strong> — ICAR-IASRI institutional details, author profiles, and citation information.</li>
 </ul>
 </div>
 </div>
