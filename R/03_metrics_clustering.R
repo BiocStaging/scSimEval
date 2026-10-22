@@ -685,7 +685,7 @@ evaluate_clustering_metrics <- function(
   if (is.null(pred_clusters) && nlevels(cluster_info) >= 2) {
     k_centers <- nlevels(cluster_info)
     km_input <- if (!is.null(pca_coords)) pca_coords else t(as.matrix(data))
-    km_fit <- tryCatch(stats::kmeans(km_input, centers = k_centers, nstart = 5), error = function(e) NULL)
+    km_fit <- tryCatch(suppressWarnings(stats::kmeans(km_input, centers = k_centers, iter.max = 50, nstart = 5)), error = function(e) NULL)
     if (!is.null(km_fit)) {
       pred_clusters <- factor(km_fit$cluster)
     }

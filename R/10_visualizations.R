@@ -956,8 +956,8 @@ plot_metric_boxplots <- function(
   }
 
   p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$Method, y = .data[[y_var]], fill = .data$Method)) +
-    ggplot2::geom_boxplot(alpha = 0.72, outlier.shape = NA, width = 0.65, color = "#2C3E50", linewidth = 0.45) +
-    ggplot2::geom_jitter(width = 0.18, height = 0, size = 1.6, alpha = 0.65, shape = 21, color = "#1A252F") +
+    ggplot2::geom_boxplot(alpha = 0.72, outlier.shape = NA, width = 0.65, color = "#2C3E50", linewidth = 0.45, na.rm = TRUE) +
+    ggplot2::geom_jitter(width = 0.18, height = 0, size = 1.6, alpha = 0.65, shape = 21, color = "#1A252F", na.rm = TRUE) +
     ggplot2::scale_fill_manual(values = active_pal, name = "Simulator") +
     ggplot2::labs(
       title    = "Benchmarking Metric Score Distributions Across Simulators",
@@ -977,7 +977,8 @@ plot_metric_boxplots <- function(
     )
 
   if (score_type == "normalized") {
-    p <- p + ggplot2::scale_y_continuous(limits = c(-0.02, 1.05), breaks = seq(0, 1, 0.25))
+    p <- p + ggplot2::coord_cartesian(ylim = c(-0.02, 1.05)) +
+      ggplot2::scale_y_continuous(breaks = seq(0, 1, 0.25))
   }
 
   if (facet_by == "metric") {
@@ -3568,7 +3569,7 @@ compute_dataset_embeddings <- function(reference,
     k_clust <- if (!is.null(cell_types)) length(unique(stats::na.omit(as.character(cell_types)))) else 3
     k_clust <- max(2, min(k_clust, n_cells - 1))
     km_fit <- tryCatch(
-      stats::kmeans(pca_coords, centers = k_clust, nstart = 5),
+      suppressWarnings(stats::kmeans(pca_coords, centers = k_clust, iter.max = 50, nstart = 5)),
       error = function(e) list(cluster = rep(1, n_cells))
     )
     

@@ -6774,8 +6774,11 @@ server <- function(input, output, session) {
   # Subpanel 2 (Distribution QC) Selectors
   output$ui_dist_dataset_selector <- renderUI({
     dsets <- available_bubble_datasets()
-    current_sel <- input$sel_dist_dataset %||% (if (!identical(input$sel_viz_dataset_view, "all_avg")) input$sel_viz_dataset_view else dsets[1])
-    if (!current_sel %in% dsets) current_sel <- dsets[1]
+    if (is.null(dsets) || length(dsets) == 0) return(NULL)
+    current_sel <- input$sel_dist_dataset %||% (if (!identical(input$sel_viz_dataset_view, "all_avg") && !is.null(input$sel_viz_dataset_view)) input$sel_viz_dataset_view else dsets[1])
+    if (length(current_sel) == 0 || is.null(current_sel) || !isTRUE(current_sel %in% dsets)) {
+      current_sel <- dsets[1]
+    }
     selectInput("sel_dist_dataset", "Dataset Reference:", choices = dsets, selected = current_sel)
   })
   output$ui_dist_sim_selector <- renderUI({
@@ -6787,8 +6790,11 @@ server <- function(input, output, session) {
   # Subpanel 8 (Cell Embeddings) Dataset Selector
   output$ui_emb_dataset_selector <- renderUI({
     dsets <- available_bubble_datasets()
-    current_sel <- input$sel_emb_dataset %||% (if (!identical(input$sel_viz_dataset_view, "all_avg")) input$sel_viz_dataset_view else dsets[1])
-    if (!current_sel %in% dsets) current_sel <- dsets[1]
+    if (is.null(dsets) || length(dsets) == 0) return(NULL)
+    current_sel <- input$sel_emb_dataset %||% (if (!identical(input$sel_viz_dataset_view, "all_avg") && !is.null(input$sel_viz_dataset_view)) input$sel_viz_dataset_view else dsets[1])
+    if (length(current_sel) == 0 || is.null(current_sel) || !isTRUE(current_sel %in% dsets)) {
+      current_sel <- dsets[1]
+    }
     selectInput("sel_emb_dataset", "Dataset to Project:", choices = dsets, selected = current_sel)
   })
   
@@ -7554,6 +7560,10 @@ server <- function(input, output, session) {
     req(rv$benchmark_df)
     req(rv_plot_triggers$pca > 0)
     df <- get_viz_benchmark_data()
+    n_sims <- length(unique(df$Method))
+    if (n_sims < 3) {
+      validate(need(FALSE, sprintf("PCA ordination requires at least 3 distinct simulators (currently evaluated: %d). Please evaluate additional methods or select a multi-simulator dataset.", n_sims)))
+    }
     withProgress(message = "Computing PCA Ordination", detail = "Decomposing variance and loadings...", {
       cat_sel <- if (identical(input$sel_pca_cat, "all")) NULL else input$sel_pca_cat
       n_top <- if (!is.null(input$num_pca_top_metrics) && is.finite(input$num_pca_top_metrics)) input$num_pca_top_metrics else 14
@@ -7615,6 +7625,10 @@ server <- function(input, output, session) {
     req(rv$benchmark_df)
     req(rv_plot_triggers$mds > 0)
     df <- get_viz_benchmark_data()
+    n_sims <- length(unique(df$Method))
+    if (n_sims < 3) {
+      validate(need(FALSE, sprintf("MDS distance ordination requires at least 3 distinct simulators (currently evaluated: %d). Please evaluate additional methods or select a multi-simulator dataset.", n_sims)))
+    }
     withProgress(message = "Computing MDS Metric Space", detail = "Calculating Euclidean distance coordinates...", {
       cat_sel <- if (identical(input$sel_mds_cat, "all")) NULL else input$sel_mds_cat
       ord_by <- if (!is.null(input$sel_mds_by) && input$sel_mds_by %in% c("summaries", "metrics")) {
@@ -7840,7 +7854,7 @@ server <- function(input, output, session) {
     req(rv_plot_triggers$emb > 0)
     emb_data <- reactive_cell_embeddings()
     req(emb_data)
-    df_metrics <- compute_embedding_quality_table(emb_data)
+    df_metrics <- compute_embedding_quality_metrics(emb_data)
     datatable(df_metrics, options = list(dom = "t", pageLength = 10), rownames = FALSE, class = "compact stripe")
   })
   # Tab 5: Download Results (Data Tables, Excel, CSV, RDS, and Consolidated ZIP)
@@ -7972,6 +7986,26 @@ server <- function(input, output, session) {
         df_export <- df_export[input$table_master_export_rows_all, , drop = FALSE]
       }
       
+      # Retain only raw evaluation metric values in exported table
+      raw_val <- if ("Score_Raw" %in% colnames(df_export)) {
+        df_export$Score_Raw
+      } else if ("Value" %in% colnames(df_export)) {
+        df_export$Value
+      } else if ("Raw_Value" %in% colnames(df_export)) {
+        df_export$Raw_Value
+      } else {
+        df_export$Score
+      }
+      df_export$Score <- NULL
+      df_export$Score_Norm <- NULL
+      df_export$Value <- NULL
+      df_export$Raw_Value <- NULL
+      df_export$Score_Raw <- raw_val
+      pref_cols <- c("Dataset", "Method", "Category", intersect("Property", colnames(df_export)), "Metric", "Score_Raw")
+      col_order <- unique(c(pref_cols, colnames(df_export)))
+      col_order <- intersect(col_order, colnames(df_export))
+      df_export <- df_export[, col_order, drop = FALSE]
+      
       if (fmt == "xlsx") {
         export_excel_workbook(file, df_export, leaderboard_reactive(), rv$dataset_summary_df)
       } else if (fmt == "csv") {
@@ -8049,9 +8083,27 @@ server <- function(input, output, session) {
     # 2. Score (Normalized Score in [0, 1])
     df$Score_Norm <- NULL
     
+    # Retain ONLY the raw evaluation metric values column as requested:
+    raw_val <- if ("Score_Raw" %in% colnames(df)) {
+      df$Score_Raw
+    } else if ("Value" %in% colnames(df)) {
+      df$Value
+    } else if ("Raw_Value" %in% colnames(df)) {
+      df$Raw_Value
+    } else {
+      df$Score
+    }
+    
+    # Drop redundant duplicate score columns so only raw evaluation metric values remain:
+    df$Score <- NULL
+    df$Score_Norm <- NULL
+    df$Value <- NULL
+    df$Raw_Value <- NULL
+    df$Score_Raw <- raw_val
+    
     # Establish clean, logical column ordering:
-    # Dataset -> Method -> Category -> Property -> Metric -> Score_Raw -> Score
-    pref_cols <- c("Dataset", "Method", "Category", intersect("Property", colnames(df)), "Metric", "Score_Raw", "Score")
+    # Dataset -> Method -> Category -> Property -> Metric -> Score_Raw
+    pref_cols <- c("Dataset", "Method", "Category", intersect("Property", colnames(df)), "Metric", "Score_Raw")
     col_order <- unique(c(pref_cols, colnames(df)))
     col_order <- intersect(col_order, colnames(df))
     df <- df[, col_order, drop = FALSE]

@@ -10,13 +10,19 @@
 
 * **Documentation & Vignette Synchronization for Multi-Core Workflows:**
   - Updated `vignettes/shiny-app.Rmd`, `vignettes/scSimEval-workflow.Rmd`, and `vignettes/demo-multiomics.Rmd` to comprehensively document multi-core / multi-threaded execution options, explaining how parallelization accelerates large-scale single-cell and multiomics benchmarking.
-  - Confirmed 0 errors, 0 warnings, and 0 notes on `R CMD check` under strict Bioconductor submission settings.
 
 * **Day/Night Dark Mode Toggle & UI Accessibility Enhancements:**
   - Added an interactive day and night (light/dark) mode toggle switch in the top-right corner of the application navbar via `bslib::input_dark_mode()`, allowing users to switch dynamically between light and dark themes.
   - Provided comprehensive dark mode CSS styling across all panels, cards, tables, modal dialogs, and diagnostic containers.
   - Enhanced contrast and visibility for the "View Formats & Full Breakdown →" action buttons in both Single-Cell and Multiomics simulation tabs by adopting styled, high-contrast controls.
   - Fixed font and background contrast in the Metric Measurement Capacity modal breakdown table, ensuring that badge indicators across all experimental modes and metadata combinations are clearly legible in both light and dark modes.
+
+* **Diagnostic Visualization & Shiny Studio Robustness Enhancements:**
+  - Added safe validation guards for `output$ui_dist_dataset_selector` and `output$ui_emb_dataset_selector` to gracefully handle single-dataset or dynamically switching evaluation contexts without zero-length conditional errors.
+  - Added graceful validation checks in PCA and MDS ordination reactive plots (`metric_pca_reactive`, `metric_mds_reactive`), clearly guiding users when fewer than 3 simulators are evaluated instead of raising raw R stack traces.
+  - Synchronized cell embedding quality table evaluation by properly calling `compute_embedding_quality_metrics()`.
+  - Streamlined the Master Benchmark Scores Table and result download handlers (`.csv`, `.tsv`, `.xlsx`) to report exclusively the unstandardized raw evaluation metric values (`Score_Raw`), removing duplicate and redundant score columns.
+  - Eliminated k-means clustering iteration warnings (`iter.max = 50`) and ggplot2 boxplot scale clipping notices across distribution plots.
 
 # scSimEval 0.99.7
 
