@@ -114,11 +114,26 @@ standardize_benchmark_categories <- function(df) {
 # ==============================================================================
 as_sparse_or_matrix <- function(m) {
   if (is.null(m)) return(NULL)
+  if (inherits(m, "SingleCellExperiment") && requireNamespace("SingleCellExperiment", quietly = TRUE)) {
+    m <- SummarizedExperiment::assay(m, "counts")
+  } else if (inherits(m, "Seurat")) {
+    m <- tryCatch(m[["RNA"]]$counts, error = function(e) tryCatch(Seurat::GetAssayData(m, slot = "counts"), error = function(e2) m))
+  }
   if (inherits(m, "sparseMatrix")) return(m)
-  if (is.data.frame(m)) m <- as.matrix(m)
+  if (is.data.frame(m)) {
+    if (ncol(m) > 1 && (is.character(m[[1]]) || is.factor(m[[1]]))) {
+      rownames(m) <- make.unique(as.character(m[[1]]))
+      m <- m[, -1, drop = FALSE]
+    }
+    m <- data.matrix(m)
+  }
   if (is.matrix(m)) {
+    if (!is.numeric(m)) {
+      suppressWarnings(mode(m) <- "numeric")
+      m[is.na(m)] <- 0
+    }
     n_tot <- as.numeric(nrow(m)) * as.numeric(ncol(m))
-    if (n_tot > 50000) {
+    if (!is.na(n_tot) && n_tot > 50000) {
       s_idx <- sample.int(n_tot, min(10000, n_tot))
       if (mean(m[s_idx] == 0, na.rm = TRUE) > 0.3) {
         return(Matrix::Matrix(m, sparse = TRUE))
@@ -141,24 +156,38 @@ read_uploaded_matrix <- function(file_path, file_name) {
     } else if (inherits(obj, "SingleCellExperiment") && requireNamespace("SingleCellExperiment", quietly = TRUE)) {
       return(as_sparse_or_matrix(SingleCellExperiment::counts(obj)))
     } else if (inherits(obj, "Seurat") && requireNamespace("Seurat", quietly = TRUE)) {
-      return(as_sparse_or_matrix(Seurat::GetAssayData(obj, slot = "counts")))
-    } else if (is.list(obj) && length(obj) > 0 && (is.matrix(obj[[1]]) || inherits(obj[[1]], "Matrix") || is.data.frame(obj[[1]]))) {
+      return(as_sparse_or_matrix(tryCatch(obj[["RNA"]]$counts, error = function(e) Seurat::GetAssayData(obj, slot = "counts"))))
+    } else if (is.list(obj) && length(obj) > 0) {
+      candidate_names <- c("new_count", "counts", "sim_counts", "simulated", "sim_rna", "sim_atac", "mat")
+      found <- intersect(candidate_names, names(obj))
+      if (length(found) > 0) return(as_sparse_or_matrix(obj[[found[1]]]))
+      for (item in obj) {
+        if (is.matrix(item) || inherits(item, "Matrix") || is.data.frame(item)) {
+          return(as_sparse_or_matrix(item))
+        }
+      }
       return(as_sparse_or_matrix(obj[[1]]))
     } else {
       stop("Unsupported RDS format. Please provide a count matrix or data.frame.")
     }
   } else if (ext == "csv") {
-    df <- utils::read.csv(file_path, row.names = 1, check.names = FALSE)
+    df <- tryCatch(
+      utils::read.csv(file_path, row.names = 1, check.names = FALSE),
+      error = function(e) utils::read.csv(file_path, check.names = FALSE)
+    )
     return(as_sparse_or_matrix(df))
   } else if (ext %in% c("tsv", "txt")) {
-    df <- utils::read.table(file_path, sep = "\t", header = TRUE, row.names = 1, check.names = FALSE)
+    df <- tryCatch(
+      utils::read.table(file_path, sep = "\t", header = TRUE, row.names = 1, check.names = FALSE),
+      error = function(e) utils::read.table(file_path, sep = "\t", header = TRUE, check.names = FALSE)
+    )
     return(as_sparse_or_matrix(df))
   } else if (ext %in% c("xlsx", "xls")) {
     if (requireNamespace("readxl", quietly = TRUE)) {
       df <- as.data.frame(readxl::read_excel(file_path))
       if (!is.null(df) && nrow(df) > 0 && ncol(df) > 1) {
         if (is.character(df[[1]])) {
-          rownames(df) <- df[[1]]
+          rownames(df) <- make.unique(as.character(df[[1]]))
           df <- df[, -1, drop = FALSE]
         }
       }
@@ -187,24 +216,12 @@ read_uploaded_labels <- function(file_path, file_name) {
           return(res)
         }
       }
-      return(as.factor(obj[[1]]))
+      if (ncol(obj) >= 1) return(as.factor(obj[[1]])) else return(NULL)
     }
   } else if (ext %in% c("csv", "tsv", "txt")) {
     sep <- if (ext == "csv") "," else "\t"
-    df <- utils::read.table(file_path, sep = sep, header = TRUE, stringsAsFactors = FALSE, check.names = FALSE)
-    if (ncol(df) >= 2) {
-      c1_name <- tolower(colnames(df)[1])
-      c2_name <- tolower(colnames(df)[2])
-      if (any(grepl("cell|barcode|id", c1_name)) || any(grepl("type|cluster|batch|group|label|state", c2_name))) {
-        res <- as.factor(df[[2]])
-        names(res) <- as.character(df[[1]])
-        return(res)
-      }
-    }
-    return(as.factor(df[[1]]))
-  } else if (ext %in% c("xlsx", "xls")) {
-    if (requireNamespace("readxl", quietly = TRUE)) {
-      df <- as.data.frame(readxl::read_excel(file_path))
+    df <- tryCatch(utils::read.table(file_path, sep = sep, header = TRUE, stringsAsFactors = FALSE, check.names = FALSE), error = function(e) NULL)
+    if (!is.null(df) && is.data.frame(df) && ncol(df) >= 1) {
       if (ncol(df) >= 2) {
         c1_name <- tolower(colnames(df)[1])
         c2_name <- tolower(colnames(df)[2])
@@ -216,7 +233,116 @@ read_uploaded_labels <- function(file_path, file_name) {
       }
       return(as.factor(df[[1]]))
     }
+  } else if (ext %in% c("xlsx", "xls")) {
+    if (requireNamespace("readxl", quietly = TRUE)) {
+      df <- tryCatch(as.data.frame(readxl::read_excel(file_path)), error = function(e) NULL)
+      if (!is.null(df) && is.data.frame(df) && ncol(df) >= 1) {
+        if (ncol(df) >= 2) {
+          c1_name <- tolower(colnames(df)[1])
+          c2_name <- tolower(colnames(df)[2])
+          if (any(grepl("cell|barcode|id", c1_name)) || any(grepl("type|cluster|batch|group|label|state", c2_name))) {
+            res <- as.factor(df[[2]])
+            names(res) <- as.character(df[[1]])
+            return(res)
+          }
+        }
+        return(as.factor(df[[1]]))
+      }
+    }
   }
+  return(NULL)
+}
+
+# ==============================================================================
+# Robust Pre-Flight Input Validation & Sanitization Engine
+# ==============================================================================
+validate_and_sanitize_matrix <- function(mat, matrix_name = "Count Matrix", min_cells = 2, min_features = 2) {
+  if (is.null(mat)) {
+    return(list(valid = FALSE, error = paste0(matrix_name, ": Input is NULL or missing.")))
+  }
+  if (is.data.frame(mat)) {
+    mat <- as_sparse_or_matrix(mat)
+  }
+  if (!is.matrix(mat) && !inherits(mat, "Matrix")) {
+    return(list(valid = FALSE, error = paste0(matrix_name, ": Input must be a 2D matrix or data frame.")))
+  }
+  
+  nr <- nrow(mat)
+  nc <- ncol(mat)
+  if (is.null(nr) || is.null(nc) || nr < min_features || nc < min_cells) {
+    return(list(valid = FALSE, error = sprintf(
+      "%s has insufficient dimensions (%d features x %d cells). Minimum required is %d features and %d cells.",
+      matrix_name, if(is.null(nr)) 0 else nr, if(is.null(nc)) 0 else nc, min_features, min_cells
+    )))
+  }
+  
+  # Ensure rownames and colnames exist to prevent out-of-bounds on dimension lookup
+  if (is.null(rownames(mat)) || any(is.na(rownames(mat))) || any(rownames(mat) == "")) {
+    def_r <- paste0("Feature_", seq_len(nr))
+    rownames(mat) <- make.unique(if (!is.null(rownames(mat))) ifelse(is.na(rownames(mat)) | rownames(mat) == "", def_r, rownames(mat)) else def_r)
+  } else if (any(duplicated(rownames(mat)))) {
+    rownames(mat) <- make.unique(rownames(mat))
+  }
+  
+  if (is.null(colnames(mat)) || any(is.na(colnames(mat))) || any(colnames(mat) == "")) {
+    def_c <- paste0("Cell_", seq_len(nc))
+    colnames(mat) <- make.unique(if (!is.null(colnames(mat))) ifelse(is.na(colnames(mat)) | colnames(mat) == "", def_c, colnames(mat)) else def_c)
+  } else if (any(duplicated(colnames(mat)))) {
+    colnames(mat) <- make.unique(colnames(mat))
+  }
+  
+  # Sanitize non-finite values (NA, NaN, Inf, -Inf)
+  if (inherits(mat, "dgCMatrix")) {
+    if (any(is.na(mat@x)) || any(is.nan(mat@x)) || any(is.infinite(mat@x))) {
+      mat@x[is.na(mat@x) | is.nan(mat@x) | is.infinite(mat@x)] <- 0
+    }
+  } else {
+    if (any(is.na(mat)) || any(is.nan(mat)) || any(is.infinite(mat))) {
+      mat[is.na(mat) | is.nan(mat) | is.infinite(mat)] <- 0
+    }
+  }
+  
+  list(valid = TRUE, mat = mat)
+}
+
+safe_read_uploaded_matrix <- function(file_path, file_name, label = "Matrix") {
+  if (is.null(file_path) || !file.exists(file_path)) {
+    return(list(success = FALSE, error = sprintf("File for %s does not exist on the filesystem.", label)))
+  }
+  res <- tryCatch({
+    mat <- read_uploaded_matrix(file_path, file_name)
+    val <- validate_and_sanitize_matrix(mat, matrix_name = label)
+    if (!val$valid) return(list(success = FALSE, error = val$error))
+    list(success = TRUE, mat = val$mat)
+  }, error = function(e) {
+    list(success = FALSE, error = sprintf("Error reading %s ('%s'): %s", label, file_name, e$message))
+  })
+  res
+}
+
+safe_align_annotation <- function(ann_vec, mat, label = "Cell Types") {
+  if (is.null(ann_vec) || length(ann_vec) == 0 || is.null(mat)) return(NULL)
+  ann_vec <- as.character(ann_vec)
+  nc <- ncol(mat)
+  
+  # If vector has names matching matrix colnames
+  if (!is.null(names(ann_vec)) && !is.null(colnames(mat))) {
+    common <- intersect(colnames(mat), names(ann_vec))
+    if (length(common) >= 2) {
+      aligned <- ann_vec[colnames(mat)]
+      aligned[is.na(aligned)] <- "Unknown"
+      names(aligned) <- colnames(mat)
+      return(as.factor(aligned))
+    }
+  }
+  
+  # If length matches exactly
+  if (length(ann_vec) == nc) {
+    names(ann_vec) <- colnames(mat)
+    return(as.factor(ann_vec))
+  }
+  
+  warning(sprintf("[scSimEval Guard] %s length (%d) does not match cell count (%d); setting to NULL to prevent out-of-bounds error.", label, length(ann_vec), nc), call. = FALSE)
   return(NULL)
 }
 
@@ -445,8 +571,8 @@ compute_dataset_embeddings <- function(reference,
     pca_coords <- pca_res$x[, seq_len(min(k_pc, ncol(pca_res$x))), drop = FALSE]
     
     # 5. Non-linear Dimension Reduction (UMAP / t-SNE / PCA)
-    dim1 <- pca_coords[, 1]
-    dim2 <- if (ncol(pca_coords) >= 2) pca_coords[, 2] else pca_coords[, 1]
+    dim1 <- if (ncol(pca_coords) >= 1) pca_coords[, 1] else rep(0, n_cells)
+    dim2 <- if (ncol(pca_coords) >= 2) pca_coords[, 2] else dim1
     
     if (reduction == "tsne") {
       perp <- min(perplexity, floor((n_cells - 1) / 3))
@@ -454,8 +580,10 @@ compute_dataset_embeddings <- function(reference,
       if (requireNamespace("Rtsne", quietly = TRUE)) {
         tryCatch({
           tsne_out <- Rtsne::Rtsne(pca_coords, perplexity = perp, check_duplicates = FALSE, pca = FALSE)
-          dim1 <- tsne_out$Y[, 1]
-          dim2 <- tsne_out$Y[, 2]
+          if (!is.null(tsne_out$Y) && ncol(tsne_out$Y) >= 2) {
+            dim1 <- tsne_out$Y[, 1]
+            dim2 <- tsne_out$Y[, 2]
+          }
         }, error = function(e) {
           warning("t-SNE computation failed: ", e$message, "; falling back to PCA coordinates.", call. = FALSE)
         })
@@ -466,8 +594,10 @@ compute_dataset_embeddings <- function(reference,
       if (requireNamespace("uwot", quietly = TRUE)) {
         tryCatch({
           umap_out <- uwot::umap(pca_coords, n_neighbors = n_neigh, min_dist = min_dist, seed = seed)
-          dim1 <- umap_out[, 1]
-          dim2 <- umap_out[, 2]
+          if (!is.null(umap_out) && ncol(umap_out) >= 2) {
+            dim1 <- umap_out[, 1]
+            dim2 <- umap_out[, 2]
+          }
         }, error = function(e) {
           warning("UMAP computation failed: ", e$message, "; falling back to PCA coordinates.", call. = FALSE)
         })
@@ -3885,10 +4015,21 @@ server <- function(input, output, session) {
       "    m <- Matrix::rsparsematrix(nrow = 50, ncol = 30, density = 0.2)",
       "    rownames(m) <- paste0('Feature_', seq_len(50))",
       "    colnames(m) <- paste0('Cell_', seq_len(30))",
-      "    return(m)",
+      "    return(abs(m))",
       "  }",
       "  if (endsWith(tolower(path), '.rds')) {",
       "    m <- readRDS(path)",
+      "    if (inherits(m, 'SingleCellExperiment')) {",
+      "      m <- SummarizedExperiment::assay(m, 'counts')",
+      "    } else if (inherits(m, 'Seurat')) {",
+      "      m <- tryCatch(m[['RNA']]$counts, error = function(e) tryCatch(Seurat::GetAssayData(m, slot = 'counts'), error = function(e2) m))",
+      "    } else if (is.list(m) && !is.data.frame(m) && !inherits(m, 'Matrix')) {",
+      "      candidate_names <- c('new_count', 'counts', 'sim_counts', 'simulated', 'sim_rna', 'sim_atac', 'mat')",
+      "      found <- intersect(candidate_names, names(m))",
+      "      if (length(found) > 0) m <- m[[found[1]]] else {",
+      "        for (item in m) if (is.matrix(item) || inherits(item, 'Matrix') || is.data.frame(item)) { m <- item; break }",
+      "      }",
+      "    }",
       "  } else {",
       "    sep_char <- if (endsWith(tolower(path), '.csv')) ',' else '\t'",
       "    df <- utils::read.table(path, header = TRUE, row.names = 1, sep = sep_char, check.names = FALSE)",
@@ -3896,6 +4037,47 @@ server <- function(input, output, session) {
       "  }",
       "  if (!inherits(m, 'dgCMatrix')) m <- Matrix::Matrix(m, sparse = TRUE)",
       "  return(m)",
+      "}",
+      "",
+      "# Helper: Safe Vector Loader (Cell Types / Batches)",
+      "load_vector_safe <- function(path) {",
+      "  if (is.null(path) || is.na(path) || path == '' || !file.exists(path)) return(NULL)",
+      "  lower_p <- tolower(path)",
+      "  if (endsWith(lower_p, '.rds')) {",
+      "    v <- readRDS(path)",
+      "    if (is.data.frame(v) || is.matrix(v)) v <- v[, 1]",
+      "    return(as.character(v))",
+      "  }",
+      "  if (endsWith(lower_p, '.xlsx') || endsWith(lower_p, '.xls')) {",
+      "    if (requireNamespace('readxl', quietly = TRUE)) {",
+      "      df <- as.data.frame(readxl::read_excel(path))",
+      "      col_pick <- if ('cell_type' %in% tolower(colnames(df))) which(tolower(colnames(df)) == 'cell_type')[1] else",
+      "                  if ('batch' %in% tolower(colnames(df))) which(tolower(colnames(df)) == 'batch')[1] else ncol(df)",
+      "      return(as.character(df[[col_pick]]))",
+      "    }",
+      "  }",
+      "  if (endsWith(lower_p, '.csv') || endsWith(lower_p, '.tsv') || endsWith(lower_p, '.txt')) {",
+      "    sep_char <- if (endsWith(lower_p, '.csv')) ',' else '\t'",
+      "    lines <- readLines(path, n = 5)",
+      "    has_header <- length(lines) > 0 && grepl('[a-zA-Z]', lines[1]) && !grepl('^[0-9]+$', lines[1])",
+      "    df <- tryCatch(utils::read.table(path, header = has_header, sep = sep_char, stringsAsFactors = FALSE), error = function(e) NULL)",
+      "    if (!is.null(df) && is.data.frame(df) && ncol(df) >= 1) {",
+      "      col_pick <- if ('cell_type' %in% tolower(colnames(df))) which(tolower(colnames(df)) == 'cell_type')[1] else",
+      "                  if ('batch' %in% tolower(colnames(df))) which(tolower(colnames(df)) == 'batch')[1] else ncol(df)",
+      "      return(as.character(df[[col_pick]]))",
+      "    }",
+      "    return(as.character(readLines(path)))",
+      "  }",
+      "  return(as.character(readLines(path)))",
+      "}",
+      "",
+      "# Helper: Standardize Category Names",
+      "standardize_benchmark_categories <- function(df) {",
+      "  if (is.null(df) || nrow(df) == 0) return(df)",
+      "  if (exists('standardize_benchmark_categories', where = asNamespace('scSimEval'), mode = 'function')) {",
+      "    return(scSimEval::standardize_benchmark_categories(df))",
+      "  }",
+      "  df",
       "}",
       "",
       "all_benchmark_results <- list()",
@@ -3925,7 +4107,7 @@ server <- function(input, output, session) {
         if (!is.null(ct_f) && ct_f != "") {
           out <- c(out,
             sprintf("ct_file_%d   <- '%s'", d, ct_f),
-            sprintf("ct_vec_%d    <- if (file.exists(ct_file_%d)) readLines(ct_file_%d) else NULL", d, d, d)
+            sprintf("ct_vec_%d    <- load_vector_safe(ct_file_%d)", d, d)
           )
         } else {
           out <- c(out, sprintf("ct_vec_%d    <- NULL # (No cell types configured)", d))
@@ -3934,7 +4116,7 @@ server <- function(input, output, session) {
         if (!is.null(bt_f) && bt_f != "") {
           out <- c(out,
             sprintf("bt_file_%d   <- '%s'", d, bt_f),
-            sprintf("bt_vec_%d    <- if (file.exists(bt_file_%d)) readLines(bt_file_%d) else NULL", d, d, d)
+            sprintf("bt_vec_%d    <- load_vector_safe(bt_file_%d)", d, d)
           )
         } else {
           out <- c(out, sprintf("bt_vec_%d    <- NULL # (No batches configured)", d))
@@ -4015,7 +4197,7 @@ server <- function(input, output, session) {
         if (!is.null(ct_f) && ct_f != "") {
           out <- c(out,
             sprintf("ct_file_%d        <- '%s'", d, ct_f),
-            sprintf("ct_vec_%d         <- if (file.exists(ct_file_%d)) readLines(ct_file_%d) else NULL", d, d, d)
+            sprintf("ct_vec_%d         <- load_vector_safe(ct_file_%d)", d, d)
           )
         } else {
           out <- c(out, sprintf("ct_vec_%d         <- NULL # (No cell types configured)", d))
@@ -4024,7 +4206,7 @@ server <- function(input, output, session) {
         if (!is.null(bt_f) && bt_f != "") {
           out <- c(out,
             sprintf("bt_file_%d        <- '%s'", d, bt_f),
-            sprintf("bt_vec_%d         <- if (file.exists(bt_file_%d)) readLines(bt_file_%d) else NULL", d, d, d)
+            sprintf("bt_vec_%d         <- load_vector_safe(bt_file_%d)", d, d)
           )
         } else {
           out <- c(out, sprintf("bt_vec_%d         <- NULL # (No batches configured)", d))

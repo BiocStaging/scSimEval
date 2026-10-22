@@ -23,6 +23,7 @@
   - Synchronized cell embedding quality table evaluation by properly calling `compute_embedding_quality_metrics()`.
   - Streamlined the Master Benchmark Scores Table and result download handlers (`.csv`, `.tsv`, `.xlsx`) to report exclusively the unstandardized raw evaluation metric values (`Score_Raw`), removing duplicate and redundant score columns.
   - Eliminated k-means clustering iteration warnings (`iter.max = 50`) and ggplot2 boxplot scale clipping notices across distribution plots.
+  - Enhanced tabular data parsing in `read_uploaded_matrix()` to automatically infer separators, transposed gene/cell orientations, and row/column identifiers, accompanied by safe bounds-checked coordinate extraction for PCA, t-SNE, and UMAP embeddings.
 
 # scSimEval 0.99.7
 

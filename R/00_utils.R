@@ -280,6 +280,9 @@ fast_cross_distance_sq <- function(X, Y) {
 #' @return Matrix of cell principal component embeddings (cells x n_pcs).
 #' @export
 fast_pca <- function(mat, n_pcs = 20, n_hvg = 2000, scale = FALSE) {
+  if (inherits(mat, "Matrix")) {
+    mat <- as.matrix(mat)
+  }
   n_feats <- ncol(mat)
   if (n_feats > n_hvg) {
     feat_vars <- fast_col_vars(mat)

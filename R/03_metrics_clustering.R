@@ -616,6 +616,7 @@ calc_cdi <- function(counts, cluster_labels, size_factors = NULL,
 #' @param dist_mat Optional precomputed distance matrix.
 #' @param cell_types Optional alias for cluster_info.
 #' @param ref_data Optional reference data to compute reference clustering quality.
+#' @param ref_cell_types Optional reference cell type labels (if ref_data has different cells than data).
 #'
 #' @return A named list of all clustering metrics.
 #' @examples
@@ -630,7 +631,8 @@ evaluate_clustering_metrics <- function(
   pred_clusters = NULL,
   dist_mat = NULL,
   cell_types = NULL,
-  ref_data = NULL
+  ref_data = NULL,
+  ref_cell_types = NULL
 ) {
   if (is.null(cluster_info) && !is.null(cell_types)) {
     cluster_info <- cell_types
@@ -640,14 +642,16 @@ evaluate_clustering_metrics <- function(
   }
   cluster_info <- as.factor(cluster_info)
   
+  d_use <- if (inherits(data, "Matrix")) as.matrix(data) else data
+
   # Fast low-dimensional PCA projection for high-dimensional single-cell clustering
   pca_coords <- NULL
-  if (nrow(data) > 30) {
-    pca_coords <- fast_pca(t(data), n_pcs = min(30, ncol(data) - 1, nrow(data) - 1), n_hvg = 2000)
+  if (nrow(d_use) > 30) {
+    pca_coords <- fast_pca(t(d_use), n_pcs = min(30, ncol(d_use) - 1, nrow(d_use) - 1), n_hvg = 2000)
   }
   
   if (is.null(dist_mat)) {
-    dist_mat <- if (!is.null(pca_coords)) stats::dist(pca_coords) else stats::dist(t(as.matrix(data)))
+    dist_mat <- if (!is.null(pca_coords)) stats::dist(pca_coords) else stats::dist(t(as.matrix(d_use)))
   }
   
   res <- list(
@@ -657,20 +661,30 @@ evaluate_clustering_metrics <- function(
     dunn = calc_dunn(dist_mat, cluster_info),
     connectivity_sim = calc_connectivity(dist_mat, cluster_info),
     connectivity = calc_connectivity(dist_mat, cluster_info),
-    davies_bouldin_sim = calc_davies_bouldin(if (!is.null(pca_coords)) t(pca_coords) else data, cluster_info),
-    davies_bouldin = calc_davies_bouldin(if (!is.null(pca_coords)) t(pca_coords) else data, cluster_info),
-    calinski_harabasz_sim = calc_calinski_harabasz(if (!is.null(pca_coords)) t(pca_coords) else data, cluster_info),
-    calinski_harabasz = calc_calinski_harabasz(if (!is.null(pca_coords)) t(pca_coords) else data, cluster_info),
+    davies_bouldin_sim = calc_davies_bouldin(if (!is.null(pca_coords)) t(pca_coords) else d_use, cluster_info),
+    davies_bouldin = calc_davies_bouldin(if (!is.null(pca_coords)) t(pca_coords) else d_use, cluster_info),
+    calinski_harabasz_sim = calc_calinski_harabasz(if (!is.null(pca_coords)) t(pca_coords) else d_use, cluster_info),
+    calinski_harabasz = calc_calinski_harabasz(if (!is.null(pca_coords)) t(pca_coords) else d_use, cluster_info),
     neighborhood_purity = mean(calc_neighborhood_purity(dist_mat, cluster_info, is_distance = TRUE), na.rm = TRUE)
   )
   
   if (!is.null(ref_data)) {
-    ref_pca <- if (nrow(ref_data) > 30) fast_pca(t(ref_data), n_pcs = min(30, ncol(ref_data) - 1, nrow(ref_data) - 1), n_hvg = 2000) else NULL
-    ref_dist <- if (!is.null(ref_pca)) stats::dist(ref_pca) else stats::dist(t(as.matrix(ref_data)))
-    res$silhouette_ref <- calc_silhouette(ref_dist, cluster_info)
-    res$dunn_ref <- calc_dunn(ref_dist, cluster_info)
-    res$davies_bouldin_ref <- calc_davies_bouldin(if (!is.null(ref_pca)) t(ref_pca) else ref_data, cluster_info)
-    res$calinski_harabasz_ref <- calc_calinski_harabasz(if (!is.null(ref_pca)) t(ref_pca) else ref_data, cluster_info)
+    r_use <- if (inherits(ref_data, "Matrix")) as.matrix(ref_data) else ref_data
+    ref_pca <- if (nrow(r_use) > 30) fast_pca(t(r_use), n_pcs = min(30, ncol(r_use) - 1, nrow(r_use) - 1), n_hvg = 2000) else NULL
+    ref_dist <- if (!is.null(ref_pca)) stats::dist(ref_pca) else stats::dist(t(as.matrix(r_use)))
+    ref_cl <- if (!is.null(ref_cell_types) && length(ref_cell_types) == ncol(r_use)) {
+      as.factor(ref_cell_types)
+    } else if (length(cluster_info) == ncol(r_use)) {
+      cluster_info
+    } else {
+      NULL
+    }
+    if (!is.null(ref_cl) && length(unique(stats::na.omit(ref_cl))) > 1) {
+      res$silhouette_ref <- calc_silhouette(ref_dist, ref_cl)
+      res$dunn_ref <- calc_dunn(ref_dist, ref_cl)
+      res$davies_bouldin_ref <- calc_davies_bouldin(if (!is.null(ref_pca)) t(ref_pca) else r_use, ref_cl)
+      res$calinski_harabasz_ref <- calc_calinski_harabasz(if (!is.null(ref_pca)) t(ref_pca) else r_use, ref_cl)
+    }
   }
   
   # Unsupervised Clustering Deviation Index (CDI; Fang et al., 2022 / scDesign3)
@@ -736,10 +750,9 @@ evaluate_clustering_metrics <- function(
 #'
 #' @return A list containing Generative Precision, Generative Recall, and Generative F1.
 #' @examples
-#' data <- matrix(stats::rnorm(200), 20, 10)
-#' cl <- factor(rep(c("A", "B"), each = 10))
-#' dist_mat <- stats::dist(data)
-#' calc_generative_precision_recall(data, cl)
+#' ref <- matrix(stats::rnorm(200), 20, 10)
+#' sim <- matrix(stats::rnorm(200), 20, 10)
+#' calc_generative_precision_recall(ref, sim)
 #' @export
 calc_generative_precision_recall <- function(
   ref_mat,
@@ -756,17 +769,39 @@ calc_generative_precision_recall <- function(
     sim_mat <- SummarizedExperiment::assay(sim_mat, "counts")
   }
   
-  # Subsample features to top HVGs if large
-  n_r_feats <- if (cells_as_cols) nrow(ref_mat) else ncol(ref_mat)
-  if (n_r_feats > max_features) {
-    rv <- if (cells_as_cols) fast_row_vars(ref_mat) else fast_col_vars(ref_mat)
-    top_f <- order(rv, decreasing = TRUE)[seq_len(max_features)]
-    ref_mat <- if (cells_as_cols) ref_mat[top_f, , drop = FALSE] else ref_mat[, top_f, drop = FALSE]
-    sim_mat <- if (cells_as_cols) sim_mat[top_f, , drop = FALSE] else sim_mat[, top_f, drop = FALSE]
+  if (!is.matrix(ref_mat) && !inherits(ref_mat, "Matrix")) ref_mat <- as.matrix(ref_mat)
+  if (!is.matrix(sim_mat) && !inherits(sim_mat, "Matrix")) sim_mat <- as.matrix(sim_mat)
+  
+  if (!cells_as_cols) {
+    ref_mat <- t(ref_mat)
+    sim_mat <- t(sim_mat)
+    cells_as_cols <- TRUE
   }
   
-  x <- if (cells_as_cols) t(as.matrix(ref_mat)) else as.matrix(ref_mat)
-  y <- if (cells_as_cols) t(as.matrix(sim_mat)) else as.matrix(sim_mat)
+  # Align features between reference and simulation
+  r_names <- rownames(ref_mat)
+  s_names <- rownames(sim_mat)
+  if (!is.null(r_names) && !is.null(s_names) && length(intersect(r_names, s_names)) >= 5) {
+    common_feats <- intersect(r_names, s_names)
+    ref_mat <- ref_mat[common_feats, , drop = FALSE]
+    sim_mat <- sim_mat[common_feats, , drop = FALSE]
+  } else {
+    n_common <- min(nrow(ref_mat), nrow(sim_mat))
+    if (n_common < 2) return(list(generative_precision = NA_real_, generative_recall = NA_real_, generative_f1 = NA_real_))
+    ref_mat <- ref_mat[seq_len(n_common), , drop = FALSE]
+    sim_mat <- sim_mat[seq_len(n_common), , drop = FALSE]
+  }
+  
+  # Subsample features to top HVGs if large
+  if (nrow(ref_mat) > max_features) {
+    rv <- fast_row_vars(ref_mat)
+    top_f <- order(rv, decreasing = TRUE)[seq_len(max_features)]
+    ref_mat <- ref_mat[top_f, , drop = FALSE]
+    sim_mat <- sim_mat[top_f, , drop = FALSE]
+  }
+  
+  x <- t(as.matrix(ref_mat))
+  y <- t(as.matrix(sim_mat))
   
   if (nrow(x) > max_cells) x <- x[sample(nrow(x), max_cells), , drop = FALSE]
   if (nrow(y) > max_cells) y <- y[sample(nrow(y), max_cells), , drop = FALSE]

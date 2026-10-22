@@ -35,7 +35,8 @@ calc_cms <- function(
   batch_info <- as.factor(batch_info)
   
   if (is.null(coords)) {
-    coords <- fast_pca(t(data), n_pcs = n_pcs, n_hvg = 2000, scale = FALSE)
+    d_use <- if (inherits(data, "Matrix")) as.matrix(data) else data
+    coords <- fast_pca(t(d_use), n_pcs = n_pcs, n_hvg = 2000, scale = FALSE)
   }
   
   n_cells <- nrow(coords)

@@ -10,7 +10,8 @@ evaluate_clustering_metrics(
   pred_clusters = NULL,
   dist_mat = NULL,
   cell_types = NULL,
-  ref_data = NULL
+  ref_data = NULL,
+  ref_cell_types = NULL
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ evaluate_clustering_metrics(
 \item{cell_types}{Optional alias for cluster_info.}
 
 \item{ref_data}{Optional reference data to compute reference clustering quality.}
+
+\item{ref_cell_types}{Optional reference cell type labels (if ref_data has different cells than data).}
 }
 \value{
 A named list of all clustering metrics.

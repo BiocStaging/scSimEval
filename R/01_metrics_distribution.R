@@ -910,17 +910,36 @@ calc_mmd <- function(
     sim_mat <- SummarizedExperiment::assay(sim_mat, "counts")
   }
   
-  # Subsample features to top HVGs if large
-  n_r_feats <- if (cells_as_cols) nrow(ref_mat) else ncol(ref_mat)
-  if (n_r_feats > max_features) {
-    rv <- if (cells_as_cols) fast_row_vars(ref_mat) else fast_col_vars(ref_mat)
-    top_f <- order(rv, decreasing = TRUE)[seq_len(max_features)]
-    ref_mat <- if (cells_as_cols) ref_mat[top_f, , drop = FALSE] else ref_mat[, top_f, drop = FALSE]
-    sim_mat <- if (cells_as_cols) sim_mat[top_f, , drop = FALSE] else sim_mat[, top_f, drop = FALSE]
+  if (!cells_as_cols) {
+    ref_mat <- t(ref_mat)
+    sim_mat <- t(sim_mat)
+    cells_as_cols <- TRUE
   }
   
-  x <- if (cells_as_cols) t(as.matrix(ref_mat)) else as.matrix(ref_mat)
-  y <- if (cells_as_cols) t(as.matrix(sim_mat)) else as.matrix(sim_mat)
+  # Align features between reference and simulation
+  r_names <- rownames(ref_mat)
+  s_names <- rownames(sim_mat)
+  if (!is.null(r_names) && !is.null(s_names) && length(intersect(r_names, s_names)) >= 5) {
+    common_feats <- intersect(r_names, s_names)
+    ref_mat <- ref_mat[common_feats, , drop = FALSE]
+    sim_mat <- sim_mat[common_feats, , drop = FALSE]
+  } else {
+    n_common <- min(nrow(ref_mat), nrow(sim_mat))
+    if (n_common < 2) return(list(mmd = NA_real_, mmd_squared = NA_real_, bandwidth_sigma = NA_real_))
+    ref_mat <- ref_mat[seq_len(n_common), , drop = FALSE]
+    sim_mat <- sim_mat[seq_len(n_common), , drop = FALSE]
+  }
+  
+  # Subsample features to top HVGs if large
+  if (nrow(ref_mat) > max_features) {
+    rv <- fast_row_vars(ref_mat)
+    top_f <- order(rv, decreasing = TRUE)[seq_len(max_features)]
+    ref_mat <- ref_mat[top_f, , drop = FALSE]
+    sim_mat <- sim_mat[top_f, , drop = FALSE]
+  }
+  
+  x <- t(as.matrix(ref_mat))
+  y <- t(as.matrix(sim_mat))
   
   # Subsample cells if needed
   if (nrow(x) > max_cells) x <- x[sample(nrow(x), max_cells), , drop = FALSE]
@@ -990,17 +1009,36 @@ calc_frechet_singlecell_distance <- function(
   n_pcs = 15,
   max_features = 2000
 ) {
-  # Subsample features to top 2000 HVGs if features are large
-  n_r_feats <- if (cells_as_cols) nrow(ref_mat) else ncol(ref_mat)
-  if (n_r_feats > max_features) {
-    rv <- if (cells_as_cols) fast_row_vars(ref_mat) else fast_col_vars(ref_mat)
-    top_f <- order(rv, decreasing = TRUE)[seq_len(max_features)]
-    ref_mat <- if (cells_as_cols) ref_mat[top_f, , drop = FALSE] else ref_mat[, top_f, drop = FALSE]
-    sim_mat <- if (cells_as_cols) sim_mat[top_f, , drop = FALSE] else sim_mat[, top_f, drop = FALSE]
+  if (!cells_as_cols) {
+    ref_mat <- t(ref_mat)
+    sim_mat <- t(sim_mat)
+    cells_as_cols <- TRUE
   }
   
-  x <- if (cells_as_cols) t(as.matrix(ref_mat)) else as.matrix(ref_mat)
-  y <- if (cells_as_cols) t(as.matrix(sim_mat)) else as.matrix(sim_mat)
+  # Align features between reference and simulation
+  r_names <- rownames(ref_mat)
+  s_names <- rownames(sim_mat)
+  if (!is.null(r_names) && !is.null(s_names) && length(intersect(r_names, s_names)) >= 5) {
+    common_feats <- intersect(r_names, s_names)
+    ref_mat <- ref_mat[common_feats, , drop = FALSE]
+    sim_mat <- sim_mat[common_feats, , drop = FALSE]
+  } else {
+    n_common <- min(nrow(ref_mat), nrow(sim_mat))
+    if (n_common < 2) return(list(fsd = NA_real_, mean_discrepancy = NA_real_, cov_discrepancy = NA_real_))
+    ref_mat <- ref_mat[seq_len(n_common), , drop = FALSE]
+    sim_mat <- sim_mat[seq_len(n_common), , drop = FALSE]
+  }
+  
+  # Subsample features to top HVGs if features are large
+  if (nrow(ref_mat) > max_features) {
+    rv <- fast_row_vars(ref_mat)
+    top_f <- order(rv, decreasing = TRUE)[seq_len(max_features)]
+    ref_mat <- ref_mat[top_f, , drop = FALSE]
+    sim_mat <- sim_mat[top_f, , drop = FALSE]
+  }
+  
+  x <- t(as.matrix(ref_mat))
+  y <- t(as.matrix(sim_mat))
   
   # Joint PCA projection for consistent coordinate frame
   n_x <- nrow(x)

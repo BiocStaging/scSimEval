@@ -384,9 +384,34 @@ utils::globalVariables(c(
   "Cross-Modal Relationships"               = "(VII) Cross-Modal Coupling & Modularity",
   "Cross-Modal Coupling & Modularity"       = "(VII) Cross-Modal Coupling & Modularity",
   "Cross-Modal"                             = "(VII) Cross-Modal Coupling & Modularity",
-  "Computational Scalability"               = "(VIII) Computational Scalability",
-  "Scalability"                             = "(VIII) Computational Scalability"
+  "Computational Scalability"               = "(VIII) Computational Scalability"
 )
+
+#' Standardize Category Names in Benchmark Tables
+#'
+#' Standardizes legacy, informal, or variant evaluation category labels to the
+#' canonical 8 scSimEval categories across benchmark data frames.
+#'
+#' @param df Data frame containing a \code{Category} and/or \code{Metric} column.
+#' @return Data frame with standardized \code{Category} assignments.
+#' @examples
+#' df <- data.frame(Category = "Distribution", Metric = "KS", Value = 0.1)
+#' standardize_benchmark_categories(df)
+#' @export
+standardize_benchmark_categories <- function(df) {
+  if (is.null(df) || nrow(df) == 0) return(df)
+  legacy_map <- .LEGACY_CATEGORY_MAP
+  if ("Category" %in% colnames(df)) {
+    df$Category <- ifelse(df$Category %in% names(legacy_map),
+                          legacy_map[df$Category], df$Category)
+  }
+  if ("Metric" %in% colnames(df)) {
+    mc <- .METRIC_CATEGORY_MAP[df$Metric]
+    idx <- !is.na(mc)
+    df$Category[idx] <- mc[idx]
+  }
+  df
+}
 
 #' @keywords internal
 #' @keywords internal
@@ -673,10 +698,18 @@ plot_distribution_qc <- function(
 
   # 10. Gene correlation
   top_g <- order(v_r, decreasing = TRUE)[seq_len(min(nrow(ref_mat), 100))]
-  gc_r <- stats::cor(t(ref_mat[top_g, ]))[upper.tri(diag(length(top_g)))]
+  gc_r <- stats::cor(t(ref_mat[top_g, , drop = FALSE]))[upper.tri(diag(length(top_g)))]
   df_gcor_list <- list(data.frame(val = gc_r, Dataset = ref_name))
   for (sn in sim_names) {
-    gc_s <- stats::cor(t(sims[[sn]][top_g, ]))[upper.tri(diag(length(top_g)))]
+    s_mat <- sims[[sn]]
+    r_names <- rownames(ref_mat[top_g, , drop = FALSE])
+    if (!is.null(r_names) && !is.null(rownames(s_mat)) && all(r_names %in% rownames(s_mat))) {
+      gc_s <- stats::cor(t(s_mat[r_names, , drop = FALSE]))[upper.tri(diag(length(r_names)))]
+    } else {
+      v_s <- fast_row_vars(s_mat)
+      top_g_s <- order(v_s, decreasing = TRUE)[seq_len(min(nrow(s_mat), 100))]
+      gc_s <- stats::cor(t(s_mat[top_g_s, , drop = FALSE]))[upper.tri(diag(length(top_g_s)))]
+    }
     df_gcor_list[[sn]] <- data.frame(val = gc_s, Dataset = sn)
   }
   df_gcor <- do.call(rbind, df_gcor_list)
