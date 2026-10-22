@@ -1,3 +1,23 @@
+# scSimEval 0.99.8
+
+## Major Improvements
+
+* **Configurable CPU Cores & Parallel Computing Acceleration:**
+  - Added interactive CPU core/thread selection (`Number of CPU Cores / Threads`) across Single-Cell (Unimodal) and Multiomics modes in both the sidebar and the main Data Hub panel.
+  - Automatically detects available system hardware cores (`parallel::detectCores(logical = TRUE)`) and displays a live parallel worker badge (`Parallel: X CPU Cores`) with immediate visual feedback.
+  - Integrated `BiocParallel` into `evaluate_simulation_accuracy()`, `evaluate_multiomics_accuracy()`, `calc_all_bivariate_metrics()`, and `calc_cross_modality_correlation()` to parallelize 2D bivariate evaluations (Fasano-Franceschini, Peacock, KDE, EMD) and paired peak-to-gene cross-modal correlations across user-specified threads.
+  - Updated reproducible R script downloaders to automatically configure the user-selected thread count (`threads = n_cores`) for HPC cluster and local parallel execution.
+
+* **Documentation & Vignette Synchronization for Multi-Core Workflows:**
+  - Updated `vignettes/shiny-app.Rmd`, `vignettes/scSimEval-workflow.Rmd`, and `vignettes/demo-multiomics.Rmd` to comprehensively document multi-core / multi-threaded execution options, explaining how parallelization accelerates large-scale single-cell and multiomics benchmarking.
+  - Confirmed 0 errors, 0 warnings, and 0 notes on `R CMD check` under strict Bioconductor submission settings.
+
+* **Day/Night Dark Mode Toggle & UI Accessibility Enhancements:**
+  - Added an interactive day and night (light/dark) mode toggle switch in the top-right corner of the application navbar via `bslib::input_dark_mode()`, allowing users to switch dynamically between light and dark themes.
+  - Provided comprehensive dark mode CSS styling across all panels, cards, tables, modal dialogs, and diagnostic containers.
+  - Enhanced contrast and visibility for the "View Formats & Full Breakdown →" action buttons in both Single-Cell and Multiomics simulation tabs by adopting styled, high-contrast controls.
+  - Fixed font and background contrast in the Metric Measurement Capacity modal breakdown table, ensuring that badge indicators across all experimental modes and metadata combinations are clearly legible in both light and dark modes.
+
 # scSimEval 0.99.7
 
 ## Major Improvements

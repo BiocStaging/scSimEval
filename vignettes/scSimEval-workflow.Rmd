@@ -383,6 +383,12 @@ cat("Total evaluated metric instances:", nrow(summary_df), "\n")
 table(summary_df$Category)
 ```
 
+> **Parallel Computing with Multi-Core Hardware (`threads`):**
+> Both `evaluate_simulation_accuracy()` and `evaluate_multiomics_accuracy()` accept a `threads` parameter
+> (default is `threads = 1`). On multi-core workstations or HPC compute nodes, specifying `threads = 4` or `threads = 8`
+> uses `BiocParallel` to parallelize 2D bivariate distribution tests (Fasano-Franceschini, Peacock, KDE, EMD)
+> and Category VII paired peak-to-gene cross-modal correlations concurrently, reducing runtime substantially.
+
 ---
 
 ## 12. Visualization Suite

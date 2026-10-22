@@ -35,8 +35,9 @@ launch_scSimEval_app()          # opens in your default browser
 > large-scale single-cell and multiomics datasets.
 
 The studio is organized into **seven primary navigation tabs** in the top navigation bar, plus an
-**eight-panel Visualizations module** inside Tab 4. The sections below document every tab,
-every control, and all export options in the order they appear in the application.
+**eight-panel Visualizations module** inside Tab 4. The top-right corner of the navbar features an interactive
+**Day/Night (Light/Dark mode) toggle switch** (`bslib::input_dark_mode()`), allowing instantaneous switching between
+light and dark themes across all cards, tables, modal dialogs, and diagnostic containers.
 
 ---
 
@@ -76,10 +77,13 @@ Evaluate one or more unimodal count-matrix simulators across single or multiple 
 * **Number of Single-Cell Simulators (1–6):** Generates matching upload cards with simulator name, simulated count matrix, runtime (seconds), and peak RAM (MiB).
 * **Cell Type Labels (Optional):** Vector / factor / 2-column table (`Cell_ID,Cell_Type`). Unlocks +12–15 clustering and biological signal metrics.
 * **Batch Annotations (Optional):** Vector / factor / 2-column table (`Cell_ID,Batch`). Unlocks +7 batch mixing metrics.
+* **Compute & Parallelization:** Set the number of CPU worker threads (auto-detected via `parallel::detectCores()`, e.g., 4 or 8 threads). The app uses `BiocParallel` to parallelize 2D bivariate tests (Fasano-Franceschini, Peacock, KDE, EMD). A live badge (`Parallel: X CPU Cores`) in the action bar confirms the active hardware allocation.
 
 #### Mode 3 — Multiomics Evaluation (scRNA-seq + scATAC-seq)
 * **Paired Co-assay:** Same individual cells in both modalities (10x Multiome, SHARE-seq). All 62 metrics including FOSCTTM, Match@1, and peak-to-gene linkage.
 * **Unpaired Profiling:** Separate cells from the same tissue. Population-level cross-modal metrics evaluated; cell-pairing metrics safely skipped.
+* **Multi-Core Hardware Acceleration:** Configure dedicated CPU threads for multiomics benchmarking. Accelerates dual-modality unimodal layers and Category VII cross-modality correlation calculations in parallel.
+* **Reproducible HPC Script Generation:** Clicking **Download R Script** outputs an executable R script pre-configured with the chosen thread count (`threads = n_cores`) for cluster or server deployment.
 
 #### Metric Measurement Capacity by Upload Configuration
 
@@ -195,7 +199,7 @@ Every Shiny control maps directly to a documented R function:
 | Cell Embeddings | `compute_dataset_embeddings()` + `plot_dataset_embeddings()` |
 | Embedding Quality Metrics | `compute_embedding_quality_metrics()` |
 
-For complete parameter descriptions see the [Reference](../reference/index.html) index.
+For complete parameter descriptions, refer to the individual package manual pages.
 
 ---
 

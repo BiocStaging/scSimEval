@@ -226,6 +226,11 @@ master_eval <- evaluate_multiomics_accuracy(
 head(master_eval$benchmark_summary_table)
 ```
 
+> **Parallel Multi-Core Acceleration (`threads`):**
+> On multi-core systems or HPC nodes, set `threads = 4` or `threads = 8` to accelerate
+> the dual unimodal layer evaluations and Category 7 cross-modal correlation computations
+> across CPU worker threads via `BiocParallel`.
+
 ---
 
 # Part 3: Evaluating Unpaired Multiomics

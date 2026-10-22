@@ -10,7 +10,8 @@ calc_cross_modality_correlation(
   sim_mod1,
   sim_mod2,
   feature_pairs = NULL,
-  method = c("spearman", "pearson")
+  method = c("spearman", "pearson"),
+  threads = 1
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ calc_cross_modality_correlation(
 \item{feature_pairs}{Optional 2-column data.frame/matrix of paired feature names/indices.}
 
 \item{method}{Correlation method: "spearman" (default) or "pearson".}
+
+\item{threads}{Number of threads for parallel computation. Default is 1.}
 }
 \value{
 A named list of the 7 univariate accuracy metrics comparing the reference vs.

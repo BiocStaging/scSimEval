@@ -20,6 +20,14 @@ for (p in c("10_visualizations.R", "R/10_visualizations.R", "../../R/10_visualiz
 # Set max upload size to 10 GB for large single-cell datasets
 options(shiny.maxRequestSize = 10 * 1024^3)
 
+# Detect available CPU hardware cores for parallel benchmarking
+max_sys_cores <- tryCatch({
+  mc <- parallel::detectCores(logical = TRUE)
+  if (is.na(mc) || mc < 1) 1L else as.integer(mc)
+}, error = function(e) 1L)
+default_n_cores <- max(1L, min(4L, max_sys_cores - 1L))
+
+
 # Register static resource directory for documentation figures
 fig_dirs <- c(
   system.file("shiny", "scSimEvalApp", "www", package = "scSimEval"),
@@ -886,14 +894,631 @@ ui <- page_navbar(
         filter: blur(1px);
         transition: all 0.2s ease;
       }
+                  /* ===== GENERAL DAYLIGHT TYPOGRAPHY & CONTRAST ===== */
+      body {
+        color: #0F172A;
+      }
+      .text-muted,
+      small.text-muted {
+        color: #475569 !important;
+      }
+      
+      /* ===== HIGH-CONTRAST ALERT BANNERS IN DAYLIGHT MODE ===== */
+      /* Override Bootswatch Flatly default white text on light alert cards */
+      .alert {
+        color: #0F172A !important;
+      }
+      .alert-info {
+        background-color: #F0F9FF !important;
+        border-color: #BAE6FD !important;
+        color: #0369A1 !important;
+      }
+      .alert-info,
+      .alert-info p,
+      .alert-info div,
+      .alert-info span:not(.badge) {
+        color: #0369A1 !important;
+      }
+      .alert-info b,
+      .alert-info strong,
+      .alert-info .alert-heading {
+        color: #0C4A6E !important;
+      }
+      .alert-info i,
+      .alert-info .fa,
+      .alert-info .fas {
+        color: #0284C7 !important;
+      }
+      .alert-info a,
+      .alert-info a:visited,
+      .alert-info .action-button,
+      .alert-info actionLink {
+        color: #0284C7 !important;
+        font-weight: 700 !important;
+      }
+
+      .alert-primary {
+        background-color: #EEF2FF !important;
+        border-color: #C7D2FE !important;
+        color: #3730A3 !important;
+      }
+      .alert-primary,
+      .alert-primary p,
+      .alert-primary div,
+      .alert-primary span:not(.badge) {
+        color: #3730A3 !important;
+      }
+      .alert-primary b,
+      .alert-primary strong,
+      .alert-primary .alert-heading {
+        color: #1E1B4B !important;
+      }
+      .alert-primary i,
+      .alert-primary .fa,
+      .alert-primary .fas {
+        color: #4F46E5 !important;
+      }
+      .alert-primary a,
+      .alert-primary a:visited,
+      .alert-primary .action-button,
+      .alert-primary actionLink {
+        color: #4F46E5 !important;
+        font-weight: 700 !important;
+      }
+
+      .alert-indigo {
+        background-color: #EEF2FF !important;
+        border-color: #C7D2FE !important;
+        color: #3730A3 !important;
+      }
+      .alert-indigo,
+      .alert-indigo p,
+      .alert-indigo div,
+      .alert-indigo span:not(.badge) {
+        color: #3730A3 !important;
+      }
+      .alert-indigo b,
+      .alert-indigo strong {
+        color: #1E1B4B !important;
+      }
+      .alert-indigo i,
+      .alert-indigo .fa,
+      .alert-indigo .fas {
+        color: #4F46E5 !important;
+      }
+
+      .alert-secondary {
+        background-color: #F8FAFC !important;
+        border-color: #CBD5E1 !important;
+        color: #334155 !important;
+      }
+      .alert-secondary,
+      .alert-secondary p,
+      .alert-secondary div,
+      .alert-secondary span:not(.badge) {
+        color: #334155 !important;
+      }
+      .alert-secondary b,
+      .alert-secondary strong {
+        color: #0F172A !important;
+      }
+
+      .alert-success {
+        background-color: #F0FDF4 !important;
+        border-color: #BBF7D0 !important;
+        color: #166534 !important;
+      }
+      .alert-success,
+      .alert-success p,
+      .alert-success div,
+      .alert-success span:not(.badge) {
+        color: #166534 !important;
+      }
+      .alert-success b,
+      .alert-success strong {
+        color: #14532D !important;
+      }
+
+      .alert-warning {
+        background-color: #FFFBEB !important;
+        border-color: #FDE68A !important;
+        color: #92400E !important;
+      }
+      .alert-warning,
+      .alert-warning p,
+      .alert-warning div,
+      .alert-warning span:not(.badge) {
+        color: #92400E !important;
+      }
+      .alert-warning b,
+      .alert-warning strong {
+        color: #78350F !important;
+      }
+
+      .alert-danger {
+        background-color: #FEF2F2 !important;
+        border-color: #FECACA !important;
+        color: #991B1B !important;
+      }
+      .alert-danger,
+      .alert-danger p,
+      .alert-danger div,
+      .alert-danger span:not(.badge) {
+        color: #991B1B !important;
+      }
+      .alert-danger b,
+      .alert-danger strong {
+        color: #7F1D1D !important;
+      }
+
+      /* Alert Badges High Contrast */
+      .alert .badge.bg-primary-subtle,
+      .badge.bg-primary-subtle {
+        background-color: #E0E7FF !important;
+        color: #3730A3 !important;
+        border: 1px solid #C7D2FE !important;
+        font-weight: 700 !important;
+      }
+      .alert .badge.bg-warning-subtle,
+      .badge.bg-warning-subtle {
+        background-color: #FEF3C7 !important;
+        color: #92400E !important;
+        border: 1px solid #FDE68A !important;
+        font-weight: 700 !important;
+      }
+      
+      /* ==================================================================== */
+      /* COMPREHENSIVE HIGH-CONTRAST NIGHT MODE / DARK THEME STYLING          */
+      /* ==================================================================== */
+      
+      /* 1. Global Dark Theme CSS Variables */
+      [data-bs-theme='dark'] {
+        --bs-body-bg: #0B1329 !important;
+        --bs-body-color: #F8FAFC !important;
+        --bs-emphasis-color: #FFFFFF !important;
+        --bs-secondary-color: #94A3B8 !important;
+        --bs-tertiary-color: #64748B !important;
+        --bs-border-color: #334155 !important;
+        --bs-card-bg: #0F172A !important;
+        --bs-card-color: #F8FAFC !important;
+        --bs-card-border-color: #334155 !important;
+        --bs-card-cap-bg: #1E293B !important;
+      }
+      
+      [data-bs-theme='dark'] body {
+        background-color: #0B1329 !important;
+        color: #F8FAFC !important;
+      }
+
+      /* 2. Global Text Typography in Night Mode */
+      [data-bs-theme='dark'] p,
+      [data-bs-theme='dark'] span:not(.badge),
+      [data-bs-theme='dark'] div:not(.badge):not(.alert),
+      [data-bs-theme='dark'] label,
+      [data-bs-theme='dark'] .form-label,
+      [data-bs-theme='dark'] .control-label,
+      [data-bs-theme='dark'] li,
+      [data-bs-theme='dark'] td,
+      [data-bs-theme='dark'] th,
+      [data-bs-theme='dark'] strong,
+      [data-bs-theme='dark'] b {
+        color: #F8FAFC;
+      }
+
+      [data-bs-theme='dark'] h1, [data-bs-theme='dark'] .h1,
+      [data-bs-theme='dark'] h2, [data-bs-theme='dark'] .h2,
+      [data-bs-theme='dark'] h3, [data-bs-theme='dark'] .h3,
+      [data-bs-theme='dark'] h4, [data-bs-theme='dark'] .h4,
+      [data-bs-theme='dark'] h5, [data-bs-theme='dark'] .h5,
+      [data-bs-theme='dark'] h6, [data-bs-theme='dark'] .h6 {
+        color: #FFFFFF !important;
+      }
+
+      [data-bs-theme='dark'] .text-muted,
+      [data-bs-theme='dark'] small.text-muted,
+      [data-bs-theme='dark'] .text-secondary,
+      [data-bs-theme='dark'] .stat-label {
+        color: #94A3B8 !important;
+      }
+
+      /* 3. Attribute Selectors to Override Hardcoded Dark / Black Inline Text */
+      [data-bs-theme='dark'] [style*='color: #0F172A'],
+      [data-bs-theme='dark'] [style*='color:#0F172A'],
+      [data-bs-theme='dark'] [style*='color: #0f172a'],
+      [data-bs-theme='dark'] [style*='color:#0f172a'],
+      [data-bs-theme='dark'] [style*='color: #1E293B'],
+      [data-bs-theme='dark'] [style*='color:#1E293B'],
+      [data-bs-theme='dark'] [style*='color: #1e293b'],
+      [data-bs-theme='dark'] [style*='color:#1e293b'],
+      [data-bs-theme='dark'] [style*='color: #334155'],
+      [data-bs-theme='dark'] [style*='color:#334155'],
+      [data-bs-theme='dark'] [style*='color: #475569'],
+      [data-bs-theme='dark'] [style*='color:#475569'],
+      [data-bs-theme='dark'] [style*='color: black'],
+      [data-bs-theme='dark'] [style*='color: #000'],
+      [data-bs-theme='dark'] [style*='color:#000'],
+      [data-bs-theme='dark'] [style*='color: #111827'],
+      [data-bs-theme='dark'] [style*='color:#111827'] {
+        color: #F8FAFC !important;
+      }
+
+      [data-bs-theme='dark'] [style*='color: #64748B'],
+      [data-bs-theme='dark'] [style*='color:#64748B'],
+      [data-bs-theme='dark'] [style*='color: #64748b'],
+      [data-bs-theme='dark'] [style*='color:#64748b'] {
+        color: #CBD5E1 !important;
+      }
+
+      /* Hardcoded dark blues, navy, indigos become vibrant cyan / sky blue */
+      [data-bs-theme='dark'] [style*='color: #1E3A8A'],
+      [data-bs-theme='dark'] [style*='color:#1E3A8A'],
+      [data-bs-theme='dark'] [style*='color: #1e3a8a'],
+      [data-bs-theme='dark'] [style*='color:#1e3a8a'],
+      [data-bs-theme='dark'] [style*='color: #1B4F72'],
+      [data-bs-theme='dark'] [style*='color:#1B4F72'],
+      [data-bs-theme='dark'] [style*='color: #1b4f72'],
+      [data-bs-theme='dark'] [style*='color:#1b4f72'],
+      [data-bs-theme='dark'] [style*='color: #312E81'],
+      [data-bs-theme='dark'] [style*='color:#312E81'],
+      [data-bs-theme='dark'] [style*='color: #312e81'],
+      [data-bs-theme='dark'] [style*='color:#312e81'],
+      [data-bs-theme='dark'] [style*='color: #1E3A5F'],
+      [data-bs-theme='dark'] [style*='color:#1E3A5F'],
+      [data-bs-theme='dark'] [style*='color: #0369A1'],
+      [data-bs-theme='dark'] [style*='color:#0369A1'],
+      [data-bs-theme='dark'] [style*='color: #0C4A6E'],
+      [data-bs-theme='dark'] [style*='color:#0C4A6E'] {
+        color: #38BDF8 !important;
+      }
+
+      [data-bs-theme='dark'] [style*='color: #3730A3'],
+      [data-bs-theme='dark'] [style*='color:#3730A3'],
+      [data-bs-theme='dark'] [style*='color: #1E1B4B'],
+      [data-bs-theme='dark'] [style*='color:#1E1B4B'] {
+        color: #A5B4FC !important;
+      }
+
+      /* Hardcoded dark greens become radiant emerald */
+      [data-bs-theme='dark'] [style*='color: #166534'],
+      [data-bs-theme='dark'] [style*='color:#166534'],
+      [data-bs-theme='dark'] [style*='color: #15803D'],
+      [data-bs-theme='dark'] [style*='color:#15803D'],
+      [data-bs-theme='dark'] [style*='color: #0F766E'],
+      [data-bs-theme='dark'] [style*='color:#0F766E'],
+      [data-bs-theme='dark'] [style*='color: #0D9488'],
+      [data-bs-theme='dark'] [style*='color:#0D9488'] {
+        color: #4ADE80 !important;
+      }
+
+      [data-bs-theme='dark'] [style*='color: #4338CA'],
+      [data-bs-theme='dark'] [style*='color:#4338CA'] {
+        color: #A5B4FC !important;
+      }
+
+      /* 4. Transform Hardcoded Light Background Containers into Dark Slate */
+      [data-bs-theme='dark'] [style*='background: #FFFFFF'],
+      [data-bs-theme='dark'] [style*='background:#FFFFFF'],
+      [data-bs-theme='dark'] [style*='background-color: #FFFFFF'],
+      [data-bs-theme='dark'] [style*='background-color:#FFFFFF'],
+      [data-bs-theme='dark'] [style*='background: white'],
+      [data-bs-theme='dark'] [style*='background-color: white'],
+      [data-bs-theme='dark'] [style*='background: #F8FAFC'],
+      [data-bs-theme='dark'] [style*='background:#F8FAFC'],
+      [data-bs-theme='dark'] [style*='background-color: #F8FAFC'],
+      [data-bs-theme='dark'] [style*='background-color:#F8FAFC'],
+      [data-bs-theme='dark'] [style*='background: #EEF2F6'],
+      [data-bs-theme='dark'] [style*='background:#EEF2F6'],
+      [data-bs-theme='dark'] .bg-white,
+      [data-bs-theme='dark'] .bg-light {
+        background-color: #1E293B !important;
+        color: #F8FAFC !important;
+      }
+
+      [data-bs-theme='dark'] [style*='background: #EFF6FF'],
+      [data-bs-theme='dark'] [style*='background:#EFF6FF'],
+      [data-bs-theme='dark'] [style*='background: #F0F9FF'],
+      [data-bs-theme='dark'] [style*='background:#F0F9FF'] {
+        background: #0C4A6E !important;
+        color: #E0F2FE !important;
+      }
+
+      [data-bs-theme='dark'] [style*='background: #EEF2FF'],
+      [data-bs-theme='dark'] [style*='background:#EEF2FF'] {
+        background: #1E1B4B !important;
+        color: #E0E7FF !important;
+      }
+
+      [data-bs-theme='dark'] [style*='background: #F0FDF4'],
+      [data-bs-theme='dark'] [style*='background:#F0FDF4'] {
+        background: #064E3B !important;
+        color: #D1FAE5 !important;
+      }
+
+      /* Header Gradients in Dark Mode */
+      [data-bs-theme='dark'] [style*='linear-gradient(135deg, #EFF6FF'] {
+        background: linear-gradient(135deg, #0C4A6E 0%, #082F49 100%) !important;
+        border-color: #0284C7 !important;
+      }
+      [data-bs-theme='dark'] [style*='linear-gradient(135deg, #EFF6FF'] h5,
+      [data-bs-theme='dark'] [style*='linear-gradient(135deg, #EFF6FF'] p {
+        color: #E0F2FE !important;
+      }
+      [data-bs-theme='dark'] [style*='linear-gradient(135deg, #EEF2FF'] {
+        background: linear-gradient(135deg, #1E1B4B 0%, #311042 100%) !important;
+        border-color: #4F46E5 !important;
+      }
+      [data-bs-theme='dark'] [style*='linear-gradient(135deg, #EEF2FF'] h5,
+      [data-bs-theme='dark'] [style*='linear-gradient(135deg, #EEF2FF'] p {
+        color: #E0E7FF !important;
+      }
+
+      /* Borders in Dark Mode */
+      [data-bs-theme='dark'] .border,
+      [data-bs-theme='dark'] [style*='border: 1px solid #E2E8F0'],
+      [data-bs-theme='dark'] [style*='border:1px solid #E2E8F0'],
+      [data-bs-theme='dark'] [style*='border: 1px solid #CBD5E1'],
+      [data-bs-theme='dark'] [style*='border:1px solid #CBD5E1'],
+      [data-bs-theme='dark'] [style*='border: 2px dashed #CBD5E1'] {
+        border-color: #334155 !important;
+      }
+
+      /* 5. Form Controls, Inputs, File Uploads, Selects */
+      [data-bs-theme='dark'] .form-control,
+      [data-bs-theme='dark'] .form-select,
+      [data-bs-theme='dark'] .selectize-input,
+      [data-bs-theme='dark'] .selectize-dropdown {
+        background-color: #1E293B !important;
+        color: #F8FAFC !important;
+        border-color: #475569 !important;
+      }
+      [data-bs-theme='dark'] .form-control:focus,
+      [data-bs-theme='dark'] .form-select:focus,
+      [data-bs-theme='dark'] .selectize-input.focus {
+        background-color: #1E293B !important;
+        color: #FFFFFF !important;
+        border-color: #38BDF8 !important;
+        box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25) !important;
+      }
+      [data-bs-theme='dark'] .form-control::placeholder {
+        color: #64748B !important;
+      }
+      [data-bs-theme='dark'] .form-check-input {
+        background-color: #1E293B !important;
+        border-color: #475569 !important;
+      }
+      [data-bs-theme='dark'] .form-check-input:checked {
+        background-color: #0284C7 !important;
+        border-color: #0284C7 !important;
+      }
+      [data-bs-theme='dark'] .form-check-label {
+        color: #F8FAFC !important;
+      }
+
+      /* 6. Navigation Bar & Tabs */
+      [data-bs-theme='dark'] .navbar {
+        background-color: #0F172A !important;
+        border-bottom: 1px solid #334155 !important;
+      }
+      [data-bs-theme='dark'] .navbar-brand {
+        color: #FFFFFF !important;
+      }
+      [data-bs-theme='dark'] .navbar .nav-link {
+        color: #CBD5E1 !important;
+      }
+      [data-bs-theme='dark'] .navbar .nav-link:hover,
+      [data-bs-theme='dark'] .navbar .nav-link:focus {
+        color: #38BDF8 !important;
+      }
+      [data-bs-theme='dark'] .navbar .nav-link.active {
+        color: #38BDF8 !important;
+        font-weight: 700 !important;
+      }
+      [data-bs-theme='dark'] .nav-pills .nav-link {
+        color: #CBD5E1 !important;
+        background-color: #1E293B !important;
+        border: 1px solid #334155 !important;
+      }
+      [data-bs-theme='dark'] .nav-pills .nav-link.active {
+        background-color: #0284C7 !important;
+        color: #FFFFFF !important;
+        border-color: #0284C7 !important;
+      }
+
+      /* 7. Cards, Placeholders, Containers */
+      [data-bs-theme='dark'] .card {
+        background-color: #0F172A !important;
+        color: #F8FAFC !important;
+        border-color: #334155 !important;
+      }
+      [data-bs-theme='dark'] .card-header {
+        background-color: #1E293B !important;
+        color: #FFFFFF !important;
+        border-bottom-color: #334155 !important;
+      }
+      [data-bs-theme='dark'] .card-body {
+        background-color: transparent !important;
+        color: #F8FAFC !important;
+      }
+      [data-bs-theme='dark'] .stat-card {
+        background: #1E293B !important;
+        border-left-color: #38BDF8 !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+      }
+      [data-bs-theme='dark'] .stat-number {
+        color: #FFFFFF !important;
+      }
+      [data-bs-theme='dark'] .bubble-scroll-container {
+        background: #0F172A !important;
+        border-color: #334155 !important;
+      }
+      [data-bs-theme='dark'] .guide-step {
+        background: #1E293B !important;
+        border-color: #334155 !important;
+        color: #F8FAFC !important;
+      }
+      [data-bs-theme='dark'] .info-card {
+        background: #1E293B !important;
+        border-color: #334155 !important;
+        color: #F8FAFC !important;
+      }
+      [data-bs-theme='dark'] .info-card:hover {
+        background: #24354D !important;
+        border-color: #38BDF8 !important;
+      }
+      [data-bs-theme='dark'] .plot-placeholder-card {
+        background: #1E293B !important;
+        border-color: #475569 !important;
+      }
+      [data-bs-theme='dark'] .plot-placeholder-card h5 {
+        color: #FFFFFF !important;
+      }
+      [data-bs-theme='dark'] .plot-placeholder-card p {
+        color: #94A3B8 !important;
+      }
+      [data-bs-theme='dark'] .sim-input-card {
+        background: #1E293B !important;
+        border-color: #38BDF8 !important;
+      }
+
+      /* 8. Modals & Tables */
+      [data-bs-theme='dark'] .modal-content {
+        background-color: #0F172A !important;
+        color: #F8FAFC !important;
+        border-color: #334155 !important;
+      }
+      [data-bs-theme='dark'] .modal-header,
+      [data-bs-theme='dark'] .modal-footer {
+        border-color: #334155 !important;
+        background-color: #1E293B !important;
+      }
+      [data-bs-theme='dark'] .table,
+      [data-bs-theme='dark'] table.dataTable,
+      [data-bs-theme='dark'] .table > :not(caption) > * > * {
+        background-color: transparent !important;
+        color: #F8FAFC !important;
+        border-color: #334155 !important;
+      }
+      [data-bs-theme='dark'] .table-light,
+      [data-bs-theme='dark'] thead.table-light th {
+        background-color: #1E293B !important;
+        color: #FFFFFF !important;
+      }
+      [data-bs-theme='dark'] pre,
+      [data-bs-theme='dark'] code {
+        background-color: #0F172A !important;
+        color: #38BDF8 !important;
+        border-color: #334155 !important;
+      }
+
+      /* 9. Alert Banners, Buttons, and Callouts */
+      [data-bs-theme='dark'] .alert-info {
+        background-color: #082F49 !important;
+        border-color: #0284C7 !important;
+        color: #E0F2FE !important;
+      }
+      [data-bs-theme='dark'] .alert-info a,
+      [data-bs-theme='dark'] .alert-info .action-button {
+        color: #38BDF8 !important;
+      }
+      [data-bs-theme='dark'] .alert-primary {
+        background-color: #1E1B4B !important;
+        border-color: #4F46E5 !important;
+        color: #E0E7FF !important;
+      }
+      [data-bs-theme='dark'] .alert-primary a,
+      [data-bs-theme='dark'] .alert-primary .action-button {
+        color: #818CF8 !important;
+      }
+      [data-bs-theme='dark'] .alert-secondary {
+        background-color: #1E293B !important;
+        border-color: #475569 !important;
+        color: #CBD5E1 !important;
+      }
+      [data-bs-theme='dark'] .btn-outline-primary {
+        color: #38BDF8 !important;
+        border-color: #38BDF8 !important;
+        background-color: transparent !important;
+      }
+      [data-bs-theme='dark'] .btn-outline-primary:hover {
+        background-color: #0284C7 !important;
+        color: #FFFFFF !important;
+      }
+      [data-bs-theme='dark'] .btn-outline-secondary {
+        color: #CBD5E1 !important;
+        border-color: #64748B !important;
+        background-color: transparent !important;
+      }
+      [data-bs-theme='dark'] .btn-outline-secondary:hover {
+        background-color: #334155 !important;
+        color: #FFFFFF !important;
+      }
+      [data-bs-theme='dark'] #btn_show_metadata_format_hint {
+        background: #0F172A !important;
+        color: #38BDF8 !important;
+        border-color: #38BDF8 !important;
+      }
+      [data-bs-theme='dark'] #btn_show_metadata_format_multi_hint {
+        background: #0F172A !important;
+        color: #A5B4FC !important;
+        border-color: #818CF8 !important;
+      }
+      [data-bs-theme='dark'] .badge.bg-white,
+      [data-bs-theme='dark'] .badge.bg-light {
+        background-color: #1E293B !important;
+        color: #F8FAFC !important;
+        border-color: #475569 !important;
+      }
+      [data-bs-theme='dark'] .pageview-box {
+        background-color: rgba(30, 41, 59, 0.96) !important;
+        border-color: #334155 !important;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important;
+      }
+      [data-bs-theme='dark'] .pageview-title {
+        color: #94A3B8 !important;
+      }
+      [data-bs-theme='dark'] .pageview-count {
+        color: #38BDF8 !important;
+      }
+      
+      /* Daylight Mode: Clean scientific confirmation & placeholder card */
       .plot-placeholder-card {
         text-align: center;
         padding: 48px 24px;
-        background: #F8FAFC;
-        border: 2px dashed #CBD5E1;
-        border-radius: 10px;
-        margin: 18px auto;
-        max-width: 640px;
+        background: #F8FAFC !important;
+        border: 2px dashed #CBD5E1 !important;
+        border-radius: 12px;
+        margin: 24px auto;
+        max-width: 680px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      }
+      .plot-placeholder-card h5,
+      .plot-placeholder-card .placeholder-title {
+        font-weight: 700;
+        color: #0F172A !important;
+        margin-bottom: 8px;
+        font-size: 1.15rem;
+      }
+      .plot-placeholder-card p,
+      .plot-placeholder-card .placeholder-desc {
+        color: #475569 !important;
+        font-size: 0.88rem !important;
+        line-height: 1.55;
+        margin-bottom: 20px;
+      }
+
+      /* Night Mode: High-contrast Dark theme */
+      [data-bs-theme='dark'] .plot-placeholder-card {
+        background: #1E293B !important;
+        border: 2px dashed #475569 !important;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.3) !important;
+      }
+      [data-bs-theme='dark'] .plot-placeholder-card h5,
+      [data-bs-theme='dark'] .plot-placeholder-card .placeholder-title {
+        color: #FFFFFF !important;
+      }
+      [data-bs-theme='dark'] .plot-placeholder-card p,
+      [data-bs-theme='dark'] .plot-placeholder-card .placeholder-desc {
+        color: #CBD5E1 !important;
       }
     ")),
     div(
@@ -1102,6 +1727,9 @@ ui <- page_navbar(
           tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 6px; margin-bottom: 4px;", "1. Benchmarking Scope"),
           numericInput("num_uni_datasets", "Number of Datasets:", value = 1, min = 1, max = 50, step = 1),
           numericInput("num_uni_sims", "Number of Simulators:", value = 1, min = 1, max = 10, step = 1),
+          tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 10px; margin-bottom: 4px;", "2. Compute & Acceleration"),
+          numericInput("num_uni_cores", "CPU Cores / Threads:", value = default_n_cores, min = 1, max = max_sys_cores, step = 1),
+          span(class = "text-muted", style = "font-size: 0.74rem; display: block; margin-top: -6px; margin-bottom: 8px;", sprintf("System detected: %d CPU cores", max_sys_cores)),
           hr(style = "margin: 12px 0;"),
           div(
             class = "alert alert-primary py-2 px-3 mb-3", style = "font-size: 0.78rem; line-height: 1.45;",
@@ -1124,6 +1752,9 @@ ui <- page_navbar(
           tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 6px; margin-bottom: 4px;", "1. Benchmarking Scope"),
           numericInput("num_multi_datasets", "Number of Datasets:", value = 1, min = 1, max = 30, step = 1),
           numericInput("num_multi_sims", "Number of Simulators:", value = 1, min = 1, max = 8, step = 1),
+          tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 10px; margin-bottom: 4px;", "2. Compute & Acceleration"),
+          numericInput("num_multi_cores", "CPU Cores / Threads:", value = default_n_cores, min = 1, max = max_sys_cores, step = 1),
+          span(class = "text-muted", style = "font-size: 0.74rem; display: block; margin-top: -6px; margin-bottom: 8px;", sprintf("System detected: %d CPU cores", max_sys_cores)),
           radioButtons(
             "opt_multi_pairing", "Assay Type:",
             choices = c(
@@ -2663,6 +3294,10 @@ Cell_03,Batch1
         )
       )
     )
+  ),
+  nav_spacer(),
+  nav_item(
+    input_dark_mode(id = "dark_mode", mode = "light")
   )
 )
 
@@ -2773,9 +3408,9 @@ server <- function(input, output, session) {
   render_plot_placeholder <- function(title, desc, button_id, btn_label = "Confirm & Generate Plot", icon_name = "chart-simple") {
     div(
       class = "plot-placeholder-card",
-      icon(icon_name, class = "text-primary mb-3", style = "font-size: 2.6rem; opacity: 0.85;"),
-      h5(title, style = "font-weight: 700; color: #1E293B; margin-bottom: 8px;"),
-      p(desc, style = "color: #64748B; font-size: 0.86rem; line-height: 1.5; margin-bottom: 18px;"),
+      icon(icon_name, class = "text-primary mb-3", style = "font-size: 2.6rem; opacity: 0.9;"),
+      h5(title, class = "placeholder-title"),
+      p(desc, class = "placeholder-desc"),
       actionButton(button_id, btn_label, class = "btn btn-primary px-4 py-2", icon = icon("play"), style = "font-weight: 600; box-shadow: 0 2px 6px rgba(30,58,138,0.25);")
     )
   }
@@ -2841,49 +3476,49 @@ server <- function(input, output, session) {
                 tags$tr(
                   tags$td(tags$b("Single-Cell (scRNA / scATAC)")),
                   tags$td("Count Matrix alone (No metadata)"),
-                  tags$td(style = "text-align: center;", span(class = "badge bg-secondary", "~23 Metrics")),
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #475569 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.81rem; padding: 5px 10px; border-radius: 6px;", "~23 Metrics")),
                   tags$td("Cat I (Distributional Properties, 14 metrics), Cat II (Correlations & Zeroes, 6 metrics), Cat VI (Trajectory, 2 metrics), Cat VIII (Scalability, 2 metrics)")
                 ),
                 tags$tr(
                   tags$td(tags$b("Single-Cell (scRNA / scATAC)")),
                   tags$td("Count Matrix + Cell Types"),
-                  tags$td(style = "text-align: center;", span(class = "badge bg-info text-dark", "~35–38 Metrics")),
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #0284C7 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.81rem; padding: 5px 10px; border-radius: 6px;", "~35–38 Metrics")),
                   tags$td("Adds +12–15 metrics: Unlocks Cat III (Cellular Structure & Concordance / ARI, NMI, AMI, Silhouette) and Cat V (Biological Signal / SimBench DE, DP, DV, top DEG Jaccard)")
                 ),
                 tags$tr(
                   tags$td(tags$b("Single-Cell (scRNA / scATAC)")),
                   tags$td("Count Matrix + Batch Annotations"),
-                  tags$td(style = "text-align: center;", span(class = "badge bg-info text-dark", "~30 Metrics")),
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #D97706 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.81rem; padding: 5px 10px; border-radius: 6px;", "~30 Metrics")),
                   tags$td("Adds +7 metrics: Unlocks Cat IV (Batch Effects & Confounder Mixing / Batch Silhouette, Shannon entropy, PCR R², CMS, ISI, Seurat mixing)")
                 ),
                 tags$tr(
                   tags$td(tags$b("Single-Cell (scRNA / scATAC)")),
                   tags$td(tags$b("Full Metadata (Matrix + Cell Types + Batch)")),
-                  tags$td(style = "text-align: center;", span(class = "badge bg-success", "Up to ~55 Metrics")),
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #16A34A !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.81rem; padding: 5px 10px; border-radius: 6px;", "Up to ~55 Metrics")),
                   tags$td("Unlocks complete single-cell suite across Categories I, II, III, IV, V, VI, and VIII")
                 ),
                 tags$tr(
                   tags$td(tags$b("Paired Multiomics (scRNA + scATAC)")),
                   tags$td("RNA + ATAC Matrices alone (No metadata)"),
-                  tags$td(style = "text-align: center;", span(class = "badge bg-primary", "~48 Metrics")),
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #4F46E5 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.81rem; padding: 5px 10px; border-radius: 6px;", "~48 Metrics")),
                   tags$td("Both unimodal layers (I, II, VI, VIII) + Cat VII Cross-Modal Coupling (FOSCTTM cell alignment, Match@1, cross-modal generation, RV coefficient, peak-to-gene linkage)")
                 ),
                 tags$tr(
                   tags$td(tags$b("Paired Multiomics (scRNA + scATAC)")),
                   tags$td(tags$b("Full Metadata (RNA + ATAC + Cell Types + Batch)")),
-                  tags$td(style = "text-align: center;", span(class = "badge bg-success", "All 62 Metrics")),
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #15803D !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.81rem; padding: 5px 10px; border-radius: 6px;", "All 62 Metrics")),
                   tags$td("Complete multiomics benchmarking suite across all 8 canonical categories (I–VIII)")
                 ),
                 tags$tr(
                   tags$td(tags$b("Unpaired Multiomics (Independent cells)")),
                   tags$td("RNA + ATAC Matrices alone"),
-                  tags$td(style = "text-align: center;", span(class = "badge bg-secondary", "~38–42 Metrics")),
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #475569 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.81rem; padding: 5px 10px; border-radius: 6px;", "~38–42 Metrics")),
                   tags$td("Unimodal distributions for both layers + population-level co-expression module fidelity, Network Jaccard, and cross-modality correlation")
                 ),
                 tags$tr(
                   tags$td(tags$b("Unpaired Multiomics (Independent cells)")),
                   tags$td(tags$b("RNA + ATAC + Cell Types (+ Batch)")),
-                  tags$td(style = "text-align: center;", span(class = "badge bg-success", "Up to ~58 Metrics")),
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #16A34A !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.81rem; padding: 5px 10px; border-radius: 6px;", "Up to ~58 Metrics")),
                   tags$td("Crucial for unpaired: unlocks cluster-matched label transfer accuracy, cell-type regulatory concordance, and technical donor integration")
                 )
               )
@@ -3213,6 +3848,8 @@ server <- function(input, output, session) {
     n_dsets <- if (is_uni) (input$num_uni_datasets %||% 1) else (input$num_multi_datasets %||% 1)
     n_sims  <- if (is_uni) (input$num_uni_sims %||% 1) else (input$num_multi_sims %||% 1)
     is_paired <- identical(input$opt_multi_pairing, "paired")
+    n_cores <- if (is_uni) as.integer(input$num_uni_cores %||% default_n_cores) else as.integer(input$num_multi_cores %||% default_n_cores)
+    if (is.na(n_cores) || n_cores < 1) n_cores <- 1L
     
     out <- c(
       "#!/usr/bin/env Rscript",
@@ -3221,6 +3858,7 @@ server <- function(input, output, session) {
       sprintf("# Generated on: %s", date_str),
       sprintf("# Benchmark Mode: %s", if (is_uni) "Single-Cell (scRNA or scATAC)" else sprintf("Multiomics (scRNA + scATAC) [%s]", if (is_paired) "Paired" else "Unpaired")),
       sprintf("# Total Datasets: %d | Total Simulators: %d", n_dsets, n_sims),
+      sprintf("# Parallel Worker Cores / Threads: %d", n_cores),
       "#",
       "# Instructions:",
       "#   1. Ensure required R packages are installed: install.packages(c('Matrix', 'ggplot2'))",
@@ -3338,6 +3976,7 @@ server <- function(input, output, session) {
             sprintf("    memory_mb = sim_mem_%d_%d,", s, d),
             sprintf("    elapsed_time = sim_time_%d_%d,", s, d),
             "    compute_bivariate = FALSE,",
+            sprintf("    threads = %d,", n_cores),
             "    verbose = FALSE",
             "  )",
             sprintf("  tbl_%d_%d <- res_%d_%d$metrics_summary_table", s, d, s, d),
@@ -3441,6 +4080,7 @@ server <- function(input, output, session) {
             sprintf("    batch_info   = bt_vec_%d,", d),
             sprintf("    memory_mb    = sim_mem_%d_%d,", s, d),
             sprintf("    elapsed_time = sim_time_%d_%d,", s, d),
+            sprintf("    threads      = %d,", n_cores),
             "    verbose      = FALSE",
             "  )",
             sprintf("  tbl_%d_%d <- res_%d_%d$metrics_summary_table", s, d, s, d),
@@ -3513,6 +4153,50 @@ server <- function(input, output, session) {
   # ----------------------------------------------------------------------------
   # Data Hub: Mode 2 Single-Cell Server Logic (Common Reference Datasets 1 to N)
   # ----------------------------------------------------------------------------
+  
+  # Reactive Parallel Cores Badges
+  output$ui_uni_cores_badge <- renderUI({
+    n_cores <- as.integer(input$num_uni_cores %||% default_n_cores)
+    if (is.na(n_cores) || n_cores < 1) n_cores <- 1L
+    span(
+      class = "badge px-3 py-2 border shadow-sm",
+      style = "background: #F0FDF4; color: #166534; border-color: #BBF7D0 !important; font-size: 0.84rem;",
+      icon("microchip", class = "me-1 text-success"),
+      sprintf("Parallel: %d CPU Core%s", n_cores, if (n_cores > 1) "s" else "")
+    )
+  })
+  output$ui_uni_cores_badge_bottom <- renderUI({
+    n_cores <- as.integer(input$num_uni_cores %||% default_n_cores)
+    if (is.na(n_cores) || n_cores < 1) n_cores <- 1L
+    span(
+      class = "badge px-3 py-2 border shadow-sm",
+      style = "background: #F0FDF4; color: #166534; border-color: #BBF7D0 !important; font-size: 0.84rem;",
+      icon("microchip", class = "me-1 text-success"),
+      sprintf("Parallel: %d CPU Core%s", n_cores, if (n_cores > 1) "s" else "")
+    )
+  })
+
+  output$ui_multi_cores_badge <- renderUI({
+    n_cores <- as.integer(input$num_multi_cores %||% default_n_cores)
+    if (is.na(n_cores) || n_cores < 1) n_cores <- 1L
+    span(
+      class = "badge px-3 py-2 border shadow-sm",
+      style = "background: #EEF2FF; color: #3730A3; border-color: #C7D2FE !important; font-size: 0.84rem;",
+      icon("microchip", class = "me-1 text-indigo"),
+      sprintf("Parallel: %d CPU Core%s", n_cores, if (n_cores > 1) "s" else "")
+    )
+  })
+  output$ui_multi_cores_badge_bottom <- renderUI({
+    n_cores <- as.integer(input$num_multi_cores %||% default_n_cores)
+    if (is.na(n_cores) || n_cores < 1) n_cores <- 1L
+    span(
+      class = "badge px-3 py-2 border shadow-sm",
+      style = "background: #EEF2FF; color: #3730A3; border-color: #C7D2FE !important; font-size: 0.84rem;",
+      icon("microchip", class = "me-1 text-indigo"),
+      sprintf("Parallel: %d CPU Core%s", n_cores, if (n_cores > 1) "s" else "")
+    )
+  })
+
   output$ui_uni_ref_cards <- renderUI({
     n_dsets <- input$num_uni_datasets %||% 1
     
@@ -3679,12 +4363,16 @@ server <- function(input, output, session) {
               modality = "Single-Cell (Counts)", cell_types = ct_vec, batch_info = bt_vec
             )
             
+            n_cores_uni <- as.integer(input$num_uni_cores %||% default_n_cores)
+            if (is.na(n_cores_uni) || n_cores_uni < 1) n_cores_uni <- 1L
+            
             res_sd <- evaluate_simulation_accuracy(
               ref_data = ref_mat_d,
               sim_data = sim_mat_d,
               memory_mb = sim_mem,
               elapsed_time = sim_time,
               compute_bivariate = TRUE,
+              threads = n_cores_uni,
               verbose = FALSE
             )
             tbl_sd <- res_sd$metrics_summary_table
@@ -4033,6 +4721,9 @@ server <- function(input, output, session) {
               modality = "ATAC-seq", cell_types = ct_vec, batch_info = bt_vec
             )
             
+            n_cores_multi <- as.integer(input$num_multi_cores %||% default_n_cores)
+            if (is.na(n_cores_multi) || n_cores_multi < 1) n_cores_multi <- 1L
+            
             res_multi_sd <- evaluate_multiomics_accuracy(
               ref_multi = list(RNA = ref_rna_d, ATAC = ref_atac_d),
               sim_multi = list(RNA = sim_rna_d, ATAC = sim_atac_d),
@@ -4041,6 +4732,7 @@ server <- function(input, output, session) {
               batch_info = bt_vec,
               memory_mb = sim_mem,
               elapsed_time = sim_time,
+              threads = n_cores_multi,
               verbose = FALSE
             )
             tbl_m_sd <- res_multi_sd$metrics_summary_table
@@ -4605,8 +5297,10 @@ server <- function(input, output, session) {
               style = "color: #1E40AF; margin: 0; font-size: 0.84rem;")
           ),
           div(
+            class = "d-flex gap-2 align-items-center flex-wrap",
             span(class = "badge bg-primary text-white px-3 py-2", style = "font-size: 0.85rem;",
-                 sprintf("%d Reference Dataset%s | %d Simulator%s", n_dsets, if (n_dsets > 1) "s" else "", n_sims, if (n_sims > 1) "s" else ""))
+                 sprintf("%d Reference Dataset%s | %d Simulator%s", n_dsets, if (n_dsets > 1) "s" else "", n_sims, if (n_sims > 1) "s" else "")),
+            uiOutput("ui_uni_cores_badge", inline = TRUE)
           )
         )
       ),
@@ -4614,18 +5308,24 @@ server <- function(input, output, session) {
             # Metric Capacity Callout Banner
       div(
         class = "alert alert-info py-2 px-3 mb-3 border-info-subtle",
-        style = "background: #F0F9FF; border-left: 4px solid #0284C7; font-size: 0.83rem;",
+        style = "background: #F0F9FF; border-left: 4px solid #0284C7; font-size: 0.83rem; color: #0369A1;",
         div(class = "d-flex align-items-center justify-content-between flex-wrap gap-2",
           div(
-            tags$b(icon("circle-info", class = "me-1 text-info"), "Single-Cell Metric Measurement Capacity: "),
-            "Count matrix alone measures ", tags$b("~23 baseline metrics"), " (Distributional properties, correlations, zero-inflation curves, trajectory). ",
+            style = "color: #0369A1; line-height: 1.55;",
+            tags$b(icon("circle-info", class = "me-1 text-info"), "Single-Cell Metric Measurement Capacity: ", style = "color: #0C4A6E;"),
+            "Count matrix alone measures ", tags$b("~23 baseline metrics", style = "color: #0C4A6E;"), " (Distributional properties, correlations, zero-inflation curves, trajectory). ",
             "Uploading ", tags$span(class = "badge bg-primary-subtle text-primary border border-primary-subtle", "+ Cell Types"), 
-            " unlocks ", tags$b("+12–15 extra metrics"), " (clustering concordance, ARI, NMI, SimBench signal fidelity). ",
+            " unlocks ", tags$b("+12-15 extra metrics", style = "color: #0C4A6E;"), " (clustering concordance, ARI, NMI, SimBench signal fidelity). ",
             "Uploading ", tags$span(class = "badge bg-warning-subtle text-warning border border-warning-subtle", "+ Batch Info"), 
-            " unlocks ", tags$b("+7 extra metrics"), " (batch mixing, kBET, LISI, CMS). ",
-            "With full metadata, up to ", tags$b("~55 metrics"), " are computed."
+            " unlocks ", tags$b("+7 extra metrics", style = "color: #0C4A6E;"), " (batch mixing, kBET, LISI, CMS). ",
+            "With full metadata, up to ", tags$b("~55 metrics", style = "color: #0C4A6E;"), " are computed."
           ),
-          actionLink("btn_show_metadata_format_hint", "View Formats & Full Breakdown →", class = "fw-bold text-decoration-none", style = "font-size: 0.80rem;")
+          actionLink(
+            "btn_show_metadata_format_hint",
+            span(icon("circle-question", class = "me-1"), "View Formats & Full Breakdown →"),
+            class = "btn btn-sm btn-outline-primary fw-bold shadow-sm",
+            style = "font-size: 0.78rem; white-space: nowrap; border-color: #0284C7; color: #0284C7 !important; background: #FFFFFF;"
+          )
         )
       ),
       # Card 1: Common Biological Reference Single-Cell Datasets (1 to N)
@@ -4678,7 +5378,9 @@ server <- function(input, output, session) {
       div(
         class = "d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2 p-3 bg-light border rounded",
         div(
-          checkboxInput("chk_append_uni", "Add to current benchmark results", value = FALSE)
+          class = "d-flex align-items-center gap-3 flex-wrap",
+          checkboxInput("chk_append_uni", "Add to current benchmark results", value = FALSE),
+          uiOutput("ui_uni_cores_badge_bottom", inline = TRUE)
         ),
         div(
           class = "d-flex gap-2 flex-wrap",
@@ -4707,8 +5409,10 @@ server <- function(input, output, session) {
               style = "color: #4338CA; margin: 0; font-size: 0.84rem;")
           ),
           div(
+            class = "d-flex gap-2 align-items-center flex-wrap",
             span(class = "badge text-white px-3 py-2", style = "background: #4F46E5; font-size: 0.85rem;",
-                 sprintf("%d Reference Dataset%s | %d Simulator%s", n_dsets, if (n_dsets > 1) "s" else "", n_sims, if (n_sims > 1) "s" else ""))
+                 sprintf("%d Reference Dataset%s | %d Simulator%s", n_dsets, if (n_dsets > 1) "s" else "", n_sims, if (n_sims > 1) "s" else "")),
+            uiOutput("ui_multi_cores_badge", inline = TRUE)
           )
         )
       ),
@@ -4716,17 +5420,23 @@ server <- function(input, output, session) {
             # Metric Capacity Callout Banner
       div(
         class = "alert alert-primary py-2 px-3 mb-3 border-indigo-subtle",
-        style = "background: #EEF2FF; border-left: 4px solid #4F46E5; font-size: 0.83rem;",
+        style = "background: #EEF2FF; border-left: 4px solid #4F46E5; font-size: 0.83rem; color: #3730A3;",
         div(class = "d-flex align-items-center justify-content-between flex-wrap gap-2",
           div(
-            tags$b(icon("circle-info", class = "me-1 text-indigo"), "Multiomics Metric Measurement Capacity: "),
-            "Paired RNA + ATAC matrices alone evaluate ", tags$b("~48 metrics"), " (unimodal properties for both layers + Category VII Cross-Modal Coupling, FOSCTTM alignment, Match@1, and peak-to-gene linkages). ",
+            style = "color: #3730A3; line-height: 1.55;",
+            tags$b(icon("circle-info", class = "me-1 text-indigo"), "Multiomics Metric Measurement Capacity: ", style = "color: #1E1B4B;"),
+            "Paired RNA + ATAC matrices alone evaluate ", tags$b("~48 metrics", style = "color: #1E1B4B;"), " (unimodal properties for both layers + Category VII Cross-Modal Coupling, FOSCTTM alignment, Match@1, and peak-to-gene linkages). ",
             "Including ", tags$span(class = "badge bg-primary-subtle text-primary border border-primary-subtle", "+ Cell Types"), " and ",
             tags$span(class = "badge bg-warning-subtle text-warning border border-warning-subtle", "+ Batch Info"), 
-            " unlocks the ", tags$b("full suite of 62 metrics across all 8 categories"), ". ",
+            " unlocks the ", tags$b("full suite of 62 metrics across all 8 categories", style = "color: #1E1B4B;"), ". ",
             "In Unpaired mode, cell-type labels are essential to unlock cluster-matched cross-modal label transfer."
           ),
-          actionLink("btn_show_metadata_format_multi_hint", "View Formats & Full Breakdown →", class = "fw-bold text-decoration-none", style = "font-size: 0.80rem;")
+          actionLink(
+            "btn_show_metadata_format_multi_hint",
+            span(icon("circle-question", class = "me-1"), "View Formats & Full Breakdown →"),
+            class = "btn btn-sm btn-outline-primary fw-bold shadow-sm",
+            style = "font-size: 0.78rem; white-space: nowrap; border-color: #4F46E5; color: #4F46E5 !important; background: #FFFFFF;"
+          )
         )
       ),
       # Card 1: Common Biological Reference Multiomics Datasets (1 to N)
@@ -4779,7 +5489,9 @@ server <- function(input, output, session) {
       div(
         class = "d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2 p-3 bg-light border rounded",
         div(
-          checkboxInput("chk_append_multi", "Add to current benchmark results", value = FALSE)
+          class = "d-flex align-items-center gap-3 flex-wrap",
+          checkboxInput("chk_append_multi", "Add to current benchmark results", value = FALSE),
+          uiOutput("ui_multi_cores_badge_bottom", inline = TRUE)
         ),
         div(
           class = "d-flex gap-2 flex-wrap",

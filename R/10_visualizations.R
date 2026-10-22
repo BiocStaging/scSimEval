@@ -3176,7 +3176,8 @@ plot_bubble_matrix <- plot_benchmark_bubble_matrix
 #' @aliases plot_benchmark_summary_bars plot_summary_bars
 #' @examples
 #' \donttest{
-#' demo <- readRDS(system.file("shiny/scSimEvalApp/data/demo_benchmark_data.rds", package = "scSimEval"))
+#' pth <- system.file("shiny/scSimEvalApp/data/demo_benchmark_data.rds", package = "scSimEval")
+#' demo <- readRDS(pth)
 #' p <- plot_evaluation_summary(demo$benchmark_summary_table)
 #' print(p)
 #' }
@@ -3188,7 +3189,7 @@ plot_evaluation_summary <- function(
   simulators_order  = NULL,
   show_labels       = TRUE,
   title             = "Single-Cell Simulator Evaluation Summary",
-  subtitle          = "Average fidelity scores across 8 canonical evaluation categories and overall benchmark performance",
+  subtitle          = "Average fidelity scores across 8 evaluation categories",
   base_size         = 11
 ) {
   # 1. Ingest data

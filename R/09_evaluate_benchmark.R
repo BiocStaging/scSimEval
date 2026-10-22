@@ -87,33 +87,46 @@ evaluate_simulation_accuracy <- function(
   if (compute_bivariate) {
     if (verbose) message("[4/5] Computing bivariate metrics (Fasano-Franceschini, Peacock, KDE zstat, 2D EMD)...")
     
-    # 1) Library size vs Cell zero fraction
-    ref_lib_zero <- cbind(log10(ref_cell$library_size + 1), ref_cell$zero_fraction_cell)
-    sim_lib_zero <- cbind(log10(sim_cell$library_size + 1), sim_cell$zero_fraction_cell)
-    bivariate_results$lib_vs_cellzero <- calc_all_bivariate_metrics(
-      ref_lib_zero, sim_lib_zero, "lib_vs_cellzero", threads = threads
+    biv_configs <- list(
+      lib_vs_cellzero = list(ref = cbind(log10(ref_cell$library_size + 1), ref_cell$zero_fraction_cell),
+                             sim = cbind(log10(sim_cell$library_size + 1), sim_cell$zero_fraction_cell),
+                             prefix = "lib_vs_cellzero"),
+      mean_vs_sd = list(ref = cbind(ref_feat$mean_expression, ref_feat$sd),
+                        sim = cbind(sim_feat$mean_expression, sim_feat$sd),
+                        prefix = "mean_vs_sd"),
+      mean_vs_featzero = list(ref = cbind(ref_feat$mean_expression, ref_feat$zero_fraction_feature),
+                              sim = cbind(sim_feat$mean_expression, sim_feat$zero_fraction_feature),
+                              prefix = "mean_vs_featzero"),
+      mean_vs_dispersion = list(ref = cbind(ref_feat$mean_expression, ref_feat$dispersion),
+                                sim = cbind(sim_feat$mean_expression, sim_feat$dispersion),
+                                prefix = "mean_vs_dispersion")
     )
-    
-    # 2) Mean vs SD
-    ref_mean_sd <- cbind(ref_feat$mean_expression, ref_feat$sd)
-    sim_mean_sd <- cbind(sim_feat$mean_expression, sim_feat$sd)
-    bivariate_results$mean_vs_sd <- calc_all_bivariate_metrics(
-      ref_mean_sd, sim_mean_sd, "mean_vs_sd", threads = threads
-    )
-    
-    # 3) Mean vs Feature Zero Fraction (Mean-Dropout)
-    ref_mean_zero <- cbind(ref_feat$mean_expression, ref_feat$zero_fraction_feature)
-    sim_mean_zero <- cbind(sim_feat$mean_expression, sim_feat$zero_fraction_feature)
-    bivariate_results$mean_vs_featzero <- calc_all_bivariate_metrics(
-      ref_mean_zero, sim_mean_zero, "mean_vs_featzero", threads = threads
-    )
-    
-    # 4) Mean vs Dispersion (Mean-Variance)
-    ref_mean_disp <- cbind(ref_feat$mean_expression, ref_feat$dispersion)
-    sim_mean_disp <- cbind(sim_feat$mean_expression, sim_feat$dispersion)
-    bivariate_results$mean_vs_dispersion <- calc_all_bivariate_metrics(
-      ref_mean_disp, sim_mean_disp, "mean_vs_dispersion", threads = threads
-    )
+
+    if (threads > 1 && requireNamespace("BiocParallel", quietly = TRUE)) {
+      bparam <- if (.Platform$OS.type == "windows") {
+        BiocParallel::SnowParam(workers = min(threads, 4))
+      } else {
+        BiocParallel::MulticoreParam(workers = min(threads, 4))
+      }
+      biv_list <- tryCatch({
+        BiocParallel::bplapply(biv_configs, function(cfg) {
+          calc_all_bivariate_metrics(cfg$ref, cfg$sim, cfg$prefix, threads = 1)
+        }, BPPARAM = bparam)
+      }, error = function(e) NULL)
+      if (!is.null(biv_list)) {
+        bivariate_results <- biv_list
+      } else {
+        for (nm in names(biv_configs)) {
+          cfg <- biv_configs[[nm]]
+          bivariate_results[[nm]] <- calc_all_bivariate_metrics(cfg$ref, cfg$sim, cfg$prefix, threads = threads)
+        }
+      }
+    } else {
+      for (nm in names(biv_configs)) {
+        cfg <- biv_configs[[nm]]
+        bivariate_results[[nm]] <- calc_all_bivariate_metrics(cfg$ref, cfg$sim, cfg$prefix, threads = threads)
+      }
+    }
   }
   
   # Step 5: Dropout, Zero-Inflation, & Generative Manifold
@@ -608,7 +621,8 @@ evaluate_multiomics_accuracy <- function(
       ref_mod2 = ref_multi[[2]],
       sim_mod1 = sim_multi[[1]],
       sim_mod2 = sim_multi[[2]],
-      feature_pairs = feature_pairs
+      feature_pairs = feature_pairs,
+      threads = threads
     )
     
     cross_cor_metrics <- c("MAD", "KS", "MAE", "RMSE", "OV", "Bhattacharyya", "Wasserstein")
