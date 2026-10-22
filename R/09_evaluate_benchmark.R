@@ -109,9 +109,9 @@ evaluate_simulation_accuracy <- function(
         BiocParallel::MulticoreParam(workers = min(threads, 4))
       }
       biv_list <- tryCatch({
-        BiocParallel::bplapply(biv_configs, function(cfg) {
+        suppressWarnings(BiocParallel::bplapply(biv_configs, function(cfg) {
           calc_all_bivariate_metrics(cfg$ref, cfg$sim, cfg$prefix, threads = 1)
-        }, BPPARAM = bparam)
+        }, BPPARAM = bparam))
       }, error = function(e) NULL)
       if (!is.null(biv_list)) {
         bivariate_results <- biv_list

@@ -50,7 +50,7 @@ extract_cell_properties <- function(data, max_cells_cor = 1000, n_top_hvgs = 500
     cor_cpm <- sub_cpm
   }
   
-  cell_cor_mat <- stats::cor(cor_cpm, method = "spearman")
+  cell_cor_mat <- suppressWarnings(stats::cor(cor_cpm, method = "spearman"))
   cell_cor <- cell_cor_mat[upper.tri(cell_cor_mat)]
   
   # PCA and pairwise cell distance (cell_pcd from HelenaLC)
@@ -172,12 +172,14 @@ extract_feature_properties <- function(data, n_top_cor = 400, verbose = FALSE) {
   
   # Gene-gene correlation on top variable genes
   if (verbose) message("Extracting gene-gene correlation...")
-  if (ncol(sub_g_mat) > 500) {
-    cor_cells_sub <- sample(seq_len(ncol(sub_g_mat)), 500)
-    g_cor_mat <- stats::cor(t(sub_g_mat[, cor_cells_sub, drop = FALSE]), method = "spearman")
-  } else {
-    g_cor_mat <- stats::cor(t(sub_g_mat), method = "spearman")
-  }
+  g_cor_mat <- suppressWarnings({
+    if (ncol(sub_g_mat) > 500) {
+      cor_cells_sub <- sample(seq_len(ncol(sub_g_mat)), 500)
+      stats::cor(t(sub_g_mat[, cor_cells_sub, drop = FALSE]), method = "spearman")
+    } else {
+      stats::cor(t(sub_g_mat), method = "spearman")
+    }
+  })
   gene_cor <- g_cor_mat[upper.tri(g_cor_mat)]
   
   prop_outliers_feature <- calc_outlier_proportion(as.numeric(Matrix::rowSums(data)))

@@ -153,7 +153,7 @@ calc_bhattacharyya <- function(ref, sim, align = TRUE) {
   
   if (requireNamespace("philentropy", quietly = TRUE)) {
     tryCatch(
-      as.numeric(philentropy::distance(rbind(p_ref, p_sim), method = "bhattacharyya")),
+      as.numeric(suppressMessages(philentropy::distance(rbind(p_ref, p_sim), method = "bhattacharyya", mute.message = TRUE))),
       error = function(e) {
         bc <- sum(sqrt(p_ref * p_sim), na.rm = TRUE)
         if (is.na(bc) || bc <= 0) Inf else -log(bc)
@@ -215,10 +215,15 @@ calc_fasano_franceschini <- function(ref_mat, sim_mat, threads = 1) {
   
   if (requireNamespace("fasano.franceschini.test", quietly = TRUE)) {
     res <- tryCatch(
-      fasano.franceschini.test::fasano.franceschini.test(ref_mat, sim_mat, threads = threads),
+      fasano.franceschini.test::fasano.franceschini.test(ref_mat, sim_mat, threads = threads, verbose = FALSE),
       error = function(e) NULL
     )
-    if (!is.null(res)) return(mean(res$estimate))
+    if (!is.null(res)) {
+      stat <- if (!is.null(res$statistic)) res$statistic else res$estimate
+      if (!is.null(stat) && length(stat) > 0 && is.numeric(stat)) {
+        return(as.numeric(stat[1]))
+      }
+    }
   }
   return(NA_real_)
 }
@@ -305,7 +310,7 @@ calc_emd_2d <- function(ref_mat, sim_mat, n = 25) {
       )
       k_ref <- MASS::kde2d(ref_mat[, 1], ref_mat[, 2], n = n, lims = lims)
       k_sim <- MASS::kde2d(sim_mat[, 1], sim_mat[, 2], n = n, lims = lims)
-      emdist::emd2d(k_ref$z, k_sim$z) / n
+      as.numeric(suppressWarnings(emdist::emd2d(k_ref$z, k_sim$z, max.iter = 2000L))) / n
     }, error = function(e) NA_real_)
   } else {
     NA_real_

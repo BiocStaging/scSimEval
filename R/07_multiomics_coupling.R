@@ -73,13 +73,13 @@ calc_cross_modality_correlation <- function(
       chunk_size <- max(25, ceiling(n / (th * 4)))
       chunks <- split(seq_len(n), ceiling(seq_len(n) / chunk_size))
       cors_list <- tryCatch({
-        BiocParallel::bplapply(chunks, function(ck) {
+        suppressWarnings(BiocParallel::bplapply(chunks, function(ck) {
           vapply(ck, function(i) {
             x <- m1[i1[i], c_idx]
             y <- m2[i2[i], c_idx]
             if (stats::sd(x) > 0 && stats::sd(y) > 0) stats::cor(x, y, method = met) else 0
           }, numeric(1))
-        }, BPPARAM = bparam)
+        }, BPPARAM = bparam))
       }, error = function(e) NULL)
       if (!is.null(cors_list)) return(unlist(cors_list, use.names = FALSE))
     }
