@@ -150,7 +150,3 @@ Detailed in-app guides and file templates are also available directly within the
 - **Bug Reports & Issues:** [https://github.com/kabilanbio/scSimEval/issues](https://github.com/kabilanbio/scSimEval/issues)
 
 ---
-
-## License
-
-This project is licensed under the **MIT License**. Copyright (c) 2026 Kabilan Sakthivel and scSimEval Authors.
