@@ -1,6 +1,6 @@
 # inst/shiny/scSimEvalApp/app.R
 # Simulation Evaluation Studio for scRNA-seq, scATAC-seq, and Single-Cell Multiomics
-# Powered by scSimEval (62 Curated Ground-Truth-Free Measures)
+# Powered by scSimEval (62 Curated Benchmark Measures)
 
 library(shiny)
 library(bslib)
@@ -92,9 +92,16 @@ standardize_benchmark_categories <- function(df) {
                           legacy_map[df$Category], df$Category)
   }
   if ("Metric" %in% colnames(df)) {
-    mc <- scSimEval:::.METRIC_CATEGORY_MAP[df$Metric]
-    idx <- !is.na(mc)
-    df$Category[idx] <- mc[idx]
+    mc <- tryCatch(scSimEval:::.METRIC_CATEGORY_MAP[df$Metric], error = function(e) rep(NA_character_, nrow(df)))
+    batch_metrics <- c("batch_silhouette", "shannon_entropy", "pcr_r2", "cms", "isi", "seurat_mixing_metric", "ldf_diff")
+    zero_metrics  <- c("midpoint_error", "slope_error", "r2_discrepancy", "excess_zero_weight_discrepancy", "dropout_curve_midpoint_x0", "dropout_curve_slope_k", "mean_variance_r2", "bcv_discrepancy")
+    
+    needs_reassign <- !is.na(mc) & (
+      is.na(df$Category) | df$Category == "" | df$Category == "Uncategorized" |
+      (df$Metric %in% batch_metrics & df$Category != "(IV) Batch Effects & Confounder Mixing") |
+      (df$Metric %in% zero_metrics & df$Category != "(II) Correlations & Zero-Inflation")
+    )
+    df$Category[needs_reassign] <- mc[needs_reassign]
   }
   df
 }
@@ -419,47 +426,25 @@ extract_dataset_summary <- function(mat, role = "Biological Reference", method_n
 
 # Helper to summarize demo dataset at launch
 init_demo_summary <- function(demo_obj) {
-  if (is.null(demo_obj) || is.null(demo_obj$toy_data)) return(NULL)
-  td <- demo_obj$toy_data
-  rows <- list()
-  if (!is.null(td$ref)) {
-    rows[[length(rows) + 1]] <- extract_dataset_summary(
-      td$ref, role = "Biological Reference", method_name = "Empirical Reference",
-      modality = "scRNA-seq", cell_types = td$cell_types, batch_info = td$batch
-    )
-  }
-  if (!is.null(td$sim)) {
-    sim_names <- if (!is.null(demo_obj$methods)) demo_obj$methods else paste0("Simulator ", 1:6)
-    for (sn in sim_names) {
-      mod_type <- if (grepl("ATAC", sn, ignore.case = TRUE)) "scATAC-seq" else "scRNA-seq"
-      rows[[length(rows) + 1]] <- extract_dataset_summary(
-        td$sim, role = "Simulated", method_name = sn,
-        modality = mod_type, cell_types = td$cell_types, batch_info = td$batch
-      )
-    }
-  }
-  if (length(rows) > 0) do.call(rbind, rows) else NULL
+  if (is.null(demo_obj)) return(NULL)
+  if (!is.null(demo_obj$dataset_summary_df)) return(demo_obj$dataset_summary_df)
+  NULL
 }
 
 # Helper to initialize demo simulated matrices list
 init_demo_sim_matrices <- function(demo_obj) {
-  if (is.null(demo_obj) || is.null(demo_obj$toy_data) || is.null(demo_obj$toy_data$sim)) return(list())
-  base_sim <- demo_obj$toy_data$sim
-  sim_names <- if (!is.null(demo_obj$methods)) demo_obj$methods else paste0("Simulator ", 1:6)
-  
+  if (is.null(demo_obj)) return(list())
   res <- list()
-  set.seed(42)
-  for (i in seq_along(sim_names)) {
-    sn <- sim_names[i]
-    if (i == 1) {
-      res[[sn]] <- base_sim
-    } else {
-      # Method-specific signature: subtle variation in variance & expression depth
-      scale_mod <- 1 + (i - 1) * 0.05
-      noise_mat <- matrix(stats::rpois(length(base_sim), lambda = 0.25 * i), nrow = nrow(base_sim), ncol = ncol(base_sim))
-      m_adj <- round(base_sim * scale_mod + noise_mat)
-      dimnames(m_adj) <- dimnames(base_sim)
-      res[[sn]] <- m_adj
+  if (!is.null(demo_obj$example_rice_bud) && !is.null(demo_obj$example_rice_bud$simulated)) {
+    for (m in names(demo_obj$example_rice_bud$simulated)) {
+      res[[paste0("Rice Bud - ", m, " (RNA)")]] <- demo_obj$example_rice_bud$simulated[[m]]$rna
+      res[[paste0("Rice Bud - ", m, " (ATAC)")]] <- demo_obj$example_rice_bud$simulated[[m]]$atac
+    }
+  }
+  if (!is.null(demo_obj$example_soybean_root) && !is.null(demo_obj$example_soybean_root$simulated)) {
+    for (m in names(demo_obj$example_soybean_root$simulated)) {
+      res[[paste0("Soybean Root - ", m, " (RNA)")]] <- demo_obj$example_soybean_root$simulated[[m]]$rna
+      res[[paste0("Soybean Root - ", m, " (ATAC)")]] <- demo_obj$example_soybean_root$simulated[[m]]$atac
     }
   }
   res
@@ -692,18 +677,32 @@ plot_dataset_embeddings <- function(embedding_data,
   # Filter selected methods if requested
   if (!is.null(selected_methods) && length(selected_methods) > 0) {
     keep_datasets <- c("Reference", selected_methods)
-    df <- df[df$Dataset %in% keep_datasets, , drop = FALSE]
+    df_datasets <- as.character(df$Dataset)
+    base_datasets <- sub("(_Dataset.*| \\(Dataset.*\\))", "", df_datasets)
+    keep_idx <- df_datasets %in% keep_datasets | base_datasets %in% selected_methods
+    df <- df[keep_idx, , drop = FALSE]
   }
   
   if (layout == "side_by_side") {
     sim_levels <- setdiff(unique(as.character(df$Dataset)), "Reference")
-    chosen_sim <- if (length(sim_levels) > 0) sim_levels[1] else NULL
+    chosen_sim <- if (!is.null(selected_methods) && length(selected_methods) == 1 &&
+                      any(selected_methods == sim_levels | selected_methods == sub("(_Dataset.*| \\(Dataset.*\\))", "", sim_levels))) {
+      sim_levels[which(selected_methods == sim_levels | selected_methods == sub("(_Dataset.*| \\(Dataset.*\\))", "", sim_levels))[1]]
+    } else if (length(sim_levels) > 0) {
+      sim_levels[1]
+    } else {
+      NULL
+    }
     if (!is.null(chosen_sim)) {
       df <- df[df$Dataset %in% c("Reference", chosen_sim), , drop = FALSE]
     }
   }
   
-  df$Facet_Label <- paste0(df$Dataset, " (", df$Role, ")")
+  df$Facet_Label <- ifelse(
+    df$Dataset == "Reference" | df$Role == "Reference",
+    "Reference",
+    paste0(df$Dataset, " (", df$Role, ")")
+  )
   df$Facet_Label <- factor(df$Facet_Label, levels = unique(df$Facet_Label))
   
   p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$Dim1, y = .data$Dim2))
@@ -1024,177 +1023,203 @@ ui <- page_navbar(
         filter: blur(1px);
         transition: all 0.2s ease;
       }
-                  /* ===== GENERAL DAYLIGHT TYPOGRAPHY & CONTRAST ===== */
-      body {
+      /* ===== GENERAL DAYLIGHT TYPOGRAPHY & CONTRAST (DAYLIGHT MODE ONLY) ===== */
+      html:not([data-bs-theme='dark']) body {
         color: #0F172A;
       }
-      .text-muted,
-      small.text-muted {
+      html:not([data-bs-theme='dark']) .text-muted,
+      html:not([data-bs-theme='dark']) small.text-muted {
         color: #475569 !important;
       }
       
-      /* ===== HIGH-CONTRAST ALERT BANNERS IN DAYLIGHT MODE ===== */
+      /* ===== HIGH-CONTRAST ALERT BANNERS IN DAYLIGHT MODE ONLY ===== */
       /* Override Bootswatch Flatly default white text on light alert cards */
-      .alert {
+      html:not([data-bs-theme='dark']) .alert {
         color: #0F172A !important;
       }
-      .alert-info {
+      html:not([data-bs-theme='dark']) .alert-info {
         background-color: #F0F9FF !important;
         border-color: #BAE6FD !important;
         color: #0369A1 !important;
       }
-      .alert-info,
-      .alert-info p,
-      .alert-info div,
-      .alert-info span:not(.badge) {
+      html:not([data-bs-theme='dark']) .alert-info,
+      html:not([data-bs-theme='dark']) .alert-info p,
+      html:not([data-bs-theme='dark']) .alert-info div,
+      html:not([data-bs-theme='dark']) .alert-info span:not(.badge) {
         color: #0369A1 !important;
       }
-      .alert-info b,
-      .alert-info strong,
-      .alert-info .alert-heading {
+      html:not([data-bs-theme='dark']) .alert-info b,
+      html:not([data-bs-theme='dark']) .alert-info strong,
+      html:not([data-bs-theme='dark']) .alert-info .alert-heading {
         color: #0C4A6E !important;
       }
-      .alert-info i,
-      .alert-info .fa,
-      .alert-info .fas {
+      html:not([data-bs-theme='dark']) .alert-info i,
+      html:not([data-bs-theme='dark']) .alert-info .fa,
+      html:not([data-bs-theme='dark']) .alert-info .fas {
         color: #0284C7 !important;
       }
-      .alert-info a,
-      .alert-info a:visited,
-      .alert-info .action-button,
-      .alert-info actionLink {
+      html:not([data-bs-theme='dark']) .alert-info a,
+      html:not([data-bs-theme='dark']) .alert-info a:visited,
+      html:not([data-bs-theme='dark']) .alert-info .action-button,
+      html:not([data-bs-theme='dark']) .alert-info actionLink {
         color: #0284C7 !important;
         font-weight: 700 !important;
       }
 
-      .alert-primary {
+      html:not([data-bs-theme='dark']) .alert-primary {
         background-color: #EEF2FF !important;
         border-color: #C7D2FE !important;
         color: #3730A3 !important;
       }
-      .alert-primary,
-      .alert-primary p,
-      .alert-primary div,
-      .alert-primary span:not(.badge) {
+      html:not([data-bs-theme='dark']) .alert-primary,
+      html:not([data-bs-theme='dark']) .alert-primary p,
+      html:not([data-bs-theme='dark']) .alert-primary div,
+      html:not([data-bs-theme='dark']) .alert-primary span:not(.badge) {
         color: #3730A3 !important;
       }
-      .alert-primary b,
-      .alert-primary strong,
-      .alert-primary .alert-heading {
+      html:not([data-bs-theme='dark']) .alert-primary b,
+      html:not([data-bs-theme='dark']) .alert-primary strong,
+      html:not([data-bs-theme='dark']) .alert-primary .alert-heading {
         color: #1E1B4B !important;
       }
-      .alert-primary i,
-      .alert-primary .fa,
-      .alert-primary .fas {
+      html:not([data-bs-theme='dark']) .alert-primary i,
+      html:not([data-bs-theme='dark']) .alert-primary .fa,
+      html:not([data-bs-theme='dark']) .alert-primary .fas {
         color: #4F46E5 !important;
       }
-      .alert-primary a,
-      .alert-primary a:visited,
-      .alert-primary .action-button,
-      .alert-primary actionLink {
+      html:not([data-bs-theme='dark']) .alert-primary a,
+      html:not([data-bs-theme='dark']) .alert-primary a:visited,
+      html:not([data-bs-theme='dark']) .alert-primary .action-button,
+      html:not([data-bs-theme='dark']) .alert-primary actionLink {
         color: #4F46E5 !important;
         font-weight: 700 !important;
       }
 
-      .alert-indigo {
+      html:not([data-bs-theme='dark']) .alert-indigo {
         background-color: #EEF2FF !important;
         border-color: #C7D2FE !important;
         color: #3730A3 !important;
       }
-      .alert-indigo,
-      .alert-indigo p,
-      .alert-indigo div,
-      .alert-indigo span:not(.badge) {
+      html:not([data-bs-theme='dark']) .alert-indigo,
+      html:not([data-bs-theme='dark']) .alert-indigo p,
+      html:not([data-bs-theme='dark']) .alert-indigo div,
+      html:not([data-bs-theme='dark']) .alert-indigo span:not(.badge) {
         color: #3730A3 !important;
       }
-      .alert-indigo b,
-      .alert-indigo strong {
+      html:not([data-bs-theme='dark']) .alert-indigo b,
+      html:not([data-bs-theme='dark']) .alert-indigo strong {
         color: #1E1B4B !important;
       }
-      .alert-indigo i,
-      .alert-indigo .fa,
-      .alert-indigo .fas {
+      html:not([data-bs-theme='dark']) .alert-indigo i,
+      html:not([data-bs-theme='dark']) .alert-indigo .fa,
+      html:not([data-bs-theme='dark']) .alert-indigo .fas {
         color: #4F46E5 !important;
       }
 
-      .alert-secondary {
+      html:not([data-bs-theme='dark']) .alert-secondary {
         background-color: #F8FAFC !important;
         border-color: #CBD5E1 !important;
         color: #334155 !important;
       }
-      .alert-secondary,
-      .alert-secondary p,
-      .alert-secondary div,
-      .alert-secondary span:not(.badge) {
+      html:not([data-bs-theme='dark']) .alert-secondary,
+      html:not([data-bs-theme='dark']) .alert-secondary p,
+      html:not([data-bs-theme='dark']) .alert-secondary div,
+      html:not([data-bs-theme='dark']) .alert-secondary span:not(.badge) {
         color: #334155 !important;
       }
-      .alert-secondary b,
-      .alert-secondary strong {
+      html:not([data-bs-theme='dark']) .alert-secondary b,
+      html:not([data-bs-theme='dark']) .alert-secondary strong {
         color: #0F172A !important;
       }
 
-      .alert-success {
+      html:not([data-bs-theme='dark']) .alert-success {
         background-color: #F0FDF4 !important;
         border-color: #BBF7D0 !important;
         color: #166534 !important;
       }
-      .alert-success,
-      .alert-success p,
-      .alert-success div,
-      .alert-success span:not(.badge) {
+      html:not([data-bs-theme='dark']) .alert-success,
+      html:not([data-bs-theme='dark']) .alert-success p,
+      html:not([data-bs-theme='dark']) .alert-success div,
+      html:not([data-bs-theme='dark']) .alert-success span:not(.badge) {
         color: #166534 !important;
       }
-      .alert-success b,
-      .alert-success strong {
+      html:not([data-bs-theme='dark']) .alert-success b,
+      html:not([data-bs-theme='dark']) .alert-success strong {
         color: #14532D !important;
       }
 
-      .alert-warning {
+      html:not([data-bs-theme='dark']) .alert-warning {
         background-color: #FFFBEB !important;
         border-color: #FDE68A !important;
         color: #92400E !important;
       }
-      .alert-warning,
-      .alert-warning p,
-      .alert-warning div,
-      .alert-warning span:not(.badge) {
+      html:not([data-bs-theme='dark']) .alert-warning,
+      html:not([data-bs-theme='dark']) .alert-warning p,
+      html:not([data-bs-theme='dark']) .alert-warning div,
+      html:not([data-bs-theme='dark']) .alert-warning span:not(.badge) {
         color: #92400E !important;
       }
-      .alert-warning b,
-      .alert-warning strong {
+      html:not([data-bs-theme='dark']) .alert-warning b,
+      html:not([data-bs-theme='dark']) .alert-warning strong {
         color: #78350F !important;
       }
 
-      .alert-danger {
+      html:not([data-bs-theme='dark']) .alert-danger {
         background-color: #FEF2F2 !important;
         border-color: #FECACA !important;
         color: #991B1B !important;
       }
-      .alert-danger,
-      .alert-danger p,
-      .alert-danger div,
-      .alert-danger span:not(.badge) {
+      html:not([data-bs-theme='dark']) .alert-danger,
+      html:not([data-bs-theme='dark']) .alert-danger p,
+      html:not([data-bs-theme='dark']) .alert-danger div,
+      html:not([data-bs-theme='dark']) .alert-danger span:not(.badge) {
         color: #991B1B !important;
       }
-      .alert-danger b,
-      .alert-danger strong {
+      html:not([data-bs-theme='dark']) .alert-danger b,
+      html:not([data-bs-theme='dark']) .alert-danger strong {
         color: #7F1D1D !important;
       }
 
-      /* Alert Badges High Contrast */
-      .alert .badge.bg-primary-subtle,
-      .badge.bg-primary-subtle {
+      /* Alert Badges High Contrast in Daylight */
+      html:not([data-bs-theme='dark']) .alert .badge.bg-primary-subtle,
+      html:not([data-bs-theme='dark']) .badge.bg-primary-subtle {
         background-color: #E0E7FF !important;
         color: #3730A3 !important;
         border: 1px solid #C7D2FE !important;
         font-weight: 700 !important;
       }
-      .alert .badge.bg-warning-subtle,
-      .badge.bg-warning-subtle {
+      html:not([data-bs-theme='dark']) .alert .badge.bg-warning-subtle,
+      html:not([data-bs-theme='dark']) .badge.bg-warning-subtle {
         background-color: #FEF3C7 !important;
         color: #92400E !important;
         border: 1px solid #FDE68A !important;
         font-weight: 700 !important;
+      }
+      
+      /* Daylight Mode: Clean scientific confirmation & placeholder card */
+      html:not([data-bs-theme='dark']) .plot-placeholder-card {
+        text-align: center;
+        padding: 48px 24px;
+        background: #F8FAFC !important;
+        border: 2px dashed #CBD5E1 !important;
+        border-radius: 12px;
+        margin: 24px auto;
+        max-width: 680px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      }
+      html:not([data-bs-theme='dark']) .plot-placeholder-card h5,
+      html:not([data-bs-theme='dark']) .plot-placeholder-card .placeholder-title {
+        font-weight: 700;
+        color: #0F172A !important;
+        margin-bottom: 8px;
+        font-size: 1.15rem;
+      }
+      html:not([data-bs-theme='dark']) .plot-placeholder-card p,
+      html:not([data-bs-theme='dark']) .plot-placeholder-card .placeholder-desc {
+        color: #475569 !important;
+        font-size: 0.88rem !important;
+        line-height: 1.55;
+        margin-bottom: 20px;
       }
       
       /* ==================================================================== */
@@ -1206,8 +1231,8 @@ ui <- page_navbar(
         --bs-body-bg: #0B1329 !important;
         --bs-body-color: #F8FAFC !important;
         --bs-emphasis-color: #FFFFFF !important;
-        --bs-secondary-color: #94A3B8 !important;
-        --bs-tertiary-color: #64748B !important;
+        --bs-secondary-color: #CBD5E1 !important;
+        --bs-tertiary-color: #94A3B8 !important;
         --bs-border-color: #334155 !important;
         --bs-card-bg: #0F172A !important;
         --bs-card-color: #F8FAFC !important;
@@ -1215,26 +1240,41 @@ ui <- page_navbar(
         --bs-card-cap-bg: #1E293B !important;
       }
       
+      [data-bs-theme='dark'],
       [data-bs-theme='dark'] body {
         background-color: #0B1329 !important;
         color: #F8FAFC !important;
       }
 
-      /* 2. Global Text Typography in Night Mode */
+      /* 2. Universal Light Typography in Night Mode */
       [data-bs-theme='dark'] p,
       [data-bs-theme='dark'] span:not(.badge),
-      [data-bs-theme='dark'] div:not(.badge):not(.alert),
+      [data-bs-theme='dark'] div:not(.badge):not(.btn):not(.selectize-dropdown-content),
       [data-bs-theme='dark'] label,
       [data-bs-theme='dark'] .form-label,
       [data-bs-theme='dark'] .control-label,
       [data-bs-theme='dark'] li,
       [data-bs-theme='dark'] td,
       [data-bs-theme='dark'] th,
-      [data-bs-theme='dark'] strong,
-      [data-bs-theme='dark'] b {
-        color: #F8FAFC;
+      [data-bs-theme='dark'] small,
+      [data-bs-theme='dark'] em,
+      [data-bs-theme='dark'] summary,
+      [data-bs-theme='dark'] caption,
+      [data-bs-theme='dark'] .help-block,
+      [data-bs-theme='dark'] .form-text,
+      [data-bs-theme='dark'] .shiny-input-container label {
+        color: #F8FAFC !important;
       }
 
+      /* Bold and Strong text: Pure High-Contrast White */
+      [data-bs-theme='dark'] strong,
+      [data-bs-theme='dark'] b,
+      [data-bs-theme='dark'] .fw-bold,
+      [data-bs-theme='dark'] .fw-semibold {
+        color: #FFFFFF !important;
+      }
+
+      /* Headings: Crisp Pure White */
       [data-bs-theme='dark'] h1, [data-bs-theme='dark'] .h1,
       [data-bs-theme='dark'] h2, [data-bs-theme='dark'] .h2,
       [data-bs-theme='dark'] h3, [data-bs-theme='dark'] .h3,
@@ -1244,88 +1284,382 @@ ui <- page_navbar(
         color: #FFFFFF !important;
       }
 
+      /* Secondary / Muted text: Bright readable light silver */
       [data-bs-theme='dark'] .text-muted,
       [data-bs-theme='dark'] small.text-muted,
       [data-bs-theme='dark'] .text-secondary,
       [data-bs-theme='dark'] .stat-label {
-        color: #94A3B8 !important;
+        color: #CBD5E1 !important;
       }
 
-      /* 3. Attribute Selectors to Override Hardcoded Dark / Black Inline Text */
+      /* 3. High-Contrast Dark Mode Alert Banners & Callouts */
+      [data-bs-theme='dark'] .alert {
+        color: #F8FAFC !important;
+        border-width: 1px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+      }
+      [data-bs-theme='dark'] .alert p,
+      [data-bs-theme='dark'] .alert div,
+      [data-bs-theme='dark'] .alert span:not(.badge) {
+        color: #F8FAFC !important;
+      }
+      [data-bs-theme='dark'] .alert b,
+      [data-bs-theme='dark'] .alert strong,
+      [data-bs-theme='dark'] .alert .alert-heading {
+        color: #FFFFFF !important;
+      }
+
+      /* Alert Secondary (e.g. Reproducible Analysis Callout Banner) */
+      [data-bs-theme='dark'] .alert-secondary {
+        background-color: #1E293B !important;
+        border-color: #475569 !important;
+        color: #F8FAFC !important;
+      }
+      [data-bs-theme='dark'] .alert-secondary b,
+      [data-bs-theme='dark'] .alert-secondary strong {
+        color: #FFFFFF !important;
+      }
+      [data-bs-theme='dark'] .alert-secondary span:not(.badge) {
+        color: #E2E8F0 !important;
+      }
+
+      /* Alert Info */
+      [data-bs-theme='dark'] .alert-info {
+        background-color: #082F49 !important;
+        border-color: #0284C7 !important;
+        color: #F0F9FF !important;
+      }
+      [data-bs-theme='dark'] .alert-info b,
+      [data-bs-theme='dark'] .alert-info strong,
+      [data-bs-theme='dark'] .alert-info .alert-heading {
+        color: #FFFFFF !important;
+      }
+      [data-bs-theme='dark'] .alert-info a,
+      [data-bs-theme='dark'] .alert-info actionLink,
+      [data-bs-theme='dark'] .alert-info .action-button {
+        color: #38BDF8 !important;
+        font-weight: 700 !important;
+      }
+
+      /* Alert Primary & Indigo */
+      [data-bs-theme='dark'] .alert-primary,
+      [data-bs-theme='dark'] .alert-indigo {
+        background-color: #1E1B4B !important;
+        border-color: #6366F1 !important;
+        color: #EEF2FF !important;
+      }
+      [data-bs-theme='dark'] .alert-primary b,
+      [data-bs-theme='dark'] .alert-primary strong,
+      [data-bs-theme='dark'] .alert-indigo b,
+      [data-bs-theme='dark'] .alert-indigo strong {
+        color: #FFFFFF !important;
+      }
+      [data-bs-theme='dark'] .alert-primary a,
+      [data-bs-theme='dark'] .alert-primary actionLink,
+      [data-bs-theme='dark'] .alert-primary .action-button {
+        color: #A5B4FC !important;
+        font-weight: 700 !important;
+      }
+
+      /* Alert Success */
+      [data-bs-theme='dark'] .alert-success {
+        background-color: #064E3B !important;
+        border-color: #059669 !important;
+        color: #ECFDF5 !important;
+      }
+      [data-bs-theme='dark'] .alert-success b,
+      [data-bs-theme='dark'] .alert-success strong {
+        color: #FFFFFF !important;
+      }
+
+      /* Alert Warning */
+      [data-bs-theme='dark'] .alert-warning {
+        background-color: #451A03 !important;
+        border-color: #D97706 !important;
+        color: #FEF3C7 !important;
+      }
+      [data-bs-theme='dark'] .alert-warning b,
+      [data-bs-theme='dark'] .alert-warning strong {
+        color: #FFFFFF !important;
+      }
+
+      /* Alert Danger */
+      [data-bs-theme='dark'] .alert-danger {
+        background-color: #450A0A !important;
+        border-color: #DC2626 !important;
+        color: #FEE2E2 !important;
+      }
+      [data-bs-theme='dark'] .alert-danger b,
+      [data-bs-theme='dark'] .alert-danger strong {
+        color: #FFFFFF !important;
+      }
+
+      /* 4. Attribute Selectors to Override Hardcoded Dark / Black Inline Text */
       [data-bs-theme='dark'] [style*='color: #0F172A'],
+      [data-bs-theme='dark'] [style*='color: #0F172A'] *,
       [data-bs-theme='dark'] [style*='color:#0F172A'],
+      [data-bs-theme='dark'] [style*='color:#0F172A'] *,
       [data-bs-theme='dark'] [style*='color: #0f172a'],
+      [data-bs-theme='dark'] [style*='color: #0f172a'] *,
       [data-bs-theme='dark'] [style*='color:#0f172a'],
+      [data-bs-theme='dark'] [style*='color:#0f172a'] *,
       [data-bs-theme='dark'] [style*='color: #1E293B'],
+      [data-bs-theme='dark'] [style*='color: #1E293B'] *,
       [data-bs-theme='dark'] [style*='color:#1E293B'],
+      [data-bs-theme='dark'] [style*='color:#1E293B'] *,
       [data-bs-theme='dark'] [style*='color: #1e293b'],
+      [data-bs-theme='dark'] [style*='color: #1e293b'] *,
       [data-bs-theme='dark'] [style*='color:#1e293b'],
+      [data-bs-theme='dark'] [style*='color:#1e293b'] *,
       [data-bs-theme='dark'] [style*='color: #334155'],
+      [data-bs-theme='dark'] [style*='color: #334155'] *,
       [data-bs-theme='dark'] [style*='color:#334155'],
+      [data-bs-theme='dark'] [style*='color:#334155'] *,
       [data-bs-theme='dark'] [style*='color: #475569'],
+      [data-bs-theme='dark'] [style*='color: #475569'] *,
       [data-bs-theme='dark'] [style*='color:#475569'],
-      [data-bs-theme='dark'] [style*='color: black'],
-      [data-bs-theme='dark'] [style*='color: #000'],
-      [data-bs-theme='dark'] [style*='color:#000'],
+      [data-bs-theme='dark'] [style*='color:#475569'] *,
       [data-bs-theme='dark'] [style*='color: #111827'],
-      [data-bs-theme='dark'] [style*='color:#111827'] {
+      [data-bs-theme='dark'] [style*='color: #111827'] *,
+      [data-bs-theme='dark'] [style*='color:#111827'],
+      [data-bs-theme='dark'] [style*='color:#111827'] *,
+      [data-bs-theme='dark'] [style*='color: #000'],
+      [data-bs-theme='dark'] [style*='color: #000'] *,
+      [data-bs-theme='dark'] [style*='color:#000'],
+      [data-bs-theme='dark'] [style*='color:#000'] *,
+      [data-bs-theme='dark'] [style*='color: black'],
+      [data-bs-theme='dark'] [style*='color: black'] * {
         color: #F8FAFC !important;
       }
 
       [data-bs-theme='dark'] [style*='color: #64748B'],
+      [data-bs-theme='dark'] [style*='color: #64748B'] *,
       [data-bs-theme='dark'] [style*='color:#64748B'],
+      [data-bs-theme='dark'] [style*='color:#64748B'] *,
       [data-bs-theme='dark'] [style*='color: #64748b'],
-      [data-bs-theme='dark'] [style*='color:#64748b'] {
+      [data-bs-theme='dark'] [style*='color: #64748b'] *,
+      [data-bs-theme='dark'] [style*='color:#64748b'],
+      [data-bs-theme='dark'] [style*='color:#64748b'] *,
+      [data-bs-theme='dark'] [style*='color: #94A3B8'],
+      [data-bs-theme='dark'] [style*='color: #94A3B8'] *,
+      [data-bs-theme='dark'] [style*='color:#94A3B8'],
+      [data-bs-theme='dark'] [style*='color:#94A3B8'] *,
+      [data-bs-theme='dark'] [style*='color: #94a3b8'],
+      [data-bs-theme='dark'] [style*='color: #94a3b8'] *,
+      [data-bs-theme='dark'] [style*='color:#94a3b8'],
+      [data-bs-theme='dark'] [style*='color:#94a3b8'] * {
         color: #CBD5E1 !important;
       }
 
       /* Hardcoded dark blues, navy, indigos become vibrant cyan / sky blue */
       [data-bs-theme='dark'] [style*='color: #1E3A8A'],
+      [data-bs-theme='dark'] [style*='color: #1E3A8A'] *,
       [data-bs-theme='dark'] [style*='color:#1E3A8A'],
+      [data-bs-theme='dark'] [style*='color:#1E3A8A'] *,
       [data-bs-theme='dark'] [style*='color: #1e3a8a'],
+      [data-bs-theme='dark'] [style*='color: #1e3a8a'] *,
       [data-bs-theme='dark'] [style*='color:#1e3a8a'],
+      [data-bs-theme='dark'] [style*='color:#1e3a8a'] *,
       [data-bs-theme='dark'] [style*='color: #1B4F72'],
+      [data-bs-theme='dark'] [style*='color: #1B4F72'] *,
       [data-bs-theme='dark'] [style*='color:#1B4F72'],
+      [data-bs-theme='dark'] [style*='color:#1B4F72'] *,
       [data-bs-theme='dark'] [style*='color: #1b4f72'],
+      [data-bs-theme='dark'] [style*='color: #1b4f72'] *,
       [data-bs-theme='dark'] [style*='color:#1b4f72'],
-      [data-bs-theme='dark'] [style*='color: #312E81'],
-      [data-bs-theme='dark'] [style*='color:#312E81'],
-      [data-bs-theme='dark'] [style*='color: #312e81'],
-      [data-bs-theme='dark'] [style*='color:#312e81'],
+      [data-bs-theme='dark'] [style*='color:#1b4f72'] *,
       [data-bs-theme='dark'] [style*='color: #1E3A5F'],
+      [data-bs-theme='dark'] [style*='color: #1E3A5F'] *,
       [data-bs-theme='dark'] [style*='color:#1E3A5F'],
+      [data-bs-theme='dark'] [style*='color:#1E3A5F'] *,
+      [data-bs-theme='dark'] [style*='color: #1e3a5f'],
+      [data-bs-theme='dark'] [style*='color: #1e3a5f'] *,
+      [data-bs-theme='dark'] [style*='color:#1e3a5f'],
+      [data-bs-theme='dark'] [style*='color:#1e3a5f'] *,
+      [data-bs-theme='dark'] [style*='color: #172554'],
+      [data-bs-theme='dark'] [style*='color: #172554'] *,
+      [data-bs-theme='dark'] [style*='color:#172554'],
+      [data-bs-theme='dark'] [style*='color:#172554'] *,
+      [data-bs-theme='dark'] [style*='color: #1e40af'],
+      [data-bs-theme='dark'] [style*='color: #1e40af'] *,
+      [data-bs-theme='dark'] [style*='color:#1e40af'],
+      [data-bs-theme='dark'] [style*='color:#1e40af'] *,
+      [data-bs-theme='dark'] [style*='color: #1E40AF'],
+      [data-bs-theme='dark'] [style*='color: #1E40AF'] *,
+      [data-bs-theme='dark'] [style*='color:#1E40AF'],
+      [data-bs-theme='dark'] [style*='color:#1E40AF'] *,
       [data-bs-theme='dark'] [style*='color: #0369A1'],
+      [data-bs-theme='dark'] [style*='color: #0369A1'] *,
       [data-bs-theme='dark'] [style*='color:#0369A1'],
+      [data-bs-theme='dark'] [style*='color:#0369A1'] *,
+      [data-bs-theme='dark'] [style*='color: #0369a1'],
+      [data-bs-theme='dark'] [style*='color: #0369a1'] *,
+      [data-bs-theme='dark'] [style*='color:#0369a1'],
+      [data-bs-theme='dark'] [style*='color:#0369a1'] *,
       [data-bs-theme='dark'] [style*='color: #0C4A6E'],
-      [data-bs-theme='dark'] [style*='color:#0C4A6E'] {
+      [data-bs-theme='dark'] [style*='color: #0C4A6E'] *,
+      [data-bs-theme='dark'] [style*='color:#0C4A6E'],
+      [data-bs-theme='dark'] [style*='color:#0C4A6E'] *,
+      [data-bs-theme='dark'] [style*='color: #0c4a6e'],
+      [data-bs-theme='dark'] [style*='color: #0c4a6e'] *,
+      [data-bs-theme='dark'] [style*='color:#0c4a6e'],
+      [data-bs-theme='dark'] [style*='color:#0c4a6e'] *,
+      [data-bs-theme='dark'] [style*='color: #082F49'],
+      [data-bs-theme='dark'] [style*='color: #082F49'] *,
+      [data-bs-theme='dark'] [style*='color:#082F49'],
+      [data-bs-theme='dark'] [style*='color:#082F49'] *,
+      [data-bs-theme='dark'] [style*='color: #2563EB'],
+      [data-bs-theme='dark'] [style*='color: #2563EB'] *,
+      [data-bs-theme='dark'] [style*='color:#2563EB'],
+      [data-bs-theme='dark'] [style*='color:#2563EB'] *,
+      [data-bs-theme='dark'] [style*='color: #3B82F6'],
+      [data-bs-theme='dark'] [style*='color: #3B82F6'] *,
+      [data-bs-theme='dark'] [style*='color:#3B82F6'],
+      [data-bs-theme='dark'] [style*='color:#3B82F6'] * {
         color: #38BDF8 !important;
       }
 
+      /* Hardcoded deep indigos become radiant soft indigo / violet */
+      [data-bs-theme='dark'] [style*='color: #312E81'],
+      [data-bs-theme='dark'] [style*='color: #312E81'] *,
+      [data-bs-theme='dark'] [style*='color:#312E81'],
+      [data-bs-theme='dark'] [style*='color:#312E81'] *,
+      [data-bs-theme='dark'] [style*='color: #312e81'],
+      [data-bs-theme='dark'] [style*='color: #312e81'] *,
+      [data-bs-theme='dark'] [style*='color:#312e81'],
+      [data-bs-theme='dark'] [style*='color:#312e81'] *,
       [data-bs-theme='dark'] [style*='color: #3730A3'],
+      [data-bs-theme='dark'] [style*='color: #3730A3'] *,
       [data-bs-theme='dark'] [style*='color:#3730A3'],
+      [data-bs-theme='dark'] [style*='color:#3730A3'] *,
+      [data-bs-theme='dark'] [style*='color: #3730a3'],
+      [data-bs-theme='dark'] [style*='color: #3730a3'] *,
+      [data-bs-theme='dark'] [style*='color:#3730a3'],
+      [data-bs-theme='dark'] [style*='color:#3730a3'] *,
       [data-bs-theme='dark'] [style*='color: #1E1B4B'],
-      [data-bs-theme='dark'] [style*='color:#1E1B4B'] {
+      [data-bs-theme='dark'] [style*='color: #1E1B4B'] *,
+      [data-bs-theme='dark'] [style*='color:#1E1B4B'],
+      [data-bs-theme='dark'] [style*='color:#1E1B4B'] *,
+      [data-bs-theme='dark'] [style*='color: #1e1b4b'],
+      [data-bs-theme='dark'] [style*='color: #1e1b4b'] *,
+      [data-bs-theme='dark'] [style*='color:#1e1b4b'],
+      [data-bs-theme='dark'] [style*='color:#1e1b4b'] *,
+      [data-bs-theme='dark'] [style*='color: #4338CA'],
+      [data-bs-theme='dark'] [style*='color: #4338CA'] *,
+      [data-bs-theme='dark'] [style*='color:#4338CA'],
+      [data-bs-theme='dark'] [style*='color:#4338CA'] *,
+      [data-bs-theme='dark'] [style*='color: #4338ca'],
+      [data-bs-theme='dark'] [style*='color: #4338ca'] *,
+      [data-bs-theme='dark'] [style*='color:#4338ca'],
+      [data-bs-theme='dark'] [style*='color:#4338ca'] *,
+      [data-bs-theme='dark'] [style*='color: #4F46E5'],
+      [data-bs-theme='dark'] [style*='color: #4F46E5'] *,
+      [data-bs-theme='dark'] [style*='color:#4F46E5'],
+      [data-bs-theme='dark'] [style*='color:#4F46E5'] *,
+      [data-bs-theme='dark'] [style*='color: #4f46e5'],
+      [data-bs-theme='dark'] [style*='color: #4f46e5'] *,
+      [data-bs-theme='dark'] [style*='color:#4f46e5'],
+      [data-bs-theme='dark'] [style*='color:#4f46e5'] * {
         color: #A5B4FC !important;
       }
 
       /* Hardcoded dark greens become radiant emerald */
       [data-bs-theme='dark'] [style*='color: #166534'],
+      [data-bs-theme='dark'] [style*='color: #166534'] *,
       [data-bs-theme='dark'] [style*='color:#166534'],
+      [data-bs-theme='dark'] [style*='color:#166534'] *,
+      [data-bs-theme='dark'] [style*='color: #14532D'],
+      [data-bs-theme='dark'] [style*='color: #14532D'] *,
+      [data-bs-theme='dark'] [style*='color:#14532D'],
+      [data-bs-theme='dark'] [style*='color:#14532D'] *,
+      [data-bs-theme='dark'] [style*='color: #14532d'],
+      [data-bs-theme='dark'] [style*='color: #14532d'] *,
+      [data-bs-theme='dark'] [style*='color:#14532d'],
+      [data-bs-theme='dark'] [style*='color:#14532d'] *,
       [data-bs-theme='dark'] [style*='color: #15803D'],
+      [data-bs-theme='dark'] [style*='color: #15803D'] *,
       [data-bs-theme='dark'] [style*='color:#15803D'],
+      [data-bs-theme='dark'] [style*='color:#15803D'] *,
+      [data-bs-theme='dark'] [style*='color: #15803d'],
+      [data-bs-theme='dark'] [style*='color: #15803d'] *,
+      [data-bs-theme='dark'] [style*='color:#15803d'],
+      [data-bs-theme='dark'] [style*='color:#15803d'] *,
+      [data-bs-theme='dark'] [style*='color: #16A34A'],
+      [data-bs-theme='dark'] [style*='color: #16A34A'] *,
+      [data-bs-theme='dark'] [style*='color:#16A34A'],
+      [data-bs-theme='dark'] [style*='color:#16A34A'] *,
+      [data-bs-theme='dark'] [style*='color: #16a34a'],
+      [data-bs-theme='dark'] [style*='color: #16a34a'] *,
+      [data-bs-theme='dark'] [style*='color:#16a34a'],
+      [data-bs-theme='dark'] [style*='color:#16a34a'] *,
       [data-bs-theme='dark'] [style*='color: #0F766E'],
+      [data-bs-theme='dark'] [style*='color: #0F766E'] *,
       [data-bs-theme='dark'] [style*='color:#0F766E'],
+      [data-bs-theme='dark'] [style*='color:#0F766E'] *,
+      [data-bs-theme='dark'] [style*='color: #0f766e'],
+      [data-bs-theme='dark'] [style*='color: #0f766e'] *,
+      [data-bs-theme='dark'] [style*='color:#0f766e'],
+      [data-bs-theme='dark'] [style*='color:#0f766e'] *,
       [data-bs-theme='dark'] [style*='color: #0D9488'],
-      [data-bs-theme='dark'] [style*='color:#0D9488'] {
+      [data-bs-theme='dark'] [style*='color: #0D9488'] *,
+      [data-bs-theme='dark'] [style*='color:#0D9488'],
+      [data-bs-theme='dark'] [style*='color:#0D9488'] *,
+      [data-bs-theme='dark'] [style*='color: #0d9488'],
+      [data-bs-theme='dark'] [style*='color: #0d9488'] *,
+      [data-bs-theme='dark'] [style*='color:#0d9488'],
+      [data-bs-theme='dark'] [style*='color:#0d9488'] * {
         color: #4ADE80 !important;
       }
 
-      [data-bs-theme='dark'] [style*='color: #4338CA'],
-      [data-bs-theme='dark'] [style*='color:#4338CA'] {
-        color: #A5B4FC !important;
+      /* Hardcoded amber/browns become soft light gold */
+      [data-bs-theme='dark'] [style*='color: #92400E'],
+      [data-bs-theme='dark'] [style*='color: #92400E'] *,
+      [data-bs-theme='dark'] [style*='color:#92400E'],
+      [data-bs-theme='dark'] [style*='color:#92400E'] *,
+      [data-bs-theme='dark'] [style*='color: #92400e'],
+      [data-bs-theme='dark'] [style*='color: #92400e'] *,
+      [data-bs-theme='dark'] [style*='color:#92400e'],
+      [data-bs-theme='dark'] [style*='color:#92400e'] *,
+      [data-bs-theme='dark'] [style*='color: #78350F'],
+      [data-bs-theme='dark'] [style*='color: #78350F'] *,
+      [data-bs-theme='dark'] [style*='color:#78350F'],
+      [data-bs-theme='dark'] [style*='color:#78350F'] *,
+      [data-bs-theme='dark'] [style*='color: #78350f'],
+      [data-bs-theme='dark'] [style*='color: #78350f'] *,
+      [data-bs-theme='dark'] [style*='color:#78350f'],
+      [data-bs-theme='dark'] [style*='color:#78350f'] * {
+        color: #FCD34D !important;
       }
 
-      /* 4. Transform Hardcoded Light Background Containers into Dark Slate */
+      /* Hardcoded dark reds become soft coral / rose */
+      [data-bs-theme='dark'] [style*='color: #991B1B'],
+      [data-bs-theme='dark'] [style*='color: #991B1B'] *,
+      [data-bs-theme='dark'] [style*='color:#991B1B'],
+      [data-bs-theme='dark'] [style*='color:#991B1B'] *,
+      [data-bs-theme='dark'] [style*='color: #991b1b'],
+      [data-bs-theme='dark'] [style*='color: #991b1b'] *,
+      [data-bs-theme='dark'] [style*='color:#991b1b'],
+      [data-bs-theme='dark'] [style*='color:#991b1b'] *,
+      [data-bs-theme='dark'] [style*='color: #7F1D1D'],
+      [data-bs-theme='dark'] [style*='color: #7F1D1D'] *,
+      [data-bs-theme='dark'] [style*='color:#7F1D1D'],
+      [data-bs-theme='dark'] [style*='color:#7F1D1D'] *,
+      [data-bs-theme='dark'] [style*='color: #7f1d1d'],
+      [data-bs-theme='dark'] [style*='color: #7f1d1d'] *,
+      [data-bs-theme='dark'] [style*='color:#7f1d1d'],
+      [data-bs-theme='dark'] [style*='color:#7f1d1d'] *,
+      [data-bs-theme='dark'] [style*='color: #DC3545'],
+      [data-bs-theme='dark'] [style*='color: #DC3545'] *,
+      [data-bs-theme='dark'] [style*='color:#DC3545'],
+      [data-bs-theme='dark'] [style*='color:#DC3545'] *,
+      [data-bs-theme='dark'] [style*='color: #dc3545'],
+      [data-bs-theme='dark'] [style*='color: #dc3545'] *,
+      [data-bs-theme='dark'] [style*='color:#dc3545'],
+      [data-bs-theme='dark'] [style*='color:#dc3545'] * {
+        color: #F87171 !important;
+      }
+
+      /* 5. Transform Hardcoded Light Background Containers into Dark Slate */
       [data-bs-theme='dark'] [style*='background: #FFFFFF'],
       [data-bs-theme='dark'] [style*='background:#FFFFFF'],
       [data-bs-theme='dark'] [style*='background-color: #FFFFFF'],
@@ -1353,7 +1687,9 @@ ui <- page_navbar(
       }
 
       [data-bs-theme='dark'] [style*='background: #EEF2FF'],
-      [data-bs-theme='dark'] [style*='background:#EEF2FF'] {
+      [data-bs-theme='dark'] [style*='background:#EEF2FF'],
+      [data-bs-theme='dark'] [style*='background-color: #EEF2FF'],
+      [data-bs-theme='dark'] [style*='background-color:#EEF2FF'] {
         background: #1E1B4B !important;
         color: #E0E7FF !important;
       }
@@ -1362,6 +1698,18 @@ ui <- page_navbar(
       [data-bs-theme='dark'] [style*='background:#F0FDF4'] {
         background: #064E3B !important;
         color: #D1FAE5 !important;
+      }
+
+      [data-bs-theme='dark'] [style*='background: #FFFBEB'],
+      [data-bs-theme='dark'] [style*='background:#FFFBEB'] {
+        background: #451A03 !important;
+        color: #FEF3C7 !important;
+      }
+
+      [data-bs-theme='dark'] [style*='background: #FEF2F2'],
+      [data-bs-theme='dark'] [style*='background:#FEF2F2'] {
+        background: #450A0A !important;
+        color: #FEE2E2 !important;
       }
 
       /* Header Gradients in Dark Mode */
@@ -1388,11 +1736,12 @@ ui <- page_navbar(
       [data-bs-theme='dark'] [style*='border:1px solid #E2E8F0'],
       [data-bs-theme='dark'] [style*='border: 1px solid #CBD5E1'],
       [data-bs-theme='dark'] [style*='border:1px solid #CBD5E1'],
-      [data-bs-theme='dark'] [style*='border: 2px dashed #CBD5E1'] {
+      [data-bs-theme='dark'] [style*='border: 2px dashed #CBD5E1'],
+      [data-bs-theme='dark'] [style*='border: 1px dashed #CBD5E1'] {
         border-color: #334155 !important;
       }
 
-      /* 5. Form Controls, Inputs, File Uploads, Selects */
+      /* 6. Form Controls, Inputs, File Uploads, Selects */
       [data-bs-theme='dark'] .form-control,
       [data-bs-theme='dark'] .form-select,
       [data-bs-theme='dark'] .selectize-input,
@@ -1424,7 +1773,7 @@ ui <- page_navbar(
         color: #F8FAFC !important;
       }
 
-      /* 6. Navigation Bar & Tabs */
+      /* 7. Navigation Bar & Tabs */
       [data-bs-theme='dark'] .navbar {
         background-color: #0F172A !important;
         border-bottom: 1px solid #334155 !important;
@@ -1454,7 +1803,7 @@ ui <- page_navbar(
         border-color: #0284C7 !important;
       }
 
-      /* 7. Cards, Placeholders, Containers */
+      /* 8. Cards, Placeholders, Containers */
       [data-bs-theme='dark'] .card {
         background-color: #0F172A !important;
         color: #F8FAFC !important;
@@ -1497,20 +1846,23 @@ ui <- page_navbar(
       }
       [data-bs-theme='dark'] .plot-placeholder-card {
         background: #1E293B !important;
-        border-color: #475569 !important;
+        border: 2px dashed #475569 !important;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.3) !important;
       }
-      [data-bs-theme='dark'] .plot-placeholder-card h5 {
+      [data-bs-theme='dark'] .plot-placeholder-card h5,
+      [data-bs-theme='dark'] .plot-placeholder-card .placeholder-title {
         color: #FFFFFF !important;
       }
-      [data-bs-theme='dark'] .plot-placeholder-card p {
-        color: #94A3B8 !important;
+      [data-bs-theme='dark'] .plot-placeholder-card p,
+      [data-bs-theme='dark'] .plot-placeholder-card .placeholder-desc {
+        color: #CBD5E1 !important;
       }
       [data-bs-theme='dark'] .sim-input-card {
         background: #1E293B !important;
         border-color: #38BDF8 !important;
       }
 
-      /* 8. Modals & Tables */
+      /* 9. Modals & Tables */
       [data-bs-theme='dark'] .modal-content {
         background-color: #0F172A !important;
         color: #F8FAFC !important;
@@ -1540,30 +1892,40 @@ ui <- page_navbar(
         border-color: #334155 !important;
       }
 
-      /* 9. Alert Banners, Buttons, and Callouts */
-      [data-bs-theme='dark'] .alert-info {
-        background-color: #082F49 !important;
-        border-color: #0284C7 !important;
-        color: #E0F2FE !important;
-      }
-      [data-bs-theme='dark'] .alert-info a,
-      [data-bs-theme='dark'] .alert-info .action-button {
-        color: #38BDF8 !important;
-      }
-      [data-bs-theme='dark'] .alert-primary {
-        background-color: #1E1B4B !important;
-        border-color: #4F46E5 !important;
-        color: #E0E7FF !important;
-      }
-      [data-bs-theme='dark'] .alert-primary a,
-      [data-bs-theme='dark'] .alert-primary .action-button {
-        color: #818CF8 !important;
-      }
-      [data-bs-theme='dark'] .alert-secondary {
-        background-color: #1E293B !important;
-        border-color: #475569 !important;
+      /* DataTables Controls & Text in Dark Mode */
+      [data-bs-theme='dark'] .dataTables_wrapper,
+      [data-bs-theme='dark'] .dataTables_info,
+      [data-bs-theme='dark'] .dataTables_length,
+      [data-bs-theme='dark'] .dataTables_filter,
+      [data-bs-theme='dark'] .dataTables_paginate,
+      [data-bs-theme='dark'] .dataTables_filter label,
+      [data-bs-theme='dark'] .dataTables_length label {
         color: #CBD5E1 !important;
       }
+      [data-bs-theme='dark'] .dataTables_filter input,
+      [data-bs-theme='dark'] .dataTables_length select {
+        background-color: #1E293B !important;
+        color: #F8FAFC !important;
+        border: 1px solid #475569 !important;
+      }
+      [data-bs-theme='dark'] .dataTables_paginate .paginate_button {
+        color: #CBD5E1 !important;
+        background: #1E293B !important;
+        border-color: #334155 !important;
+      }
+      [data-bs-theme='dark'] .dataTables_paginate .paginate_button.current,
+      [data-bs-theme='dark'] .dataTables_paginate .paginate_button.current:hover {
+        color: #FFFFFF !important;
+        background: #0284C7 !important;
+        border-color: #0284C7 !important;
+      }
+      [data-bs-theme='dark'] .dataTables_paginate .paginate_button:hover {
+        color: #FFFFFF !important;
+        background: #334155 !important;
+        border-color: #475569 !important;
+      }
+
+      /* 10. Buttons & Interactive Links */
       [data-bs-theme='dark'] .btn-outline-primary {
         color: #38BDF8 !important;
         border-color: #38BDF8 !important;
@@ -1609,47 +1971,6 @@ ui <- page_navbar(
       [data-bs-theme='dark'] .pageview-count {
         color: #38BDF8 !important;
       }
-      
-      /* Daylight Mode: Clean scientific confirmation & placeholder card */
-      .plot-placeholder-card {
-        text-align: center;
-        padding: 48px 24px;
-        background: #F8FAFC !important;
-        border: 2px dashed #CBD5E1 !important;
-        border-radius: 12px;
-        margin: 24px auto;
-        max-width: 680px;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-      }
-      .plot-placeholder-card h5,
-      .plot-placeholder-card .placeholder-title {
-        font-weight: 700;
-        color: #0F172A !important;
-        margin-bottom: 8px;
-        font-size: 1.15rem;
-      }
-      .plot-placeholder-card p,
-      .plot-placeholder-card .placeholder-desc {
-        color: #475569 !important;
-        font-size: 0.88rem !important;
-        line-height: 1.55;
-        margin-bottom: 20px;
-      }
-
-      /* Night Mode: High-contrast Dark theme */
-      [data-bs-theme='dark'] .plot-placeholder-card {
-        background: #1E293B !important;
-        border: 2px dashed #475569 !important;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.3) !important;
-      }
-      [data-bs-theme='dark'] .plot-placeholder-card h5,
-      [data-bs-theme='dark'] .plot-placeholder-card .placeholder-title {
-        color: #FFFFFF !important;
-      }
-      [data-bs-theme='dark'] .plot-placeholder-card p,
-      [data-bs-theme='dark'] .plot-placeholder-card .placeholder-desc {
-        color: #CBD5E1 !important;
-      }
     ")),
     div(
       id = "app_busy_pill",
@@ -1682,7 +2003,7 @@ ui <- page_navbar(
             style = "font-weight: 800; font-size: 2.1rem; letter-spacing: -0.03em; color: #FFFFFF; margin-bottom: 10px;"
           ),
           p(
-            "This application is designed for simulation evaluation of single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) datasets by comparing them against real reference datasets across 62 evaluation measures without requiring known ground truth.",
+            "This application is designed for simulation evaluation of single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) datasets by comparing them against real reference datasets across 62 evaluation measures.",
             style = "font-size: 1.02rem; color: #CBD5E1; line-height: 1.6; margin-bottom: 0;"
           )
         )
@@ -1745,7 +2066,7 @@ ui <- page_navbar(
                     div("Compute duration & peak memory efficiency (2)", style = "font-size: 0.75rem; color: #64748B;"))
               ),
               p(
-                "All metrics are standardized onto a direction-aware [0, 1] fidelity scale, where 1.0 represents perfect concordance with empirical biology. This enables unbiased ranking across simulator architectures without ground-truth labels.",
+                "All metrics are standardized onto a direction-aware [0, 1] fidelity scale, where 1.0 represents perfect concordance with empirical biology. This enables unbiased ranking across simulator architectures across 62 evaluation measures.",
                 style = "font-size: 0.85rem; color: #475569; margin-bottom: 0; line-height: 1.5;"
               )
             )
@@ -1828,31 +2149,36 @@ ui <- page_navbar(
         selectInput(
           "opt_data_mode", tags$b("Choose Data Mode:"),
           choices = c(
-            "Example dataset analysis" = "demo",
-            "Single-Cell (scRNA or scATAC)" = "unimodal",
-            "Multiomics (scRNA + scATAC)" = "multiomics",
+            "1. scRNA-seq datasets" = "scrna",
+            "2. scATAC-seq datasets" = "scatac",
+            "3. Single-Cell Multiomics datasets" = "multiomics",
             "Upload Saved Results (.rds / .csv)" = "upload_bench"
           ),
-          selected = "demo",
+          selected = "multiomics",
           width = "100%"
         ),
         hr(style = "margin: 10px 0;"),
         
-        # Mode 1: Example dataset analysis
+        # Mode 1: scRNA-seq datasets
         conditionalPanel(
-          condition = "input.opt_data_mode == 'demo'",
-          p("Load pre-computed demo benchmark containing 2 original reference datasets (Dataset 1, Dataset 2) and 6 simulators (Simulator 1 to Simulator 6) with simulated outputs for each dataset across 62 canonical metrics.",
-            style = "font-size: 0.82rem; color: #475569; line-height: 1.45;"),
-          actionButton("btn_load_demo", "Load Example Benchmark (2 Datasets x 6 Simulators)", class = "btn btn-primary w-100", icon = icon("play"))
-        ),
-        
-        # Mode 2: Single-Cell (scRNA-seq or scATAC-seq)
-        conditionalPanel(
-          condition = "input.opt_data_mode == 'unimodal'",
+          condition = "input.opt_data_mode == 'scrna'",
+          div(
+            style = "background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 6px; padding: 10px; margin-bottom: 12px;",
+            div(style = "font-weight: 700; color: #1E3A8A; font-size: 0.86rem; margin-bottom: 6px;", icon("flask", class = "me-1"), "Load Example scRNA-seq Data:"),
+            radioButtons(
+              "opt_example_scrna_dataset", NULL,
+              choices = c(
+                "Rice Bud (Paired, 6 Simulators)" = "rice_bud",
+                "Soybean Root (Unpaired, 3 Simulators)" = "soybean_root"
+              ),
+              selected = "rice_bud"
+            ),
+            actionButton("btn_load_example_scrna", "Load Example scRNA-seq Data", class = "btn btn-primary btn-sm w-100", icon = icon("play"))
+          ),
           div(
             style = "font-size: 0.78rem; color: #1E3A8A; background: #EFF6FF; border-left: 3px solid #2563EB; border-radius: 4px; padding: 8px 10px; margin-bottom: 12px;",
-            div(style = "font-weight: 700; color: #1E3A8A; margin-bottom: 2px;", icon("layer-group", class = "me-1"), "Single-Cell Evaluation:"),
-            div("Set scope below. Configure reference matrices, simulations, runtime, and RAM in the Main Panel on the right.")
+            div(style = "font-weight: 700; color: #1E3A8A; margin-bottom: 2px;", icon("layer-group", class = "me-1"), "Custom scRNA-seq Evaluation:"),
+            div("Configure reference matrix, simulations, runtime, and RAM in the Main Panel.")
           ),
           tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 6px; margin-bottom: 4px;", "1. Benchmarking Scope"),
           numericInput("num_uni_datasets", "Number of Datasets:", value = 1, min = 1, max = 50, step = 1),
@@ -1861,32 +2187,49 @@ ui <- page_navbar(
           numericInput("num_uni_cores", "CPU Cores / Threads:", value = default_n_cores, min = 1, max = max_sys_cores, step = 1),
           span(class = "text-muted", style = "font-size: 0.74rem; display: block; margin-top: -6px; margin-bottom: 8px;", sprintf("System detected: %d CPU cores", max_sys_cores)),
           hr(style = "margin: 12px 0;"),
-          div(
-            class = "alert alert-primary py-2 px-3 mb-3", style = "font-size: 0.78rem; line-height: 1.45;",
-            icon("arrow-right", class = "me-1"), tags$b("Main Panel Workspace:"), br(),
-            "Dataset details & simulator upload forms are available in the Main Panel."
-          ),
           checkboxInput("chk_append_uni", "Add to current benchmark results", value = FALSE),
-          actionButton("btn_run_uni_eval", "Calculate Single-Cell Metrics", class = "btn btn-primary w-100 mt-2", icon = icon("play")),
-          actionButton("btn_inspect_uni_data_side", "Inspect Dataset Properties", class = "btn btn-outline-secondary w-100 mt-2 btn-sm", icon = icon("table-cells")),
+          actionButton("btn_run_uni_eval", "Calculate scRNA-seq Metrics", class = "btn btn-primary w-100 mt-2", icon = icon("play")),
+          actionButton("btn_inspect_uni_data_side", "Inspect Dataset Properties", class = "btn btn-outline-secondary w-100 mt-2 btn-sm", icon = icon("table-cells"))
+        ),
+        
+        # Mode 2: scATAC-seq datasets
+        conditionalPanel(
+          condition = "input.opt_data_mode == 'scatac'",
+          div(
+            style = "background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 6px; padding: 10px; margin-bottom: 12px;",
+            div(style = "font-weight: 700; color: #0284C7; font-size: 0.86rem; margin-bottom: 6px;", icon("flask", class = "me-1"), "Load Example scATAC-seq Data:"),
+            radioButtons(
+              "opt_example_scatac_dataset", NULL,
+              choices = c(
+                "Rice Bud (Paired, 6 Simulators)" = "rice_bud",
+                "Soybean Root (Unpaired, 3 Simulators)" = "soybean_root"
+              ),
+              selected = "rice_bud"
+            ),
+            actionButton("btn_load_example_scatac", "Load Example scATAC-seq Data", class = "btn btn-info text-white btn-sm w-100", icon = icon("play"))
+          ),
+          div(
+            style = "font-size: 0.78rem; color: #0C4A6E; background: #F0F9FF; border-left: 3px solid #0284C7; border-radius: 4px; padding: 8px 10px; margin-bottom: 12px;",
+            div(style = "font-weight: 700; color: #0C4A6E; margin-bottom: 2px;", icon("chart-simple", class = "me-1"), "Custom scATAC-seq Evaluation:"),
+            div("Configure reference peak accessibility matrix, simulations, runtime, and RAM in the Main Panel.")
+          ),
+          tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 6px; margin-bottom: 4px;", "1. Benchmarking Scope"),
+          numericInput("num_uni_datasets_atac", "Number of Datasets:", value = 1, min = 1, max = 50, step = 1),
+          numericInput("num_uni_sims_atac", "Number of Simulators:", value = 1, min = 1, max = 10, step = 1),
+          tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 10px; margin-bottom: 4px;", "2. Compute & Acceleration"),
+          numericInput("num_uni_cores_atac", "CPU Cores / Threads:", value = default_n_cores, min = 1, max = max_sys_cores, step = 1),
+          span(class = "text-muted", style = "font-size: 0.74rem; display: block; margin-top: -6px; margin-bottom: 8px;", sprintf("System detected: %d CPU cores", max_sys_cores)),
+          hr(style = "margin: 12px 0;"),
+          checkboxInput("chk_append_uni_atac", "Add to current benchmark results", value = FALSE),
+          actionButton("btn_run_uni_eval_atac", "Calculate scATAC-seq Metrics", class = "btn btn-info text-white w-100 mt-2", icon = icon("play")),
+          actionButton("btn_inspect_uni_data_side_atac", "Inspect Dataset Properties", class = "btn btn-outline-secondary w-100 mt-2 btn-sm", icon = icon("table-cells"))
         ),
         
         # Mode 3: Multiomics (scRNA-seq + scATAC-seq)
         conditionalPanel(
           condition = "input.opt_data_mode == 'multiomics'",
-          div(
-            style = "font-size: 0.78rem; color: #312E81; background: #EEF2FF; border-left: 3px solid #6366F1; border-radius: 4px; padding: 8px 10px; margin-bottom: 12px;",
-            div(style = "font-weight: 700; color: #312E81; margin-bottom: 2px;", icon("dna", class = "me-1"), "Multiomics Evaluation:"),
-            div("Set scope below. Configure paired RNA & ATAC matrices, simulations, runtime, and RAM in the Main Panel.")
-          ),
-          tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 6px; margin-bottom: 4px;", "1. Benchmarking Scope"),
-          numericInput("num_multi_datasets", "Number of Datasets:", value = 1, min = 1, max = 30, step = 1),
-          numericInput("num_multi_sims", "Number of Simulators:", value = 1, min = 1, max = 8, step = 1),
-          tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 10px; margin-bottom: 4px;", "2. Compute & Acceleration"),
-          numericInput("num_multi_cores", "CPU Cores / Threads:", value = default_n_cores, min = 1, max = max_sys_cores, step = 1),
-          span(class = "text-muted", style = "font-size: 0.74rem; display: block; margin-top: -6px; margin-bottom: 8px;", sprintf("System detected: %d CPU cores", max_sys_cores)),
           radioButtons(
-            "opt_multi_pairing", "Assay Type:",
+            "opt_multi_pairing", tags$b("Assay Type:"),
             choices = c(
               "Paired (Same Cells, 10x / SHARE-seq)" = "paired",
               "Unpaired (Independent Cells)" = "unpaired"
@@ -1894,15 +2237,37 @@ ui <- page_navbar(
             selected = "paired"
           ),
           uiOutput("ui_pairing_info_banner"),
-          hr(style = "margin: 12px 0;"),
           div(
-            class = "alert alert-indigo py-2 px-3 mb-3", style = "font-size: 0.78rem; line-height: 1.45; background: #EEF2FF; border: 1px solid #C7D2FE; color: #3730A3;",
-            icon("arrow-right", class = "me-1"), tags$b("Main Panel Workspace:"), br(),
-            "Paired RNA/ATAC dataset forms are available in the Main Panel."
+            style = "background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 6px; padding: 10px; margin-bottom: 12px;",
+            div(style = "font-weight: 700; color: #312E81; font-size: 0.86rem; margin-bottom: 6px;", icon("flask", class = "me-1"), "Load Example Multiomics Data:"),
+            conditionalPanel(
+              condition = "input.opt_multi_pairing == 'paired'",
+              p("Rice Bud (Oryza sativa) paired multiomics dataset (100 cells, 200 genes, 200 peaks, 8 cell types, 2 batches) evaluated across 6 simulators (scMultiSim, scDesign3, MOSim, scCross, scMoMtF, Matilda).",
+                style = "font-size: 0.78rem; color: #475569; margin-bottom: 8px; line-height: 1.4;"),
+              actionButton("btn_load_example_paired_multi", "Load Rice Bud Example (Paired, 6 Simulators)", class = "btn btn-primary btn-sm w-100", icon = icon("play"))
+            ),
+            conditionalPanel(
+              condition = "input.opt_multi_pairing == 'unpaired'",
+              p("Soybean Root (Glycine max) unpaired multiomics dataset (100 RNA cells, 100 ATAC cells, 200 genes, 200 peaks) evaluated across 3 simulators (scMultiSim, scDesign3, scCross).",
+                style = "font-size: 0.78rem; color: #475569; margin-bottom: 8px; line-height: 1.4;"),
+              actionButton("btn_load_example_unpaired_multi", "Load Soybean Root Example (Unpaired, 3 Simulators)", class = "btn btn-primary btn-sm w-100", icon = icon("play"))
+            )
           ),
+          div(
+            style = "font-size: 0.78rem; color: #312E81; background: #EEF2FF; border-left: 3px solid #6366F1; border-radius: 4px; padding: 8px 10px; margin-bottom: 12px;",
+            div(style = "font-weight: 700; color: #312E81; margin-bottom: 2px;", icon("dna", class = "me-1"), "Custom Multiomics Evaluation:"),
+            div("Configure paired/unpaired RNA & ATAC matrices, simulations, runtime, and RAM in the Main Panel.")
+          ),
+          tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 6px; margin-bottom: 4px;", "1. Benchmarking Scope"),
+          numericInput("num_multi_datasets", "Number of Datasets:", value = 1, min = 1, max = 30, step = 1),
+          numericInput("num_multi_sims", "Number of Simulators:", value = 1, min = 1, max = 8, step = 1),
+          tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 10px; margin-bottom: 4px;", "2. Compute & Acceleration"),
+          numericInput("num_multi_cores", "CPU Cores / Threads:", value = default_n_cores, min = 1, max = max_sys_cores, step = 1),
+          span(class = "text-muted", style = "font-size: 0.74rem; display: block; margin-top: -6px; margin-bottom: 8px;", sprintf("System detected: %d CPU cores", max_sys_cores)),
+          hr(style = "margin: 12px 0;"),
           checkboxInput("chk_append_multi", "Add to current benchmark results", value = FALSE),
           actionButton("btn_run_multi_eval", "Calculate Multiomics Metrics", class = "btn btn-primary w-100 mt-2", icon = icon("dna")),
-          actionButton("btn_inspect_multi_data_side", "Inspect Dataset Properties", class = "btn btn-outline-secondary w-100 mt-2 btn-sm", icon = icon("table-cells")),
+          actionButton("btn_inspect_multi_data_side", "Inspect Dataset Properties", class = "btn btn-outline-secondary w-100 mt-2 btn-sm", icon = icon("table-cells"))
         ),
         
         # Mode 4: Upload Saved Results (.rds / .csv)
@@ -1939,6 +2304,7 @@ ui <- page_navbar(
         
         # Dataset Selection (All Datasets Average vs Individual Datasets)
         uiOutput("ui_bubble_dataset_selector"),
+        uiOutput("ui_bubble_modality_selector"),
         hr(style = "margin: 10px 0;"),
 
         # 1. Filter Mode
@@ -2068,8 +2434,7 @@ ui <- page_navbar(
   nav_panel(
     "Visualizations",
     
-    # Global Visualization Dataset Selector & Navigation Bar
-    uiOutput("ui_viz_global_dataset_bar"),
+    # Dataset selectors embedded directly within each visualization tab
     
     navset_pill(
       id = "viz_subtabs",
@@ -2092,15 +2457,20 @@ ui <- page_navbar(
           ),
           card_body(
             fluidRow(
-              column(3,
-                     actionButton("btn_plot_sum", "Confirm & Plot", class = "btn btn-primary btn-sm w-100", icon = icon("chart-pie"), style = "font-weight: 600;")
+              column(3, uiOutput("ui_sum_dataset_selector")),
+              column(2,
+                     div(style = "margin-top: 24px;",
+                         actionButton("btn_plot_sum", "Confirm & Plot", class = "btn btn-primary btn-sm w-100", icon = icon("chart-pie"), style = "font-weight: 600;")
+                     )
               ),
-              column(2, checkboxInput("chk_sum_labels", "Show Score Labels", value = TRUE)),
-              column(3, checkboxInput("chk_sum_norm", "Normalize Scores [0, 1]", value = TRUE)),
-              column(4,
-                     downloadButton("download_sum_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2 mb-1"),
-                     downloadButton("download_sum_pdf", "Download PDF", class = "btn btn-sm btn-outline-secondary me-2 mb-1"),
-                     downloadButton("download_sum_r_script", "Download R Script", class = "btn btn-sm btn-outline-primary mb-1", icon = icon("file-code"))
+              column(2, div(style = "margin-top: 28px;", checkboxInput("chk_sum_labels", "Show Score Labels", value = TRUE))),
+              column(2, div(style = "margin-top: 28px;", checkboxInput("chk_sum_norm", "Normalize [0, 1]", value = TRUE))),
+              column(3,
+                     div(style = "margin-top: 20px;",
+                         downloadButton("download_sum_jpeg", "JPEG (600 DPI)", class = "btn btn-sm btn-primary me-1 mb-1"),
+                         downloadButton("download_sum_pdf", "PDF", class = "btn btn-sm btn-outline-secondary me-1 mb-1"),
+                         downloadButton("download_sum_r_script", "R Script", class = "btn btn-sm btn-outline-primary mb-1", icon = icon("file-code"))
+                     )
               )
             ),
             hr(),
@@ -2131,11 +2501,12 @@ ui <- page_navbar(
                      actionButton("btn_plot_dist", "Confirm & Plot QC", class = "btn btn-primary btn-sm w-100", icon = icon("play"), style = "font-weight: 600;")
               ),
               column(2, uiOutput("ui_dist_dataset_selector")),
+              column(2, uiOutput("ui_dist_modality_selector")),
               column(2, uiOutput("ui_dist_sim_selector")),
               column(2, selectInput("sel_dist_layout", "QC Layout:", choices = c("Comprehensive (14 Panels)" = "full", "Density Curves Only" = "density_only"), selected = "full")),
-              column(4,
-                     downloadButton("download_dist_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2 mb-1"),
-                     downloadButton("download_dist_pdf", "Download PDF", class = "btn btn-sm btn-outline-secondary me-2 mb-1"),
+              column(2,
+                     downloadButton("download_dist_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-1 mb-1"),
+                     downloadButton("download_dist_pdf", "Download PDF", class = "btn btn-sm btn-outline-secondary me-1 mb-1"),
                      downloadButton("download_dist_r_script", "Download R Script", class = "btn btn-sm btn-outline-primary mb-1", icon = icon("file-code"))
               )
             ),
@@ -2163,10 +2534,9 @@ ui <- page_navbar(
           ),
           card_body(
             fluidRow(
-              column(2,
-                     actionButton("btn_plot_scale", "Confirm & Plot", class = "btn btn-primary btn-sm w-100", icon = icon("microchip"), style = "font-weight: 600;")
-              ),
-              column(6,
+              column(3, uiOutput("ui_scale_dataset_selector")),
+              column(3, uiOutput("ui_scale_modality_selector")),
+              column(3,
                      selectInput(
                        "sel_scale_type", "Scalability View:",
                        choices = c(
@@ -2179,7 +2549,14 @@ ui <- page_navbar(
                        selected = "composite"
                      )
               ),
-              column(4,
+              column(3,
+                     div(style = "margin-top: 24px;",
+                         actionButton("btn_plot_scale", "Confirm & Plot", class = "btn btn-primary btn-sm w-100", icon = icon("microchip"), style = "font-weight: 600;")
+                     )
+              )
+            ),
+            fluidRow(
+              column(12,
                      downloadButton("download_scale_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2 mb-1"),
                      downloadButton("download_scale_pdf", "Download PDF", class = "btn btn-sm btn-outline-secondary me-2 mb-1"),
                      downloadButton("download_scale_r_script", "Download R Script", class = "btn btn-sm btn-outline-primary mb-1", icon = icon("file-code"))
@@ -2224,6 +2601,8 @@ ui <- page_navbar(
             fluidRow(
               conditionalPanel(
                 condition = "input.opt_box_view_mode == 'individual'",
+                column(2, uiOutput("ui_box_dataset_selector")),
+                column(2, uiOutput("ui_box_modality_selector")),
                 column(3,
                        selectInput(
                          "sel_box_cat_first", "1. Choose Category First:",
@@ -2247,16 +2626,13 @@ ui <- page_navbar(
                          choices = c("Normalized Score [0, 1]" = "normalized", "Raw Metric Value" = "raw"),
                          selected = "normalized"
                        )
-                ),
-                column(4,
-                       downloadButton("download_box_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2 mb-1"),
-                       downloadButton("download_box_pdf", "Download PDF", class = "btn btn-sm btn-outline-secondary me-2 mb-1"),
-                       downloadButton("download_box_r_script", "Download R Script", class = "btn btn-sm btn-outline-primary mb-1", icon = icon("file-code"))
                 )
               ),
               conditionalPanel(
                 condition = "input.opt_box_view_mode == 'category'",
-                column(4,
+                column(3, uiOutput("ui_box_dataset_selector_cat")),
+                column(3, uiOutput("ui_box_modality_selector_cat")),
+                column(3,
                        selectInput(
                          "sel_box_cat_group", "Choose Category:",
                          choices = c(
@@ -2273,12 +2649,14 @@ ui <- page_navbar(
                          selected = "all"
                        )
                 ),
-                column(4, selectInput("sel_box_score_type", "Score Type:", choices = c("Normalized Score [0, 1]" = "normalized", "Raw Value" = "raw"), selected = "normalized")),
-                column(4,
-                       downloadButton("download_box_cat_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2 mb-1"),
-                       downloadButton("download_box_cat_pdf", "Download PDF", class = "btn btn-sm btn-outline-secondary me-2 mb-1"),
-                       downloadButton("download_box_cat_r_script", "Download R Script", class = "btn btn-sm btn-outline-primary mb-1", icon = icon("file-code"))
-                )
+                column(3, selectInput("sel_box_score_type", "Score Type:", choices = c("Normalized Score [0, 1]" = "normalized", "Raw Value" = "raw"), selected = "normalized"))
+              )
+            ),
+            fluidRow(
+              column(12, style = "margin-top: 10px;",
+                     downloadButton("download_box_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2 mb-1"),
+                     downloadButton("download_box_pdf", "Download PDF", class = "btn btn-sm btn-outline-secondary me-2 mb-1"),
+                     downloadButton("download_box_r_script", "Download R Script", class = "btn btn-sm btn-outline-primary mb-1", icon = icon("file-code"))
               )
             ),
             hr(),
@@ -2306,6 +2684,8 @@ ui <- page_navbar(
           ),
           card_body(
             fluidRow(
+              column(3, uiOutput("ui_heat_dataset_selector")),
+              column(2, uiOutput("ui_heat_modality_selector")),
               column(3,
                      div(style = "margin-bottom: 8px;",
                        actionButton("btn_plot_heat", "Confirm & Plot Heatmap", class = "btn btn-primary btn-sm w-100", icon = icon("table-cells"), style = "font-weight: 600;")
@@ -2324,15 +2704,22 @@ ui <- page_navbar(
                          "(VIII) Computational Scalability"
                        ),
                        selected = "all"
+                     ),
+                     selectInput(
+                       "sel_heat_score_type", "Score Scale:",
+                       choices = c("Normalized Fidelity [0, 1]" = "relative", "Raw Metric Values" = "raw"),
+                       selected = "relative"
                      )
               ),
               column(2,
                      sliderInput("sld_heat_height", "Heatmap Height (px):", min = 400, max = 1500, value = 1100, step = 50)
               ),
-              column(3,
+              column(2,
                      sliderInput("sld_heat_width", "Heatmap Width (px):", min = 600, max = 1300, value = 880, step = 20)
-              ),
-              column(4,
+              )
+            ),
+            fluidRow(
+              column(12, style = "margin-top: 10px;",
                      downloadButton("download_heat_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2 mb-1"),
                      downloadButton("download_heat_pdf", "Download PDF", class = "btn btn-sm btn-outline-secondary me-2 mb-1"),
                      downloadButton("download_heat_r_script", "Download R Script", class = "btn btn-sm btn-outline-primary mb-1", icon = icon("file-code"))
@@ -2367,6 +2754,8 @@ ui <- page_navbar(
           ),
           card_body(
             fluidRow(
+              column(3, uiOutput("ui_pca_dataset_selector")),
+              column(2, uiOutput("ui_pca_modality_selector")),
               column(3,
                      div(style = "margin-bottom: 8px;",
                        actionButton("btn_plot_pca", "Confirm & Plot PCA", class = "btn btn-primary btn-sm w-100", icon = icon("compass"), style = "font-weight: 600;")
@@ -2385,9 +2774,11 @@ ui <- page_navbar(
                        selected = "all"
                      )
               ),
-              column(3, selectInput("sel_pca_panel", "PCA Panel:", choices = c("Both (Simulators & Metric Loadings)" = "both", "Simulator Ordination Only" = "methods", "Metric Loadings Only" = "loadings"), selected = "both")),
-              column(2, numericInput("num_pca_top_metrics", "Top Metrics to Label:", value = 8, min = 3, max = 25, step = 1)),
-              column(4,
+              column(2, selectInput("sel_pca_panel", "PCA Panel:", choices = c("Both (Simulators & Metric Loadings)" = "both", "Simulator Ordination Only" = "methods", "Metric Loadings Only" = "loadings"), selected = "both")),
+              column(2, numericInput("num_pca_top_metrics", "Top Metrics to Label:", value = 8, min = 3, max = 25, step = 1))
+            ),
+            fluidRow(
+              column(12, style = "margin-top: 10px;",
                      downloadButton("download_pca_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2 mb-1"),
                      downloadButton("download_pca_pdf", "Download PDF", class = "btn btn-sm btn-outline-secondary me-2 mb-1"),
                      downloadButton("download_pca_r_script", "Download R Script", class = "btn btn-sm btn-outline-primary mb-1", icon = icon("file-code"))
@@ -2436,6 +2827,8 @@ ui <- page_navbar(
           ),
           card_body(
             fluidRow(
+              column(3, uiOutput("ui_mds_dataset_selector")),
+              column(2, uiOutput("ui_mds_modality_selector")),
               column(3,
                      div(style = "margin-bottom: 8px;",
                        actionButton("btn_plot_mds", "Confirm & Plot MDS", class = "btn btn-primary btn-sm w-100", icon = icon("circle-nodes"), style = "font-weight: 600;")
@@ -2454,16 +2847,11 @@ ui <- page_navbar(
                        selected = "all"
                      )
               ),
-              column(3, selectInput("sel_mds_by", "Compare By:", choices = c("By Simulators" = "simulators", "By Metric Summaries" = "summaries"), selected = "simulators")),
-              column(3,
-                     sliderInput("sld_mds_height", "MDS Height (px):", min = 400, max = 1300, value = 620, step = 20)
-              ),
-              column(3,
-                     sliderInput("sld_mds_width", "MDS Width (px):", min = 600, max = 1400, value = 900, step = 20)
-              )
+              column(2, selectInput("sel_mds_by", "Compare By:", choices = c("By Simulators" = "simulators", "By Metric Summaries" = "summaries"), selected = "simulators")),
+              column(2, sliderInput("sld_mds_height", "MDS Height (px):", min = 400, max = 1300, value = 620, step = 20))
             ),
             fluidRow(
-              column(12,
+              column(12, style = "margin-top: 10px;",
                      downloadButton("download_mds_jpeg", "Download JPEG (600 DPI)", class = "btn btn-sm btn-primary me-2 mb-1"),
                      downloadButton("download_mds_pdf", "Download PDF", class = "btn btn-sm btn-outline-secondary me-2 mb-1"),
                      downloadButton("download_mds_r_script", "Download R Script", class = "btn btn-sm btn-outline-primary mb-1", icon = icon("file-code"))
@@ -2500,6 +2888,7 @@ ui <- page_navbar(
             fluidRow(
               column(3,
                      uiOutput("ui_emb_dataset_selector"),
+                     uiOutput("ui_emb_modality_selector"),
                      radioButtons(
                        "sel_emb_reduction", "1. Method:",
                        choices = c("UMAP" = "umap", "t-SNE" = "tsne", "PCA" = "pca"),
@@ -2515,7 +2904,7 @@ ui <- page_navbar(
                      ),
                      conditionalPanel(
                        condition = "input.sel_emb_layout == 'side_by_side'",
-                       selectInput("sel_emb_single_sim", "Select Simulator to Compare:", choices = NULL)
+                       uiOutput("ui_emb_single_sim")
                      )
               ),
               column(3,
@@ -2590,7 +2979,7 @@ ui <- page_navbar(
   # ============================================================================
   nav_panel(
     "Benchmark Results & Export",
-    # Sleek Minimalist Export Action Bar
+    # Benchmark Results Session Export (Exclusively .rds for reproducible analysis)
     div(
       class = "p-3 mb-3",
       style = "background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);",
@@ -2599,34 +2988,17 @@ ui <- page_navbar(
         div(
           div(
             class = "d-flex align-items-center gap-2",
-            icon("cloud-arrow-down", class = "text-primary fs-5"),
-            tags$h5("Benchmark Results Export", style = "margin: 0; font-weight: 700; color: #0F172A; font-size: 1.05rem;"),
-            span(class = "badge bg-light text-secondary border", "Tables & Data")
+            icon("database", class = "text-primary fs-5"),
+            tags$h5("Benchmark Results Session Export", style = "margin: 0; font-weight: 700; color: #0F172A; font-size: 1.05rem;"),
+            span(class = "badge bg-primary-subtle text-primary border border-primary-subtle", "Complete R Data Object (.rds)")
           ),
-          p("Download complete evaluation tables, raw metric values, category scores, and rankings across all simulators:", 
+          p("Download complete benchmarking session object (.rds) to preserve and reproduce all 62 evaluation metrics, rankings, and figures in another R session:",
             style = "margin: 2px 0 0 0; font-size: 0.82rem; color: #64748B;")
         ),
         div(
-          class = "d-flex align-items-center gap-2",
-          tags$span("Format:", style = "font-size: 0.85rem; font-weight: 600; color: #475569; white-space: nowrap;"),
-          div(
-            style = "width: 220px; margin-bottom: 0;",
-            selectInput(
-              "sel_download_format", label = NULL,
-              choices = c(
-                "Excel Workbook (.xlsx)" = "xlsx",
-                "CSV Table (.csv)" = "csv",
-                "Tab-delimited (.tsv)" = "tsv",
-                "Complete Archive (.zip)" = "zip",
-                "R Data Object (.rds)" = "rds"
-              ),
-              selected = "xlsx",
-              width = "100%"
-            )
-          ),
           downloadButton(
-            "download_benchmark_data", "Download Results",
-            class = "btn btn-primary", icon = icon("download"),
+            "download_benchmark_data", "Download Benchmark Session (.rds)",
+            class = "btn btn-primary", icon = icon("file-code"),
             style = "font-weight: 600; white-space: nowrap;"
           )
         )
@@ -2651,7 +3023,12 @@ ui <- page_navbar(
               tags$span(tags$b("Score: "), "Direction-aware normalized score [0, 1] where 1.0 represents best performance.")
             )
           ),
-          span(class = "badge bg-light text-muted border", "Inbuilt Dropdown Filters for Dataset, Method & Category")
+          div(
+            class = "d-flex align-items-center gap-2",
+            downloadButton("download_master_table_excel", "Download Table (.xlsx)", class = "btn btn-sm btn-outline-success", icon = icon("file-excel")),
+            downloadButton("download_master_table_csv", "Download Table (.csv)", class = "btn btn-sm btn-outline-primary", icon = icon("file-csv")),
+            span(class = "badge bg-light text-muted border", "Dropdown Filters Active")
+          )
         )
       ),
       card_body(
@@ -2677,8 +3054,7 @@ ui <- page_navbar(
               h4("Simulation Evaluation for Single-Cell and Multiomics Datasets", style = "font-weight: 800; color: #1B4F72; margin-top: 0; font-size: 1.18rem;"),
               p(
                 strong("scSimEval"), " is a comprehensive, publication-grade benchmarking suite for single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) simulations. ",
-                "It systematically evaluates how faithfully simulated datasets reproduce real experimental biology across ", strong("62 quantitative evaluation metrics organized into 8 canonical categories"), 
-                " without requiring synthetic ground truth."
+                "It systematically evaluates how faithfully simulated datasets reproduce real experimental biology across ", strong("62 quantitative evaluation metrics organized into 8 canonical categories"), "."
               ),
               p(
                 "This updated web application features multi-dataset benchmarking, interactive simulator leaderboards, customizable weight modeling, high-density bubble matrices, 8 diagnostic visualization suites, and reproducible R script generators for all plots.",
@@ -3009,7 +3385,7 @@ ui <- page_navbar(
                       tags$li(tags$b("Minimalist vs Publication Matrix: "), "Toggle between a sleek, dot-matrix view and a fully annotated publication matrix."),
                       tags$li(tags$b("Category & Modality Filtering: "), "Filter metrics by modality (All Categories, RNA-Specific, ATAC-Specific, or Cross-Modal Coupling)."),
                       tags$li(tags$b("High-Resolution Exports: "), "Export publication figures in 600 DPI JPEG or vectorized PDF."),
-                      tags$li(tags$b("Download Standalone R Script: "), "Generate a 100% self-contained R script with embedded data and custom ggplot2 code to reproduce the exact bubble matrix in standalone R.")
+                      tags$li(tags$b("Download Standalone R Script: "), "Generate a 100% self-contained, end-to-end analytical R script without readymade dput dumps, featuring a dedicated FILE PATH CONFIGURATION & HPC CLUSTER RUN GUIDE to run on local workstations, cloud instances, or SLURM/PBS clusters.")
                     )
                   )
                 )
@@ -3029,17 +3405,17 @@ ui <- page_navbar(
                   id = "collapseFive", class = "accordion-collapse collapse", "aria-labelledby" = "headingFive",
                   tags$div(
                     class = "accordion-body",
-                    tags$p("Explore eight dedicated diagnostic subtabs equipped with global multi-dataset pill selectors and standalone R script generators:", style = "font-size: 0.84rem; color: #475569; margin-bottom: 6px;"),
+                    tags$p("Explore eight dedicated diagnostic subtabs equipped with global multi-dataset pill selectors, modality filtering (scRNA-seq, scATAC-seq, Cross-Modal Coupling), and standalone reproducible R script generators:", style = "font-size: 0.84rem; color: #475569; margin-bottom: 6px;"),
                     tags$ol(
                       style = "font-size: 0.84rem; color: #475569; padding-left: 18px; margin: 0;",
-                      tags$li(tags$b("Evaluation Summary: "), "Horizontal bar charts ranking simulators across categories and composite fidelity."),
-                      tags$li(tags$b("Distribution QC: "), "Empirical cumulative distribution curves (ECDF), KS distance curves, and gene/cell mean-variance trends comparing reference vs simulations."),
+                      tags$li(tags$b("Evaluation Summary: "), "Horizontal bar charts ranking simulators across categories and composite fidelity with dynamic raw vs. normalized score scaling."),
+                      tags$li(tags$b("Distribution QC: "), "Empirical cumulative distribution curves (ECDF), KS distance curves, and gene/cell mean-variance trends comparing reference vs simulations with modality isolation."),
                       tags$li(tags$b("Scalability Benchmark: "), "Runtime in seconds vs Peak RAM in MiB, throughput (cells/sec), and resource cost index."),
                       tags$li(tags$b("Metric Boxplots & Barplots: "), "Score distribution across categories with Raw vs Normalized view toggles."),
-                      tags$li(tags$b("Metric Heatmap: "), "Unsupervised hierarchical clustering of simulators and metrics."),
+                      tags$li(tags$b("Metric Heatmap: "), "Unsupervised hierarchical clustering of simulators and metrics with dynamic score scaling and custom dimensions."),
                       tags$li(tags$b("PCA Ordination: "), "Principal component biplots projecting simulators into reduced metric space."),
                       tags$li(tags$b("MDS Metric Space: "), "Multidimensional scaling mapping simulator algorithmic proximity."),
-                      tags$li(tags$b("Cell Embeddings: "), "Dimension reduction (UMAP, t-SNE, PCA) comparing reference cells directly to simulated cells.")
+                      tags$li(tags$b("Cell Embeddings: "), "Dimension reduction (UMAP, t-SNE, PCA) comparing reference cells directly to simulated cells with modality isolation and quantitative fidelity metrics.")
                     )
                   )
                 )
@@ -3186,64 +3562,95 @@ Cell_03,Batch1
             ),
             
             # ------------------------------------------------------------------
-            # Section 6: Computational Sizing, RAM (MiB/GiB), & Guidelines
+            # Section 6: End-to-End Analytical R Scripts & HPC Cluster Execution Guide
+            # ------------------------------------------------------------------
+            div(
+              style = "margin-top: 24px; padding: 22px 24px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);",
+              div(
+                class = "d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2",
+                h5(tags$b("End-to-End Analytical R Scripts & HPC Cluster Run Guide"), style = "color: #1E3A8A; margin: 0; font-size: 1.05rem;"),
+                span(class = "badge bg-primary-subtle text-primary border border-primary-subtle", "100% Reproducible • Cloud & HPC Ready")
+              ),
+              p(
+                "Every visualization panel in scSimEval includes a ", tags$b("Download Standalone R Script"), 
+                " button. Unlike conventional web applications that dump hardcoded static numbers (e.g. ", tags$code("dput"), 
+                "), scSimEval generates ", tags$b("complete, self-contained end-to-end analytical workflows"), 
+                " that load raw input files from disk, execute full statistical calculations, and export publication-ready graphics.",
+                style = "color: #475569; font-size: 0.85rem; margin-bottom: 16px;"
+              ),
+              
+              fluidRow(
+                column(
+                  4,
+                  div(
+                    style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 14px; height: 100%;",
+                    h6(tags$b(icon("code", class = "me-1 text-primary"), " 1. Procedural & dput-Free"), style = "color: #0F172A; margin-bottom: 6px; font-size: 0.88rem;"),
+                    p("Scripts contain zero hardcoded data matrices. Clean, human-readable code that can be tracked in Git, peer-reviewed, and customized for manuscripts.", style = "font-size: 0.78rem; color: #64748B; margin-bottom: 0;")
+                  )
+                ),
+                column(
+                  4,
+                  div(
+                    style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 14px; height: 100%;",
+                    h6(tags$b(icon("sliders", class = "me-1 text-teal"), " 2. Dedicated Configuration Block"), style = "color: #0F172A; margin-bottom: 6px; font-size: 0.88rem;"),
+                    p("Every script concludes with a dedicated FILE PATH CONFIGURATION block where non-coding users simply update input file paths before execution.", style = "font-size: 0.78rem; color: #64748B; margin-bottom: 0;")
+                  )
+                ),
+                column(
+                  4,
+                  div(
+                    style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 14px; height: 100%;",
+                    h6(tags$b(icon("server", class = "me-1 text-indigo"), " 3. HPC & Cloud Compatible"), style = "color: #0F172A; margin-bottom: 6px; font-size: 0.88rem;"),
+                    p("Headless execution via Rscript. Run directly on SLURM, PBS, LSF, AWS EC2, GCP, or local machines without needing a web browser.", style = "font-size: 0.78rem; color: #64748B; margin-bottom: 0;")
+                  )
+                )
+              ),
+              
+              div(
+                style = "margin-top: 16px; background: #0F172A; border-radius: 6px; padding: 14px 18px; color: #E2E8F0;",
+                div(
+                  class = "d-flex justify-content-between align-items-center mb-2",
+                  tags$span(tags$b(icon("terminal", class = "me-1 text-warning"), " Standardized Configuration Block Template (Bottom of Each Downloaded Script):"), style = "font-size: 0.80rem; font-weight: 600; color: #38BDF8;"),
+                  tags$span(class = "badge bg-secondary", "Edit paths & run")
+                ),
+                tags$pre(
+                  style = "font-size: 0.74rem; background: transparent; color: #F1F5F9; border: none; padding: 0; margin: 0; line-height: 1.5;",
+                  "# ==============================================================================\n# FILE PATH CONFIGURATION & HPC CLUSTER RUN GUIDE\n# ==============================================================================\nBENCHMARK_RESULTS_FILE <- \"path/to/scSimEval_benchmark_results.csv\"  # Master results table\nREF_DATA_FILE          <- \"path/to/reference_counts.rds\"            # Empirical count matrix\nSIM_DATA_FILE          <- \"path/to/simulated_counts.rds\"            # Simulator count matrix\nCELL_TYPES_FILE        <- \"path/to/cell_types.csv\"                  # Optional cell annotations\nBATCH_FILE             <- \"path/to/batch_labels.csv\"                # Optional batch labels\nOUTPUT_DIR             <- \"./scSimEval_publication_figures\"         # Destination directory\n\n# Terminal execution on local workstation, cloud VM, or HPC node:\n#   $ Rscript scSimEval_workflow.R\n#\n# SLURM cluster submission:\n#   $ sbatch --mem=32G --cpus-per-task=4 --wrap=\"Rscript scSimEval_workflow.R\""
+                )
+              )
+            ),
+            
+            # ------------------------------------------------------------------
+            # Section 7: Hardware & Memory Guidelines
             # ------------------------------------------------------------------
             div(
               style = "margin-top: 22px; padding: 20px 22px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);",
               div(
                 class = "d-flex justify-content-between align-items-center mb-2",
-                h5(tags$b("Recommended Hardware Sizing & Memory Guidelines"), style = "color: #1E3A8A; margin: 0; font-size: 1.00rem;"),
-                span(class = "badge bg-light text-primary border", "Cloud vs Local Workstation vs HPC Cluster")
+                h5(tags$b("Hardware & Memory Guidelines"), style = "color: #1E3A8A; margin: 0; font-size: 1.00rem;"),
+                span(class = "badge bg-light text-primary border", "CPU & RAM Sizing")
               ),
               p(
-                "Choose the right execution environment depending on your dataset dimensions and peak RAM footprint:",
-                style = "color: #475569; font-size: 0.85rem; margin-bottom: 12px;"
+                HTML("<b>Standard Analysis (Exploratory / Demo):</b> For datasets up to ~2,000 cells &times; 3,000 features, a standard workstation or cloud instance with <b>2–4 CPU cores and 8–16 GiB RAM</b> delivers rapid execution (<1 min) with minimal memory footprint."),
+                style = "color: #334155; font-size: 0.85rem; margin-bottom: 6px; line-height: 1.5;"
+              ),
+              p(
+                HTML("<b>Large-Scale & Multiomics Workflows:</b> For large single-cell datasets (>5,000 cells) or joint multiomics assays (scRNA-seq + scATAC-seq with multiple simulators), <b>4–8 CPU cores and 16–32 GiB RAM</b> are recommended to accommodate parallel metric evaluations and latent space projections."),
+                style = "color: #334155; font-size: 0.85rem; margin-bottom: 6px; line-height: 1.5;"
+              ),
+              p(
+                HTML("<b>Atlas-Scale Datasets (HPC):</b> For atlas-scale cohorts (>50,000 cells), allocating <b>8+ CPU cores and 32–64+ GiB RAM</b> on an HPC cluster node or dedicated workstation ensures optimal performance using scSimEval's sparse matrix operations and multi-core parallelization."),
+                style = "color: #334155; font-size: 0.85rem; margin-bottom: 12px; line-height: 1.5;"
               ),
               tags$div(
-                class = "table-responsive",
-                tags$table(
-                  class = "table table-bordered table-sm",
-                  style = "font-size: 0.84rem; vertical-align: middle;",
-                  tags$thead(
-                    style = "background-color: #F8FAFC;",
-                    tags$tr(
-                      tags$th(style = "width: 22%;", "Environment"),
-                      tags$th(style = "width: 20%;", "Peak RAM Capacity"),
-                      tags$th(style = "width: 30%;", "Recommended Dataset Size"),
-                      tags$th(style = "width: 28%;", "Best For")
-                    )
-                  ),
-                  tags$tbody(
-                    tags$tr(
-                      tags$td(tags$b("Hosted Web App (Cloud)")),
-                      tags$td("4 GiB RAM (4,096 MiB), 1 vCPU"),
-                      tags$td(HTML("scRNA: &le; 4,000 cells &times; 3,000 genes<br>Multiomics: &le; 3,000 cells &times; 8,000 peaks")),
-                      tags$td("Quick exploratory analysis, demo benchmarks, and instant figure generation.")
-                    ),
-                    tags$tr(
-                      tags$td(tags$b("Local R Package Studio")),
-                      tags$td("16 - 64 GiB RAM"),
-                      tags$td("Scalable to 50,000+ cells and complete peaksets"),
-                      tags$td("Full multi-dataset benchmarking, heavy multi-omics evaluations, and high-res plotting.")
-                    ),
-                    tags$tr(
-                      tags$td(tags$b("HPC Cluster (SLURM/PBS)")),
-                      tags$td("64+ GiB RAM per node"),
-                      tags$td("Atlas-scale datasets (100,000+ cells)"),
-                      tags$td("Automated batch benchmarking using Data Hub HPC script generator.")
-                    )
-                  )
-                )
-              ),
-              tags$div(
-                style = "margin-top: 12px; background: #F8FAFC; border-radius: 6px; padding: 10px 14px; border: 1px solid #E2E8F0;",
+                style = "margin-top: 10px; background: #F8FAFC; border-radius: 6px; padding: 10px 14px; border: 1px solid #E2E8F0;",
                 span(tags$b("Launch locally in R: "), style = "font-size: 0.82rem; color: #334155;"),
                 tags$code("remotes::install_github('kabilanbio/scSimEval'); scSimEval::launch_scSimEval_app()", style = "font-size: 0.82rem; background: #FFFFFF; padding: 2px 6px; border: 1px solid #CBD5E1; border-radius: 4px; margin-left: 6px;")
               ),
               div(
-                style = "margin-top: 12px; padding: 10px 14px; background: #F8FAFC; border-left: 3px solid #6366F1; border-radius: 4px; font-size: 0.82rem; color: #475569;",
-                tags$b("Memory Measurement Note: "),
-                "scSimEval records computational memory usage in Mebibytes (MiB, where 1 MiB = 1,048,576 bytes) across all scalability metrics and benchmark score tables."
+                style = "margin-top: 10px; padding: 10px 14px; background: #F8FAFC; border-left: 3px solid #6366F1; border-radius: 4px; font-size: 0.82rem; color: #475569;",
+                tags$b("Memory Optimization Note: "),
+                "scSimEval utilizes sparse matrix arithmetic (dgCMatrix) and fast low-rank linear algebra to minimize peak memory consumption across all 62 evaluation metrics."
               )
             )
           )
@@ -3461,7 +3868,19 @@ server <- function(input, output, session) {
       benchmark_df = NULL, all_matrices = list(), ref_matrices = list(),
       sim_matrices = list(), dataset_summary_df = NULL, toy_ref = NULL,
       toy_sim = NULL, cell_types = NULL, batch = NULL, methods = NULL,
-      source_name = "Demo Benchmark (Simulator 1 to Simulator 6)"
+      source_name = "Demo Benchmark (Real Datasets)"
+    ),
+    scrna = list(
+      benchmark_df = NULL, all_matrices = list(), ref_matrices = list(),
+      sim_matrices = list(), dataset_summary_df = NULL, toy_ref = NULL,
+      toy_sim = NULL, cell_types = NULL, batch = NULL, methods = NULL,
+      source_name = "scRNA-seq Benchmarks"
+    ),
+    scatac = list(
+      benchmark_df = NULL, all_matrices = list(), ref_matrices = list(),
+      sim_matrices = list(), dataset_summary_df = NULL, toy_ref = NULL,
+      toy_sim = NULL, cell_types = NULL, batch = NULL, methods = NULL,
+      source_name = "scATAC-seq Benchmarks"
     ),
     unimodal = list(
       benchmark_df = NULL, all_matrices = list(), ref_matrices = list(),
@@ -3498,6 +3917,8 @@ server <- function(input, output, session) {
       rv$toy_sim            <- cur$toy_sim
       rv$cell_types         <- cur$cell_types
       rv$batch              <- cur$batch
+      rv$cell_types_map     <- cur$cell_types_map
+      rv$batches_map        <- cur$batches_map
       rv$source_name        <- cur$source_name
       if (!is.null(cur$methods) && length(cur$methods) > 0) {
         updateCheckboxGroupInput(session, "sel_bubble_methods", choices = cur$methods, selected = cur$methods)
@@ -3513,6 +3934,8 @@ server <- function(input, output, session) {
       rv$toy_sim            <- NULL
       rv$cell_types         <- NULL
       rv$batch              <- NULL
+      rv$cell_types_map     <- list()
+      rv$batches_map        <- list()
       rv$source_name        <- paste0("No data loaded for ", target_mode)
     }
   }
@@ -3604,52 +4027,70 @@ server <- function(input, output, session) {
               ),
               tags$tbody(
                 tags$tr(
-                  tags$td(tags$b("Single-Cell (scRNA / scATAC)")),
+                  tags$td(tags$b("1. scRNA-seq")),
                   tags$td("Count Matrix alone (No metadata)"),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #475569 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.81rem; padding: 5px 10px; border-radius: 6px;", "~23 Metrics")),
-                  tags$td("Cat I (Distributional Properties, 14 metrics), Cat II (Correlations & Zeroes, 6 metrics), Cat VI (Trajectory, 2 metrics), Cat VIII (Scalability, 2 metrics)")
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #475569 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "24 / 62 Metrics")),
+                  tags$td("Cat I (Distributional Properties, 14 moments & 2D tests), Cat II (Correlations & Zero-Inflation, 6 metrics), Cat VI (Trajectory dynamics, 2 metrics), Cat VIII (Computational Scalability, 2 metrics)")
                 ),
                 tags$tr(
-                  tags$td(tags$b("Single-Cell (scRNA / scATAC)")),
+                  tags$td(tags$b("1. scRNA-seq")),
                   tags$td("Count Matrix + Cell Types"),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #0284C7 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.81rem; padding: 5px 10px; border-radius: 6px;", "~35–38 Metrics")),
-                  tags$td("Adds +12–15 metrics: Unlocks Cat III (Cellular Structure & Concordance / ARI, NMI, AMI, Silhouette) and Cat V (Biological Signal / SimBench DE, DP, DV, top DEG Jaccard)")
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #0284C7 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "44 / 62 Metrics")),
+                  tags$td("Adds +20 metrics: Unlocks Cat III (Cellular Structure & Clustering Concordance: ARI, NMI, AMI, Silhouette, Dunn, DB, Calinski-Harabasz, Neighborhood Purity, 10 metrics) and Cat V (Biological Signal Fidelity: SimBench DE, DV, DD, DP, top DEG Jaccard, delta variance, 10 metrics)")
                 ),
                 tags$tr(
-                  tags$td(tags$b("Single-Cell (scRNA / scATAC)")),
-                  tags$td("Count Matrix + Batch Annotations"),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #D97706 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.81rem; padding: 5px 10px; border-radius: 6px;", "~30 Metrics")),
-                  tags$td("Adds +7 metrics: Unlocks Cat IV (Batch Effects & Confounder Mixing / Batch Silhouette, Shannon entropy, PCR R², CMS, ISI, Seurat mixing)")
-                ),
-                tags$tr(
-                  tags$td(tags$b("Single-Cell (scRNA / scATAC)")),
+                  tags$td(tags$b("1. scRNA-seq")),
                   tags$td(tags$b("Full Metadata (Matrix + Cell Types + Batch)")),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #16A34A !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.81rem; padding: 5px 10px; border-radius: 6px;", "Up to ~55 Metrics")),
-                  tags$td("Unlocks complete single-cell suite across Categories I, II, III, IV, V, VI, and VIII")
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #16A34A !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "51 / 62 Metrics")),
+                  tags$td("Adds +7 metrics: Unlocks Cat IV (Batch Effects & Confounder Mixing: Batch Silhouette, Shannon entropy, PCR R², CMS, ISI, Seurat mixing, LDF difference). Maximum possible for unimodal RNA.")
                 ),
                 tags$tr(
-                  tags$td(tags$b("Paired Multiomics (scRNA + scATAC)")),
+                  tags$td(tags$b("2. scATAC-seq")),
+                  tags$td("Count Matrix alone (No metadata)"),
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #475569 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "22 / 62 Metrics")),
+                  tags$td("Cat I (Peak accessibility distribution moments, 14 metrics), Cat II (Peak-peak correlations & sparsity curves, 6 metrics), Cat VIII (Computational Scalability, 2 metrics)")
+                ),
+                tags$tr(
+                  tags$td(tags$b("2. scATAC-seq")),
+                  tags$td("Count Matrix + Cell Types"),
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #0284C7 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "36 / 62 Metrics")),
+                  tags$td("Adds +14 metrics: Unlocks Cat III (Epigenomic Cellular Clustering Concordance, 8 metrics) and Cat V (Differential Accessibility signal fidelity, 6 metrics)")
+                ),
+                tags$tr(
+                  tags$td(tags$b("2. scATAC-seq")),
+                  tags$td(tags$b("Full Metadata (Matrix + Cell Types + Batch)")),
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #16A34A !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "43 / 62 Metrics")),
+                  tags$td("Adds +7 metrics: Unlocks Cat IV (Epigenomic Batch Effects & Confounder Mixing: Batch Silhouette, Shannon entropy, PCR R², CMS, ISI). Maximum possible for unimodal ATAC.")
+                ),
+                tags$tr(
+                  tags$td(tags$b("3. Paired Multiomics")),
                   tags$td("RNA + ATAC Matrices alone (No metadata)"),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #4F46E5 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.81rem; padding: 5px 10px; border-radius: 6px;", "~48 Metrics")),
-                  tags$td("Both unimodal layers (I, II, VI, VIII) + Cat VII Cross-Modal Coupling (FOSCTTM cell alignment, Match@1, cross-modal generation, RV coefficient, peak-to-gene linkage)")
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #4F46E5 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "36 / 62 Metrics")),
+                  tags$td("Measures both unimodal layers simultaneously + Cat VII Cross-Modal Coupling (FOSCTTM cell alignment, Match@1, Match@5, cross-modal generation, RV coefficient, peak-to-gene linkage, module co-expression, 10 metrics)")
                 ),
                 tags$tr(
-                  tags$td(tags$b("Paired Multiomics (scRNA + scATAC)")),
+                  tags$td(tags$b("3. Paired Multiomics")),
+                  tags$td("RNA + ATAC + Cell Types"),
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #0284C7 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "55 / 62 Metrics")),
+                  tags$td("Unlocks Cat III (Dual cellular clustering concordance), Cat V (Dual DEG/DA signal fidelity), and Cat VII (Cell-type guided cross-modal alignment accuracy & Macro-F1)")
+                ),
+                tags$tr(
+                  tags$td(tags$b("3. Paired Multiomics")),
                   tags$td(tags$b("Full Metadata (RNA + ATAC + Cell Types + Batch)")),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #15803D !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.81rem; padding: 5px 10px; border-radius: 6px;", "All 62 Metrics")),
-                  tags$td("Complete multiomics benchmarking suite across all 8 canonical categories (I–VIII)")
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #15803D !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "All 62 / 62 Metrics")),
+                  tags$td("100% complete coverage across all 8 biological and computational dimensions (Categories I–VIII)")
                 ),
                 tags$tr(
-                  tags$td(tags$b("Unpaired Multiomics (Independent cells)")),
-                  tags$td("RNA + ATAC Matrices alone"),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #475569 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.81rem; padding: 5px 10px; border-radius: 6px;", "~38–42 Metrics")),
+                  tags$td(tags$b("4. Unpaired Multiomics")),
+                  tags$td("RNA + ATAC Matrices alone (Independent cells)"),
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #475569 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "30 / 62 Metrics")),
                   tags$td("Unimodal distributions for both layers + population-level co-expression module fidelity, Network Jaccard, and cross-modality correlation")
                 ),
                 tags$tr(
-                  tags$td(tags$b("Unpaired Multiomics (Independent cells)")),
+                  tags$td(tags$b("4. Unpaired Multiomics")),
                   tags$td(tags$b("RNA + ATAC + Cell Types (+ Batch)")),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #16A34A !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.81rem; padding: 5px 10px; border-radius: 6px;", "Up to ~58 Metrics")),
-                  tags$td("Crucial for unpaired: unlocks cluster-matched label transfer accuracy, cell-type regulatory concordance, and technical donor integration")
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #16A34A !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "52 / 62 Metrics")),
+                  tags$td("Unlocks cluster-matched cross-modal label transfer accuracy, cell-type regulatory concordance, and technical donor batch alignment")
                 )
               )
             )
@@ -3734,228 +4175,289 @@ server <- function(input, output, session) {
   # Data Hub: Mode 1 - Load Example Dataset Analysis
   # ----------------------------------------------------------------------------
   # Realistic baseline scalability helper across simulators and datasets
+  # Realistic baseline scalability helper across simulators and datasets
   get_default_sim_scalability <- function(s, d, mode = 'unimodal') {
-    base_time_uni <- c(29.1, 63.0, 46.0, 44.8, 76.2, 44.8)
-    base_mem_uni  <- c(700, 1282, 1030, 738, 1565, 863)
+    base_time_uni <- c(12.4, 18.6, 8.2, 15.1, 11.5, 14.8)
+    base_mem_uni  <- c(248, 312, 185, 290, 220, 275)
     d_scale_time <- if (d == 1) 1.0 else (1.0 + (d - 1) * 0.22)
     d_scale_mem  <- if (d == 1) 1.0 else (1.0 + (d - 1) * 0.13)
-    mult <- if (identical(mode, 'multiomics')) 1.6 else 1.0
+    mult <- if (identical(mode, 'multiomics')) 1.4 else 1.0
     idx <- ((s - 1) %% 6) + 1
     t_val <- round(base_time_uni[idx] * d_scale_time * mult, 1)
     m_val <- round(base_mem_uni[idx] * d_scale_mem * mult, 0)
     list(time = t_val, mem = m_val)
   }
   
-  execute_load_demo_benchmark <- function() {
-    if (!is.null(initial_demo)) {
-      orig_methods <- if (!is.null(initial_demo$methods)) initial_demo$methods else c("Splatter", "scDesign3", "SCRIP", "SymSim", "dyngen", "simATAC")
-      anon_methods <- paste0("Simulator ", seq_along(orig_methods))
-      name_map <- stats::setNames(anon_methods, orig_methods)
-      
-      demo_summary_df <- initial_demo$benchmark_summary_table
-      if (!is.null(demo_summary_df) && "Method" %in% colnames(demo_summary_df)) {
-        demo_summary_df$Method <- as.character(demo_summary_df$Method)
-        for (om in names(name_map)) {
-          demo_summary_df$Method[demo_summary_df$Method == om] <- name_map[om]
-        }
-      }
-      
-      # 1. Two Original Reference Datasets: Dataset 1 and Dataset 2
-      ref_1 <- initial_demo$toy_data$ref
-      ct_1  <- initial_demo$toy_data$cell_types
-      b_1   <- initial_demo$toy_data$batch
-      
-      set.seed(101)
-      n_genes <- nrow(ref_1)
-      n_cells <- ncol(ref_1)
-      gene_means <- exp(stats::rnorm(n_genes, mean = 0.8, sd = 0.7))
-      ref_2 <- matrix(
-        stats::rpois(n_genes * n_cells, lambda = rep(gene_means, n_cells) * stats::runif(n_cells, 0.7, 1.4)),
-        nrow = n_genes, ncol = n_cells
-      )
-      rownames(ref_2) <- rownames(ref_1)
-      colnames(ref_2) <- paste0("Cell_D2_", seq_len(n_cells))
-      ct_2 <- factor(sample(c("TypeA", "TypeB"), n_cells, replace = TRUE, prob = c(0.55, 0.45)))
-      b_2  <- factor(sample(c("Batch1", "Batch2"), n_cells, replace = TRUE, prob = c(0.5, 0.5)))
-      
-      # 2. Six Simulators: Simulated datasets for each of the 2 original datasets
-      sims_d1 <- list()
-      set.seed(42)
-      for (i in seq_along(anon_methods)) {
-        sn <- anon_methods[i]
-        scale_mod <- 1 + (i - 1) * 0.04
-        noise_mat <- matrix(stats::rpois(length(ref_1), lambda = 0.20 * i), nrow = nrow(ref_1), ncol = ncol(ref_1))
-        m <- round(ref_1 * scale_mod + noise_mat)
-        dimnames(m) <- dimnames(ref_1)
-        sims_d1[[sn]] <- m
-      }
-      
-      sims_d2 <- list()
-      set.seed(84)
-      for (i in seq_along(anon_methods)) {
-        sn <- anon_methods[i]
-        scale_mod <- 1 + (i - 1) * 0.045
-        noise_mat <- matrix(stats::rpois(length(ref_2), lambda = 0.22 * i), nrow = nrow(ref_2), ncol = ncol(ref_2))
-        m <- round(ref_2 * scale_mod + noise_mat)
-        dimnames(m) <- dimnames(ref_2)
-        sims_d2[[sn]] <- m
-      }
-      
-      # 3. All Matrices List (for View Uploaded Data inspection)
-      demo_all_mats <- list(
-        "Reference: Dataset 1" = ref_1,
-        "Reference: Dataset 2" = ref_2
-      )
-      for (sn in anon_methods) {
-        demo_all_mats[[paste0("Simulated: ", sn, " (Dataset 1)")]] <- sims_d1[[sn]]
-      }
-      for (sn in anon_methods) {
-        demo_all_mats[[paste0("Simulated: ", sn, " (Dataset 2)")]] <- sims_d2[[sn]]
-      }
-      
-      # 4. Reference & Simulated Collections
-      demo_ref_mats <- list(
-        "Dataset 1" = ref_1,
-        "Dataset 2" = ref_2
-      )
-      demo_sim_mats <- list()
-      for (sn in anon_methods) {
-        demo_sim_mats[[sn]] <- sims_d1[[sn]]
-        demo_sim_mats[[paste0(sn, " (Dataset 1)")]] <- sims_d1[[sn]]
-        demo_sim_mats[[paste0(sn, " (Dataset 2)")]] <- sims_d2[[sn]]
-      }
-      
-      # 5. Dataset Properties Summary (14 rows: 2 References + 12 Simulated datasets)
-      summary_rows <- list()
-      summary_rows[[1]] <- extract_dataset_summary(
-        ref_1, role = "Biological Reference", method_name = "Dataset 1 (Reference)",
-        modality = "scRNA-seq", cell_types = ct_1, batch_info = b_1
-      )
-      summary_rows[[1]]$Dataset <- "Dataset 1"
-      for (sn in anon_methods) {
-        r <- extract_dataset_summary(
-          sims_d1[[sn]], role = "Simulated", method_name = paste0(sn, " (Dataset 1)"),
-          modality = "scRNA-seq", cell_types = ct_1, batch_info = b_1
-        )
-        r$Dataset <- "Dataset 1"
-        summary_rows[[length(summary_rows) + 1]] <- r
-      }
-      r2 <- extract_dataset_summary(
-        ref_2, role = "Biological Reference", method_name = "Dataset 2 (Reference)",
-        modality = "scRNA-seq", cell_types = ct_2, batch_info = b_2
-      )
-      r2$Dataset <- "Dataset 2"
-      summary_rows[[length(summary_rows) + 1]] <- r2
-      for (sn in anon_methods) {
-        r <- extract_dataset_summary(
-          sims_d2[[sn]], role = "Simulated", method_name = paste0(sn, " (Dataset 2)"),
-          modality = "scRNA-seq", cell_types = ct_2, batch_info = b_2
-        )
-        r$Dataset <- "Dataset 2"
-        summary_rows[[length(summary_rows) + 1]] <- r
-      }
-      demo_summary_props <- do.call(rbind, summary_rows)
-      
-      # 6. Assign demo benchmark across Dataset 1 and Dataset 2
-      df1 <- demo_summary_df
-      df1$Dataset <- 'Dataset 1'
-      df2 <- demo_summary_df
-      df2$Dataset <- 'Dataset 2'
-      
-      # Identify scalability metrics to prevent compression/truncation
-      is_scal <- df2$Category %in% c('(VIII) Computational Scalability', 'Scalability', 'Computational Scalability') |
-                 df2$Metric %in% c('elapsed_time_seconds', 'peak_memory_mb', 'elapsed_time', 'memory_mb')
-      
-      # Perturb fidelity scores for Dataset 2 while strictly keeping them within realistic [0.05, 0.98]
-      set.seed(42)
-      df2$Score[!is_scal] <- round(pmax(0.05, pmin(0.98, df2$Score[!is_scal] + stats::rnorm(sum(!is_scal), 0, 0.025))), 3)
-      
-      # Distinct, realistic computational runtime and memory values for Dataset 2 across all simulators
-      d2_time_map <- c(
-        'Simulator 1' = 35.5, 'Splatter'  = 35.5,
-        'Simulator 2' = 76.9, 'scDesign3' = 76.9,
-        'Simulator 3' = 56.1, 'SCRIP'     = 56.1,
-        'Simulator 4' = 54.7, 'SymSim'    = 54.7,
-        'Simulator 5' = 93.0, 'dyngen'    = 93.0,
-        'Simulator 6' = 54.7, 'simATAC'   = 54.7
-      )
-      d2_mem_map <- c(
-        'Simulator 1' = 791.0,  'Splatter'  = 791.0,
-        'Simulator 2' = 1449.0, 'scDesign3' = 1449.0,
-        'Simulator 3' = 1164.0, 'SCRIP'     = 1164.0,
-        'Simulator 4' = 834.0,  'SymSim'    = 834.0,
-        'Simulator 5' = 1768.0, 'dyngen'    = 1768.0,
-        'Simulator 6' = 975.0,  'simATAC'   = 975.0
-      )
-      
-      time_idx <- which(df2$Metric %in% c('elapsed_time_seconds', 'elapsed_time'))
-      for (ti in time_idx) {
-        mth <- as.character(df2$Method[ti])
-        df2$Score[ti] <- if (mth %in% names(d2_time_map)) d2_time_map[[mth]] else round(df1$Score[ti] * 1.22, 1)
-      }
-      
-      mem_idx <- which(df2$Metric %in% c('peak_memory_mb', 'memory_mb'))
-      for (mi in mem_idx) {
-        mth <- as.character(df2$Method[mi])
-        df2$Score[mi] <- if (mth %in% names(d2_mem_map)) d2_mem_map[[mth]] else round(df1$Score[mi] * 1.13, 0)
-      }
-      
-      compute_demo_raw_and_norm <- function(d_df) {
-        d_df$Score_Raw <- d_df$Score
-        for (i in seq_len(nrow(d_df))) {
-          met <- d_df$Metric[i]
-          sc  <- d_df$Score[i]
-          if (met %in% c("elapsed_time_seconds", "elapsed_time")) {
-            d_df$Score_Raw[i] <- round(sc, 1)
-            d_df$Score[i]     <- round(pmax(0.05, pmin(0.98, 1 - (sc - 20) / 90)), 4)
-          } else if (met %in% c("peak_memory_mb", "memory_mb")) {
-            d_df$Score_Raw[i] <- round(sc, 0)
-            d_df$Score[i]     <- round(pmax(0.05, pmin(0.98, 1 - (sc - 500) / 1600)), 4)
-          } else if (met == "PValue_Uniformity_Chisq") {
-            d_df$Score_Raw[i] <- round(sc, 2)
-            d_df$Score[i]     <- round(pmax(0.05, pmin(0.98, exp(-sc / 22))), 4)
-          } else if (met == "tree_height_rmse") {
-            d_df$Score_Raw[i] <- round(sc, 4)
-            d_df$Score[i]     <- round(pmax(0.05, pmin(0.98, 1 - sc)), 4)
-          } else if (!met %in% .HIGHER_IS_BETTER_METRICS_LIST) {
-            d_df$Score_Raw[i] <- round(pmax(0.001, 1 - sc), 4)
-            d_df$Score[i]     <- round(sc, 4)
-          } else {
-            d_df$Score_Raw[i] <- round(sc, 4)
-            d_df$Score[i]     <- round(sc, 4)
-          }
-        }
-        d_df$Score_Norm <- d_df$Score
-        d_df
-      }
-      
-      df1 <- compute_demo_raw_and_norm(df1)
-      df2 <- compute_demo_raw_and_norm(df2)
-      
-      demo_benchmark_combined <- rbind(df1, df2)
-      
-      mode_data$demo <- list(
-        benchmark_df       = demo_benchmark_combined,
-        methods            = anon_methods,
-        toy_ref            = ref_1,
-        toy_sim            = sims_d1[[1]],
-        sim_matrices       = demo_sim_mats,
-        ref_matrices       = demo_ref_mats,
-        cell_types         = ct_1,
-        batch              = b_1,
-        source_name        = "Demo Benchmark (2 Datasets x 6 Simulators)",
-        dataset_summary_df = demo_summary_props,
-        all_matrices       = demo_all_mats
-      )
-      
-      sync_active_mode_data("demo")
-      rv_plot_triggers$bubble <- 0; rv_plot_triggers$sum <- 0; rv_plot_triggers$dist <- 0; rv_plot_triggers$scale <- 0; rv_plot_triggers$box <- 0; rv_plot_triggers$heat <- 0; rv_plot_triggers$pca <- 0; rv_plot_triggers$mds <- 0; rv_plot_triggers$emb <- 0
-      showNotification("Example demo benchmark loaded successfully! (2 reference datasets and 6 simulators)", type = "message")
-      nav_select("datahub_subtabs", "Dataset properties")
-    } else {
-      showNotification("Demo benchmark file not found on disk.", type = "warning")
+  # Helper to locate package data files across installation & development roots
+  get_pkg_data_file <- function(filename) {
+    candidates <- c(
+      system.file("shiny", "scSimEvalApp", "data", filename, package = "scSimEval"),
+      system.file("data", filename, package = "scSimEval"),
+      file.path("data", filename),
+      file.path("inst", "shiny", "scSimEvalApp", "data", filename),
+      file.path("..", "data", filename),
+      file.path("..", "..", "inst", "shiny", "scSimEvalApp", "data", filename)
+    )
+    for (f in candidates) {
+      if (nzchar(f) && file.exists(f)) return(normalizePath(f, winslash = "/"))
     }
+    return(NULL)
   }
+
+  # Unified Example Dataset & Benchmark Loader (Real Rice Bud & Soybean Root Datasets)
+  load_example_benchmark <- function(type = c("all", "scrna_rice", "scrna_soy", "scatac_rice", "scatac_soy", "multi_paired", "multi_unpaired")) {
+    type <- match.arg(type)
+    
+    bm_file <- get_pkg_data_file("demo_benchmark_data.rds")
+    rb_file <- get_pkg_data_file("example_rice_bud.rds")
+    sb_file <- get_pkg_data_file("example_soybean_root.rds")
+    
+    if (is.null(bm_file) || !file.exists(bm_file)) {
+      showNotification("Benchmark database cache file not found on disk.", type = "error")
+      return(FALSE)
+    }
+    
+    bm <- readRDS(bm_file)
+    rb <- if (!is.null(rb_file) && file.exists(rb_file)) readRDS(rb_file) else NULL
+    sb <- if (!is.null(sb_file) && file.exists(sb_file)) readRDS(sb_file) else NULL
+    
+    get_rb_ct <- function() {
+      if (is.null(rb) || is.null(rb$reference$cell_types)) return(NULL)
+      df <- rb$reference$cell_types
+      ct <- df$CellType %||% (if (ncol(df) >= 2) df[[2]] else df[[1]])
+      as.character(ct)
+    }
+    get_rb_bt <- function() {
+      if (is.null(rb) || is.null(rb$reference$batches)) return(NULL)
+      df <- rb$reference$batches
+      bt <- df$Batch %||% (if (ncol(df) >= 2) df[[2]] else df[[1]])
+      as.character(bt)
+    }
+    get_sb_ct <- function(mod = "rna") {
+      if (is.null(sb)) return(NULL)
+      df <- if (tolower(mod) == "atac") sb$reference$atac_cell_types else sb$reference$rna_cell_types
+      if (is.null(df)) return(NULL)
+      ct <- df$CellType %||% (if (ncol(df) >= 2) df[[2]] else df[[1]])
+      as.character(ct)
+    }
+    get_sb_bt <- function(mod = "rna") {
+      if (is.null(sb)) return(NULL)
+      df <- if (tolower(mod) == "atac") sb$reference$atac_batches else sb$reference$rna_batches
+      if (is.null(df)) return(NULL)
+      bt <- df$Batch %||% (if (ncol(df) >= 2) df[[2]] else df[[1]])
+      as.character(bt)
+    }
+    
+    target_mode <- "multiomics"
+    ref_mats <- list()
+    sim_mats <- list()
+    all_mats <- list()
+    ct <- NULL
+    bt <- NULL
+    bench_df <- NULL
+    summary_df <- NULL
+    source_name <- ""
+    
+    if (type == "scrna_rice") {
+      target_mode <- "scrna"
+      req(rb)
+      ref_mats <- list("Rice Bud (scRNA-seq)" = rb$reference$rna)
+      sim_mats <- lapply(rb$simulated, function(x) x$rna)
+      all_mats <- c(list("[Reference] Rice Bud (scRNA-seq)" = rb$reference$rna),
+                    stats::setNames(sim_mats, paste0("[Simulated] ", names(sim_mats), " (Rice Bud scRNA-seq)")))
+      bench_df <- bm$benchmark_df[bm$benchmark_df$Dataset == "Rice Bud (Paired)" & bm$benchmark_df$Modality %in% c("RNA", "Computation"), ]
+      bench_df$Dataset <- "Rice Bud (scRNA-seq)"
+      summary_df <- bm$dataset_summary_df[bm$dataset_summary_df$Dataset == "Rice Bud (Paired)" & bm$dataset_summary_df$Modality == "scRNA-seq", ]
+      summary_df$Dataset <- "Rice Bud (scRNA-seq)"
+      ct <- get_rb_ct()
+      bt <- get_rb_bt()
+      source_name <- "Example Data: Rice Bud scRNA-seq (100 cells, 200 genes, 8 cell types, 6 simulators)"
+      
+    } else if (type == "scrna_soy") {
+      target_mode <- "scrna"
+      req(sb)
+      ref_mats <- list("Soybean Root (scRNA-seq)" = sb$reference$rna)
+      sim_mats <- lapply(sb$simulated, function(x) x$rna)
+      all_mats <- c(list("[Reference] Soybean Root (scRNA-seq)" = sb$reference$rna),
+                    stats::setNames(sim_mats, paste0("[Simulated] ", names(sim_mats), " (Soybean Root scRNA-seq)")))
+      bench_df <- bm$benchmark_df[bm$benchmark_df$Dataset == "Soybean Root (Unpaired)" & bm$benchmark_df$Modality %in% c("RNA", "Computation"), ]
+      bench_df$Dataset <- "Soybean Root (scRNA-seq)"
+      summary_df <- bm$dataset_summary_df[bm$dataset_summary_df$Dataset == "Soybean Root (Unpaired)" & bm$dataset_summary_df$Modality == "scRNA-seq", ]
+      summary_df$Dataset <- "Soybean Root (scRNA-seq)"
+      ct <- get_sb_ct("rna")
+      bt <- get_sb_bt("rna")
+      source_name <- "Example Data: Soybean Root scRNA-seq (100 cells, 200 genes, 8 cell types, 2 batches, 3 simulators)"
+      
+    } else if (type == "scatac_rice") {
+      target_mode <- "scatac"
+      req(rb)
+      ref_mats <- list("Rice Bud (scATAC-seq)" = rb$reference$atac)
+      sim_mats <- lapply(rb$simulated, function(x) x$atac)
+      all_mats <- c(list("[Reference] Rice Bud (scATAC-seq)" = rb$reference$atac),
+                    stats::setNames(sim_mats, paste0("[Simulated] ", names(sim_mats), " (Rice Bud scATAC-seq)")))
+      bench_df <- bm$benchmark_df[bm$benchmark_df$Dataset == "Rice Bud (Paired)" & bm$benchmark_df$Modality %in% c("ATAC", "Computation"), ]
+      bench_df$Dataset <- "Rice Bud (scATAC-seq)"
+      summary_df <- bm$dataset_summary_df[bm$dataset_summary_df$Dataset == "Rice Bud (Paired)" & bm$dataset_summary_df$Modality == "scATAC-seq", ]
+      summary_df$Dataset <- "Rice Bud (scATAC-seq)"
+      ct <- get_rb_ct()
+      bt <- get_rb_bt()
+      source_name <- "Example Data: Rice Bud scATAC-seq (100 cells, 200 peaks, 8 cell types, 6 simulators)"
+      
+    } else if (type == "scatac_soy") {
+      target_mode <- "scatac"
+      req(sb)
+      ref_mats <- list("Soybean Root (scATAC-seq)" = sb$reference$atac)
+      sim_mats <- lapply(sb$simulated, function(x) x$atac)
+      all_mats <- c(list("[Reference] Soybean Root (scATAC-seq)" = sb$reference$atac),
+                    stats::setNames(sim_mats, paste0("[Simulated] ", names(sim_mats), " (Soybean Root scATAC-seq)")))
+      bench_df <- bm$benchmark_df[bm$benchmark_df$Dataset == "Soybean Root (Unpaired)" & bm$benchmark_df$Modality %in% c("ATAC", "Computation"), ]
+      bench_df$Dataset <- "Soybean Root (scATAC-seq)"
+      summary_df <- bm$dataset_summary_df[bm$dataset_summary_df$Dataset == "Soybean Root (Unpaired)" & bm$dataset_summary_df$Modality == "scATAC-seq", ]
+      summary_df$Dataset <- "Soybean Root (scATAC-seq)"
+      ct <- get_sb_ct("atac")
+      bt <- get_sb_bt("atac")
+      source_name <- "Example Data: Soybean Root scATAC-seq (100 cells, 200 peaks, 10 cell types, 5 batches, 3 simulators)"
+      
+    } else if (type == "multi_paired") {
+      target_mode <- "multiomics"
+      req(rb)
+      ref_mats <- list("Rice Bud_RNA" = rb$reference$rna, "Rice Bud_ATAC" = rb$reference$atac)
+      all_mats <- list(
+        "[Reference] Rice Bud RNA" = rb$reference$rna,
+        "[Reference] Rice Bud ATAC" = rb$reference$atac
+      )
+      for (m in names(rb$simulated)) {
+        sim_mats[[paste0(m, "_RNA_Rice Bud")]] <- rb$simulated[[m]]$rna
+        sim_mats[[paste0(m, "_ATAC_Rice Bud")]] <- rb$simulated[[m]]$atac
+        all_mats[[paste0("[Simulated] ", m, " RNA (Rice Bud)")]] <- rb$simulated[[m]]$rna
+        all_mats[[paste0("[Simulated] ", m, " ATAC (Rice Bud)")]] <- rb$simulated[[m]]$atac
+      }
+      bench_df <- bm$benchmark_df[bm$benchmark_df$Dataset == "Rice Bud (Paired)", ]
+      summary_df <- bm$dataset_summary_df[bm$dataset_summary_df$Dataset == "Rice Bud (Paired)", ]
+      ct <- get_rb_ct()
+      bt <- get_rb_bt()
+      source_name <- "Example Data: Rice Bud Paired Multiomics (100 cells, 200 genes, 200 peaks, 8 cell types, 6 simulators)"
+      
+    } else if (type == "multi_unpaired") {
+      target_mode <- "multiomics"
+      req(sb)
+      ref_mats <- list("Soybean Root_RNA" = sb$reference$rna, "Soybean Root_ATAC" = sb$reference$atac)
+      all_mats <- list(
+        "[Reference] Soybean Root RNA" = sb$reference$rna,
+        "[Reference] Soybean Root ATAC" = sb$reference$atac
+      )
+      for (m in names(sb$simulated)) {
+        sim_mats[[paste0(m, "_RNA_Soybean Root")]] <- sb$simulated[[m]]$rna
+        sim_mats[[paste0(m, "_ATAC_Soybean Root")]] <- sb$simulated[[m]]$atac
+        all_mats[[paste0("[Simulated] ", m, " RNA (Soybean Root)")]] <- sb$simulated[[m]]$rna
+        all_mats[[paste0("[Simulated] ", m, " ATAC (Soybean Root)")]] <- sb$simulated[[m]]$atac
+      }
+      bench_df <- bm$benchmark_df[bm$benchmark_df$Dataset == "Soybean Root (Unpaired)", ]
+      summary_df <- bm$dataset_summary_df[bm$dataset_summary_df$Dataset == "Soybean Root (Unpaired)", ]
+      ct <- get_sb_ct("rna")
+      bt <- get_sb_bt("rna")
+      source_name <- "Example Data: Soybean Root Unpaired Multiomics (100 RNA cells, 100 ATAC cells, 200 genes, 200 peaks, 3 simulators)"
+      
+    } else {
+      # "all" - Full benchmark of both datasets
+      target_mode <- input$opt_data_mode %||% "multiomics"
+      if (!target_mode %in% c("scrna", "scatac", "multiomics")) target_mode <- "multiomics"
+      bench_df <- bm$benchmark_df
+      summary_df <- bm$dataset_summary_df
+      if (!is.null(rb)) {
+        ref_mats[["Rice Bud_RNA"]] <- rb$reference$rna
+        ref_mats[["Rice Bud_ATAC"]] <- rb$reference$atac
+        all_mats[["[Reference] Rice Bud RNA"]] <- rb$reference$rna
+        all_mats[["[Reference] Rice Bud ATAC"]] <- rb$reference$atac
+        for (m in names(rb$simulated)) {
+          sim_mats[[paste0(m, "_RNA_Rice Bud")]] <- rb$simulated[[m]]$rna
+          sim_mats[[paste0(m, "_ATAC_Rice Bud")]] <- rb$simulated[[m]]$atac
+          all_mats[[paste0("[Simulated] ", m, " RNA (Rice Bud)")]] <- rb$simulated[[m]]$rna
+          all_mats[[paste0("[Simulated] ", m, " ATAC (Rice Bud)")]] <- rb$simulated[[m]]$atac
+        }
+        ct <- get_rb_ct()
+        bt <- get_rb_bt()
+      }
+      if (!is.null(sb)) {
+        ref_mats[["Soybean Root_RNA"]] <- sb$reference$rna
+        ref_mats[["Soybean Root_ATAC"]] <- sb$reference$atac
+        all_mats[["[Reference] Soybean Root RNA"]] <- sb$reference$rna
+        all_mats[["[Reference] Soybean Root ATAC"]] <- sb$reference$atac
+        for (m in names(sb$simulated)) {
+          sim_mats[[paste0(m, "_RNA_Soybean Root")]] <- sb$simulated[[m]]$rna
+          sim_mats[[paste0(m, "_ATAC_Soybean Root")]] <- sb$simulated[[m]]$atac
+          all_mats[[paste0("[Simulated] ", m, " RNA (Soybean Root)")]] <- sb$simulated[[m]]$rna
+          all_mats[[paste0("[Simulated] ", m, " ATAC (Soybean Root)")]] <- sb$simulated[[m]]$atac
+        }
+      }
+      source_name <- "Benchmark Database: Rice Bud (6 Simulators) & Soybean Root (3 Simulators)"
+    }
+    
+    methods <- unique(bench_df$Method)
+    
+    ct_map <- list()
+    bt_map <- list()
+    if (!is.null(rb)) {
+      ct_map[["Rice Bud_RNA"]] <- get_rb_ct()
+      ct_map[["Rice Bud_ATAC"]] <- get_rb_ct()
+      bt_map[["Rice Bud_RNA"]] <- get_rb_bt()
+      bt_map[["Rice Bud_ATAC"]] <- get_rb_bt()
+    }
+    if (!is.null(sb)) {
+      ct_map[["Soybean Root_RNA"]] <- get_sb_ct("rna")
+      ct_map[["Soybean Root_ATAC"]] <- get_sb_ct("atac")
+      bt_map[["Soybean Root_RNA"]] <- get_sb_bt("rna")
+      bt_map[["Soybean Root_ATAC"]] <- get_sb_bt("atac")
+    }
+    
+    mode_data[[target_mode]] <- list(
+      benchmark_df       = bench_df,
+      methods            = methods,
+      toy_ref            = if (length(ref_mats) > 0) ref_mats[[1]] else NULL,
+      toy_sim            = if (length(sim_mats) > 0) sim_mats[[1]] else NULL,
+      sim_matrices       = sim_mats,
+      ref_matrices       = ref_mats,
+      cell_types         = ct,
+      batch              = bt,
+      cell_types_map     = ct_map,
+      batches_map        = bt_map,
+      source_name        = source_name,
+      dataset_summary_df = summary_df,
+      all_matrices       = all_mats
+    )
+    mode_data$demo <- mode_data[[target_mode]]
+    
+    sync_active_mode_data(target_mode)
+    rv_plot_triggers$bubble <- 0; rv_plot_triggers$sum <- 0; rv_plot_triggers$dist <- 0; rv_plot_triggers$scale <- 0; rv_plot_triggers$box <- 0; rv_plot_triggers$heat <- 0; rv_plot_triggers$pca <- 0; rv_plot_triggers$mds <- 0; rv_plot_triggers$emb <- 0
+    showNotification(paste0(source_name, " loaded successfully!"), type = "message", duration = 6)
+    nav_select("datahub_subtabs", "Dataset properties")
+    return(TRUE)
+  }
+  
+  execute_load_demo_benchmark <- function() {
+    load_example_benchmark("all")
+  }
+  
+  observeEvent(input$btn_load_example_scrna, {
+    ds <- input$opt_example_scrna_dataset %||% "rice_bud"
+    load_example_benchmark(if (ds == "soybean_root") "scrna_soy" else "scrna_rice")
+  })
+  observeEvent(input$btn_load_example_scatac, {
+    ds <- input$opt_example_scatac_dataset %||% "rice_bud"
+    load_example_benchmark(if (ds == "soybean_root") "scatac_soy" else "scatac_rice")
+  })
+  observeEvent(input$btn_load_example_paired_multi, {
+    load_example_benchmark("multi_paired")
+  })
+  observeEvent(input$btn_load_example_unpaired_multi, {
+    load_example_benchmark("multi_unpaired")
+  })
+  observeEvent(input$btn_run_uni_eval_atac, {
+    run_single_cell_evaluation()
+  })
+  observeEvent(input$btn_inspect_uni_data_side, { nav_select("datahub_subtabs", "Dataset properties") })
+  observeEvent(input$btn_inspect_uni_data_side_atac, { nav_select("datahub_subtabs", "Dataset properties") })
+  observeEvent(input$btn_inspect_multi_data_side, { nav_select("datahub_subtabs", "Dataset properties") })
   observeEvent(input$btn_load_demo, { execute_load_demo_benchmark() })
   observeEvent(input$btn_empty_load_demo, { execute_load_demo_benchmark() })
   observeEvent(input$btn_empty_load_demo_view, { execute_load_demo_benchmark() })
@@ -4309,6 +4811,21 @@ server <- function(input, output, session) {
       "}",
       "",
       "cat('[scSimEval] Benchmarking pipeline completed successfully!\n')",
+      "",
+      "# ==============================================================================",
+      "# ==============================================================================",
+      "# FILE PATH CONFIGURATION & HPC CLUSTER RUN GUIDE",
+      "# ==============================================================================",
+      "# Instructions for Non-Coding Users & HPC / Cluster Deployment:",
+      "#   1. Copy this R script and all your data files into your working directory on",
+      "#      your HPC cluster, cloud instance, or computing server.",
+      "#   2. Ensure all input file variables (ref_*_file, sim_*_file, ct_file, bt_file)",
+      "#      above point to your exact file locations on your HPC system.",
+      "#   3. Run the script directly from your terminal:",
+      "#        Rscript <this_script_name>.R",
+      "#      Or submit via SLURM:",
+      "#        sbatch --cpus-per-task=8 --mem=32G --time=04:00:00 --wrap=\"Rscript <this_script_name>.R\"",
+      "# ==============================================================================",
       ""
     )
     
@@ -4733,6 +5250,7 @@ server <- function(input, output, session) {
   # ----------------------------------------------------------------------------
   output$ui_multi_ref_cards <- renderUI({
     n_dsets <- input$num_multi_datasets %||% 1
+    is_unpaired <- identical(input$opt_multi_pairing, "unpaired")
     
     dset_cards <- lapply(seq_len(n_dsets), function(d) {
       div(
@@ -4743,17 +5261,38 @@ server <- function(input, output, session) {
           div(
             span(class = "badge text-white me-2", style = "background: #4F46E5;", sprintf("Reference %d", d)),
             tags$b(sprintf("Biological Reference Multiomics Dataset %d", d), style = "color: #312E81; font-size: 0.94rem;"),
-            tags$small(class = "text-muted ms-2", "(Paired/unpaired ground truth for all multiomics simulators)")
+            tags$small(class = "text-muted ms-2", if (is_unpaired) "(Unpaired: independent cells for RNA and ATAC)" else "(Paired single-cell co-assay across all multiomics simulators)")
           ),
           div(uiOutput(paste0("ui_multi_ref_rna_badge_", d)), uiOutput(paste0("ui_multi_ref_atac_badge_", d)))
         ),
-        fluidRow(
-          column(2, textInput(paste0("multi_dset_name_", d), "Dataset Name:", value = sprintf("Dataset %d", d))),
-          column(3, fileInput(paste0("file_multi_ref_rna_", d), "Reference RNA Matrix (.rds / .csv):", accept = c(".rds", ".csv", ".tsv", ".txt"))),
-          column(3, fileInput(paste0("file_multi_ref_atac_", d), "Reference ATAC Matrix (.rds / .csv):", accept = c(".rds", ".csv", ".tsv", ".txt"))),
-          column(2, fileInput(paste0("file_multi_celltypes_", d), "Cell Types (Opt):", accept = c(".rds", ".csv", ".tsv", ".txt"))),
-          column(2, fileInput(paste0("file_multi_batch_", d), "Batches (Opt):", accept = c(".rds", ".csv", ".tsv", ".txt")))
-        )
+        if (is_unpaired) {
+          tagList(
+            fluidRow(
+              column(2, textInput(paste0("multi_dset_name_", d), "Dataset Name:", value = sprintf("Dataset %d", d))),
+              column(5, fileInput(paste0("file_multi_ref_rna_", d), "Reference RNA Matrix (.rds / .csv):", accept = c(".rds", ".csv", ".tsv", ".txt"))),
+              column(5, fileInput(paste0("file_multi_ref_atac_", d), "Reference ATAC Matrix (.rds / .csv):", accept = c(".rds", ".csv", ".tsv", ".txt")))
+            ),
+            div(
+              style = "background: #EEF2FF; border: 1px dashed #A5B4FC; border-radius: 6px; padding: 10px; margin-top: 6px;",
+              div(style = "font-size: 0.78rem; font-weight: 700; color: #3730A3; margin-bottom: 6px;",
+                  icon("layer-group", class = "me-1"), "Unpaired Annotations (Independent RNA & ATAC Cells):"),
+              fluidRow(
+                column(3, fileInput(paste0("file_multi_celltypes_rna_", d), "RNA Cell Types (.rds / .csv):", accept = c(".rds", ".csv", ".tsv", ".txt"))),
+                column(3, fileInput(paste0("file_multi_celltypes_atac_", d), "ATAC Cell Types (.rds / .csv):", accept = c(".rds", ".csv", ".tsv", ".txt"))),
+                column(3, fileInput(paste0("file_multi_batch_rna_", d), "RNA Batches (.rds / .csv):", accept = c(".rds", ".csv", ".tsv", ".txt"))),
+                column(3, fileInput(paste0("file_multi_batch_atac_", d), "ATAC Batches (.rds / .csv):", accept = c(".rds", ".csv", ".tsv", ".txt")))
+              )
+            )
+          )
+        } else {
+          fluidRow(
+            column(2, textInput(paste0("multi_dset_name_", d), "Dataset Name:", value = sprintf("Dataset %d", d))),
+            column(3, fileInput(paste0("file_multi_ref_rna_", d), "Reference RNA Matrix (.rds / .csv):", accept = c(".rds", ".csv", ".tsv", ".txt"))),
+            column(3, fileInput(paste0("file_multi_ref_atac_", d), "Reference ATAC Matrix (.rds / .csv):", accept = c(".rds", ".csv", ".tsv", ".txt"))),
+            column(2, fileInput(paste0("file_multi_celltypes_", d), "Cell Types (Opt):", accept = c(".rds", ".csv", ".tsv", ".txt"))),
+            column(2, fileInput(paste0("file_multi_batch_", d), "Batches (Opt):", accept = c(".rds", ".csv", ".tsv", ".txt")))
+          )
+        }
       )
     })
     tagList(dset_cards)
@@ -4777,6 +5316,7 @@ server <- function(input, output, session) {
   output$ui_multi_sim_cards <- renderUI({
     n_sims <- input$num_multi_sims %||% 1
     n_dsets <- input$num_multi_datasets %||% 1
+    is_unpaired <- identical(input$opt_multi_pairing, "unpaired")
     
     sim_cards <- lapply(seq_len(n_sims), function(s) {
       dataset_rows <- lapply(seq_len(n_dsets), function(d) {
@@ -4793,12 +5333,32 @@ server <- function(input, output, session) {
             tags$b(sprintf("Simulated Multiomics Data for: %s", dname_disp), style = "color: #312E81; font-size: 0.90rem;"),
             tags$small(class = "text-muted ms-2", "(specify simulated RNA & ATAC, runtime, and Peak RAM (MiB) for this dataset)")
           ),
-          fluidRow(
-            column(4, fileInput(paste0("file_multi_sim_rna_", s, "_", d), sprintf("Simulated RNA for %s (.rds / .csv):", dname_disp), accept = c(".rds", ".csv", ".tsv", ".txt"))),
-            column(4, fileInput(paste0("file_multi_sim_atac_", s, "_", d), sprintf("Simulated ATAC for %s (.rds / .csv):", dname_disp), accept = c(".rds", ".csv", ".tsv", ".txt"))),
-            column(2, numericInput(paste0("multi_sim_time_", s, "_", d), "Runtime (s):", value = sim_def$time, min = 0.1, step = 1)),
-            column(2, numericInput(paste0("multi_sim_mem_", s, "_", d), "Peak RAM (MiB):", value = sim_def$mem, min = 1, step = 10))
-          )
+          if (is_unpaired) {
+            tagList(
+              fluidRow(
+                column(6, fileInput(paste0("file_multi_sim_rna_", s, "_", d), sprintf("Simulated RNA for %s (.rds / .csv):", dname_disp), accept = c(".rds", ".csv", ".tsv", ".txt"))),
+                column(6, fileInput(paste0("file_multi_sim_atac_", s, "_", d), sprintf("Simulated ATAC for %s (.rds / .csv):", dname_disp), accept = c(".rds", ".csv", ".tsv", ".txt")))
+              ),
+              div(
+                style = "background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 6px; padding: 8px 12px; margin-top: 4px;",
+                div(style = "font-size: 0.76rem; font-weight: 700; color: #475569; margin-bottom: 4px;",
+                    icon("stopwatch", class = "me-1 text-primary"), "Dual / Flexible Scalability Metrics (Unpaired Simulator):"),
+                fluidRow(
+                  column(3, numericInput(paste0("multi_sim_time_rna_", s, "_", d), "RNA Runtime (s):", value = round(sim_def$time * 0.45, 1), min = 0.1, step = 1)),
+                  column(3, numericInput(paste0("multi_sim_mem_rna_", s, "_", d), "RNA Peak RAM (MiB):", value = round(sim_def$mem * 0.85, 0), min = 1, step = 10)),
+                  column(3, numericInput(paste0("multi_sim_time_atac_", s, "_", d), "ATAC Runtime (s):", value = round(sim_def$time * 0.55, 1), min = 0.1, step = 1)),
+                  column(3, numericInput(paste0("multi_sim_mem_atac_", s, "_", d), "ATAC Peak RAM (MiB):", value = round(sim_def$mem * 0.95, 0), min = 1, step = 10))
+                )
+              )
+            )
+          } else {
+            fluidRow(
+              column(4, fileInput(paste0("file_multi_sim_rna_", s, "_", d), sprintf("Simulated RNA for %s (.rds / .csv):", dname_disp), accept = c(".rds", ".csv", ".tsv", ".txt"))),
+              column(4, fileInput(paste0("file_multi_sim_atac_", s, "_", d), sprintf("Simulated ATAC for %s (.rds / .csv):", dname_disp), accept = c(".rds", ".csv", ".tsv", ".txt"))),
+              column(2, numericInput(paste0("multi_sim_time_", s, "_", d), "Runtime (s):", value = sim_def$time, min = 0.1, step = 1)),
+              column(2, numericInput(paste0("multi_sim_mem_", s, "_", d), "Peak RAM (MiB):", value = sim_def$mem, min = 1, step = 10))
+            )
+          }
         )
       })
       
@@ -4860,18 +5420,37 @@ server <- function(input, output, session) {
           refs_list[[paste0(d_label, "_RNA")]] <- ref_rna_d
           refs_list[[paste0(d_label, "_ATAC")]] <- ref_atac_d
           
-          ct_file <- input[[paste0("file_multi_celltypes_", d)]]
-          bt_file <- input[[paste0("file_multi_batch_", d)]]
-          ct_vec <- if (!is.null(ct_file) && nrow(ct_file) > 0) read_uploaded_labels(ct_file$datapath, ct_file$name) else NULL
-          bt_vec <- if (!is.null(bt_file) && nrow(bt_file) > 0) read_uploaded_labels(bt_file$datapath, bt_file$name) else NULL
+          if (is_paired) {
+            ct_file <- input[[paste0("file_multi_celltypes_", d)]]
+            bt_file <- input[[paste0("file_multi_batch_", d)]]
+            ct_vec <- if (!is.null(ct_file) && nrow(ct_file) > 0) read_uploaded_labels(ct_file$datapath, ct_file$name) else NULL
+            bt_vec <- if (!is.null(bt_file) && nrow(bt_file) > 0) read_uploaded_labels(bt_file$datapath, bt_file$name) else NULL
+            eval_ct <- ct_vec
+            eval_bt <- bt_vec
+            ct_r_disp <- ct_vec; ct_a_disp <- ct_vec
+            bt_r_disp <- bt_vec; bt_a_disp <- bt_vec
+          } else {
+            ct_r_f <- input[[paste0("file_multi_celltypes_rna_", d)]] %||% input[[paste0("file_multi_celltypes_", d)]]
+            ct_a_f <- input[[paste0("file_multi_celltypes_atac_", d)]]
+            bt_r_f <- input[[paste0("file_multi_batch_rna_", d)]] %||% input[[paste0("file_multi_batch_", d)]]
+            bt_a_f <- input[[paste0("file_multi_batch_atac_", d)]]
+            
+            ct_r_disp <- if (!is.null(ct_r_f) && nrow(ct_r_f) > 0) read_uploaded_labels(ct_r_f$datapath, ct_r_f$name) else NULL
+            ct_a_disp <- if (!is.null(ct_a_f) && nrow(ct_a_f) > 0) read_uploaded_labels(ct_a_f$datapath, ct_a_f$name) else NULL
+            bt_r_disp <- if (!is.null(bt_r_f) && nrow(bt_r_f) > 0) read_uploaded_labels(bt_r_f$datapath, bt_r_f$name) else NULL
+            bt_a_disp <- if (!is.null(bt_a_f) && nrow(bt_a_f) > 0) read_uploaded_labels(bt_a_f$datapath, bt_a_f$name) else NULL
+            
+            eval_ct <- if (!is.null(ct_r_disp) || !is.null(ct_a_disp)) list(RNA = ct_r_disp, ATAC = ct_a_disp) else NULL
+            eval_bt <- if (!is.null(bt_r_disp) || !is.null(bt_a_disp)) list(RNA = bt_r_disp, ATAC = bt_a_disp) else NULL
+          }
           
           summary_rows[[length(summary_rows) + 1]] <- extract_dataset_summary(
             ref_rna_d, role = "Biological Reference (RNA)", method_name = paste0("Empirical Reference (", d_label, ")"),
-            modality = "RNA-seq", cell_types = ct_vec, batch_info = bt_vec
+            modality = "RNA-seq", cell_types = ct_r_disp, batch_info = bt_r_disp
           )
           summary_rows[[length(summary_rows) + 1]] <- extract_dataset_summary(
             ref_atac_d, role = "Biological Reference (ATAC)", method_name = paste0("Empirical Reference (", d_label, ")"),
-            modality = "ATAC-seq", cell_types = ct_vec, batch_info = bt_vec
+            modality = "ATAC-seq", cell_types = ct_a_disp, batch_info = bt_a_disp
           )
           
           for (s in seq_len(n_sims)) {
@@ -4882,8 +5461,21 @@ server <- function(input, output, session) {
             sim_atac_file <- input[[paste0("file_multi_sim_atac_", s, "_", d)]]
             if (is.null(sim_rna_file) || is.null(sim_atac_file)) next
             
-            sim_time <- as.numeric(input[[paste0("multi_sim_time_", s, "_", d)]]) %||% 60.0
-            sim_mem  <- as.numeric(input[[paste0("multi_sim_mem_", s, "_", d)]]) %||% 1500.0
+            t_r <- input[[paste0("multi_sim_time_rna_", s, "_", d)]]
+            t_a <- input[[paste0("multi_sim_time_atac_", s, "_", d)]]
+            m_r <- input[[paste0("multi_sim_mem_rna_", s, "_", d)]]
+            m_a <- input[[paste0("multi_sim_mem_atac_", s, "_", d)]]
+            
+            sim_time <- if (!is_paired && !is.null(t_r) && !is.null(t_a)) {
+              as.numeric(t_r) + as.numeric(t_a)
+            } else {
+              as.numeric(input[[paste0("multi_sim_time_", s, "_", d)]]) %||% 60.0
+            }
+            sim_mem <- if (!is_paired && !is.null(m_r) && !is.null(m_a)) {
+              max(as.numeric(m_r), as.numeric(m_a))
+            } else {
+              as.numeric(input[[paste0("multi_sim_mem_", s, "_", d)]]) %||% 1500.0
+            }
             
             incProgress(0.7 / (n_sims * n_dsets), detail = sprintf("Evaluating %s on %s...", sim_name, d_label))
             sim_rna_d  <- read_uploaded_matrix(sim_rna_file$datapath, sim_rna_file$name)
@@ -4896,11 +5488,11 @@ server <- function(input, output, session) {
             
             summary_rows[[length(summary_rows) + 1]] <- extract_dataset_summary(
               sim_rna_d, role = "Simulated (RNA)", method_name = paste0(sim_name, " (", d_label, ")"),
-              modality = "RNA-seq", cell_types = ct_vec, batch_info = bt_vec
+              modality = "RNA-seq", cell_types = ct_r_disp, batch_info = bt_r_disp
             )
             summary_rows[[length(summary_rows) + 1]] <- extract_dataset_summary(
               sim_atac_d, role = "Simulated (ATAC)", method_name = paste0(sim_name, " (", d_label, ")"),
-              modality = "ATAC-seq", cell_types = ct_vec, batch_info = bt_vec
+              modality = "ATAC-seq", cell_types = ct_a_disp, batch_info = bt_a_disp
             )
             
             n_cores_multi <- as.integer(input$num_multi_cores %||% default_n_cores)
@@ -4910,8 +5502,8 @@ server <- function(input, output, session) {
               ref_multi = list(RNA = ref_rna_d, ATAC = ref_atac_d),
               sim_multi = list(RNA = sim_rna_d, ATAC = sim_atac_d),
               is_paired = is_paired,
-              cell_types = ct_vec,
-              batch_info = bt_vec,
+              cell_types = eval_ct,
+              batch_info = eval_bt,
               memory_mb = sim_mem,
               elapsed_time = sim_time,
               threads = n_cores_multi,
@@ -5494,13 +6086,12 @@ server <- function(input, output, session) {
         div(class = "d-flex align-items-center justify-content-between flex-wrap gap-2",
           div(
             style = "color: #0369A1; line-height: 1.55;",
-            tags$b(icon("circle-info", class = "me-1 text-info"), "Single-Cell Metric Measurement Capacity: ", style = "color: #0C4A6E;"),
-            "Count matrix alone measures ", tags$b("~23 baseline metrics", style = "color: #0C4A6E;"), " (Distributional properties, correlations, zero-inflation curves, trajectory). ",
+            tags$b(icon("circle-info", class = "me-1 text-info"), "Exact Single-Cell Metric Measurement Capacity: ", style = "color: #0C4A6E;"),
+            "Count matrix alone measures ", tags$b("24 metrics (scRNA)", style = "color: #0C4A6E;"), " / ", tags$b("22 metrics (scATAC)", style = "color: #0C4A6E;"), " (Distributional properties, correlations, zero-inflation curves, trajectory). ",
             "Uploading ", tags$span(class = "badge bg-primary-subtle text-primary border border-primary-subtle", "+ Cell Types"), 
-            " unlocks ", tags$b("+12-15 extra metrics", style = "color: #0C4A6E;"), " (clustering concordance, ARI, NMI, SimBench signal fidelity). ",
+            " unlocks ", tags$b("44 metrics (scRNA)", style = "color: #0C4A6E;"), " / ", tags$b("36 metrics (scATAC)", style = "color: #0C4A6E;"), " (clustering concordance, ARI, NMI, SimBench biological signal fidelity). ",
             "Uploading ", tags$span(class = "badge bg-warning-subtle text-warning border border-warning-subtle", "+ Batch Info"), 
-            " unlocks ", tags$b("+7 extra metrics", style = "color: #0C4A6E;"), " (batch mixing, kBET, LISI, CMS). ",
-            "With full metadata, up to ", tags$b("~55 metrics", style = "color: #0C4A6E;"), " are computed."
+            " unlocks ", tags$b("51 metrics (scRNA)", style = "color: #0C4A6E;"), " / ", tags$b("43 metrics (scATAC)", style = "color: #0C4A6E;"), " (batch mixing, kBET, LISI, CMS, Shannon entropy)."
           ),
           actionLink(
             "btn_show_metadata_format_hint",
@@ -5549,7 +6140,7 @@ server <- function(input, output, session) {
       # Scientific Callout Banner
       div(
         class = "alert alert-secondary py-2 px-3 mt-3 mb-2 rounded",
-        style = "font-size: 0.80rem; color: #334155; background: #F8FAFC; border: 1px dashed #CBD5E1;",
+        style = "font-size: 0.80rem; border: 1px dashed #CBD5E1;",
         icon("file-code", class = "me-2 text-primary"),
         tags$strong("Reproducible Analysis:"),
         " Click ", tags$b("Download R Script"),
@@ -5606,12 +6197,13 @@ server <- function(input, output, session) {
         div(class = "d-flex align-items-center justify-content-between flex-wrap gap-2",
           div(
             style = "color: #3730A3; line-height: 1.55;",
-            tags$b(icon("circle-info", class = "me-1 text-indigo"), "Multiomics Metric Measurement Capacity: ", style = "color: #1E1B4B;"),
-            "Paired RNA + ATAC matrices alone evaluate ", tags$b("~48 metrics", style = "color: #1E1B4B;"), " (unimodal properties for both layers + Category VII Cross-Modal Coupling, FOSCTTM alignment, Match@1, and peak-to-gene linkages). ",
-            "Including ", tags$span(class = "badge bg-primary-subtle text-primary border border-primary-subtle", "+ Cell Types"), " and ",
+            tags$b(icon("circle-info", class = "me-1 text-indigo"), "Exact Multiomics Metric Measurement Capacity: ", style = "color: #1E1B4B;"),
+            "Paired RNA + ATAC matrices alone evaluate ", tags$b("36 / 62 metrics", style = "color: #1E1B4B;"), " (unimodal properties for both layers + Category VII Cross-Modal Coupling, FOSCTTM alignment, Match@1, Match@5, and peak-to-gene linkages). ",
+            "Including ", tags$span(class = "badge bg-primary-subtle text-primary border border-primary-subtle", "+ Cell Types"), " unlocks ",
+            tags$b("55 / 62 metrics", style = "color: #1E1B4B;"), ". Adding ",
             tags$span(class = "badge bg-warning-subtle text-warning border border-warning-subtle", "+ Batch Info"), 
-            " unlocks the ", tags$b("full suite of 62 metrics across all 8 categories", style = "color: #1E1B4B;"), ". ",
-            "In Unpaired mode, cell-type labels are essential to unlock cluster-matched cross-modal label transfer."
+            " unlocks ", tags$b("all 62 / 62 metrics across all 8 categories", style = "color: #1E1B4B;"), ". ",
+            "In Unpaired mode: 30 / 62 metrics (counts alone) and up to 52 / 62 metrics (with cell types and batches)."
           ),
           actionLink(
             "btn_show_metadata_format_multi_hint",
@@ -5660,7 +6252,7 @@ server <- function(input, output, session) {
       # Scientific Callout Banner
       div(
         class = "alert alert-secondary py-2 px-3 mt-3 mb-2 rounded",
-        style = "font-size: 0.80rem; color: #334155; background: #F8FAFC; border: 1px dashed #CBD5E1;",
+        style = "font-size: 0.80rem; border: 1px dashed #CBD5E1;",
         icon("file-code", class = "me-2 text-primary"),
         tags$strong("Reproducible Analysis:"),
         " Click ", tags$b("Download R Script"),
@@ -6251,6 +6843,46 @@ server <- function(input, output, session) {
     )
   })
 
+  output$ui_bubble_modality_selector <- renderUI({
+    req(rv$benchmark_df)
+    has_multi <- "Modality" %in% colnames(rv$benchmark_df) &&
+      (any(grepl("RNA", rv$benchmark_df$Modality, ignore.case = TRUE)) && any(grepl("ATAC", rv$benchmark_df$Modality, ignore.case = TRUE)))
+    if (!has_multi) return(NULL)
+    
+    div(
+      class = "mb-2",
+      tags$label(
+        class = "control-label fw-bold mb-1",
+        style = "font-size: 0.86rem; color: #1E293B;",
+        icon("dna", class = "me-1 text-primary"),
+        "Assay Modality:"
+      ),
+      selectInput(
+        "sel_bubble_modality", NULL,
+        choices = c(
+          "All Modalities (Combined Multiomics)" = "all",
+          "scRNA-seq (Transcriptome)" = "RNA",
+          "scATAC-seq (Chromatin Accessibility)" = "ATAC",
+          "Cross-Modal Coupling (Joint Multiomics)" = "Joint"
+        ),
+        selected = input$sel_bubble_modality %||% (input$sel_viz_modality %||% "all"),
+        width = "100%"
+      )
+    )
+  })
+
+  observeEvent(input$sel_bubble_modality, {
+    if (!is.null(input$sel_viz_modality) && input$sel_viz_modality != input$sel_bubble_modality) {
+      updateSelectInput(session, "sel_viz_modality", selected = input$sel_bubble_modality)
+    }
+  }, ignoreInit = TRUE)
+
+  observeEvent(input$sel_viz_modality, {
+    if (!is.null(input$sel_bubble_modality) && input$sel_bubble_modality != input$sel_viz_modality) {
+      updateSelectInput(session, "sel_bubble_modality", selected = input$sel_viz_modality)
+    }
+  }, ignoreInit = TRUE)
+
   output$ui_bubble_dataset_pills <- renderUI({
     dsets <- available_bubble_datasets()
     if (length(dsets) <= 1) return(NULL)
@@ -6299,8 +6931,10 @@ server <- function(input, output, session) {
     d_tag <- if (identical(d_sel, "all_avg") && n_d > 1) sprintf("All %d Datasets (Average)", n_d) else if (identical(d_sel, "all_avg")) "All Datasets" else d_sel
     mode <- input$rad_bubble_filter_mode %||% "all"
     lbl <- if (identical(mode, "custom")) "Custom" else "All 62"
+    mod_tag <- input$sel_bubble_modality %||% (input$sel_viz_modality %||% "all")
+    mod_lbl <- if (!identical(mod_tag, "all")) sprintf(" | Modality: %s", switch(mod_tag, RNA = "scRNA-seq", ATAC = "scATAC-seq", Joint = "Cross-Modal", mod_tag)) else ""
     span(class = "badge bg-primary", style = "font-size: 0.8rem; font-weight: 500;",
-         sprintf("%s | %s: %d Metrics x %d Simulators", d_tag, lbl, n_m, n_s))
+         sprintf("%s%s | %s: %d Metrics x %d Simulators", d_tag, mod_lbl, lbl, n_m, n_s))
   })
 
   output$ui_bubble_method_picker <- renderUI({
@@ -6436,7 +7070,19 @@ server <- function(input, output, session) {
       df <- df[df$Dataset == dataset_choice, , drop = FALSE]
     }
     
-    # 2. Simulator Methods Filter
+    # 2. Modality Filter
+    mod_choice <- input$sel_bubble_modality %||% (input$sel_viz_modality %||% "all")
+    if ("Modality" %in% colnames(df) && !identical(mod_choice, "all")) {
+      if (identical(mod_choice, "RNA")) {
+        df <- df[df$Modality %in% c("RNA", "Computation"), , drop = FALSE]
+      } else if (identical(mod_choice, "ATAC")) {
+        df <- df[df$Modality %in% c("ATAC", "Computation"), , drop = FALSE]
+      } else if (identical(mod_choice, "Joint")) {
+        df <- df[df$Modality %in% c("Joint (Cross-Modal)", "Computation"), , drop = FALSE]
+      }
+    }
+    
+    # 3. Simulator Methods Filter
     if (!is.null(input$sel_bubble_methods)) {
       if (length(input$sel_bubble_methods) == 0) return(NULL)
       df <- df[df$Method %in% input$sel_bubble_methods, , drop = FALSE]
@@ -6529,7 +7175,7 @@ server <- function(input, output, session) {
       }
       
       caption_text <- if (!show_title) NULL else paste0(
-        "Circle: standard performance (< 0.96)  |  Square: top performer (>= 0.96)  |  Higher score = closer concordance with empirical reference."
+        "Circle: standard performance  |  Bold circle outline: top-performing simulator for the metric  |  Higher score = closer concordance with empirical reference."
       )
       
       p + ggplot2::labs(
@@ -6658,6 +7304,92 @@ server <- function(input, output, session) {
     }
   )
 
+  # Helper: Generate Comprehensive File Path Configuration Block for Downloaded R Scripts
+  get_workflow_file_paths_block <- function(target_analysis = "benchmark") {
+    lines <- c(
+      "",
+      "# ==============================================================================",
+      "# ==============================================================================",
+      "# FILE PATH CONFIGURATION & HPC CLUSTER RUN GUIDE",
+      "# ==============================================================================",
+      "# Instructions for Non-Coding Users & HPC / Cluster Deployment:",
+      "#   1. Copy this R script and all your data files into your working folder on",
+      "#      your HPC cluster, cloud instance, or server.",
+      "#   2. Update the file path variables below to point to the exact locations on your system.",
+      "#   3. Run the script directly from your terminal:",
+      "#        Rscript <this_script_name>.R",
+      "#      Or submit as a SLURM cluster job:",
+      "#        sbatch --cpus-per-task=8 --mem=32G --time=02:00:00 --wrap=\"Rscript <this_script_name>.R\"",
+      "# ==============================================================================",
+      "",
+      "# 1. Primary Benchmark Results Table (Exported from scSimEval):",
+      "# Point this variable to your exported CSV or RDS results file from the Shiny app:",
+      "BENCHMARK_RESULTS_FILE <- 'scSimEval_benchmark_results.csv' # or 'scSimEval_benchmark_results.rds'",
+      ""
+    )
+    
+    is_multi <- !is.null(rv$benchmark_df) && "Modality" %in% colnames(rv$benchmark_df) &&
+      (any(grepl("RNA", rv$benchmark_df$Modality, ignore.case = TRUE)) && any(grepl("ATAC", rv$benchmark_df$Modality, ignore.case = TRUE)))
+    
+    if (is_multi) {
+      lines <- c(lines,
+        "# 2. Input Single-Cell Multiomics Count Matrices & Annotations:",
+        "# Update paths to your empirical reference and simulated datasets on HPC/cloud:",
+        "REF_RNA_FILE    <- 'reference_rna.csv'   # (Supported: .csv, .tsv, .rds, .mtx, .xlsx)",
+        "REF_ATAC_FILE   <- 'reference_atac.csv'  # (Supported: .csv, .tsv, .rds, .mtx, .xlsx)",
+        "REF_DATA_FILE   <- REF_RNA_FILE          # Alias for Distribution QC workflow",
+        "REF_MATRIX_FILE <- REF_RNA_FILE          # Alias for Cell Embeddings workflow",
+        "CELL_TYPES_FILE <- 'cell_types.csv'      # (Optional: cell barcode to cell type mapping)",
+        "BATCH_FILE      <- 'batches.csv'         # (Optional: cell barcode to batch mapping)",
+        "",
+        "# Simulated Datasets for Evaluated Simulators:"
+      )
+      sim_names <- if (!is.null(rv$methods) && length(rv$methods) > 0) rv$methods else c("scMultiSim", "scDesign3", "MOSim", "scCross")
+      lines <- c(lines, "SIMULATOR_FILES <- list(")
+      for (i in seq_along(sim_names)) {
+        m <- sim_names[i]
+        comma <- if (i < length(sim_names)) "," else ""
+        lines <- c(lines, sprintf("  '%s' = list(rna = 'sim_%s_rna.csv', atac = 'sim_%s_atac.csv')%s", m, m, m, comma))
+      }
+      lines <- c(lines, ")",
+        "SIM_DATA_FILE   <- 'sim_scMultiSim_rna.csv' # Primary simulator for Distribution QC",
+        ""
+      )
+    } else {
+      lines <- c(lines,
+        "# 2. Input Single-Cell Count Matrix & Annotations:",
+        "# Update paths to your empirical reference and simulated datasets on HPC/cloud:",
+        "REF_MATRIX_FILE <- 'reference_counts.csv' # (Supported: .csv, .tsv, .rds, .mtx, .xlsx)",
+        "REF_DATA_FILE   <- REF_MATRIX_FILE        # Alias for Distribution QC workflow",
+        "CELL_TYPES_FILE <- 'cell_types.csv'       # (Optional: cell barcode to cell type mapping)",
+        "BATCH_FILE      <- 'batches.csv'          # (Optional: cell barcode to batch mapping)",
+        "",
+        "# Simulated Count Matrices for Evaluated Simulators:"
+      )
+      sim_names <- if (!is.null(rv$methods) && length(rv$methods) > 0) rv$methods else c("scDesign3", "Splatter", "SCRIP", "SymSim")
+      lines <- c(lines, "SIMULATOR_FILES <- list(")
+      for (i in seq_along(sim_names)) {
+        m <- sim_names[i]
+        comma <- if (i < length(sim_names)) "," else ""
+        lines <- c(lines, sprintf("  '%s' = 'sim_%s_counts.csv'%s", m, m, comma))
+      }
+      lines <- c(lines, ")",
+        "SIM_DATA_FILE   <- 'sim_scDesign3_counts.csv' # Primary simulator for Distribution QC",
+        ""
+      )
+    }
+    
+    lines <- c(lines,
+      "# 3. HPC Parallel Acceleration & Output Configuration:",
+      "NUM_THREADS <- 4L                   # Number of CPU cores for parallel metric evaluation",
+      "OUTPUT_DIR  <- './scSimEval_output' # Directory where figures and results tables will be saved",
+      "if (!dir.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR, recursive = TRUE)",
+      "# ==============================================================================",
+      ""
+    )
+    return(paste(lines, collapse = "\n"))
+  }
+
   # Generator for Standalone Reproducible Analytical Workflow Script for Comparative Bubble Matrix
   generate_bubble_plot_script <- function() {
     date_str <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
@@ -6687,13 +7419,6 @@ server <- function(input, output, session) {
     w_in <- round(max(10, w_px / 95), 2)
     h_in <- round(max(4.5, min(14, 2.5 + 35 * 0.16)), 2)
     
-    plot_df <- df_raw
-    if (!"Dataset" %in% colnames(plot_df)) plot_df$Dataset <- "Dataset 1"
-    clean_cols <- intersect(c("Dataset", "Method", "Category", "Property", "Metric", "Score_Raw", "Score", "Value"), colnames(plot_df))
-    plot_df_clean <- plot_df[, clean_cols, drop = FALSE]
-    if (nrow(plot_df_clean) > 800) plot_df_clean <- head(plot_df_clean, 800)
-    
-    df_dput <- paste(capture.output(dput(plot_df_clean)), collapse = "\n")
     methods_code <- paste0("c(", paste(sprintf("\"%s\"", selected_methods), collapse = ", "), ")")
     metrics_code <- if (!is.null(selected_metrics) && length(selected_metrics) > 0) {
       paste0("c(", paste(sprintf("\"%s\"", selected_metrics), collapse = ", "), ")")
@@ -6727,20 +7452,35 @@ server <- function(input, output, session) {
       "# ------------------------------------------------------------------------------",
       "# WORKFLOW STEP 2: Ingest Benchmark Evaluation Data",
       "# ------------------------------------------------------------------------------",
-      "# You can supply your own benchmark results table:",
-      "#   benchmark_data <- utils::read.csv('scSimEval_benchmark_results.csv', stringsAsFactors = FALSE)",
-      "#   benchmark_data <- readRDS('scSimEval_benchmark_data.rds')$benchmark_summary_table",
-      "#",
-      "# For immediate standalone execution, active session benchmark data is embedded below:",
-      paste0("benchmark_data <- ", df_dput),
+      "# Check if benchmark results file exists (see FILE PATH CONFIGURATION at end of script)",
+      "if (!exists('BENCHMARK_RESULTS_FILE')) BENCHMARK_RESULTS_FILE <- 'scSimEval_benchmark_results.csv'",
       "",
-      "cat(sprintf('[scSimEval Workflow] Step 2: Ingested %d benchmark observations across %d simulators.\n', nrow(benchmark_data), length(unique(benchmark_data$Method))))",
+      "if (file.exists(BENCHMARK_RESULTS_FILE)) {",
+      "  cat(sprintf('[scSimEval Workflow] Step 2: Loading benchmark evaluation data from: %s\n', BENCHMARK_RESULTS_FILE))",
+      "  if (endsWith(tolower(BENCHMARK_RESULTS_FILE), '.rds')) {",
+      "    obj <- readRDS(BENCHMARK_RESULTS_FILE)",
+      "    benchmark_data <- if (is.data.frame(obj)) obj else (obj$benchmark_summary_table %||% obj$benchmark_df)",
+      "  } else {",
+      "    benchmark_data <- utils::read.csv(BENCHMARK_RESULTS_FILE, stringsAsFactors = FALSE, check.names = FALSE)",
+      "  }",
+      "} else {",
+      "  cat(sprintf('[scSimEval Workflow] Step 2: BENCHMARK_RESULTS_FILE (\"%s\") not found on disk.\n', BENCHMARK_RESULTS_FILE))",
+      "  cat('  Please set the correct path in the FILE PATH CONFIGURATION section at the bottom of this script.\n')",
+      "  cat('  Loading package demo benchmark database for execution demonstration...\n')",
+      "  pth <- system.file('shiny/scSimEvalApp/data/demo_benchmark_data.rds', package = 'scSimEval')",
+      "  if (file.exists(pth)) {",
+      "    demo_obj <- readRDS(pth)",
+      "    benchmark_data <- demo_obj$benchmark_summary_table %||% demo_obj$benchmark_df",
+      "  } else {",
+      "    stop(sprintf('File \"%s\" not found. Please set the correct path in FILE PATH CONFIGURATION at the end of the script.', BENCHMARK_RESULTS_FILE))",
+      "  }",
+      "}",
+      "",
+      "cat(sprintf('[scSimEval Workflow] Ingested %d benchmark observations across %d simulators.\n', nrow(benchmark_data), length(unique(benchmark_data$Method)))),",
       "",
       "# ------------------------------------------------------------------------------",
       "# WORKFLOW STEP 3: Multi-Dataset Harmonization & Cross-Dataset Aggregation",
       "# ------------------------------------------------------------------------------",
-      "# For studies spanning multiple experimental datasets, cross-dataset averaging",
-      "# prevents individual dataset artifacts from dominating overall simulator rank.",
       sprintf("dataset_scope <- '%s'", dataset_choice),
       "df <- benchmark_data",
       "if (!'Dataset' %in% colnames(df)) df$Dataset <- 'Dataset 1'",
@@ -6754,6 +7494,7 @@ server <- function(input, output, session) {
       "  colnames(agg_score)[4] <- score_col",
       "  agg_score$Dataset <- sprintf('All Datasets (Average of %d Datasets)', length(all_dsets))",
       "  if ('Score_Raw' %in% colnames(df)) agg_score$Score_Raw <- stats::aggregate(df$Score_Raw, by = list(Method = df$Method, Category = df$Category, Metric = df$Metric), FUN = mean, na.rm = TRUE)[[4]]",
+      "  if ('Score_Norm' %in% colnames(df)) agg_score$Score_Norm <- stats::aggregate(df$Score_Norm, by = list(Method = df$Method, Category = df$Category, Metric = df$Metric), FUN = mean, na.rm = TRUE)[[4]]",
       "  df <- agg_score",
       "} else if (!identical(dataset_scope, 'all_avg') && dataset_scope %in% all_dsets) {",
       "  cat(sprintf('[scSimEval Workflow] Step 3: Subsetting strictly to dataset: %s\n', dataset_scope))",
@@ -6780,19 +7521,15 @@ server <- function(input, output, session) {
       "  }",
       "}",
       "",
-      "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 5: Score Normalization Protocol",
-      "# ------------------------------------------------------------------------------",
-      "# scSimEval applies a standardized 2-step normalization pipeline:",
-      "#   1. Direction Inversion: For error/distance metrics (KS, Wasserstein, runtime),",
-      "#      scores are inverted so higher values consistently indicate higher fidelity.",
-      "#   2. Min-Max Scaling: All measures are mapped to [0, 1] across simulators.",
-      "# plot_benchmark_bubble_matrix automatically ensures complete normalization.",
+      "# Standardize canonical category names",
+      "if (exists('standardize_benchmark_categories', where = asNamespace('scSimEval'), mode = 'function')) {",
+      "  df <- scSimEval::standardize_benchmark_categories(df)",
+      "}",
       "",
       "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 6: High-Density Comparative Bubble Matrix Construction",
+      "# WORKFLOW STEP 5: High-Density Comparative Bubble Matrix Construction",
       "# ------------------------------------------------------------------------------",
-      "cat('[scSimEval Workflow] Step 6: Rendering publication comparative bubble matrix...\n')",
+      "cat('[scSimEval Workflow] Step 5: Rendering publication comparative bubble matrix...\n')",
       "p <- plot_benchmark_bubble_matrix(",
       "  data              = df,",
       "  base_size         = 11,",
@@ -6802,7 +7539,7 @@ server <- function(input, output, session) {
       ")",
       "",
       "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 7: Publication Labels & Annotation",
+      "# WORKFLOW STEP 6: Publication Labels & Annotation",
       "# ------------------------------------------------------------------------------",
       sprintf("show_title   <- %s", if (show_title) "TRUE" else "FALSE"),
       sprintf("custom_title <- '%s'", custom_title),
@@ -6811,12 +7548,12 @@ server <- function(input, output, session) {
       "} else {",
       "  main_title <- if (nzchar(custom_title)) custom_title else if (identical(dataset_scope, 'all_avg') && length(all_dsets) > 1) 'Benchmark Evaluation of Single-Cell Simulators' else 'Comparative Evaluation of Single-Cell Simulators'",
       "  sub_title  <- if (identical(dataset_scope, 'all_avg') && length(all_dsets) > 1) sprintf('Standardized fidelity scores [0, 1] averaged across %d benchmark datasets', length(all_dsets)) else sprintf('Standardized fidelity scores [0, 1] across evaluation tiers')",
-      "  caption_text <- 'Circle: standard (< 0.96) | Square: top performer (>= 0.96) | Higher score = closer concordance with empirical reference.'",
+      "  caption_text <- 'Circle: standard | Bold circle outline: top-performing simulator for the metric | Higher score = closer concordance with empirical reference.'",
       "  p <- p + ggplot2::labs(title = main_title, subtitle = sub_title, caption = caption_text)",
       "}",
       "",
       "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 8: Multi-Format High-Resolution Export (Vector PDF & 600 DPI JPEG)",
+      "# WORKFLOW STEP 7: Multi-Format High-Resolution Export (Vector PDF & 600 DPI JPEG)",
       "# ------------------------------------------------------------------------------",
       sprintf("export_width  <- %.2f", w_in),
       sprintf("export_height <- %.2f", h_in),
@@ -6827,7 +7564,8 @@ server <- function(input, output, session) {
       "ggplot2::ggsave(jpeg_file, plot = p, width = export_width, height = export_height, dpi = 600)",
       "",
       "cat(sprintf('[scSimEval Workflow] Complete! Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG (600 DPI): %s\n', pdf_file, jpeg_file))",
-      ""
+      "",
+      get_workflow_file_paths_block("bubble")
     )
     return(paste(out, collapse = "\n"))
   }
@@ -6857,14 +7595,43 @@ server <- function(input, output, session) {
   # ============================================================================
   
   # Centralized multi-dataset filtering and cross-dataset arithmetic average helper
-  get_viz_benchmark_data <- function(dataset_choice = NULL) {
+  get_viz_benchmark_data <- function(dataset_choice = NULL, modality_choice = NULL) {
     req(rv$benchmark_df)
     df <- rv$benchmark_df
     if (!"Dataset" %in% colnames(df)) df$Dataset <- "Dataset 1"
     
-    choice <- dataset_choice %||% (input$sel_viz_dataset_view %||% (input$sel_bubble_dataset_view %||% "all_avg"))
+    active_subtab <- input$viz_subtabs %||% "1. Evaluation Summary"
+    tab_dset <- if (grepl("1\\.", active_subtab)) input$sel_sum_dataset else
+                if (grepl("2\\.", active_subtab)) input$sel_dist_dataset else
+                if (grepl("3\\.", active_subtab)) input$sel_scale_dataset else
+                if (grepl("4\\.", active_subtab)) (if (identical(input$opt_box_view_mode, "category")) input$sel_box_dataset_cat else input$sel_box_dataset) else
+                if (grepl("5\\.", active_subtab)) input$sel_heat_dataset else
+                if (grepl("6\\.", active_subtab)) input$sel_pca_dataset else
+                if (grepl("7\\.", active_subtab)) input$sel_mds_dataset else
+                if (grepl("8\\.", active_subtab)) input$sel_emb_dataset else NULL
+    choice <- dataset_choice %||% (tab_dset %||% (input$sel_viz_dataset_view %||% (input$sel_bubble_dataset_view %||% "all_avg")))
     all_dsets <- unique(as.character(df$Dataset))
     all_dsets <- all_dsets[!is.na(all_dsets) & all_dsets != ""]
+    
+    # 1. Modality Filter
+    tab_mod <- if (grepl("1\\.", active_subtab)) input$sel_sum_modality else
+               if (grepl("2\\.", active_subtab)) input$sel_dist_modality else
+               if (grepl("3\\.", active_subtab)) input$sel_scale_modality else
+               if (grepl("4\\.", active_subtab)) (if (identical(input$opt_box_view_mode, "category")) input$sel_box_modality_cat else input$sel_box_modality) else
+               if (grepl("5\\.", active_subtab)) input$sel_heat_modality else
+               if (grepl("6\\.", active_subtab)) input$sel_pca_modality else
+               if (grepl("7\\.", active_subtab)) input$sel_mds_modality else
+               if (grepl("8\\.", active_subtab)) input$sel_emb_modality else NULL
+    mod_sel <- modality_choice %||% (tab_mod %||% (input$sel_viz_modality %||% (input$sel_bubble_modality %||% "all")))
+    if ("Modality" %in% colnames(df) && !identical(mod_sel, "all")) {
+      if (identical(mod_sel, "RNA") || identical(mod_sel, "rna")) {
+        df <- df[grepl("RNA", df$Modality, ignore.case = TRUE) | df$Modality %in% c("Computation", "Total"), , drop = FALSE]
+      } else if (identical(mod_sel, "ATAC") || identical(mod_sel, "atac")) {
+        df <- df[grepl("ATAC", df$Modality, ignore.case = TRUE) | df$Modality %in% c("Computation", "Total"), , drop = FALSE]
+      } else if (identical(mod_sel, "Joint")) {
+        df <- df[grepl("Joint", df$Modality, ignore.case = TRUE) | df$Modality %in% c("Computation", "Total"), , drop = FALSE]
+      }
+    }
     
     if (identical(choice, "all_avg") && length(all_dsets) > 1) {
       score_col <- if ("Score" %in% colnames(df)) "Score" else "Value"
@@ -6885,6 +7652,10 @@ server <- function(input, output, session) {
         agg_norm <- stats::aggregate(df$Score_Norm, by = list(Method = df$Method, Category = df$Category, Metric = df$Metric), FUN = mean, na.rm = TRUE)
         agg_score$Score_Norm <- agg_norm[[4]]
       }
+      if ("Modality" %in% colnames(df)) {
+        agg_mod <- stats::aggregate(df$Modality, by = list(Method = df$Method, Category = df$Category, Metric = df$Metric), FUN = function(x) x[1])
+        agg_score$Modality <- agg_mod[[4]]
+      }
       return(agg_score)
     } else if (!identical(choice, "all_avg") && choice %in% all_dsets) {
       return(df[df$Dataset == choice, , drop = FALSE])
@@ -6895,45 +7666,72 @@ server <- function(input, output, session) {
   # Global Visualizations Dataset Navigation Bar
   output$ui_viz_global_dataset_bar <- renderUI({
     dsets <- available_bubble_datasets()
-    if (length(dsets) <= 1) return(NULL)
+    has_multi <- !is.null(rv$benchmark_df) && "Modality" %in% colnames(rv$benchmark_df) &&
+      (any(grepl("RNA", rv$benchmark_df$Modality, ignore.case = TRUE)) && any(grepl("ATAC", rv$benchmark_df$Modality, ignore.case = TRUE)))
+    if (length(dsets) <= 1 && !has_multi) return(NULL)
     
     current_sel <- input$sel_viz_dataset_view %||% (input$sel_bubble_dataset_view %||% "all_avg")
     
-    btn_all <- actionButton(
-      "btn_viz_view_dataset_all",
-      label = tagList(icon("chart-pie", class = "me-1"), sprintf("All Datasets (Average Across %d Datasets)", length(dsets))),
-      class = paste0("btn btn-sm me-1 mb-1 ", if (identical(current_sel, "all_avg")) "btn-primary active fw-bold" else "btn-outline-secondary"),
-      onclick = "Shiny.setInputValue('sel_viz_dataset_view', 'all_avg'); Shiny.setInputValue('sel_bubble_dataset_view', 'all_avg');"
-    )
-    
-    dset_btns <- lapply(seq_along(dsets), function(i) {
-      d <- dsets[i]
+    btn_all <- if (length(dsets) > 1) {
       actionButton(
-        paste0("btn_viz_view_dataset_", i),
-        label = tagList(icon("database", class = "me-1"), d),
-        class = paste0("btn btn-sm me-1 mb-1 ", if (identical(current_sel, d)) "btn-primary active fw-bold" else "btn-outline-secondary"),
-        onclick = sprintf("Shiny.setInputValue('sel_viz_dataset_view', '%s'); Shiny.setInputValue('sel_bubble_dataset_view', '%s');", d, d)
+        "btn_viz_view_dataset_all",
+        label = tagList(icon("chart-pie", class = "me-1"), sprintf("All Datasets (Average Across %d Datasets)", length(dsets))),
+        class = paste0("btn btn-sm me-1 mb-1 ", if (identical(current_sel, "all_avg")) "btn-primary active fw-bold" else "btn-outline-secondary"),
+        onclick = "Shiny.setInputValue('sel_viz_dataset_view', 'all_avg'); Shiny.setInputValue('sel_bubble_dataset_view', 'all_avg');"
       )
-    })
+    } else NULL
+    
+    dset_btns <- if (length(dsets) > 1) {
+      lapply(seq_along(dsets), function(i) {
+        d <- dsets[i]
+        actionButton(
+          paste0("btn_viz_view_dataset_", i),
+          label = tagList(icon("database", class = "me-1"), d),
+          class = paste0("btn btn-sm me-1 mb-1 ", if (identical(current_sel, d)) "btn-primary active fw-bold" else "btn-outline-secondary"),
+          onclick = sprintf("Shiny.setInputValue('sel_viz_dataset_view', '%s'); Shiny.setInputValue('sel_bubble_dataset_view', '%s');", d, d)
+        )
+      })
+    } else NULL
     
     choices <- list()
-    choices[[sprintf("All Datasets (Average Across %d Datasets)", length(dsets))]] <- "all_avg"
-    for (d in dsets) choices[[d]] <- d
+    if (length(dsets) > 1) {
+      choices[[sprintf("All Datasets (Average Across %d Datasets)", length(dsets))]] <- "all_avg"
+      for (d in dsets) choices[[d]] <- d
+    }
+    
+    mod_selector <- if (has_multi) {
+      div(
+        class = "d-flex align-items-center gap-1",
+        span(class = "fw-bold text-dark", style = "font-size: 0.86rem;", icon("dna", class = "me-1 text-primary"), "Assay Modality:"),
+        selectInput(
+          "sel_viz_modality", NULL,
+          choices = c(
+            "All Modalities (Combined Multiomics)" = "all",
+            "scRNA-seq (Transcriptome)" = "RNA",
+            "scATAC-seq (Chromatin Accessibility)" = "ATAC",
+            "Cross-Modal Coupling (Joint Multiomics)" = "Joint"
+          ),
+          selected = input$sel_viz_modality %||% "all",
+          width = "230px"
+        )
+      )
+    } else NULL
     
     div(
       class = "p-2 mb-3 bg-light border rounded d-flex justify-content-between align-items-center flex-wrap gap-2",
       style = "border-left: 4px solid #2563EB !important;",
       div(
         class = "d-flex align-items-center flex-wrap gap-1",
-        div(class = "fw-bold text-dark me-2", style = "font-size: 0.86rem;", icon("layer-group", class = "me-1 text-primary"), "Active Dataset Scope:"),
+        if (length(dsets) > 1) div(class = "fw-bold text-dark me-2", style = "font-size: 0.86rem;", icon("layer-group", class = "me-1 text-primary"), "Active Dataset Scope:") else NULL,
         btn_all,
         dset_btns
       ),
       div(
-        class = "d-flex align-items-center gap-2",
-        span(class = "badge bg-primary px-2 py-1", style = "font-size: 0.80rem;",
-             if (identical(current_sel, "all_avg")) sprintf("Viewing: Average (%d Datasets)", length(dsets)) else sprintf("Viewing: %s", current_sel)),
-        selectInput("sel_viz_dataset_view", NULL, choices = choices, selected = current_sel, width = "220px")
+        class = "d-flex align-items-center flex-wrap gap-2",
+        mod_selector,
+        if (length(dsets) > 1) span(class = "badge bg-primary px-2 py-1", style = "font-size: 0.80rem;",
+             if (identical(current_sel, "all_avg")) sprintf("Viewing: Average (%d Datasets)", length(dsets)) else sprintf("Viewing: %s", current_sel)) else NULL,
+        if (length(dsets) > 1) selectInput("sel_viz_dataset_view", NULL, choices = choices, selected = current_sel, width = "220px") else NULL
       )
     )
   })
@@ -6945,15 +7743,64 @@ server <- function(input, output, session) {
   # Active Badge Renderers for all 8 Sub-panels
   lapply(c("sum", "dist", "scale", "box", "heat", "pca", "mds", "emb"), function(tag) {
     output[[paste0("ui_viz_active_badge_", tag)]] <- renderUI({
-      d_sel <- input$sel_viz_dataset_view %||% (input$sel_bubble_dataset_view %||% "all_avg")
+      d_sel <- switch(tag,
+        sum   = input$sel_sum_dataset,
+        dist  = input$sel_dist_dataset,
+        scale = input$sel_scale_dataset,
+        box   = input$sel_box_dataset,
+        heat  = input$sel_heat_dataset,
+        pca   = input$sel_pca_dataset,
+        mds   = input$sel_mds_dataset,
+        emb   = input$sel_emb_dataset,
+        input$sel_viz_dataset_view %||% "all_avg"
+      ) %||% (input$sel_viz_dataset_view %||% "all_avg")
       n_d <- if (!is.null(rv$benchmark_df) && "Dataset" %in% colnames(rv$benchmark_df)) length(unique(rv$benchmark_df$Dataset)) else 1
       label <- if (identical(d_sel, "all_avg") && n_d > 1) sprintf("All %d Datasets (Average)", n_d) else if (identical(d_sel, "all_avg")) "All Datasets" else d_sel
-      span(class = "badge bg-primary-subtle text-primary border border-primary-subtle", style = "font-size: 0.80rem;",
-           icon("database", class = "me-1"), label)
+      
+      mod_tag <- input$sel_viz_modality %||% (input$sel_bubble_modality %||% "all")
+      mod_badge <- if (!identical(mod_tag, "all")) {
+        span(class = "badge bg-info-subtle text-info border border-info-subtle ms-1", style = "font-size: 0.80rem;",
+             icon("dna", class = "me-1"), switch(mod_tag, RNA = "scRNA-seq", ATAC = "scATAC-seq", Joint = "Cross-Modal", mod_tag))
+      } else NULL
+      
+      tagList(
+        span(class = "badge bg-primary-subtle text-primary border border-primary-subtle", style = "font-size: 0.80rem;",
+             icon("database", class = "me-1"), label),
+        mod_badge
+      )
     })
   })
   
   # Subpanel 2 (Distribution QC) Selectors
+  # Standardized Per-Subtab Dataset Selectors
+  lapply(c("sum", "scale", "box", "heat", "pca", "mds"), function(tab) {
+    output[[paste0("ui_", tab, "_dataset_selector")]] <- renderUI({
+      dsets <- available_bubble_datasets()
+      if (is.null(dsets) || length(dsets) == 0) return(NULL)
+      choices <- list()
+      if (length(dsets) > 1 && tab %in% c("sum", "box", "heat", "pca", "mds")) {
+        choices[[sprintf("All Datasets (Average Across %d Datasets)", length(dsets))]] <- "all_avg"
+      }
+      for (d in dsets) choices[[d]] <- d
+      current_sel <- input[[paste0("sel_", tab, "_dataset")]] %||% choices[[1]]
+      if (!isTRUE(current_sel %in% unlist(choices))) current_sel <- choices[[1]]
+      selectInput(paste0("sel_", tab, "_dataset"), "Select Dataset:", choices = choices, selected = current_sel)
+    })
+  })
+
+  output$ui_box_dataset_selector_cat <- renderUI({
+    dsets <- available_bubble_datasets()
+    if (is.null(dsets) || length(dsets) == 0) return(NULL)
+    choices <- list()
+    if (length(dsets) > 1) {
+      choices[[sprintf("All Datasets (Average Across %d Datasets)", length(dsets))]] <- "all_avg"
+    }
+    for (d in dsets) choices[[d]] <- d
+    current_sel <- input$sel_box_dataset %||% choices[[1]]
+    if (!isTRUE(current_sel %in% unlist(choices))) current_sel <- choices[[1]]
+    selectInput("sel_box_dataset", "Select Dataset:", choices = choices, selected = current_sel)
+  })
+
   output$ui_dist_dataset_selector <- renderUI({
     dsets <- available_bubble_datasets()
     if (is.null(dsets) || length(dsets) == 0) return(NULL)
@@ -6963,13 +7810,58 @@ server <- function(input, output, session) {
     }
     selectInput("sel_dist_dataset", "Dataset Reference:", choices = dsets, selected = current_sel)
   })
+  output$ui_dist_modality_selector <- renderUI({
+    req(rv$benchmark_df)
+    has_multi <- "Modality" %in% colnames(rv$benchmark_df) &&
+      (any(grepl("RNA", rv$benchmark_df$Modality, ignore.case = TRUE)) && any(grepl("ATAC", rv$benchmark_df$Modality, ignore.case = TRUE)))
+    if (!has_multi) return(NULL)
+    selectInput(
+      "sel_dist_modality", "Assay Modality:",
+      choices = c("scRNA-seq (Transcriptome)" = "RNA", "scATAC-seq (Chromatin Accessibility)" = "ATAC"),
+      selected = input$sel_dist_modality %||% "RNA"
+    )
+  })
   output$ui_dist_sim_selector <- renderUI({
-    sim_choices <- if (!is.null(rv$methods)) rv$methods else paste0("Simulator ", 1:6)
+    cur_dset <- input$sel_dist_dataset %||% (input$sel_viz_dataset_view %||% "Dataset 1")
+    sim_choices <- if (!is.null(rv$benchmark_df) && "Dataset" %in% colnames(rv$benchmark_df)) {
+      sub_bm <- rv$benchmark_df[rv$benchmark_df$Dataset == cur_dset, ]
+      if (nrow(sub_bm) > 0) unique(sub_bm$Method) else rv$methods
+    } else {
+      rv$methods
+    }
+    if (is.null(sim_choices) || length(sim_choices) == 0) sim_choices <- paste0("Simulator ", 1:6)
     current_sel <- input$sel_dist_sim %||% sim_choices[1]
+    if (!current_sel %in% sim_choices) current_sel <- sim_choices[1]
     selectInput("sel_dist_sim", "Simulator:", choices = sim_choices, selected = current_sel)
   })
   
-  # Subpanel 8 (Cell Embeddings) Dataset Selector
+  # Standardized Per-Subtab Modality Selectors (Tabs 4, 5, 6, 7)
+  lapply(c("box", "heat", "pca", "mds"), function(tab) {
+    output[[paste0("ui_", tab, "_modality_selector")]] <- renderUI({
+      req(rv$benchmark_df)
+      choices <- c("All Modalities Combined" = "all", "scRNA-seq (Transcriptome)" = "RNA", "scATAC-seq (Chromatin Accessibility)" = "ATAC")
+      current_sel <- input[[paste0("sel_", tab, "_modality")]] %||% "all"
+      selectInput(paste0("sel_", tab, "_modality"), "Assay Modality:", choices = choices, selected = current_sel)
+    })
+  })
+  output$ui_box_modality_selector_cat <- renderUI({
+    req(rv$benchmark_df)
+    choices <- c("All Modalities Combined" = "all", "scRNA-seq (Transcriptome)" = "RNA", "scATAC-seq (Chromatin Accessibility)" = "ATAC")
+    current_sel <- input$sel_box_modality %||% "all"
+    selectInput("sel_box_modality", "Assay Modality:", choices = choices, selected = current_sel)
+  })
+  output$ui_scale_modality_selector <- renderUI({
+    req(rv$benchmark_df)
+    choices <- c(
+      "Combined / Total Scalability" = "total",
+      "scRNA-seq Simulation Layer"  = "rna",
+      "scATAC-seq Simulation Layer" = "atac"
+    )
+    current_sel <- input$sel_scale_modality %||% "total"
+    selectInput("sel_scale_modality", "Scalability Layer:", choices = choices, selected = current_sel)
+  })
+
+  # Subpanel 8 (Cell Embeddings) Dataset & Modality Selectors
   output$ui_emb_dataset_selector <- renderUI({
     dsets <- available_bubble_datasets()
     if (is.null(dsets) || length(dsets) == 0) return(NULL)
@@ -6979,6 +7871,11 @@ server <- function(input, output, session) {
     }
     selectInput("sel_emb_dataset", "Dataset to Project:", choices = dsets, selected = current_sel)
   })
+  output$ui_emb_modality_selector <- renderUI({
+    choices <- c("scRNA-seq (Transcriptome)" = "RNA", "scATAC-seq (Chromatin Accessibility)" = "ATAC")
+    current_sel <- input$sel_emb_modality %||% "RNA"
+    selectInput("sel_emb_modality", "Assay Modality:", choices = choices, selected = current_sel)
+  })
   
   # ============================================================================
   # Standalone R Script Generators for Diagnostic Visualizations (Analytical Workflow)
@@ -6987,227 +7884,229 @@ server <- function(input, output, session) {
     req(rv$benchmark_df)
     df_raw <- rv$benchmark_df
     date_str <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
-    clean_cols <- intersect(c("Dataset", "Method", "Category", "Property", "Metric", "Score_Raw", "Score", "Value"), colnames(df_raw))
-    df_clean <- df_raw[, clean_cols, drop = FALSE]
-    if (nrow(df_clean) > 800) df_clean <- head(df_clean, 800)
-    df_dput <- paste(capture.output(dput(df_clean)), collapse = "\n")
     d_view <- input$sel_viz_dataset_view %||% (input$sel_bubble_dataset_view %||% "all_avg")
+    mod_view <- input$sel_viz_modality %||% (input$sel_bubble_modality %||% "all")
     
-    out_header <- c(
+    script_title <- switch(plot_type,
+      summary = "Evaluation Summary (Radar & Horizontal Category Bars)",
+      scale   = "Computational Scalability Benchmark (Runtime vs Memory)",
+      box     = if (identical(input$opt_box_view_mode, "individual")) "Individual Metric Performance Barplot" else "Category Metric Distribution Boxplots",
+      heat    = "Method-by-Metric Comprehensive Heatmap",
+      pca     = "Principal Component Analysis (PCA) Ordination",
+      mds     = "Multidimensional Scaling (MDS) Metric Space Projection",
+      toupper(plot_type)
+    )
+    
+    out <- c(
       "#!/usr/bin/env Rscript",
       "# ==============================================================================",
-      sprintf("# scSimEval: %s Analysis Workflow", switch(plot_type, summary = "Evaluation Summary", scale = "Computational Scalability Benchmark", box = "Metric Performance Distribution", heat = "Method-by-Metric Heatmap", pca = "Principal Component Analysis (PCA) Ordination", mds = "Multidimensional Scaling (MDS) Metric Space", toupper(plot_type))),
+      sprintf("# scSimEval: %s Analysis Workflow", script_title),
       sprintf("# Generated on: %s", date_str),
-      sprintf("# Active Dataset Scope: %s", d_view),
+      sprintf("# Active Dataset Scope: %s | Modality Scope: %s", d_view, mod_view),
       "# ==============================================================================",
       "# Standalone analytical workflow script implementing scSimEval diagnostic visualization.",
-      "# Contains structured analysis steps, clean dependencies, and publication exports.",
+      "# Non-coding users can copy this script to HPC, cloud computing, or computing clusters",
+      "# and run it directly by modifying the FILE PATH CONFIGURATION at the end of the script.",
       "# ==============================================================================",
       "",
       "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 1: Environment Setup & Package Dependencies",
+      "# WORKFLOW FUNCTION DEFINITION",
       "# ------------------------------------------------------------------------------",
-      "suppressPackageStartupMessages({",
-      "  library(scSimEval)",
-      "  library(ggplot2)",
-      "})",
+      "run_visualization_workflow <- function(",
+      "  benchmark_file = BENCHMARK_RESULTS_FILE,",
+      "  output_dir     = OUTPUT_DIR,",
+      sprintf("  dataset_scope  = '%s',", d_view),
+      sprintf("  modality_scope = '%s'", mod_view),
+      ") {",
+      "  suppressPackageStartupMessages({",
+      "    library(scSimEval)",
+      "    library(ggplot2)",
+      "  })",
       "",
-      "cat('[scSimEval Workflow] Step 1: Environment initialized successfully.\n')",
+      "  if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)",
+      "  cat('[scSimEval Workflow] Step 1: Environment initialized successfully.\n')",
       "",
-      "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 2: Ingest Benchmark Evaluation Data",
-      "# ------------------------------------------------------------------------------",
-      "# Load your exported benchmark dataset:",
-      "#   benchmark_data <- utils::read.csv('scSimEval_benchmark_results.csv', stringsAsFactors = FALSE)",
-      "#   benchmark_data <- readRDS('scSimEval_benchmark_data.rds')$benchmark_summary_table",
-      paste0("benchmark_data <- ", df_dput),
+      "  # Step 2: Ingest Benchmark Evaluation Data",
+      "  if (file.exists(benchmark_file)) {",
+      "    cat(sprintf('[scSimEval Workflow] Step 2: Ingesting benchmark evaluation data from: %s\n', benchmark_file))",
+      "    if (endsWith(tolower(benchmark_file), '.rds')) {",
+      "      obj <- readRDS(benchmark_file)",
+      "      benchmark_data <- if (is.data.frame(obj)) obj else (obj$benchmark_summary_table %||% obj$benchmark_df)",
+      "    } else {",
+      "      benchmark_data <- utils::read.csv(benchmark_file, stringsAsFactors = FALSE, check.names = FALSE)",
+      "    }",
+      "  } else {",
+      "    cat(sprintf('[scSimEval Workflow] Step 2: Specified file \"%s\" not found on disk.\n', benchmark_file))",
+      "    cat('  Please verify or update the path in FILE PATH CONFIGURATION at the end of this script.\n')",
+      "    cat('  Loading package demo benchmark database for execution verification...\n')",
+      "    demo_pth <- system.file('shiny/scSimEvalApp/data/demo_benchmark_data.rds', package = 'scSimEval')",
+      "    if (file.exists(demo_pth)) {",
+      "      demo_obj <- readRDS(demo_pth)",
+      "      benchmark_data <- demo_obj$benchmark_summary_table %||% demo_obj$benchmark_df",
+      "    } else {",
+      "      stop(sprintf('File \"%s\" not found. Please edit FILE PATH CONFIGURATION at the end of the script.', benchmark_file))",
+      "    }",
+      "  }",
       "",
-      "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 3: Multi-Dataset Harmonization & Cross-Dataset Aggregation",
-      "# ------------------------------------------------------------------------------",
-      sprintf("dataset_scope <- '%s'", d_view),
-      "df <- benchmark_data",
-      "if (!'Dataset' %in% colnames(df)) df$Dataset <- 'Dataset 1'",
-      "all_dsets <- unique(as.character(df$Dataset))",
-      "all_dsets <- all_dsets[!is.na(all_dsets) & all_dsets != '']",
-      "if (identical(dataset_scope, 'all_avg') && length(all_dsets) > 1) {",
-      "  score_col <- if ('Score' %in% colnames(df)) 'Score' else 'Value'",
-      "  agg_score <- stats::aggregate(df[[score_col]], by = list(Method = df$Method, Category = df$Category, Metric = df$Metric), FUN = mean, na.rm = TRUE)",
-      "  colnames(agg_score)[4] <- score_col",
-      "  agg_score$Dataset <- sprintf('All Datasets (Average of %d Datasets)', length(all_dsets))",
-      "  if ('Score_Raw' %in% colnames(df)) agg_score$Score_Raw <- stats::aggregate(df$Score_Raw, by = list(Method = df$Method, Category = df$Category, Metric = df$Metric), FUN = mean, na.rm = TRUE)[[4]]",
-      "  df <- agg_score",
-      "} else if (!identical(dataset_scope, 'all_avg') && dataset_scope %in% all_dsets) {",
-      "  df <- df[df$Dataset == dataset_scope, , drop = FALSE]",
-      "}",
+      "  df <- benchmark_data",
+      "  if (!'Dataset' %in% colnames(df)) df$Dataset <- 'Dataset 1'",
+      "  if (exists('standardize_benchmark_categories', where = asNamespace('scSimEval'), mode = 'function')) {",
+      "    df <- scSimEval::standardize_benchmark_categories(df)",
+      "  }",
+      "",
+      "  # Step 3: Modality & Multi-Dataset Harmonization",
+      "  if ('Modality' %in% colnames(df) && !identical(modality_scope, 'all')) {",
+      "    cat(sprintf('[scSimEval Workflow] Filtering for modality: %s\n', modality_scope))",
+      "    if (identical(modality_scope, 'RNA')) df <- df[df$Modality %in% c('RNA', 'Computation'), , drop = FALSE]",
+      "    else if (identical(modality_scope, 'ATAC')) df <- df[df$Modality %in% c('ATAC', 'Computation'), , drop = FALSE]",
+      "    else if (identical(modality_scope, 'Joint')) df <- df[df$Modality %in% c('Joint (Cross-Modal)', 'Computation'), , drop = FALSE]",
+      "  }",
+      "",
+      "  all_dsets <- unique(as.character(df$Dataset))",
+      "  all_dsets <- all_dsets[!is.na(all_dsets) & all_dsets != '']",
+      "  if (identical(dataset_scope, 'all_avg') && length(all_dsets) > 1) {",
+      "    score_col <- if ('Score' %in% colnames(df)) 'Score' else 'Value'",
+      "    cat(sprintf('[scSimEval Workflow] Computing cross-dataset average across %d datasets...\n', length(all_dsets)))",
+      "    agg_score <- stats::aggregate(df[[score_col]], by = list(Method = df$Method, Category = df$Category, Metric = df$Metric), FUN = mean, na.rm = TRUE)",
+      "    colnames(agg_score)[4] <- score_col",
+      "    agg_score$Dataset <- sprintf('All Datasets (Average of %d Datasets)', length(all_dsets))",
+      "    if ('Score_Raw' %in% colnames(df)) agg_score$Score_Raw <- stats::aggregate(df$Score_Raw, by = list(Method = df$Method, Category = df$Category, Metric = df$Metric), FUN = mean, na.rm = TRUE)[[4]]",
+      "    if ('Score_Norm' %in% colnames(df)) agg_score$Score_Norm <- stats::aggregate(df$Score_Norm, by = list(Method = df$Method, Category = df$Category, Metric = df$Metric), FUN = mean, na.rm = TRUE)[[4]]",
+      "    df <- agg_score",
+      "  } else if (!identical(dataset_scope, 'all_avg') && dataset_scope %in% all_dsets) {",
+      "    df <- df[df$Dataset == dataset_scope, , drop = FALSE]",
+      "  }",
       ""
     )
     
     out_body <- switch(plot_type,
       "summary" = c(
-        "# ------------------------------------------------------------------------------",
-        "# WORKFLOW STEP 4: Category-Averaged Performance & Simulator Leaderboard Ranking",
-        "# ------------------------------------------------------------------------------",
-        "cat_summary <- stats::aggregate(df$Score, by = list(Method = df$Method, Category = df$Category), FUN = mean, na.rm = TRUE)",
-        "colnames(cat_summary)[3] <- 'Mean_Category_Score'",
-        "overall_ranks <- stats::aggregate(cat_summary$Mean_Category_Score, by = list(Method = cat_summary$Method), FUN = mean, na.rm = TRUE)",
-        "colnames(overall_ranks) <- c('Method', 'Overall_Composite_Score')",
-        "overall_ranks <- overall_ranks[order(-overall_ranks$Overall_Composite_Score), ]",
-        "cat('[scSimEval Workflow] Step 4: Overall Simulator Ranking Summary:\n')",
-        "print(overall_ranks)",
+        "  # Step 4: Leaderboard Ranking & Evaluation Summary Figure",
+        "  cat_summary <- stats::aggregate(df$Score, by = list(Method = df$Method, Category = df$Category), FUN = mean, na.rm = TRUE)",
+        "  colnames(cat_summary)[3] <- 'Mean_Category_Score'",
+        "  overall_ranks <- stats::aggregate(cat_summary$Mean_Category_Score, by = list(Method = cat_summary$Method), FUN = mean, na.rm = TRUE)",
+        "  colnames(overall_ranks) <- c('Method', 'Overall_Composite_Score')",
+        "  overall_ranks <- overall_ranks[order(-overall_ranks$Overall_Composite_Score), ]",
+        "  cat('[scSimEval Workflow] Overall Simulator Ranking Summary:\n')",
+        "  print(overall_ranks)",
         "",
-        "# ------------------------------------------------------------------------------",
-        "# WORKFLOW STEP 5: Horizontal Evaluation Summary Visualization",
-        "# ------------------------------------------------------------------------------",
-        "cat('[scSimEval Workflow] Step 5: Generating horizontal summary bar chart...\n')",
-        sprintf("p <- plot_evaluation_summary(data = df, show_labels = %s, normalize_scores = %s, base_size = 14)", input$chk_sum_labels %||% TRUE, input$chk_sum_norm %||% TRUE),
+        "  cat('[scSimEval Workflow] Step 5: Generating horizontal summary visualization...\n')",
+        sprintf("  p <- plot_evaluation_summary(data = df, show_labels = %s, normalize_scores = %s, base_size = 14)", input$chk_sum_labels %||% TRUE, input$chk_sum_norm %||% TRUE),
         "",
-        "# ------------------------------------------------------------------------------",
-        "# WORKFLOW STEP 6: Multi-Format High-Resolution Figure Export",
-        "# ------------------------------------------------------------------------------",
-        "pdf_file  <- 'scSimEval_evaluation_summary.pdf'",
-        "jpeg_file <- 'scSimEval_evaluation_summary.jpeg'",
-        "ggplot2::ggsave(pdf_file, plot = p, width = 13, height = 7.5, device = 'pdf')",
-        "ggplot2::ggsave(jpeg_file, plot = p, width = 13, height = 7.5, dpi = 600)",
-        "cat(sprintf('[scSimEval Workflow] Complete! Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG (600 DPI): %s\n', pdf_file, jpeg_file))"
+        "  pdf_file  <- file.path(output_dir, 'scSimEval_evaluation_summary.pdf')",
+        "  jpeg_file <- file.path(output_dir, 'scSimEval_evaluation_summary.jpeg')",
+        "  ggplot2::ggsave(pdf_file, plot = p, width = 13, height = 7.5, device = 'pdf')",
+        "  ggplot2::ggsave(jpeg_file, plot = p, width = 13, height = 7.5, dpi = 600)",
+        "  cat(sprintf('[scSimEval Workflow] Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG: %s\n', pdf_file, jpeg_file))"
       ),
       "scale" = c(
-        "# ------------------------------------------------------------------------------",
-        "# WORKFLOW STEP 4: Computational Efficiency & Pareto Optimal Frontier Analysis",
-        "# ------------------------------------------------------------------------------",
-        "cat('[scSimEval Workflow] Step 4: Generating scalability benchmark dashboard...\n')",
-        sprintf("p <- plot_scalability_benchmark(benchmark_data = df, type = '%s', base_size = 13)", input$sel_scale_type %||% "composite"),
+        "  # Step 4: Computational Efficiency & Scalability Dashboard",
+        "  cat('[scSimEval Workflow] Generating scalability benchmark dashboard...\n')",
+        sprintf("  p <- plot_scalability_benchmark(benchmark_data = df, type = '%s', base_size = 13)", input$sel_scale_type %||% "composite"),
         "",
-        "# ------------------------------------------------------------------------------",
-        "# WORKFLOW STEP 5: Multi-Format High-Resolution Figure Export",
-        "# ------------------------------------------------------------------------------",
-        "pdf_file  <- 'scSimEval_scalability_benchmark.pdf'",
-        "jpeg_file <- 'scSimEval_scalability_benchmark.jpeg'",
-        "ggplot2::ggsave(pdf_file, plot = p, width = 13, height = 8, device = 'pdf')",
-        "ggplot2::ggsave(jpeg_file, plot = p, width = 13, height = 8, dpi = 600)",
-        "cat(sprintf('[scSimEval Workflow] Complete! Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG (600 DPI): %s\n', pdf_file, jpeg_file))"
+        "  pdf_file  <- file.path(output_dir, 'scSimEval_scalability_benchmark.pdf')",
+        "  jpeg_file <- file.path(output_dir, 'scSimEval_scalability_benchmark.jpeg')",
+        "  ggplot2::ggsave(pdf_file, plot = p, width = 13, height = 8, device = 'pdf')",
+        "  ggplot2::ggsave(jpeg_file, plot = p, width = 13, height = 8, dpi = 600)",
+        "  cat(sprintf('[scSimEval Workflow] Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG: %s\n', pdf_file, jpeg_file))"
       ),
       "box" = if (identical(input$opt_box_view_mode, "individual")) {
         c(
-          "# ------------------------------------------------------------------------------",
-          "# WORKFLOW STEP 4: Individual Metric Distribution & Ranked Bar Plotting",
-          "# ------------------------------------------------------------------------------",
-          sprintf("metric_name <- '%s'", input$sel_box_metric_single %||% "Mean Expression"),
-          sprintf("score_scale <- '%s'", input$sel_box_indiv_score %||% "normalized"),
-          "cat(sprintf('[scSimEval Workflow] Step 4: Generating ranked barplot for metric: %s (%s)...\n', metric_name, score_scale))",
-          "p <- plot_individual_metric_bar(benchmark_data = df, metric = metric_name, score_type = score_scale, base_size = 12)",
+          sprintf("  metric_name <- '%s'", input$sel_box_metric_single %||% "Mean Expression"),
+          sprintf("  score_scale <- '%s'", input$sel_box_indiv_score %||% "normalized"),
+          "  cat(sprintf('[scSimEval Workflow] Step 4: Generating ranked barplot for: %s (%s)...\n', metric_name, score_scale))",
+          "  p <- plot_individual_metric_bar(benchmark_data = df, metric = metric_name, score_type = score_scale, base_size = 12)",
           "",
-          "# ------------------------------------------------------------------------------",
-          "# WORKFLOW STEP 5: Multi-Format High-Resolution Figure Export",
-          "# ------------------------------------------------------------------------------",
-          "pdf_file  <- 'scSimEval_metric_bar.pdf'",
-          "jpeg_file <- 'scSimEval_metric_bar.jpeg'",
-          "ggplot2::ggsave(pdf_file, plot = p, width = 9.5, height = 6.5, device = 'pdf')",
-          "ggplot2::ggsave(jpeg_file, plot = p, width = 9.5, height = 6.5, dpi = 600)",
-          "cat(sprintf('[scSimEval Workflow] Complete! Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG (600 DPI): %s\n', pdf_file, jpeg_file))"
+          "  pdf_file  <- file.path(output_dir, 'scSimEval_metric_bar.pdf')",
+          "  jpeg_file <- file.path(output_dir, 'scSimEval_metric_bar.jpeg')",
+          "  ggplot2::ggsave(pdf_file, plot = p, width = 9.5, height = 6.5, device = 'pdf')",
+          "  ggplot2::ggsave(jpeg_file, plot = p, width = 9.5, height = 6.5, dpi = 600)",
+          "  cat(sprintf('[scSimEval Workflow] Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG: %s\n', pdf_file, jpeg_file))"
         )
       } else {
         c(
-          "# ------------------------------------------------------------------------------",
-          "# WORKFLOW STEP 4: Category Distribution Boxplots with Jittered Observations",
-          "# ------------------------------------------------------------------------------",
-          sprintf("cat_subset  <- %s", if (identical(input$sel_box_cat_group, "all")) "NULL" else paste0("'", input$sel_box_cat_group, "'")),
-          sprintf("score_scale <- '%s'", input$sel_box_score_type %||% "normalized"),
-          "cat('[scSimEval Workflow] Step 4: Generating category distribution boxplots with jittered points...\n')",
-          "p <- plot_metric_boxplots(benchmark_data = df, categories = cat_subset, score_type = score_scale, facet_by = 'category', base_size = 11)",
+          sprintf("  cat_subset  <- %s", if (identical(input$sel_box_cat_group, "all")) "NULL" else paste0("'", input$sel_box_cat_group, "'")),
+          sprintf("  score_scale <- '%s'", input$sel_box_score_type %||% "normalized"),
+          "  cat('[scSimEval Workflow] Step 4: Generating category distribution boxplots with jittered points...\n')",
+          "  p <- plot_metric_boxplots(benchmark_data = df, categories = cat_subset, score_type = score_scale, facet_by = 'category', base_size = 11)",
           "",
-          "# ------------------------------------------------------------------------------",
-          "# WORKFLOW STEP 5: Multi-Format High-Resolution Figure Export",
-          "# ------------------------------------------------------------------------------",
-          "pdf_file  <- 'scSimEval_metric_boxplots.pdf'",
-          "jpeg_file <- 'scSimEval_metric_boxplots.jpeg'",
-          "ggplot2::ggsave(pdf_file, plot = p, width = 12, height = 8.5, device = 'pdf')",
-          "ggplot2::ggsave(jpeg_file, plot = p, width = 12, height = 8.5, dpi = 600)",
-          "cat(sprintf('[scSimEval Workflow] Complete! Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG (600 DPI): %s\n', pdf_file, jpeg_file))"
+          "  pdf_file  <- file.path(output_dir, 'scSimEval_metric_boxplots.pdf')",
+          "  jpeg_file <- file.path(output_dir, 'scSimEval_metric_boxplots.jpeg')",
+          "  ggplot2::ggsave(pdf_file, plot = p, width = 12, height = 8.5, device = 'pdf')",
+          "  ggplot2::ggsave(jpeg_file, plot = p, width = 12, height = 8.5, dpi = 600)",
+          "  cat(sprintf('[scSimEval Workflow] Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG: %s\n', pdf_file, jpeg_file))"
         )
       },
       "heat" = c(
-        "# ------------------------------------------------------------------------------",
-        "# WORKFLOW STEP 4: Matrix Reshaping & Hierarchical Heatmap Construction",
-        "# ------------------------------------------------------------------------------",
-        sprintf("cat_filter <- %s", if (identical(input$sel_heat_cat, "all")) "NULL" else paste0("'", input$sel_heat_cat, "'")),
-        "cat('[scSimEval Workflow] Step 4: Generating publication metric heatmap...\n')",
-        "p <- plot_metric_heatmap(benchmark_data = df, category = cat_filter, cluster_rows = FALSE, cluster_cols = FALSE, base_size = 11)",
+        sprintf("  cat_filter  <- %s", if (identical(input$sel_heat_cat, "all")) "NULL" else paste0("'", input$sel_heat_cat, "'")),
+        sprintf("  scale_type  <- '%s'", if (!is.null(input$sel_heat_score_type) && identical(input$sel_heat_score_type, "raw")) "raw" else "relative"),
+        "  cat('[scSimEval Workflow] Step 4: Generating publication metric heatmap...\n')",
+        "  p <- plot_metric_heatmap(benchmark_data = df, category = cat_filter, scale_fill = scale_type, cluster_rows = FALSE, cluster_cols = FALSE, base_size = 11)",
         "",
-        "# ------------------------------------------------------------------------------",
-        "# WORKFLOW STEP 5: Multi-Format High-Resolution Figure Export",
-        "# ------------------------------------------------------------------------------",
-        sprintf("w_in <- %.2f", (input$sld_heat_width %||% 880) / 90),
-        sprintf("h_in <- %.2f", (input$sld_heat_height %||% 1100) / 90),
-        "pdf_file  <- 'scSimEval_metric_heatmap.pdf'",
-        "jpeg_file <- 'scSimEval_metric_heatmap.jpeg'",
-        "ggplot2::ggsave(pdf_file, plot = p, width = w_in, height = h_in, device = 'pdf')",
-        "ggplot2::ggsave(jpeg_file, plot = p, width = w_in, height = h_in, dpi = 600)",
-        "cat(sprintf('[scSimEval Workflow] Complete! Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG (600 DPI): %s\n', pdf_file, jpeg_file))"
+        sprintf("  w_in <- %.2f", (input$sld_heat_width %||% 880) / 90),
+        sprintf("  h_in <- %.2f", (input$sld_heat_height %||% 1100) / 90),
+        "  pdf_file  <- file.path(output_dir, 'scSimEval_metric_heatmap.pdf')",
+        "  jpeg_file <- file.path(output_dir, 'scSimEval_metric_heatmap.jpeg')",
+        "  ggplot2::ggsave(pdf_file, plot = p, width = w_in, height = h_in, device = 'pdf')",
+        "  ggplot2::ggsave(jpeg_file, plot = p, width = w_in, height = h_in, dpi = 600)",
+        "  cat(sprintf('[scSimEval Workflow] Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG: %s\n', pdf_file, jpeg_file))"
       ),
       "pca" = c(
-        "# ------------------------------------------------------------------------------",
-        "# WORKFLOW STEP 4: Principal Component Ordination & Biplot Decomposition",
-        "# ------------------------------------------------------------------------------",
-        sprintf("cat_filter <- %s", if (identical(input$sel_pca_cat, "all")) "NULL" else paste0("'", input$sel_pca_cat, "'")),
-        sprintf("panel_type <- '%s'", input$sel_pca_panel %||% "both"),
-        sprintf("top_loadings <- %d", input$num_pca_top_metrics %||% 8),
-        "cat('[scSimEval Workflow] Step 4: Generating PCA ordination and loadings plot...\n')",
-        "p <- plot_metric_pca(benchmark_data = df, category = cat_filter, panel = panel_type, top_n_loadings = top_loadings, base_size = 12)",
+        sprintf("  cat_filter   <- %s", if (identical(input$sel_pca_cat, "all")) "NULL" else paste0("'", input$sel_pca_cat, "'")),
+        sprintf("  panel_type   <- '%s'", input$sel_pca_panel %||% "both"),
+        sprintf("  top_loadings <- %d", input$num_pca_top_metrics %||% 8),
+        "  cat('[scSimEval Workflow] Step 4: Generating PCA ordination and loadings plot...\n')",
+        "  p <- plot_metric_pca(benchmark_data = df, category = cat_filter, panel = panel_type, top_n_loadings = top_loadings, base_size = 12)",
         "",
-        "# ------------------------------------------------------------------------------",
-        "# WORKFLOW STEP 5: Multi-Format High-Resolution Figure Export",
-        "# ------------------------------------------------------------------------------",
-        sprintf("w_in <- %.2f", (input$sld_pca_width %||% 950) / 90),
-        sprintf("h_in <- %.2f", (input$sld_pca_height %||% 1100) / 90),
-        "pdf_file  <- 'scSimEval_metric_pca.pdf'",
-        "jpeg_file <- 'scSimEval_metric_pca.jpeg'",
-        "ggplot2::ggsave(pdf_file, plot = p, width = w_in, height = h_in, device = 'pdf')",
-        "ggplot2::ggsave(jpeg_file, plot = p, width = w_in, height = h_in, dpi = 600)",
-        "cat(sprintf('[scSimEval Workflow] Complete! Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG (600 DPI): %s\n', pdf_file, jpeg_file))"
+        sprintf("  w_in <- %.2f", (input$sld_pca_width %||% 950) / 90),
+        sprintf("  h_in <- %.2f", (input$sld_pca_height %||% 1100) / 90),
+        "  pdf_file  <- file.path(output_dir, 'scSimEval_metric_pca.pdf')",
+        "  jpeg_file <- file.path(output_dir, 'scSimEval_metric_pca.jpeg')",
+        "  ggplot2::ggsave(pdf_file, plot = p, width = w_in, height = h_in, device = 'pdf')",
+        "  ggplot2::ggsave(jpeg_file, plot = p, width = w_in, height = h_in, dpi = 600)",
+        "  cat(sprintf('[scSimEval Workflow] Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG: %s\n', pdf_file, jpeg_file))"
       ),
       "mds" = c(
-        "# ------------------------------------------------------------------------------",
-        "# WORKFLOW STEP 4: Pairwise Dissimilarity Distance Matrix & Classical MDS Projection",
-        "# ------------------------------------------------------------------------------",
-        sprintf("cat_filter <- %s", if (identical(input$sel_mds_cat, "all")) "NULL" else paste0("'", input$sel_mds_cat, "'")),
-        sprintf("ord_by     <- '%s'", input$sel_mds_by %||% "simulators"),
-        "cat('[scSimEval Workflow] Step 4: Generating MDS metric space projection...\n')",
-        "p <- plot_metric_mds(benchmark_data = df, category = cat_filter, ordination_by = ord_by, base_size = 13)",
+        sprintf("  cat_filter <- %s", if (identical(input$sel_mds_cat, "all")) "NULL" else paste0("'", input$sel_mds_cat, "'")),
+        sprintf("  ord_by     <- '%s'", input$sel_mds_by %||% "simulators"),
+        "  cat('[scSimEval Workflow] Step 4: Generating MDS metric space projection...\n')",
+        "  p <- plot_metric_mds(benchmark_data = df, category = cat_filter, ordination_by = ord_by, base_size = 13)",
         "",
-        "# ------------------------------------------------------------------------------",
-        "# WORKFLOW STEP 5: Multi-Format High-Resolution Figure Export",
-        "# ------------------------------------------------------------------------------",
-        sprintf("w_in <- %.2f", (input$sld_mds_width %||% 900) / 80),
-        sprintf("h_in <- %.2f", (input$sld_mds_height %||% 620) / 80),
-        "pdf_file  <- 'scSimEval_metric_mds.pdf'",
-        "jpeg_file <- 'scSimEval_metric_mds.jpeg'",
-        "ggplot2::ggsave(pdf_file, plot = p, width = w_in, height = h_in, device = 'pdf')",
-        "ggplot2::ggsave(jpeg_file, plot = p, width = w_in, height = h_in, dpi = 600)",
-        "cat(sprintf('[scSimEval Workflow] Complete! Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG (600 DPI): %s\n', pdf_file, jpeg_file))"
+        sprintf("  w_in <- %.2f", (input$sld_mds_width %||% 900) / 80),
+        sprintf("  h_in <- %.2f", (input$sld_mds_height %||% 620) / 80),
+        "  pdf_file  <- file.path(output_dir, 'scSimEval_metric_mds.pdf')",
+        "  jpeg_file <- file.path(output_dir, 'scSimEval_metric_mds.jpeg')",
+        "  ggplot2::ggsave(pdf_file, plot = p, width = w_in, height = h_in, device = 'pdf')",
+        "  ggplot2::ggsave(jpeg_file, plot = p, width = w_in, height = h_in, dpi = 600)",
+        "  cat(sprintf('[scSimEval Workflow] Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG: %s\n', pdf_file, jpeg_file))"
       )
     )
     
-    return(paste(c(out_header, out_body), collapse = "\n"))
+    out <- c(out,
+      out_body,
+      "}",
+      "",
+      get_workflow_file_paths_block(plot_type),
+      "# ------------------------------------------------------------------------------",
+      "# WORKFLOW INVOCATION",
+      "# ------------------------------------------------------------------------------",
+      sprintf("run_visualization_workflow(benchmark_file = BENCHMARK_RESULTS_FILE, output_dir = OUTPUT_DIR, dataset_scope = '%s', modality_scope = '%s')", d_view, mod_view),
+      ""
+    )
+    
+    return(paste(out, collapse = "\n"))
   }
   
   # Standalone Distribution QC Analysis Workflow Script Generator
   generate_dist_qc_script <- function() {
     cur_dset <- input$sel_dist_dataset %||% (input$sel_viz_dataset_view %||% "Dataset 1")
-    if (identical(cur_dset, "all_avg")) cur_dset <- "Dataset 1"
-    ref_mat <- if (!is.null(rv$ref_matrices) && cur_dset %in% names(rv$ref_matrices)) rv$ref_matrices[[cur_dset]] else rv$toy_ref
-    sim_choice <- input$sel_dist_sim %||% "Simulator 1"
-    sim_mat <- NULL
-    try_keys <- c(sim_choice, paste0(sim_choice, " (", cur_dset, ")"), paste0("Simulated: ", sim_choice, " (", cur_dset, ")"), paste0("Simulated: ", sim_choice))
-    for (k in try_keys) {
-      if (!is.null(rv$sim_matrices) && k %in% names(rv$sim_matrices)) { sim_mat <- rv$sim_matrices[[k]]; break }
-      if (!is.null(rv$all_matrices) && k %in% names(rv$all_matrices)) { sim_mat <- rv$all_matrices[[k]]; break }
+    if (identical(cur_dset, "all_avg")) {
+      dsets <- available_bubble_datasets()
+      cur_dset <- if (length(dsets) > 0) dsets[1] else "Dataset 1"
     }
-    if (is.null(sim_mat)) sim_mat <- rv$toy_sim
-    
+    sim_choice <- input$sel_dist_sim %||% "Simulator 1"
+    mod_choice <- input$sel_dist_modality %||% "RNA"
     date_str <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
-    ref_dput <- paste(capture.output(dput(ref_mat)), collapse = "\n")
-    sim_dput <- paste(capture.output(dput(sim_mat)), collapse = "\n")
     lay <- input$sel_dist_layout %||% "full"
     
     out <- c(
@@ -7215,60 +8114,85 @@ server <- function(input, output, session) {
       "# ==============================================================================",
       "# scSimEval: Comparative Distribution QC Analysis Workflow",
       sprintf("# Generated on: %s", date_str),
-      sprintf("# Reference Dataset: %s | Evaluated Simulator: %s", cur_dset, sim_choice),
+      sprintf("# Reference Dataset: %s | Evaluated Simulator: %s | Modality: %s", cur_dset, sim_choice, mod_choice),
       "# ==============================================================================",
-      "# Analytical Workflow for evaluating 14 statistical distribution properties",
+      "# Standalone analytical workflow for evaluating 14 statistical distribution properties",
       "# comparing empirical reference counts against simulated single-cell profiles.",
+      "# Non-coding users can copy this script to HPC, cloud computing, or computing clusters",
+      "# and run it directly by modifying the FILE PATH CONFIGURATION at the end of the script.",
       "# ==============================================================================",
       "",
       "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 1: Environment Setup & Package Dependencies",
+      "# WORKFLOW STEP 1: Environment Setup & Matrix Loader Helper",
       "# ------------------------------------------------------------------------------",
       "suppressPackageStartupMessages({",
       "  library(scSimEval)",
+      "  library(Matrix)",
       "  library(ggplot2)",
       "})",
       "",
-      "cat('[scSimEval Workflow] Step 1: Environment initialized successfully.\n')",
-      "",
-      "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 2: Ingest Reference and Simulated Count Matrices",
-      "# ------------------------------------------------------------------------------",
-      "# You can supply your own empirical reference and simulated matrices:",
-      "#   ref_data <- readRDS('reference_counts.rds')  # or utils::read.csv('reference.csv', row.names = 1)",
-      "#   sim_data <- readRDS('simulated_counts.rds')  # or utils::read.csv('simulated.csv', row.names = 1)",
-      "#",
-      "# For immediate standalone execution, your active session matrices are loaded below:",
-      paste0("ref_data <- ", ref_dput),
-      "",
-      paste0("sim_data <- ", sim_dput),
-      "",
-      "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 3: Matrix Quality Inspection & Preprocessing",
-      "# ------------------------------------------------------------------------------",
-      "cat(sprintf('[scSimEval Workflow] Step 3: Reference matrix: %d features x %d cells (Sparsity: %.1f%%)\n', nrow(ref_data), ncol(ref_data), 100 * mean(ref_data == 0)))",
-      "cat(sprintf('[scSimEval Workflow] Step 3: Simulated matrix: %d features x %d cells (Sparsity: %.1f%%)\n', nrow(sim_data), ncol(sim_data), 100 * mean(sim_data == 0)))",
-      "",
-      "common_features <- intersect(rownames(ref_data), rownames(sim_data))",
-      "if (length(common_features) > 0 && length(common_features) < nrow(ref_data)) {",
-      "  ref_data <- ref_data[common_features, , drop = FALSE]",
-      "  sim_data <- sim_data[common_features, , drop = FALSE]",
+      "load_matrix_safe <- function(path, placeholder = 'matrix') {",
+      "  if (is.null(path) || is.na(path) || path == '') stop(sprintf('Path for %s is empty.', placeholder))",
+      "  if (!file.exists(path)) {",
+      "    warning(sprintf('File \"%s\" not found. Using small placeholder matrix for pipeline verification.', path))",
+      "    set.seed(42)",
+      "    m <- Matrix::rsparsematrix(nrow = 100, ncol = 50, density = 0.2)",
+      "    rownames(m) <- paste0('Feature_', seq_len(100))",
+      "    colnames(m) <- paste0('Cell_', seq_len(50))",
+      "    return(abs(m))",
+      "  }",
+      "  if (endsWith(tolower(path), '.rds')) {",
+      "    m <- readRDS(path)",
+      "    if (inherits(m, 'SingleCellExperiment')) m <- SummarizedExperiment::assay(m, 'counts')",
+      "    else if (inherits(m, 'Seurat')) m <- tryCatch(m[['RNA']]$counts, error = function(e) tryCatch(Seurat::GetAssayData(m, slot = 'counts'), error = function(e2) m))",
+      "    else if (is.list(m) && !is.matrix(m) && !inherits(m, 'Matrix')) {",
+      "      for (item in m) if (is.matrix(item) || inherits(item, 'Matrix')) { m <- item; break }",
+      "    }",
+      "  } else {",
+      "    sep_char <- if (endsWith(tolower(path), '.csv')) ',' else '\t'",
+      "    df <- utils::read.table(path, header = TRUE, row.names = 1, sep = sep_char, check.names = FALSE)",
+      "    m <- as.matrix(df)",
+      "  }",
+      "  if (!inherits(m, 'dgCMatrix')) m <- Matrix::Matrix(m, sparse = TRUE)",
+      "  return(m)",
       "}",
       "",
       "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 4: Comprehensive 14-Panel Distribution Concordance Evaluation",
+      "# WORKFLOW FUNCTION DEFINITION",
       "# ------------------------------------------------------------------------------",
-      "cat('[scSimEval Workflow] Step 4: Generating multi-panel Distribution QC diagnostic figure...\n')",
-      sprintf("p <- plot_distribution_qc(ref_data = ref_data, sim_data = sim_data, layout = '%s', base_size = 13)", lay),
+      "run_dist_qc_workflow <- function(",
+      "  ref_file   = REF_DATA_FILE,",
+      "  sim_file   = SIM_DATA_FILE,",
+      sprintf("  layout     = '%s',", lay),
+      "  output_dir = OUTPUT_DIR",
+      ") {",
+      "  if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)",
+      "  cat('[scSimEval Workflow] Step 2: Loading reference and simulated count matrices...\n')",
+      "  ref_data <- load_matrix_safe(ref_file, placeholder = 'Reference Matrix')",
+      "  sim_data <- load_matrix_safe(sim_file, placeholder = 'Simulated Matrix')",
       "",
+      "  cat(sprintf('[scSimEval Workflow] Step 3: Reference: %d features x %d cells | Simulated: %d features x %d cells\n', nrow(ref_data), ncol(ref_data), nrow(sim_data), ncol(sim_data)))",
+      "  common_features <- intersect(rownames(ref_data), rownames(sim_data))",
+      "  if (length(common_features) > 0 && length(common_features) < nrow(ref_data)) {",
+      "    ref_data <- ref_data[common_features, , drop = FALSE]",
+      "    sim_data <- sim_data[common_features, , drop = FALSE]",
+      "  }",
+      "",
+      "  cat('[scSimEval Workflow] Step 4: Generating 14-panel Distribution QC diagnostic figure...\n')",
+      "  p <- plot_distribution_qc(ref_data = ref_data, sim_data = sim_data, layout = layout, base_size = 13)",
+      "",
+      "  pdf_file  <- file.path(output_dir, 'scSimEval_distribution_qc.pdf')",
+      "  jpeg_file <- file.path(output_dir, 'scSimEval_distribution_qc.jpeg')",
+      "  ggplot2::ggsave(pdf_file, plot = p, width = 14, height = 9, device = 'pdf')",
+      "  ggplot2::ggsave(jpeg_file, plot = p, width = 14, height = 9, dpi = 600)",
+      "  cat(sprintf('[scSimEval Workflow] Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG: %s\n', pdf_file, jpeg_file))",
+      "}",
+      "",
+      get_workflow_file_paths_block("dist_qc"),
       "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 5: Multi-Format High-Resolution Figure Export",
+      "# WORKFLOW INVOCATION",
       "# ------------------------------------------------------------------------------",
-      "pdf_file  <- 'scSimEval_distribution_qc.pdf'",
-      "jpeg_file <- 'scSimEval_distribution_qc.jpeg'",
-      "ggplot2::ggsave(pdf_file, plot = p, width = 14, height = 9, device = 'pdf')",
-      "ggplot2::ggsave(jpeg_file, plot = p, width = 14, height = 9, dpi = 600)",
-      "cat(sprintf('[scSimEval Workflow] Complete! Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG (600 DPI): %s\n', pdf_file, jpeg_file))",
+      "run_dist_qc_workflow(ref_file = REF_DATA_FILE, sim_file = SIM_DATA_FILE, output_dir = OUTPUT_DIR)",
       ""
     )
     return(paste(out, collapse = "\n"))
@@ -7277,20 +8201,15 @@ server <- function(input, output, session) {
   # Standalone Cell Embeddings Analysis Workflow Script Generator
   generate_cell_emb_script <- function() {
     cur_dset <- input$sel_emb_dataset %||% (input$sel_viz_dataset_view %||% "Dataset 1")
-    if (identical(cur_dset, "all_avg")) cur_dset <- "Dataset 1"
-    ref_mat <- if (!is.null(rv$ref_matrices) && cur_dset %in% names(rv$ref_matrices)) rv$ref_matrices[[cur_dset]] else rv$toy_ref
-    sim_list <- if (!is.null(rv$sim_matrices) && length(rv$sim_matrices) > 0) rv$sim_matrices else list(Simulated = rv$toy_sim)
-    
+    if (identical(cur_dset, "all_avg")) {
+      dsets <- available_bubble_datasets()
+      cur_dset <- if (length(dsets) > 0) dsets[1] else "Dataset 1"
+    }
     date_str <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
     red <- input$sel_emb_reduction %||% "umap"
     lay <- input$sel_emb_layout %||% "facet"
     col_by <- input$sel_emb_color %||% "cell_type"
     lay_arg <- if (identical(lay, "side_by_side") || identical(lay, "compare")) "side_by_side" else "facet"
-    
-    ref_dput <- paste(capture.output(dput(ref_mat)), collapse = "\n")
-    sim_dput <- paste(capture.output(dput(sim_list)), collapse = "\n")
-    ct_dput  <- paste(capture.output(dput(rv$cell_types)), collapse = "\n")
-    b_dput   <- paste(capture.output(dput(rv$batch)), collapse = "\n")
     
     out <- c(
       "#!/usr/bin/env Rscript",
@@ -7299,70 +8218,118 @@ server <- function(input, output, session) {
       sprintf("# Generated on: %s", date_str),
       sprintf("# Dataset: %s | Reduction: %s | Layout: %s", cur_dset, red, lay_arg),
       "# ==============================================================================",
-      "# Analytical Workflow for projecting reference and simulated single cells into a",
+      "# Standalone analytical workflow for projecting reference and simulated single cells into a",
       "# unified latent coordinate space (UMAP/t-SNE/PCA) and quantifying cluster fidelity.",
+      "# Non-coding users can copy this script to HPC, cloud computing, or computing clusters",
+      "# and run it directly by modifying the FILE PATH CONFIGURATION at the end of the script.",
       "# ==============================================================================",
       "",
       "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 1: Environment Setup & Package Dependencies",
+      "# WORKFLOW STEP 1: Environment Setup & Helpers",
       "# ------------------------------------------------------------------------------",
       "suppressPackageStartupMessages({",
       "  library(scSimEval)",
+      "  library(Matrix)",
       "  library(ggplot2)",
       "})",
       "",
-      "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 2: Ingest Reference and Simulated Count Matrices & Annotations",
-      "# ------------------------------------------------------------------------------",
-      "# You can supply your own matrices and cell metadata:",
-      "#   ref_mat    <- readRDS('reference_counts.rds')",
-      "#   sim_list   <- list(Simulator_1 = readRDS('sim1.rds'), Simulator_2 = readRDS('sim2.rds'))",
-      "#   cell_types <- readRDS('cell_types.rds')",
-      "#   batch      <- readRDS('batch.rds')",
-      paste0("ref_mat    <- ", ref_dput),
+      "load_matrix_safe <- function(path, placeholder = 'matrix') {",
+      "  if (is.null(path) || is.na(path) || path == '') stop(sprintf('Path for %s is empty.', placeholder))",
+      "  if (!file.exists(path)) {",
+      "    warning(sprintf('File \"%s\" not found. Using small placeholder matrix for pipeline verification.', path))",
+      "    set.seed(42)",
+      "    m <- Matrix::rsparsematrix(nrow = 100, ncol = 50, density = 0.2)",
+      "    rownames(m) <- paste0('Feature_', seq_len(100))",
+      "    colnames(m) <- paste0('Cell_', seq_len(50))",
+      "    return(abs(m))",
+      "  }",
+      "  if (endsWith(tolower(path), '.rds')) {",
+      "    m <- readRDS(path)",
+      "    if (inherits(m, 'SingleCellExperiment')) m <- SummarizedExperiment::assay(m, 'counts')",
+      "    else if (inherits(m, 'Seurat')) m <- tryCatch(m[['RNA']]$counts, error = function(e) tryCatch(Seurat::GetAssayData(m, slot = 'counts'), error = function(e2) m))",
+      "    else if (is.list(m) && !is.matrix(m) && !inherits(m, 'Matrix')) {",
+      "      for (item in m) if (is.matrix(item) || inherits(item, 'Matrix')) { m <- item; break }",
+      "    }",
+      "  } else {",
+      "    sep_char <- if (endsWith(tolower(path), '.csv')) ',' else '\t'",
+      "    df <- utils::read.table(path, header = TRUE, row.names = 1, sep = sep_char, check.names = FALSE)",
+      "    m <- as.matrix(df)",
+      "  }",
+      "  if (!inherits(m, 'dgCMatrix')) m <- Matrix::Matrix(m, sparse = TRUE)",
+      "  return(m)",
+      "}",
       "",
-      paste0("sim_list   <- ", sim_dput),
-      "",
-      paste0("cell_types <- ", ct_dput),
-      "",
-      paste0("batch      <- ", b_dput),
-      "",
-      "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 3: Dimension Reduction in Unified Latent Space",
-      "# ------------------------------------------------------------------------------",
-      sprintf("red_method <- '%s'", red),
-      "cat(sprintf('[scSimEval Workflow] Step 3: Computing unified %s cell embeddings...\n', toupper(red_method)))",
-      "emb_obj <- compute_dataset_embeddings(",
-      "  reference  = ref_mat,",
-      "  simulated  = sim_list,",
-      "  reduction  = red_method,",
-      "  cell_types = cell_types,",
-      "  batch      = batch",
-      ")",
-      "",
-      "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 4: Quantitative Embedding Quality Metrics",
-      "# ------------------------------------------------------------------------------",
-      "quality_metrics <- compute_embedding_quality_metrics(emb_obj)",
-      "cat('[scSimEval Workflow] Step 4: Quantitative Embedding Quality Summary:\n')",
-      "print(quality_metrics)",
-      "",
-      "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 5: Publication Plotting (Grid / Compare Layout)",
-      "# ------------------------------------------------------------------------------",
-      sprintf("lay_type <- '%s'", lay_arg),
-      sprintf("col_by   <- '%s'", col_by),
-      "cat('[scSimEval Workflow] Step 5: Rendering cell embeddings visualization...\n')",
-      "p <- plot_dataset_embeddings(embedding_data = emb_obj, reduction = red_method, layout = lay_type, color_by = col_by)",
+      "load_vector_safe <- function(path) {",
+      "  if (is.null(path) || is.na(path) || path == '' || !file.exists(path)) return(NULL)",
+      "  lower_p <- tolower(path)",
+      "  if (endsWith(lower_p, '.rds')) {",
+      "    v <- readRDS(path)",
+      "    if (is.data.frame(v) || is.matrix(v)) v <- v[, 1]",
+      "    return(as.character(v))",
+      "  }",
+      "  if (endsWith(lower_p, '.csv') || endsWith(lower_p, '.tsv')) {",
+      "    sep_char <- if (endsWith(lower_p, '.csv')) ',' else '\t'",
+      "    df <- tryCatch(utils::read.table(path, header = TRUE, sep = sep_char, stringsAsFactors = FALSE), error = function(e) NULL)",
+      "    if (!is.null(df) && is.data.frame(df) && ncol(df) >= 1) return(as.character(df[[ncol(df)]]))",
+      "  }",
+      "  return(as.character(readLines(path)))",
+      "}",
       "",
       "# ------------------------------------------------------------------------------",
-      "# WORKFLOW STEP 6: Multi-Format High-Resolution Figure Export",
+      "# WORKFLOW FUNCTION DEFINITION",
       "# ------------------------------------------------------------------------------",
-      "pdf_file  <- 'scSimEval_cell_embeddings.pdf'",
-      "jpeg_file <- 'scSimEval_cell_embeddings.jpeg'",
-      "ggplot2::ggsave(pdf_file, plot = p, width = 13, height = 8.5, device = 'pdf')",
-      "ggplot2::ggsave(jpeg_file, plot = p, width = 13, height = 8.5, dpi = 600)",
-      "cat(sprintf('[scSimEval Workflow] Complete! Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG (600 DPI): %s\n', pdf_file, jpeg_file))",
+      "run_cell_embeddings_workflow <- function(",
+      "  ref_file        = REF_MATRIX_FILE,",
+      "  sim_files       = SIMULATOR_FILES,",
+      "  cell_types_file = CELL_TYPES_FILE,",
+      "  batch_file      = BATCH_FILE,",
+      sprintf("  reduction       = '%s',", red),
+      sprintf("  layout          = '%s',", lay_arg),
+      sprintf("  color_by        = '%s',", col_by),
+      "  output_dir      = OUTPUT_DIR",
+      ") {",
+      "  if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)",
+      "  cat('[scSimEval Workflow] Step 2: Loading reference and simulated count matrices...\n')",
+      "  ref_mat <- load_matrix_safe(ref_file, placeholder = 'Reference Matrix')",
+      "  sim_mats <- list()",
+      "  if (is.list(sim_files)) {",
+      "    for (nm in names(sim_files)) {",
+      "      f <- sim_files[[nm]]",
+      "      if (is.list(f)) f <- f$rna %||% f[[1]]",
+      "      sim_mats[[nm]] <- load_matrix_safe(f, placeholder = paste0('Simulated Matrix: ', nm))",
+      "    }",
+      "  }",
+      "  cell_types <- load_vector_safe(cell_types_file)",
+      "  batch      <- load_vector_safe(batch_file)",
+      "",
+      "  cat(sprintf('[scSimEval Workflow] Step 3: Computing unified %s cell embeddings...\n', toupper(reduction)))",
+      "  emb_obj <- compute_dataset_embeddings(",
+      "    reference  = ref_mat,",
+      "    simulated  = sim_mats,",
+      "    reduction  = reduction,",
+      "    cell_types = cell_types,",
+      "    batch      = batch",
+      "  )",
+      "",
+      "  cat('[scSimEval Workflow] Step 4: Quantitative Embedding Quality Metrics:\n')",
+      "  quality_metrics <- compute_embedding_quality_metrics(emb_obj)",
+      "  print(quality_metrics)",
+      "",
+      "  cat('[scSimEval Workflow] Step 5: Rendering cell embeddings visualization...\n')",
+      "  p <- plot_dataset_embeddings(embedding_data = emb_obj, reduction = reduction, layout = layout, color_by = color_by)",
+      "",
+      "  pdf_file  <- file.path(output_dir, 'scSimEval_cell_embeddings.pdf')",
+      "  jpeg_file <- file.path(output_dir, 'scSimEval_cell_embeddings.jpeg')",
+      "  ggplot2::ggsave(pdf_file, plot = p, width = 13, height = 8.5, device = 'pdf')",
+      "  ggplot2::ggsave(jpeg_file, plot = p, width = 13, height = 8.5, dpi = 600)",
+      "  cat(sprintf('[scSimEval Workflow] Figures successfully saved:\n  - Vector PDF: %s\n  - Publication JPEG: %s\n', pdf_file, jpeg_file))",
+      "}",
+      "",
+      get_workflow_file_paths_block("cell_emb"),
+      "# ------------------------------------------------------------------------------",
+      "# WORKFLOW INVOCATION",
+      "# ------------------------------------------------------------------------------",
+      "run_cell_embeddings_workflow(ref_file = REF_MATRIX_FILE, sim_files = SIMULATOR_FILES, cell_types_file = CELL_TYPES_FILE, batch_file = BATCH_FILE, output_dir = OUTPUT_DIR)",
       ""
     )
     return(paste(out, collapse = "\n"))
@@ -7455,7 +8422,7 @@ server <- function(input, output, session) {
   eval_summary_reactive <- reactive({
     req(rv$benchmark_df)
     req(rv_plot_triggers$sum > 0)
-    df <- get_viz_benchmark_data()
+    df <- get_viz_benchmark_data(dataset_choice = input$sel_sum_dataset)
     withProgress(message = "Rendering Evaluation Summary", detail = "Aggregating category scores...", {
       plot_evaluation_summary(
         data = df,
@@ -7493,15 +8460,79 @@ server <- function(input, output, session) {
     req(rv_plot_triggers$dist > 0)
     cur_dset <- input$sel_dist_dataset %||% (input$sel_viz_dataset_view %||% "Dataset 1")
     if (identical(cur_dset, "all_avg")) cur_dset <- "Dataset 1"
-    ref_mat <- if (!is.null(rv$ref_matrices) && cur_dset %in% names(rv$ref_matrices)) rv$ref_matrices[[cur_dset]] else rv$toy_ref
+    cur_mod <- input$sel_dist_modality %||% "RNA"
+    cur_dset_clean <- sub(" \\(.*\\)$", "", cur_dset)
+    
+    # Try resolving reference matrix
+    ref_mat <- NULL
+    ref_try_keys <- c(
+      paste0(cur_dset, "_", cur_mod),
+      paste0(cur_dset_clean, "_", cur_mod),
+      paste0(cur_dset, " (sc", cur_mod, "-seq)"),
+      paste0(cur_dset_clean, " (sc", cur_mod, "-seq)"),
+      cur_dset,
+      cur_dset_clean,
+      paste0(cur_dset, "_", tolower(cur_mod)),
+      paste0(cur_dset_clean, "_", tolower(cur_mod))
+    )
+    for (rk in ref_try_keys) {
+      if (!is.null(rv$ref_matrices) && rk %in% names(rv$ref_matrices)) { ref_mat <- rv$ref_matrices[[rk]]; break }
+      if (!is.null(rv$all_matrices) && paste0("[Reference] ", rk) %in% names(rv$all_matrices)) { ref_mat <- rv$all_matrices[[paste0("[Reference] ", rk)]]; break }
+    }
+    if (is.null(ref_mat) && !is.null(rv$ref_matrices) && length(rv$ref_matrices) > 0) {
+      mod_hits <- names(rv$ref_matrices)[grepl(cur_mod, names(rv$ref_matrices), ignore.case = TRUE)]
+      if (length(mod_hits) > 0) {
+        dset_hits <- mod_hits[grepl(cur_dset_clean, mod_hits, fixed = TRUE)]
+        ref_mat <- if (length(dset_hits) > 0) rv$ref_matrices[[dset_hits[1]]] else rv$ref_matrices[[mod_hits[1]]]
+      } else if (cur_dset %in% names(rv$ref_matrices)) {
+        ref_mat <- rv$ref_matrices[[cur_dset]]
+      } else {
+        ref_mat <- rv$ref_matrices[[1]]
+      }
+    }
+    if (is.null(ref_mat)) ref_mat <- rv$toy_ref
     req(ref_mat)
     
     sim_choice <- input$sel_dist_sim %||% "Simulator 1"
     sim_mat <- NULL
-    try_keys <- c(sim_choice, paste0(sim_choice, " (", cur_dset, ")"), paste0("Simulated: ", sim_choice, " (", cur_dset, ")"), paste0("Simulated: ", sim_choice))
+    try_keys <- c(
+      paste0(sim_choice, "_", cur_mod, "_", cur_dset),
+      paste0(sim_choice, "_", cur_mod, "_", cur_dset_clean),
+      paste0(sim_choice, "_", tolower(cur_mod), "_", cur_dset),
+      paste0(sim_choice, "_", tolower(cur_mod), "_", cur_dset_clean),
+      paste0(sim_choice, "_", cur_dset),
+      paste0(sim_choice, "_", cur_dset_clean),
+      paste0(sim_choice, "_", cur_mod),
+      paste0(sim_choice, " (", cur_dset, ")"),
+      paste0(sim_choice, " (", cur_dset_clean, ")"),
+      paste0("Simulated: ", sim_choice, " (", cur_dset, ")"),
+      paste0("[Simulated] ", sim_choice, " ", cur_mod, " (", cur_dset_clean, ")"),
+      paste0("[Simulated] ", sim_choice, "_", cur_dset),
+      paste0("[", cur_dset, "] Simulated: ", sim_choice),
+      paste0("[", cur_dset, "] Simulated ", cur_mod, ": ", sim_choice),
+      sim_choice,
+      paste0("Simulated: ", sim_choice)
+    )
     for (k in try_keys) {
       if (!is.null(rv$sim_matrices) && k %in% names(rv$sim_matrices)) { sim_mat <- rv$sim_matrices[[k]]; break }
       if (!is.null(rv$all_matrices) && k %in% names(rv$all_matrices)) { sim_mat <- rv$all_matrices[[k]]; break }
+    }
+    if (is.null(sim_mat) && !is.null(rv$sim_matrices) && length(rv$sim_matrices) > 0) {
+      matches <- names(rv$sim_matrices)[grepl(paste0("^", sim_choice, "(_| |\\()"), names(rv$sim_matrices))]
+      if (length(matches) > 0) {
+        mod_m <- matches[grepl(cur_mod, matches, ignore.case = TRUE)]
+        sim_mat <- if (length(mod_m) > 0) rv$sim_matrices[[mod_m[1]]] else rv$sim_matrices[[matches[1]]]
+      }
+    }
+    if (is.null(sim_mat) && !is.null(rv$all_matrices) && length(rv$all_matrices) > 0) {
+      matches <- names(rv$all_matrices)[grepl(sim_choice, names(rv$all_matrices), fixed = TRUE)]
+      if (length(matches) > 0) {
+        mod_m <- matches[grepl(cur_mod, matches, ignore.case = TRUE)]
+        sim_mat <- if (length(mod_m) > 0) rv$all_matrices[[mod_m[1]]] else rv$all_matrices[[matches[1]]]
+      }
+    }
+    if (is.null(sim_mat) && !is.null(rv$sim_matrices) && length(rv$sim_matrices) > 0) {
+      sim_mat <- rv$sim_matrices[[1]]
     }
     if (is.null(sim_mat)) sim_mat <- rv$toy_sim
     req(sim_mat)
@@ -7548,11 +8579,16 @@ server <- function(input, output, session) {
   scale_bench_reactive <- reactive({
     req(rv$benchmark_df)
     req(rv_plot_triggers$scale > 0)
-    df <- get_viz_benchmark_data()
+    scale_mod <- input$sel_scale_modality %||% "total"
+    df <- get_viz_benchmark_data(
+      dataset_choice = input$sel_scale_dataset,
+      modality_choice = if (scale_mod == "rna") "RNA" else if (scale_mod == "atac") "ATAC" else "all"
+    )
     withProgress(message = "Rendering Scalability Benchmark", detail = "Extracting computational metrics...", {
       plot_scalability_benchmark(
         benchmark_data = df,
         type = input$sel_scale_type,
+        modality = scale_mod,
         base_size = 13
       )
     })
@@ -7569,7 +8605,7 @@ server <- function(input, output, session) {
   
   # 4. Metric Plots
   output$ui_box_metric_picker <- renderUI({
-    df <- get_viz_benchmark_data()
+    df <- get_viz_benchmark_data(dataset_choice = input$sel_box_dataset, modality_choice = input$sel_box_modality)
     req(input$sel_box_cat_first)
     sub_df <- df[df$Category == input$sel_box_cat_first, , drop = FALSE]
     avail_metrics <- sort(unique(sub_df$Metric))
@@ -7579,7 +8615,10 @@ server <- function(input, output, session) {
   metric_box_reactive <- reactive({
     req(rv$benchmark_df)
     req(rv_plot_triggers$box > 0)
-    df <- get_viz_benchmark_data()
+    df <- get_viz_benchmark_data(
+      dataset_choice = if (identical(input$opt_box_view_mode, "category")) input$sel_box_dataset_cat else input$sel_box_dataset,
+      modality_choice = if (identical(input$opt_box_view_mode, "category")) input$sel_box_modality_cat else input$sel_box_modality
+    )
     withProgress(message = "Rendering Metric Plots", detail = "Formatting metric scores...", {
       if (identical(input$opt_box_view_mode, "individual")) {
         req(input$sel_box_metric_single)
@@ -7673,13 +8712,15 @@ server <- function(input, output, session) {
   metric_heat_reactive <- reactive({
     req(rv$benchmark_df)
     req(rv_plot_triggers$heat > 0)
-    df <- get_viz_benchmark_data()
+    df <- get_viz_benchmark_data(dataset_choice = input$sel_heat_dataset)
     withProgress(message = "Rendering Performance Heatmap", detail = "Formatting metric matrix...", {
       cat_sel <- if (identical(input$sel_heat_cat, "all")) NULL else input$sel_heat_cat
       b_size <- if (is.null(cat_sel)) 9.5 else 11
+      scale_type <- if (!is.null(input$sel_heat_score_type) && identical(input$sel_heat_score_type, "raw")) "raw" else "relative"
       plot_metric_heatmap(
         benchmark_data = df,
         category = cat_sel,
+        scale_fill = scale_type,
         cluster_rows = FALSE,
         cluster_cols = FALSE,
         base_size = b_size
@@ -7741,7 +8782,7 @@ server <- function(input, output, session) {
   metric_pca_reactive <- reactive({
     req(rv$benchmark_df)
     req(rv_plot_triggers$pca > 0)
-    df <- get_viz_benchmark_data()
+    df <- get_viz_benchmark_data(dataset_choice = input$sel_pca_dataset)
     n_sims <- length(unique(df$Method))
     if (n_sims < 3) {
       validate(need(FALSE, sprintf("PCA ordination requires at least 3 distinct simulators (currently evaluated: %d). Please evaluate additional methods or select a multi-simulator dataset.", n_sims)))
@@ -7758,13 +8799,17 @@ server <- function(input, output, session) {
       } else {
         "both"
       }
-      plot_metric_pca(
-        benchmark_data = df,
-        category = cat_sel,
-        panel = p_panel,
-        top_n_loadings = n_top,
-        base_size = 12
-      )
+      tryCatch({
+        plot_metric_pca(
+          benchmark_data = df,
+          category = cat_sel,
+          panel = p_panel,
+          top_n_loadings = n_top,
+          base_size = 12
+        )
+      }, error = function(e) {
+        validate(need(FALSE, paste0("Unable to render PCA plot: ", conditionMessage(e))))
+      })
     })
   })
   output$plot_metric_pca_out <- renderPlot({ metric_pca_reactive() })
@@ -7806,7 +8851,7 @@ server <- function(input, output, session) {
   metric_mds_reactive <- reactive({
     req(rv$benchmark_df)
     req(rv_plot_triggers$mds > 0)
-    df <- get_viz_benchmark_data()
+    df <- get_viz_benchmark_data(dataset_choice = input$sel_mds_dataset)
     n_sims <- length(unique(df$Method))
     if (n_sims < 3) {
       validate(need(FALSE, sprintf("MDS distance ordination requires at least 3 distinct simulators (currently evaluated: %d). Please evaluate additional methods or select a multi-simulator dataset.", n_sims)))
@@ -7847,18 +8892,20 @@ server <- function(input, output, session) {
   )
   
   # 8. Cell Embeddings (UMAP, t-SNE, PCA) & Quantitative Quality Metrics
-  # Clean simulator names helper for embedding visualizations
   get_clean_emb_sim_names <- function(cur_dset = 'Dataset 1') {
+    if (!is.null(rv$benchmark_df) && "Dataset" %in% colnames(rv$benchmark_df)) {
+      sub_bm <- rv$benchmark_df[rv$benchmark_df$Dataset == cur_dset, ]
+      if (nrow(sub_bm) > 0) return(unique(sub_bm$Method))
+    }
     if (!is.null(rv$methods) && length(rv$methods) > 0) {
       return(rv$methods)
     }
     if (!is.null(rv$sim_matrices) && length(rv$sim_matrices) > 0) {
       all_names <- names(rv$sim_matrices)
-      dset_matches <- grep(paste0('\\(', cur_dset, '\\)'), all_names, value = TRUE)
-      if (length(dset_matches) > 0) {
-        return(unique(gsub(paste0('\\s*\\(', cur_dset, '\\)'), '', dset_matches)))
-      }
-      return(unique(gsub('\\s*\\(Dataset\\s*\\d+\\)', '', all_names)))
+      clean <- gsub("(_RNA|_ATAC)?(_Dataset.*| \\(Dataset.*\\)|\\[.*\\] )", "", all_names)
+      clean <- gsub("^(\\[.*\\]\\s*Simulated:\\s*|Simulated:\\s*)", "", clean)
+      clean <- unique(clean[clean != ""])
+      if (length(clean) > 0) return(clean)
     }
     return('Simulated')
   }
@@ -7920,12 +8967,39 @@ server <- function(input, output, session) {
     updateCheckboxGroupInput(session, 'chk_emb_methods', selected = character(0))
   })
 
+  output$ui_emb_single_sim <- renderUI({
+    req(input$sel_emb_layout == "side_by_side")
+    cur_dset <- input$sel_emb_dataset %||% (input$sel_viz_dataset_view %||% 'Dataset 1')
+    if (identical(cur_dset, 'all_avg')) cur_dset <- 'Dataset 1'
+    sim_names <- get_clean_emb_sim_names(cur_dset)
+    if (rv_plot_triggers$emb > 0) {
+      emb_data <- tryCatch(reactive_cell_embeddings(), error = function(e) NULL)
+      if (!is.null(emb_data) && "Dataset" %in% colnames(emb_data)) {
+        emb_sims <- setdiff(unique(as.character(emb_data$Dataset)), "Reference")
+        if (length(emb_sims) > 0) sim_names <- emb_sims
+      }
+    }
+    prev_sel <- isolate(input$sel_emb_single_sim)
+    sel_val <- if (!is.null(prev_sel) && prev_sel %in% sim_names) prev_sel else sim_names[1]
+    selectInput("sel_emb_single_sim", "Select Simulator to Compare:", choices = sim_names, selected = sel_val)
+  })
+
   observe({
+    req(input$sel_emb_layout == "side_by_side")
     cur_dset <- input$sel_emb_dataset %||% (input$sel_viz_dataset_view %||% 'Dataset 1')
     if (identical(cur_dset, 'all_avg')) cur_dset <- 'Dataset 1'
     clean_sims <- get_clean_emb_sim_names(cur_dset)
+    if (rv_plot_triggers$emb > 0) {
+      emb_data <- tryCatch(reactive_cell_embeddings(), error = function(e) NULL)
+      if (!is.null(emb_data) && "Dataset" %in% colnames(emb_data)) {
+        emb_sims <- setdiff(unique(as.character(emb_data$Dataset)), "Reference")
+        if (length(emb_sims) > 0) clean_sims <- emb_sims
+      }
+    }
     if (!is.null(clean_sims) && length(clean_sims) > 0) {
-      updateSelectInput(session, 'sel_emb_single_sim', choices = clean_sims, selected = clean_sims[1])
+      cur_val <- isolate(input$sel_emb_single_sim)
+      sel_val <- if (!is.null(cur_val) && cur_val %in% clean_sims) cur_val else clean_sims[1]
+      updateSelectInput(session, 'sel_emb_single_sim', choices = clean_sims, selected = sel_val)
     }
   })
   
@@ -7933,7 +9007,37 @@ server <- function(input, output, session) {
   reactive_cell_embeddings <- reactive({
     cur_dset <- input$sel_emb_dataset %||% (input$sel_viz_dataset_view %||% "Dataset 1")
     if (identical(cur_dset, "all_avg")) cur_dset <- "Dataset 1"
-    ref_mat <- if (!is.null(rv$ref_matrices) && cur_dset %in% names(rv$ref_matrices)) rv$ref_matrices[[cur_dset]] else rv$toy_ref
+    cur_mod <- input$sel_emb_modality %||% "RNA"
+    cur_dset_clean <- sub(" \\(.*\\)$", "", cur_dset)
+    
+    # Try resolving reference matrix
+    ref_mat <- NULL
+    ref_try_keys <- c(
+      paste0(cur_dset, "_", cur_mod),
+      paste0(cur_dset_clean, "_", cur_mod),
+      paste0(cur_dset, " (sc", cur_mod, "-seq)"),
+      paste0(cur_dset_clean, " (sc", cur_mod, "-seq)"),
+      cur_dset,
+      cur_dset_clean,
+      paste0(cur_dset, "_", tolower(cur_mod)),
+      paste0(cur_dset_clean, "_", tolower(cur_mod))
+    )
+    for (rk in ref_try_keys) {
+      if (!is.null(rv$ref_matrices) && rk %in% names(rv$ref_matrices)) { ref_mat <- rv$ref_matrices[[rk]]; break }
+      if (!is.null(rv$all_matrices) && paste0("[Reference] ", rk) %in% names(rv$all_matrices)) { ref_mat <- rv$all_matrices[[paste0("[Reference] ", rk)]]; break }
+    }
+    if (is.null(ref_mat) && !is.null(rv$ref_matrices) && length(rv$ref_matrices) > 0) {
+      mod_hits <- names(rv$ref_matrices)[grepl(cur_mod, names(rv$ref_matrices), ignore.case = TRUE)]
+      if (length(mod_hits) > 0) {
+        dset_hits <- mod_hits[grepl(cur_dset_clean, mod_hits, fixed = TRUE)]
+        ref_mat <- if (length(dset_hits) > 0) rv$ref_matrices[[dset_hits[1]]] else rv$ref_matrices[[mod_hits[1]]]
+      } else if (cur_dset %in% names(rv$ref_matrices)) {
+        ref_mat <- rv$ref_matrices[[cur_dset]]
+      } else {
+        ref_mat <- rv$ref_matrices[[1]]
+      }
+    }
+    if (is.null(ref_mat)) ref_mat <- rv$toy_ref
     req(ref_mat)
     req(rv_plot_triggers$emb > 0)
     withProgress(message = "Computing Cell Embeddings", detail = "Running low-dimensional projection...", {
@@ -7950,28 +9054,63 @@ server <- function(input, output, session) {
       clean_all <- get_clean_emb_sim_names(cur_dset)
       if (is.null(sel_methods) || length(sel_methods) == 0) sel_methods <- clean_all
       
-      # Map chosen simulators to count matrices for the active dataset
+      # Map chosen simulators to count matrices for the active dataset & modality
       sim_list_filtered <- list()
       for (m in sel_methods) {
         matched_mat <- NULL
         candidate_keys <- c(
+          paste0(m, "_", cur_mod, "_", cur_dset),
+          paste0(m, "_", cur_mod, "_", cur_dset_clean),
+          paste0(m, "_", tolower(cur_mod), "_", cur_dset),
+          paste0(m, "_", tolower(cur_mod), "_", cur_dset_clean),
+          paste0(m, "_", cur_dset),
+          paste0(m, "_", cur_dset_clean),
+          paste0(m, "_", cur_mod),
           paste0(m, " (", cur_dset, ")"),
+          paste0(m, " (", cur_dset_clean, ")"),
           paste0("Simulated: ", m, " (", cur_dset, ")"),
+          paste0("[Simulated] ", m, " ", cur_mod, " (", cur_dset_clean, ")"),
+          paste0("[Simulated] ", m, "_", cur_dset),
+          paste0("[", cur_dset, "] Simulated: ", m),
+          paste0("[", cur_dset, "] Simulated ", cur_mod, ": ", m),
           m,
           paste0("Simulated: ", m)
         )
         for (ck in candidate_keys) {
-          if (ck %in% names(sim_list)) { matched_mat <- sim_list[[ck]]; break }
+          if (!is.null(sim_list) && ck %in% names(sim_list)) { matched_mat <- sim_list[[ck]]; break }
           if (!is.null(rv$all_matrices) && ck %in% names(rv$all_matrices)) { matched_mat <- rv$all_matrices[[ck]]; break }
+        }
+        if (is.null(matched_mat) && !is.null(sim_list)) {
+          m_names <- names(sim_list)
+          hit <- m_names[grepl(paste0("^", m, "(_| |\\()"), m_names)]
+          if (length(hit) > 0) {
+            mod_hit <- hit[grepl(cur_mod, hit, ignore.case = TRUE)]
+            matched_mat <- if (length(mod_hit) > 0) sim_list[[mod_hit[1]]] else sim_list[[hit[1]]]
+          }
         }
         if (!is.null(matched_mat)) {
           sim_list_filtered[[m]] <- matched_mat
         }
       }
       if (length(sim_list_filtered) == 0) {
-        sim_list_filtered <- sim_list[intersect(sel_methods, names(sim_list))]
-        if (length(sim_list_filtered) == 0) sim_list_filtered <- sim_list
+        sim_list_filtered <- sim_list
+        clean_names <- sub("(_RNA|_ATAC)?(_Dataset.*| \\(Dataset.*\\)|\\[.*\\] )", "", names(sim_list_filtered))
+        clean_names <- sub("^(\\[.*\\]\\s*Simulated:\\s*|Simulated:\\s*)", "", clean_names)
+        names(sim_list_filtered) <- clean_names
       }
+      
+      ct_vec <- if (!is.null(rv$cell_types_map) && !is.null(rv$cell_types_map[[paste0(cur_dset_clean, "_", cur_mod)]])) {
+        rv$cell_types_map[[paste0(cur_dset_clean, "_", cur_mod)]]
+      } else {
+        rv$cell_types
+      }
+      bt_vec <- if (!is.null(rv$batches_map) && !is.null(rv$batches_map[[paste0(cur_dset_clean, "_", cur_mod)]])) {
+        rv$batches_map[[paste0(cur_dset_clean, "_", cur_mod)]]
+      } else {
+        rv$batch
+      }
+      if (!is.null(ct_vec) && length(ct_vec) != ncol(ref_mat)) ct_vec <- NULL
+      if (!is.null(bt_vec) && length(bt_vec) != ncol(ref_mat)) bt_vec <- NULL
       
       n_pcs <- if (!is.null(input$sld_emb_pcs)) input$sld_emb_pcs else 20
       perp <- if (!is.null(input$sld_emb_perp)) input$sld_emb_perp else 15
@@ -7984,8 +9123,8 @@ server <- function(input, output, session) {
         n_pcs = n_pcs,
         perplexity = perp,
         n_neighbors = n_nei,
-        cell_types = rv$cell_types,
-        batch = rv$batch
+        cell_types = ct_vec,
+        batch = bt_vec
       )
     })
   })
@@ -8012,12 +9151,18 @@ server <- function(input, output, session) {
     pt_sz <- if (!is.null(input$sld_emb_pt_size)) input$sld_emb_pt_size else 1.0
     alpha_val <- if (!is.null(input$sld_emb_alpha)) input$sld_emb_alpha else 0.8
     
+    single_sim <- input$sel_emb_single_sim
+    if (is.null(single_sim) || !nzchar(trimws(single_sim))) {
+      all_sims <- setdiff(unique(as.character(emb_data$Dataset)), "Reference")
+      single_sim <- if (length(all_sims) > 0) all_sims[1] else NULL
+    }
+    
     plot_dataset_embeddings(
       embedding_data = emb_data,
       reduction = input$sel_emb_reduction,
       layout = lay,
       color_by = input$sel_emb_color,
-      selected_methods = if (identical(lay, "side_by_side")) input$sel_emb_single_sim else input$chk_emb_methods,
+      selected_methods = if (identical(lay, "side_by_side")) single_sim else input$chk_emb_methods,
       pt_size = pt_sz,
       alpha = alpha_val,
       base_size = 12
@@ -8143,18 +9288,43 @@ server <- function(input, output, session) {
   )
   
   # Unified format downloader based on sel_download_format
+  # Dedicated Master Table Download Handlers inside the Table Box
+  output$download_master_table_excel <- downloadHandler(
+    filename = function() {
+      paste0("scSimEval_master_benchmark_scores_", Sys.Date(), ".xlsx")
+    },
+    content = function(file) {
+      req(rv$benchmark_df)
+      df_export <- rv$benchmark_df
+      if (!is.null(input$table_master_export_rows_all) &&
+          length(input$table_master_export_rows_all) > 0 &&
+          length(input$table_master_export_rows_all) < nrow(df_export)) {
+        df_export <- df_export[input$table_master_export_rows_all, , drop = FALSE]
+      }
+      export_excel_workbook(file, df_export, leaderboard_reactive(), rv$dataset_summary_df)
+    }
+  )
+
+  output$download_master_table_csv <- downloadHandler(
+    filename = function() {
+      paste0("scSimEval_master_benchmark_scores_", Sys.Date(), ".csv")
+    },
+    content = function(file) {
+      req(rv$benchmark_df)
+      df_export <- rv$benchmark_df
+      if (!is.null(input$table_master_export_rows_all) &&
+          length(input$table_master_export_rows_all) > 0 &&
+          length(input$table_master_export_rows_all) < nrow(df_export)) {
+        df_export <- df_export[input$table_master_export_rows_all, , drop = FALSE]
+      }
+      utils::write.csv(df_export, file, row.names = FALSE)
+    }
+  )
+
+  # Benchmark Results Session Export (Exclusively .rds for reproduction)
   output$download_benchmark_data <- downloadHandler(
     filename = function() {
-      fmt <- input$sel_download_format %||% "xlsx"
-      ext <- switch(fmt,
-        "xlsx" = ".xlsx",
-        "csv"  = ".csv",
-        "tsv"  = ".tsv",
-        "rds"  = ".rds",
-        "zip"  = ".zip",
-        ".xlsx"
-      )
-      paste0("scSimEval_benchmark_results_", Sys.Date(), ext)
+      paste0("scSimEval_benchmark_session_", Sys.Date(), ".rds")
     },
     content = function(file) {
       req(rv$benchmark_df)
@@ -8168,7 +9338,7 @@ server <- function(input, output, session) {
         df_export <- df_export[input$table_master_export_rows_all, , drop = FALSE]
       }
       
-      # Retain only raw evaluation metric values in exported table
+      # Retain both raw evaluation metric values and normalized scores in exported table
       raw_val <- if ("Score_Raw" %in% colnames(df_export)) {
         df_export$Score_Raw
       } else if ("Value" %in% colnames(df_export)) {
@@ -8178,12 +9348,19 @@ server <- function(input, output, session) {
       } else {
         df_export$Score
       }
-      df_export$Score <- NULL
+      norm_val <- if ("Score" %in% colnames(df_export)) {
+        df_export$Score
+      } else if ("Score_Norm" %in% colnames(df_export)) {
+        df_export$Score_Norm
+      } else {
+        raw_val
+      }
       df_export$Score_Norm <- NULL
       df_export$Value <- NULL
       df_export$Raw_Value <- NULL
-      df_export$Score_Raw <- raw_val
-      pref_cols <- c("Dataset", "Method", "Category", intersect("Property", colnames(df_export)), "Metric", "Score_Raw")
+      df_export$Score_Raw <- round(as.numeric(raw_val), 4)
+      df_export$Score <- round(as.numeric(norm_val), 4)
+      pref_cols <- c("Dataset", "Method", "Category", intersect("Property", colnames(df_export)), "Metric", "Score_Raw", "Score")
       col_order <- unique(c(pref_cols, colnames(df_export)))
       col_order <- intersect(col_order, colnames(df_export))
       df_export <- df_export[, col_order, drop = FALSE]
@@ -8259,33 +9436,29 @@ server <- function(input, output, session) {
     }
     if (!"Score" %in% colnames(df) && "Score_Norm" %in% colnames(df)) {
       df$Score <- df$Score_Norm
+    } else if (!"Score" %in% colnames(df)) {
+      df$Score <- df$Score_Raw
     }
-    # Remove redundant third score column (Score_Norm) so the user only sees exactly TWO clean score columns:
-    # 1. Score_Raw (Raw Metric Value in statistical/biological/computational units)
-    # 2. Score (Normalized Score in [0, 1])
-    df$Score_Norm <- NULL
     
-    # Retain ONLY the raw evaluation metric values column as requested:
-    raw_val <- if ("Score_Raw" %in% colnames(df)) {
-      df$Score_Raw
-    } else if ("Value" %in% colnames(df)) {
-      df$Value
-    } else if ("Raw_Value" %in% colnames(df)) {
-      df$Raw_Value
+    # Ensure Score is rounded normalized score in [0, 1]
+    df$Score <- round(as.numeric(df$Score), 4)
+    df$Score_Raw <- round(as.numeric(df$Score_Raw), 4)
+    
+    # Ensure Property column is present and never empty
+    if (!"Property" %in% colnames(df)) {
+      df$Property <- df$Metric
     } else {
-      df$Score
+      df$Property <- ifelse(is.na(df$Property) | df$Property == "", df$Metric, df$Property)
     }
     
-    # Drop redundant duplicate score columns so only raw evaluation metric values remain:
-    df$Score <- NULL
+    # Remove redundant intermediate columns
     df$Score_Norm <- NULL
     df$Value <- NULL
     df$Raw_Value <- NULL
-    df$Score_Raw <- raw_val
     
     # Establish clean, logical column ordering:
-    # Dataset -> Method -> Category -> Property -> Metric -> Score_Raw
-    pref_cols <- c("Dataset", "Method", "Category", intersect("Property", colnames(df)), "Metric", "Score_Raw")
+    # Dataset -> Method -> Category -> Property -> Metric -> Score_Raw -> Score -> Modality
+    pref_cols <- c("Dataset", "Method", "Category", "Property", "Metric", "Score_Raw", "Score", intersect("Modality", colnames(df)))
     col_order <- unique(c(pref_cols, colnames(df)))
     col_order <- intersect(col_order, colnames(df))
     df <- df[, col_order, drop = FALSE]

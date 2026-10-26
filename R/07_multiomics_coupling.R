@@ -32,10 +32,10 @@ calc_cross_modality_correlation <- function(
 ) {
   method <- match.arg(method)
   
-  ref_mod1 <- as.matrix(ref_mod1)
-  ref_mod2 <- as.matrix(ref_mod2)
-  sim_mod1 <- as.matrix(sim_mod1)
-  sim_mod2 <- as.matrix(sim_mod2)
+  ref_mod1 <- as.matrix(normalize_counts(ref_mod1))
+  ref_mod2 <- as.matrix(normalize_counts(ref_mod2))
+  sim_mod1 <- as.matrix(normalize_counts(sim_mod1))
+  sim_mod2 <- as.matrix(normalize_counts(sim_mod2))
   
   if (is.null(feature_pairs)) {
     n_pairs <- min(nrow(ref_mod1), nrow(ref_mod2), nrow(sim_mod1), nrow(sim_mod2))
@@ -258,8 +258,8 @@ calc_foscttm <- function(x, y, metric = c("euclidean", "cosine")) {
 #' calc_cross_modal_generation(r_rna, r_atac)
 #' @export
 calc_cross_modal_generation <- function(true_data, pred_data) {
-  true_data <- as.matrix(true_data)
-  pred_data <- as.matrix(pred_data)
+  true_data <- as.matrix(normalize_counts(true_data))
+  pred_data <- as.matrix(normalize_counts(pred_data))
   
   if (all(dim(true_data) != dim(pred_data))) {
     if (nrow(true_data) == ncol(pred_data) && ncol(true_data) == nrow(pred_data)) {
@@ -496,8 +496,8 @@ calc_network_jaccard <- function(edges1, edges2, k = NULL, directed = TRUE) {
 #' calc_atac_rna_coupling(r_rna, r_atac)
 #' @export
 calc_atac_rna_coupling <- function(atac_data, rna_data, linked_pairs = NULL) {
-  atac_data <- as.matrix(atac_data)
-  rna_data <- as.matrix(rna_data)
+  atac_data <- as.matrix(normalize_counts(atac_data))
+  rna_data <- as.matrix(normalize_counts(rna_data))
   
   if (is.null(linked_pairs)) {
     n_pairs <- min(nrow(atac_data), nrow(rna_data))
@@ -561,8 +561,8 @@ calc_coregulation_fidelity <- function(
   method = c("pearson", "spearman")
 ) {
   method <- match.arg(method)
-  ref_mat <- as.matrix(ref_data)
-  sim_mat <- as.matrix(sim_data)
+  ref_mat <- as.matrix(normalize_counts(ref_data))
+  sim_mat <- as.matrix(normalize_counts(sim_data))
   
   if (!is.list(modules)) {
     if (!is.null(names(modules))) {
@@ -655,8 +655,8 @@ calc_peak_coaccessibility_fidelity <- function(
   method = c("spearman", "pearson")
 ) {
   method <- match.arg(method)
-  ref_mat <- as.matrix(ref_atac)
-  sim_mat <- as.matrix(sim_atac)
+  ref_mat <- as.matrix(normalize_counts(ref_atac))
+  sim_mat <- as.matrix(normalize_counts(sim_atac))
   
   common_peaks <- intersect(rownames(ref_mat), rownames(sim_mat))
   if (length(common_peaks) < 10) {
@@ -722,8 +722,8 @@ calc_coexpression_module_fidelity <- function(
   n_modules = 5,
   top_genes = 200
 ) {
-  ref_m <- as.matrix(ref_mat)
-  sim_m <- as.matrix(sim_mat)
+  ref_m <- as.matrix(normalize_counts(ref_mat))
+  sim_m <- as.matrix(normalize_counts(sim_mat))
   
   common_genes <- intersect(rownames(ref_m), rownames(sim_m))
   if (length(common_genes) < 20) {

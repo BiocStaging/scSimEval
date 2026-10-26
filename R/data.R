@@ -114,3 +114,59 @@
 #' table(example_batch_info)
 #' @export
 "example_batch_info"
+
+#' Real Paired Single-Cell Multiomics Benchmark Dataset (Rice Bud)
+#'
+#' A real, pre-processed paired single-cell RNA-seq and ATAC-seq benchmark dataset of
+#' rice bud tissue (\emph{Oryza sativa}, GEO accession GSE232863). Contains paired
+#' empirical reference profiles (200 genes x 100 cells for RNA, 200 peaks x 100 cells for ATAC)
+#' across 8 biological cell types and 2 batches, alongside simulated outputs from 6 major
+#' single-cell multiomics simulators (\code{scMultiSim}, \code{scDesign3}, \code{MOSim},
+#' \code{scCross}, \code{scMoMtF}, and \code{Matilda}) and observed scalability benchmarks
+#' (runtime in seconds and peak RAM in MiB).
+#'
+#' @docType data
+#' @name example_rice_bud
+#' @usage data(example_rice_bud)
+#' @format A list with 4 elements:
+#' \describe{
+#'   \item{metadata}{List containing organism, tissue, GEO accession (GSE232863), data type (Paired), and description.}
+#'   \item{reference}{List containing empirical reference sparse matrices \code{rna} (200 x 100) and \code{atac} (200 x 100), \code{cell_types} (8 cell types), and \code{batches} (2 batches).}
+#'   \item{simulated}{Named list of simulated outputs for 6 simulators: \code{scMultiSim}, \code{scDesign3}, \code{MOSim}, \code{scCross}, \code{scMoMtF}, and \code{Matilda}, each with \code{rna} and \code{atac} count matrices.}
+#'   \item{scalability_benchmarks}{A data.frame with benchmarked \code{Method}, \code{Runtime_Seconds}, and \code{PeakRAM_MiB}.}
+#' }
+#' @source Gene Expression Omnibus (GEO) GSE232863. Preprocessed via standard rice tissue pipeline.
+#' @examples
+#' data(example_rice_bud)
+#' dim(example_rice_bud$reference$rna)
+#' dim(example_rice_bud$reference$atac)
+#' names(example_rice_bud$simulated)
+"example_rice_bud"
+
+#' Real Unpaired Single-Cell Multiomics Benchmark Dataset (Soybean Root)
+#'
+#' A real, pre-processed unpaired single-cell RNA-seq and ATAC-seq benchmark dataset of
+#' soybean root tissue (\emph{Glycine max}). Contains independent empirical reference profiles
+#' (200 genes x 100 cells for RNA, 200 peaks x 100 cells for ATAC) with modality-specific
+#' cell-type and batch annotations, alongside simulated outputs from 3 multiomics simulators
+#' (\code{scMultiSim}, \code{scDesign3}, and \code{scCross}) and observed
+#' scalability benchmarks.
+#'
+#' @docType data
+#' @name example_soybean_root
+#' @usage data(example_soybean_root)
+#' @format A list with 4 elements:
+#' \describe{
+#'   \item{metadata}{List containing organism, tissue, data type (Unpaired), and description.}
+#'   \item{reference}{List containing empirical reference matrices \code{rna} (200 x 100), \code{atac} (200 x 100), \code{rna_cell_types}, \code{rna_batches}, \code{atac_cell_types}, and \code{atac_batches}.}
+#'   \item{simulated}{Named list of simulated outputs for 3 simulators: \code{scMultiSim}, \code{scDesign3}, and \code{scCross}, each with \code{rna} and \code{atac} count matrices.}
+#'   \item{scalability_benchmarks}{A data.frame with benchmarked runtime and peak RAM for RNA, ATAC, and combined execution.}
+#' }
+#' @source Preprocessed from soybean root single-cell atlas datasets.
+#' @examples
+#' data(example_soybean_root)
+#' dim(example_soybean_root$reference$rna)
+#' dim(example_soybean_root$reference$atac)
+#' names(example_soybean_root$simulated)
+"example_soybean_root"
+

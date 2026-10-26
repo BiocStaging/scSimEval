@@ -16,13 +16,13 @@ infer_scrna_pseudotime <- function(data, n_top = 500) {
   n_cells <- ncol(data)
   if (n_cells < 3) return(seq(0, 1, length.out = n_cells))
   
-  # Select top variable genes directly without densifying the full matrix
-  gene_vars <- fast_row_vars(data)
+  data_norm <- normalize_counts(data)
+  gene_vars <- fast_row_vars(data_norm)
   n_top_use <- min(n_top, length(gene_vars))
   top_idx <- order(gene_vars, decreasing = TRUE)[seq_len(n_top_use)]
   
   # Run PCA on top variable genes
-  sub_mat <- as.matrix(data[top_idx, , drop = FALSE])
+  sub_mat <- as.matrix(data_norm[top_idx, , drop = FALSE])
   pca_pts <- fast_pca(t(sub_mat), n_pcs = 2, n_hvg = n_top, scale = FALSE)
   pc1 <- pca_pts[, 1]
   
@@ -51,7 +51,18 @@ infer_scrna_pseudotime <- function(data, n_top = 500) {
 #' infer_scrna_lineage_tree(example_scrna$ref, example_scrna$cell_types)
 #' @export
 infer_scrna_lineage_tree <- function(data, cell_types, method = "ward.D2") {
-  mat <- as.matrix(data)
+  mat <- as.matrix(normalize_counts(data))
+  if (is.data.frame(cell_types)) {
+    cell_types <- if (!is.null(cell_types$CellType)) {
+      cell_types$CellType
+    } else if (ncol(cell_types) >= 2) {
+      cell_types[[2]]
+    } else {
+      cell_types[[1]]
+    }
+  } else if (is.list(cell_types) && !is.factor(cell_types)) {
+    cell_types <- cell_types[[1]]
+  }
   cell_types <- as.factor(cell_types)
   unique_cts <- levels(cell_types)
   

@@ -930,25 +930,42 @@ calc_mmd <- function(
     sim_mat <- sim_mat[seq_len(n_common), , drop = FALSE]
   }
   
+  # Standard single-cell protocol (CFGen, cfDiffusion, scCross):
+  # Library-size normalize and log-transform counts, then project to low-dimensional PCA space
+  ref_norm <- normalize_counts(ref_mat)
+  sim_norm <- normalize_counts(sim_mat)
+  
   # Subsample features to top HVGs if large
-  if (nrow(ref_mat) > max_features) {
-    rv <- fast_row_vars(ref_mat)
+  if (nrow(ref_norm) > max_features) {
+    rv <- fast_row_vars(ref_norm)
     top_f <- order(rv, decreasing = TRUE)[seq_len(max_features)]
-    ref_mat <- ref_mat[top_f, , drop = FALSE]
-    sim_mat <- sim_mat[top_f, , drop = FALSE]
+    ref_norm <- ref_norm[top_f, , drop = FALSE]
+    sim_norm <- sim_norm[top_f, , drop = FALSE]
   }
   
-  x <- t(as.matrix(ref_mat))
-  y <- t(as.matrix(sim_mat))
+  x_raw <- t(as.matrix(ref_norm))
+  y_raw <- t(as.matrix(sim_norm))
   
   # Subsample cells if needed
-  if (nrow(x) > max_cells) x <- x[sample(nrow(x), max_cells), , drop = FALSE]
-  if (nrow(y) > max_cells) y <- y[sample(nrow(y), max_cells), , drop = FALSE]
+  if (nrow(x_raw) > max_cells) x_raw <- x_raw[sample(nrow(x_raw), max_cells), , drop = FALSE]
+  if (nrow(y_raw) > max_cells) y_raw <- y_raw[sample(nrow(y_raw), max_cells), , drop = FALSE]
+  
+  # Joint PCA projection (top 30 PCs) to evaluate kernel distance in manifold space
+  combined <- rbind(x_raw, y_raw)
+  n_pcs_use <- min(30, ncol(combined) - 1, nrow(combined) - 1)
+  if (n_pcs_use >= 2 && ncol(combined) > n_pcs_use) {
+    pca_comb <- fast_pca(combined, n_pcs = n_pcs_use, scale = FALSE)
+    x <- pca_comb[seq_len(nrow(x_raw)), , drop = FALSE]
+    y <- pca_comb[(nrow(x_raw) + 1):nrow(combined), , drop = FALSE]
+  } else {
+    x <- x_raw
+    y <- y_raw
+  }
   
   m <- nrow(x)
   n <- nrow(y)
   
-  # Pairwise squared Euclidean distance
+  # Pairwise squared Euclidean distance in latent manifold space
   dist_xx <- as.matrix(stats::dist(x))^2
   dist_yy <- as.matrix(stats::dist(y))^2
   
@@ -1029,16 +1046,20 @@ calc_frechet_singlecell_distance <- function(
     sim_mat <- sim_mat[seq_len(n_common), , drop = FALSE]
   }
   
+  # Standard single-cell protocol: library-size normalize & log-transform before PCA
+  ref_norm <- normalize_counts(ref_mat)
+  sim_norm <- normalize_counts(sim_mat)
+  
   # Subsample features to top HVGs if features are large
-  if (nrow(ref_mat) > max_features) {
-    rv <- fast_row_vars(ref_mat)
+  if (nrow(ref_norm) > max_features) {
+    rv <- fast_row_vars(ref_norm)
     top_f <- order(rv, decreasing = TRUE)[seq_len(max_features)]
-    ref_mat <- ref_mat[top_f, , drop = FALSE]
-    sim_mat <- sim_mat[top_f, , drop = FALSE]
+    ref_norm <- ref_norm[top_f, , drop = FALSE]
+    sim_norm <- sim_norm[top_f, , drop = FALSE]
   }
   
-  x <- t(as.matrix(ref_mat))
-  y <- t(as.matrix(sim_mat))
+  x <- t(as.matrix(ref_norm))
+  y <- t(as.matrix(sim_norm))
   
   # Joint PCA projection for consistent coordinate frame
   n_x <- nrow(x)
@@ -1046,7 +1067,7 @@ calc_frechet_singlecell_distance <- function(
   combined <- rbind(x, y)
   
   rank_use <- min(n_pcs, ncol(combined) - 1, nrow(combined) - 1)
-  pca_pts <- fast_pca(combined, n_pcs = rank_use, n_hvg = max_features, scale = TRUE)
+  pca_pts <- fast_pca(combined, n_pcs = rank_use, n_hvg = max_features, scale = FALSE)
   if (is.null(pca_pts) || ncol(pca_pts) < 2) {
     return(list(fsd = NA_real_, mean_discrepancy = NA_real_, cov_discrepancy = NA_real_))
   }
@@ -1066,7 +1087,10 @@ calc_frechet_singlecell_distance <- function(
   # Covariance square root product trace: Tr((cov_ref %*% cov_sim)^(1/2))
   # via eigenvalues of cov_ref %*% cov_sim
   cov_prod <- cov_ref %*% cov_sim
-  eigen_vals <- eigen(cov_prod, only.values = TRUE)$values
+  eigen_vals <- tryCatch({
+    if (any(!is.finite(cov_prod))) stop("non-finite")
+    eigen(cov_prod, only.values = TRUE)$values
+  }, error = function(e) rep(0, ncol(cov_prod)))
   cov_tr_sqrt <- sum(sqrt(pmax(0, Re(eigen_vals))))
   
   cov_diff <- sum(diag(cov_ref)) + sum(diag(cov_sim)) - 2 * cov_tr_sqrt

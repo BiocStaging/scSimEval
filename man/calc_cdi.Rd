@@ -36,7 +36,7 @@ A list containing:
 }
 \description{
 Evaluates the deviation and goodness-of-fit of single-cell clustering labels directly
-from raw or normalized count matrices without requiring ground-truth cell-type labels
+from raw or normalized count matrices when evaluating unsupervised cell state purity
 (Fang et al., Genome Biology 2022; benchmarked in scDesign3, Song et al., Nat Biotechnol 2024).
 CDI calculates the penalized log-likelihood (CDI-AIC and CDI-BIC) of count data
 under a cluster-specific Poisson or Negative Binomial GLM with cell size factors.

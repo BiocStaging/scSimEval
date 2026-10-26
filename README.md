@@ -19,7 +19,7 @@ The package is primarily optimized for:
 
 ## Key Highlights
 
-- **Zero External Ground Truth Required:** Operates directly on the empirical reference matrices and simulated matrices you already have.
+- **Comprehensive Empirical Benchmarking:** Directly evaluates simulated datasets against real biological reference data across 62 evaluation measures.
 - **62 Evaluation Measures Across 8 Canonical Categories:** Comprehensively evaluates distributions, zero counts, cell clustering, batch mixing, marker genes, developmental lineages, cross-modal coupling, and runtime/RAM scalability.
 - **Support for Paired, Unpaired & Mosaic Multiomics:** Seamlessly switches between full cell-level coupling metrics (FOSCTTM, Match@1) for paired co-assays and population-level concordance metrics (label transfer accuracy/F1, module co-expression) for unpaired or mosaic profiles.
 - **Low-Dimensional Cell Embeddings (UMAP, t-SNE, PCA):** Multi-dataset non-linear coordinate projections comparing reference and simulated cells, accompanied by an interactive table of quantitative quality metrics (Mean Silhouette width, ARI cluster fidelity, mean library size, mean detected features, and library size discrepancy %).
@@ -63,7 +63,7 @@ The evaluation process follows four simple steps:
 Provide your real experimental reference and simulated count matrices (`ref_rna`, `sim_rna`, `ref_atac`, `sim_atac`), along with cell type labels (`cell_types`), batch labels (`batch_info`), and computer resource records (runtime in seconds and peak RAM in MiB).
 
 ### Step 2: Calculate Evaluation Measures
-`scSimEval` calculates 62 evaluation measures across 8 core categories without needing any artificial ground truth.
+`scSimEval` calculates 62 evaluation measures across 8 core categories.
 
 ### Step 3: Run the Complete Benchmark
 Execute the complete evaluation in a single command using `evaluate_simulation_accuracy()`, `evaluate_multiomics_accuracy()`, or `evaluate_multiple_datasets()`.
@@ -240,7 +240,7 @@ To ensure fair comparison across metrics with different units and directions:
 
 3. **Visual Mapping Rules:**
    * **Bubble Size:** Directly proportional to the standardized score ($0.00$ to $1.00$). Larger bubbles indicate higher simulation quality.
-   * **Glyph Shape:** Top-performing tools ($\ge 0.96$) are highlighted with bold squares, while standard scores are shown as circles.
+   * **Glyph Highlighting:** The best-performing simulator for each metric is highlighted with a bold circular outline, while standard scores are shown as circles with standard outlines.
    * **Category Colors:** Distinct color for each evaluation category.
    * **Leaderboard Ranking:** Simulation methods are ordered top-to-bottom on the vertical axis by composite average score.
 

@@ -225,7 +225,7 @@ of top highly variable genes."><meta property="og:image" content="https://kabila
 
     <a class="navbar-brand me-2" href="../index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -291,26 +291,30 @@ of top highly variable genes.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_scrna</span>, package <span class="op">=</span> <span class="st">"scSimEval"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">infer_scrna_pseudotime</span><span class="op">(</span><span class="va">example_scrna</span><span class="op">$</span><span class="va">ref</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Cell_01   Cell_02   Cell_03   Cell_04   Cell_05   Cell_06   Cell_07   Cell_08 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.4077206 0.3824215 0.2083128 0.3588559 0.3305395 0.2891701 0.1925207 0.4602022 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Cell_09   Cell_10   Cell_11   Cell_12   Cell_13   Cell_14   Cell_15   Cell_16 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.2697856 0.2915467 0.2126668 0.5736764 0.5735789 0.2865348 0.2232895 0.2670922 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Cell_17   Cell_18   Cell_19   Cell_20   Cell_21   Cell_22   Cell_23   Cell_24 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.3264004 0.3412905 0.3647760 0.5085966 0.2759201 0.4556877 0.2732168 0.4202623 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Cell_25   Cell_26   Cell_27   Cell_28   Cell_29   Cell_30   Cell_31   Cell_32 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.8008962 0.4600573 0.3223783 0.2694681 0.5034364 0.2783259 0.2966012 0.2199424 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Cell_33   Cell_34   Cell_35   Cell_36   Cell_37   Cell_38   Cell_39   Cell_40 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.7308869 0.3190394 0.3035495 0.2611547 0.3065771 0.6495041 0.2249674 0.3793338 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Cell_41   Cell_42   Cell_43   Cell_44   Cell_45   Cell_46   Cell_47   Cell_48 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.5402216 0.2549464 0.4271279 0.4228344 0.2297063 0.7789738 0.3981666 0.3743102 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Cell_49   Cell_50   Cell_51   Cell_52   Cell_53   Cell_54   Cell_55   Cell_56 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.3095495 0.3068042 0.3956266 0.5233562 0.2976209 0.2968928 0.0000000 0.4711851 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Cell_57   Cell_58   Cell_59   Cell_60   Cell_61   Cell_62   Cell_63   Cell_64 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.4100254 0.2786418 0.3588908 0.4419328 0.4710782 0.4995378 0.1989761 0.5595960 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Cell_65   Cell_66   Cell_67   Cell_68   Cell_69   Cell_70   Cell_71   Cell_72 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.3185634 0.1639920 1.0000000 0.5901425 0.5127609 0.4472541 0.6446821 0.3932446 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Cell_73   Cell_74   Cell_75   Cell_76   Cell_77   Cell_78   Cell_79   Cell_80 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 0.4083712 0.4369437 0.2657939 0.2581369 0.7184793 0.5168538 0.3310625 0.5513640 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Cell_01    Cell_02    Cell_03    Cell_04    Cell_05    Cell_06    Cell_07 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.41759739 0.45901927 0.49637168 0.77353790 0.34387925 0.84781040 0.52877867 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Cell_08    Cell_09    Cell_10    Cell_11    Cell_12    Cell_13    Cell_14 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.54790473 0.42466216 0.39397755 0.34431179 0.69547915 0.33091467 0.38385344 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Cell_15    Cell_16    Cell_17    Cell_18    Cell_19    Cell_20    Cell_21 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.67072136 0.23467611 0.60165132 0.44670669 0.85094013 0.38061329 0.28963526 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Cell_22    Cell_23    Cell_24    Cell_25    Cell_26    Cell_27    Cell_28 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.36523250 0.54499857 0.81496222 0.35765557 0.49405864 0.29677919 0.66358160 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Cell_29    Cell_30    Cell_31    Cell_32    Cell_33    Cell_34    Cell_35 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.35807340 0.42839411 0.29153147 0.84343713 0.57763568 0.80586828 0.61264403 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Cell_36    Cell_37    Cell_38    Cell_39    Cell_40    Cell_41    Cell_42 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.75374225 0.40209081 0.72121703 0.58482378 0.70780559 0.87851194 1.00000000 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Cell_43    Cell_44    Cell_45    Cell_46    Cell_47    Cell_48    Cell_49 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.01599112 0.66400402 0.82871228 0.33085210 0.57096273 0.59476202 0.60315576 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Cell_50    Cell_51    Cell_52    Cell_53    Cell_54    Cell_55    Cell_56 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.41207545 0.72506061 0.54074057 0.05658093 0.40222307 0.00000000 0.48314164 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Cell_57    Cell_58    Cell_59    Cell_60    Cell_61    Cell_62    Cell_63 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.79510404 0.54572867 0.78919845 0.78704550 0.67376888 0.70963373 0.47499017 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Cell_64    Cell_65    Cell_66    Cell_67    Cell_68    Cell_69    Cell_70 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.31516190 0.16160572 0.28523016 0.54812465 0.18068369 0.53231035 0.58105737 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Cell_71    Cell_72    Cell_73    Cell_74    Cell_75    Cell_76    Cell_77 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.82357821 0.59226123 0.47771115 0.48496802 0.23412951 0.69182896 0.58624743 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Cell_78    Cell_79    Cell_80 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.38078131 0.93076680 0.48873806 </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -244,7 +244,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -300,8 +300,8 @@
 simulated count data is important before testing analysis tools such as
 clustering, batch correction, or differential expression algorithms.</p>
 <p>This tutorial shows how to evaluate synthetic scRNA-seq data
-step-by-step using <strong><code>scSimEval</code></strong> without
-needing any artificial ground truth.</p>
+step-by-step using <strong><code>scSimEval</code></strong> across 62
+evaluation measures.</p>
 <hr>
 </div>
 <div class="section level2">
@@ -350,17 +350,6 @@ match the real reference data using
 <span>  compute_bivariate <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose           <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
 <span></span>
 <span><span class="co"># Inspect statistical distance metrics for library size</span></span>
 <span><span class="va">lib_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">unimodal_res</span><span class="op">$</span><span class="va">metrics_summary_table</span>, <span class="va">Property</span> <span class="op">==</span> <span class="st">"library_size"</span><span class="op">)</span></span>
@@ -388,13 +377,13 @@ in unsupervised and supervised clustering using
 <span></span>
 <span><span class="co"># Preview clustering concordance metrics</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Average Silhouette Width (Simulated):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">clust_res</span><span class="op">$</span><span class="va">silhouette</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Average Silhouette Width (Simulated): 0.0337</span></span>
+<span><span class="co">#&gt; Average Silhouette Width (Simulated): 0.0034</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Davies-Bouldin Index:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">clust_res</span><span class="op">$</span><span class="va">davies_bouldin</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Davies-Bouldin Index: 4.9116</span></span>
+<span><span class="co">#&gt; Davies-Bouldin Index: 7.9168</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Adjusted Rand Index (ARI):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">clust_res</span><span class="op">$</span><span class="va">ARI</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Adjusted Rand Index (ARI): 0.0968</span></span>
+<span><span class="co">#&gt; Adjusted Rand Index (ARI): -0.0071</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Normalized Mutual Information (NMI):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">clust_res</span><span class="op">$</span><span class="va">NMI</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Normalized Mutual Information (NMI): 0.1138</span></span></code></pre></div>
+<span><span class="co">#&gt; Normalized Mutual Information (NMI): 0.0041</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="batch-effects-and-confounder-mixing-category-4">2.3 Batch Effects and Confounder Mixing (Category 4)<a class="anchor" aria-label="anchor" href="#batch-effects-and-confounder-mixing-category-4"></a>
@@ -412,11 +401,11 @@ without masking biological differences using
 <span></span>
 <span><span class="co"># Preview batch mixing metrics</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Batch Shannon Entropy:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">batch_res</span><span class="op">$</span><span class="va">shannon_entropy</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Batch Shannon Entropy: 0.9796</span></span>
+<span><span class="co">#&gt; Batch Shannon Entropy: 0.9757</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Principal Component Regression (PCR R2):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">batch_res</span><span class="op">$</span><span class="va">pcr_r2</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Principal Component Regression (PCR R2): 0.0121</span></span>
+<span><span class="co">#&gt; Principal Component Regression (PCR R2): 0.0095</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cross-Batch Transfer Accuracy:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">batch_res</span><span class="op">$</span><span class="va">cross_batch_accuracy</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Cross-Batch Transfer Accuracy: 0.6125</span></span></code></pre></div>
+<span><span class="co">#&gt; Cross-Batch Transfer Accuracy: 0.5375</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="differential-expression-deg-fidelity-category-5">2.4 Differential Expression (DEG) Fidelity (Category 5)<a class="anchor" aria-label="anchor" href="#differential-expression-deg-fidelity-category-5"></a>
@@ -461,12 +450,11 @@ scRNA-seq expression counts using
 <span>  cell_types_ref <span class="op">=</span> <span class="va">example_scrna</span><span class="op">$</span><span class="va">cell_types</span>,</span>
 <span>  cell_types_sim <span class="op">=</span> <span class="va">example_scrna</span><span class="op">$</span><span class="va">cell_types</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Pseudotime Spearman Correlation:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">traj_res</span><span class="op">$</span><span class="va">pseudotime_correlation</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Pseudotime Spearman Correlation: 1</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Lineage Tree Branch Height RMSE:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">traj_res</span><span class="op">$</span><span class="va">tree_height_rmse</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Lineage Tree Branch Height RMSE: 1.8672</span></span></code></pre></div>
+<span><span class="co">#&gt; Lineage Tree Branch Height RMSE: 1.0145</span></span></code></pre></div>
 <hr>
 </div>
 </div>
@@ -485,17 +473,6 @@ evaluation suite in a single coordinated command:</p>
 <span>  compute_bivariate <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose           <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
 <span></span>
 <span><span class="co"># Preview tidy evaluation summary</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">eval_res</span><span class="op">$</span><span class="va">metrics_summary_table</span><span class="op">)</span></span>
@@ -528,13 +505,12 @@ high-resolution diagnostic plotting:</p>
 <p>This demonstration illustrates how <code>scSimEval</code>
 comprehensively assesses scRNA-seq simulations across distributions,
 zero patterns, clustering, batch integration, marker genes, and
-trajectory dynamics without requiring artificial ground-truth
-labels.</p>
+trajectory dynamics across all 62 evaluation measures.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; R version 4.6.1 (2026-06-24 ucrt)</span></span>
 <span><span class="co">#&gt; Platform: x86_64-w64-mingw32/x64</span></span>
-<span><span class="co">#&gt; Running under: Windows 11 x64 (build 26200)</span></span>
+<span><span class="co">#&gt; Running under: Windows 11 x64 (build 26300)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Matrix products: default</span></span>
 <span><span class="co">#&gt;   LAPACK version 3.12.1</span></span>
@@ -551,7 +527,7 @@ labels.</p>
 <span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt; [1] scSimEval_0.99.7</span></span>
+<span><span class="co">#&gt; [1] scSimEval_0.99.8</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
 <span><span class="co">#&gt;   [1] RColorBrewer_1.1-3          jsonlite_2.0.0             </span></span>

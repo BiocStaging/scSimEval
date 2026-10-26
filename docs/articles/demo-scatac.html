@@ -244,7 +244,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -345,17 +345,6 @@ library sizes match real distributions using
 <span>  compute_bivariate <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose           <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
 <span></span>
 <span><span class="co"># Inspect peak accessibility and library size statistical distances</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">atac_res</span><span class="op">$</span><span class="va">metrics_summary_table</span>, <span class="fl">8</span><span class="op">)</span></span>
@@ -385,13 +374,13 @@ preserves genuine biological separation using
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Average Silhouette Width (Simulated):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">atac_clust</span><span class="op">$</span><span class="va">silhouette</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Average Silhouette Width (Simulated): 0.0558</span></span>
+<span><span class="co">#&gt; Average Silhouette Width (Simulated): 0.0415</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Davies-Bouldin Index:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">atac_clust</span><span class="op">$</span><span class="va">davies_bouldin</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Davies-Bouldin Index: 3.6911</span></span>
+<span><span class="co">#&gt; Davies-Bouldin Index: 4.1632</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Adjusted Rand Index (ARI):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">atac_clust</span><span class="op">$</span><span class="va">ARI</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Adjusted Rand Index (ARI): 0.7627</span></span>
+<span><span class="co">#&gt; Adjusted Rand Index (ARI): 0.5955</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Normalized Mutual Information (NMI):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">atac_clust</span><span class="op">$</span><span class="va">NMI</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Normalized Mutual Information (NMI): 0.721</span></span></code></pre></div>
+<span><span class="co">#&gt; Normalized Mutual Information (NMI): 0.4934</span></span></code></pre></div>
 <hr>
 </div>
 <div class="section level2">
@@ -409,11 +398,11 @@ confound biological signals. We evaluate batch mixing metrics using
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Batch Shannon Entropy:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">atac_batch</span><span class="op">$</span><span class="va">shannon_entropy</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Batch Shannon Entropy: 0.9671</span></span>
+<span><span class="co">#&gt; Batch Shannon Entropy: 0.9727</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Principal Component Regression (PCR R2):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">atac_batch</span><span class="op">$</span><span class="va">pcr_r2</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Principal Component Regression (PCR R2): 0.0125</span></span>
+<span><span class="co">#&gt; Principal Component Regression (PCR R2): 0.0138</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cross-Batch Transfer Accuracy:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">atac_batch</span><span class="op">$</span><span class="va">cross_batch_accuracy</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Cross-Batch Transfer Accuracy: 0.825</span></span></code></pre></div>
+<span><span class="co">#&gt; Cross-Batch Transfer Accuracy: 0.7375</span></span></code></pre></div>
 <hr>
 </div>
 <div class="section level2">
@@ -430,13 +419,13 @@ accessibility:</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Co-Accessibility RV Coefficient:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">coacc_res</span><span class="op">$</span><span class="va">rv_coefficient</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Co-Accessibility RV Coefficient: 0.6014</span></span>
+<span><span class="co">#&gt; Co-Accessibility RV Coefficient: 0.5721</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Peak Co-Accessibility Pearson Correlation:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">coacc_res</span><span class="op">$</span><span class="va">coaccessibility_pearson</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Peak Co-Accessibility Pearson Correlation: 0.1128</span></span>
+<span><span class="co">#&gt; Peak Co-Accessibility Pearson Correlation: 0.029</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Peak Co-Accessibility Spearman Correlation:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">coacc_res</span><span class="op">$</span><span class="va">coaccessibility_spearman</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Peak Co-Accessibility Spearman Correlation: 0.0902</span></span>
+<span><span class="co">#&gt; Peak Co-Accessibility Spearman Correlation: 0.0248</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Frobenius Matrix Distance:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">coacc_res</span><span class="op">$</span><span class="va">frobenius_distance</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Frobenius Matrix Distance: 0.0053</span></span></code></pre></div>
+<span><span class="co">#&gt; Frobenius Matrix Distance: 0.0054</span></span></code></pre></div>
 <hr>
 </div>
 <div class="section level2">
@@ -453,17 +442,6 @@ command:</p>
 <span>  compute_bivariate <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose           <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
-<span><span class="co">#&gt; Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span></span>
 <span></span>
 <span><span class="co"># Inspect tidy summary table</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">master_atac</span><span class="op">$</span><span class="va">metrics_summary_table</span><span class="op">)</span></span>
@@ -481,13 +459,13 @@ command:</p>
 </h2>
 <p><code>scSimEval</code> effectively benchmarks scATAC-seq simulations,
 validating peak insertion distributions, extreme sparsity, cell type
-clustering, batch mixing, and chromatin peak co-accessibility without
-requiring synthetic ground-truth annotations.</p>
+clustering, batch mixing, and chromatin peak co-accessibility across all
+62 evaluation measures.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; R version 4.6.1 (2026-06-24 ucrt)</span></span>
 <span><span class="co">#&gt; Platform: x86_64-w64-mingw32/x64</span></span>
-<span><span class="co">#&gt; Running under: Windows 11 x64 (build 26200)</span></span>
+<span><span class="co">#&gt; Running under: Windows 11 x64 (build 26300)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Matrix products: default</span></span>
 <span><span class="co">#&gt;   LAPACK version 3.12.1</span></span>
@@ -504,7 +482,7 @@ requiring synthetic ground-truth annotations.</p>
 <span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt; [1] scSimEval_0.99.7</span></span>
+<span><span class="co">#&gt; [1] scSimEval_0.99.8</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
 <span><span class="co">#&gt;   [1] RColorBrewer_1.1-3          jsonlite_2.0.0             </span></span>

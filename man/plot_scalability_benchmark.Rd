@@ -9,6 +9,7 @@ plot_scalability_benchmark(
   type = c("composite", "runtime", "memory", "tradeoff", "cost", "throughput",
     "efficiency"),
   layout = c("4panel", "6panel"),
+  modality = c("total", "rna", "atac"),
   cell_count = 1000,
   palette = NULL,
   base_size = 11
@@ -25,6 +26,9 @@ Default \code{"composite"}.}
 
 \item{layout}{Character. For composite dashboards: \code{"4panel"} (runtime, memory, tradeoff, cost footprint)
 or \code{"6panel"} (adds throughput). Default \code{"4panel"}.}
+
+\item{modality}{Character string specifying the modality layer to benchmark: \code{"total"} (default, combined runtime and memory),
+\code{"rna"} (scRNA-seq layer only), or \code{"atac"} (scATAC-seq layer only).}
 
 \item{cell_count}{Integer. Number of cells processed in the benchmark, used to calculate
 simulation throughput (\code{cells / second}). Default \code{1000}.}

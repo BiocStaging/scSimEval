@@ -225,7 +225,7 @@ Plot Multi-Dimensional Computational Scalability Benchmark"><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -272,6 +272,7 @@ Plot Multi-Dimensional Computational Scalability Benchmark</p>
 <span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"composite"</span>, <span class="st">"runtime"</span>, <span class="st">"memory"</span>, <span class="st">"tradeoff"</span>, <span class="st">"cost"</span>, <span class="st">"throughput"</span>,</span>
 <span>    <span class="st">"efficiency"</span><span class="op">)</span>,</span>
 <span>  layout <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"4panel"</span>, <span class="st">"6panel"</span><span class="op">)</span>,</span>
+<span>  modality <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"total"</span>, <span class="st">"rna"</span>, <span class="st">"atac"</span><span class="op">)</span>,</span>
 <span>  cell_count <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  palette <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  base_size <span class="op">=</span> <span class="fl">11</span></span>
@@ -297,6 +298,11 @@ Default <code>"composite"</code>.</p></dd>
 <dt id="arg-layout">layout<a class="anchor" aria-label="anchor" href="#arg-layout"></a></dt>
 <dd><p>Character. For composite dashboards: <code>"4panel"</code> (runtime, memory, tradeoff, cost footprint)
 or <code>"6panel"</code> (adds throughput). Default <code>"4panel"</code>.</p></dd>
+
+
+<dt id="arg-modality">modality<a class="anchor" aria-label="anchor" href="#arg-modality"></a></dt>
+<dd><p>Character string specifying the modality layer to benchmark: <code>"total"</code> (default, combined runtime and memory),
+<code>"rna"</code> (scRNA-seq layer only), or <code>"atac"</code> (scATAC-seq layer only).</p></dd>
 
 
 <dt id="arg-cell-count">cell_count<a class="anchor" aria-label="anchor" href="#arg-cell-count"></a></dt>
@@ -331,26 +337,7 @@ memory consumption in MiB).</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> [1/5] Extracting cell-level properties...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> [2/5] Extracting feature-level properties...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> [3/5] Computing univariate accuracy metrics...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Metric: 'bhattacharyya' with unit: 'log'; comparing: 2 vectors</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> [4/5] Computing bivariate metrics (Fasano-Franceschini, Peacock, KDE zstat, 2D EMD)...</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>argument is not numeric or logical: returning NA</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>emd: Maximum number of iterations has been reached (500)</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>argument is not numeric or logical: returning NA</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>emd: Maximum number of iterations has been reached (500)</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>argument is not numeric or logical: returning NA</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>emd: Maximum number of iterations has been reached (500)</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>argument is not numeric or logical: returning NA</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>emd: Maximum number of iterations has been reached (500)</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> [5/5] Computing zero-probability and manifold distances...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Unimodal accuracy evaluation complete.</span>
 </code></pre></div>

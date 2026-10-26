@@ -1,3 +1,6 @@
+library(testthat)
+library(Matrix)
+
 test_that("example_scrna dataset has valid structure and dimensions", {
   data("example_scrna", package = "scSimEval", envir = environment())
   expect_true(exists("example_scrna"))
@@ -50,4 +53,49 @@ test_that("example_multiomics dataset has paired modalities and resource stats",
   # Resource stats
   expect_true(is.numeric(example_multiomics$resource_stats$cpu_time))
   expect_true(is.numeric(example_multiomics$resource_stats$memory_mb))
+})
+
+test_that("example_rice_bud dataset has real paired multiomics structure and 6 simulators", {
+  data("example_rice_bud", package = "scSimEval", envir = environment())
+  expect_true(exists("example_rice_bud"))
+  expect_type(example_rice_bud, "list")
+  expect_named(example_rice_bud, c("metadata", "reference", "simulated", "scalability_benchmarks"), ignore.order = TRUE)
+  
+  # Reference dimensions: 200 genes x 100 cells, 200 peaks x 100 cells
+  expect_equal(dim(example_rice_bud$reference$rna), c(200, 100))
+  expect_equal(dim(example_rice_bud$reference$atac), c(200, 100))
+  expect_equal(ncol(example_rice_bud$reference$rna), ncol(example_rice_bud$reference$atac))
+  
+  # Metadata
+  expect_equal(nrow(example_rice_bud$reference$cell_types), 100)
+  expect_equal(nrow(example_rice_bud$reference$batches), 100)
+  
+  # 6 Simulators
+  sim_methods <- c("scMultiSim", "scDesign3", "MOSim", "scCross", "scMoMtF", "Matilda")
+  expect_true(all(sim_methods %in% names(example_rice_bud$simulated)))
+  for (m in sim_methods) {
+    expect_equal(dim(example_rice_bud$simulated[[m]]$rna), c(200, 100))
+    expect_equal(dim(example_rice_bud$simulated[[m]]$atac), c(200, 100))
+  }
+})
+
+test_that("example_soybean_root dataset has real unpaired multiomics structure and 3 simulators", {
+  data("example_soybean_root", package = "scSimEval", envir = environment())
+  expect_true(exists("example_soybean_root"))
+  expect_type(example_soybean_root, "list")
+  expect_named(example_soybean_root, c("metadata", "reference", "simulated", "scalability_benchmarks"), ignore.order = TRUE)
+  
+  # Reference dimensions: 200 genes x 100 cells, 200 peaks x 100 cells
+  expect_equal(dim(example_soybean_root$reference$rna), c(200, 100))
+  expect_equal(dim(example_soybean_root$reference$atac), c(200, 100))
+  
+  # 3 Simulators (MOSim excluded because it only supports paired co-assay simulation)
+  sim_methods <- c("scMultiSim", "scDesign3", "scCross")
+  expect_equal(length(example_soybean_root$simulated), 3)
+  expect_true(all(sim_methods %in% names(example_soybean_root$simulated)))
+  expect_false("MOSim" %in% names(example_soybean_root$simulated))
+  for (m in sim_methods) {
+    expect_equal(dim(example_soybean_root$simulated[[m]]$rna), c(200, 100))
+    expect_equal(dim(example_soybean_root$simulated[[m]]$atac), c(200, 100))
+  }
 })

@@ -201,7 +201,7 @@ evaluate_simulation_accuracy <- function(
   
   for (m in names(zero_prob_eval)) {
     summary_rows[[length(summary_rows) + 1]] <- data.frame(
-      Category = "Distributional Properties",
+      Category = "Correlations & Dependencies",
       Property = "dropout_curve",
       Metric = m,
       Value = as.numeric(zero_prob_eval[[m]]),
@@ -210,7 +210,7 @@ evaluate_simulation_accuracy <- function(
   }
   
   summary_rows[[length(summary_rows) + 1]] <- data.frame(
-    Category = "Distributional Properties",
+    Category = "Correlations & Dependencies",
     Property = "excess_zero_weights",
     Metric = "excess_zero_weight_discrepancy",
     Value = abs(ref_excess_w$mean_excess_zero_weight - sim_excess_w$mean_excess_zero_weight),
@@ -423,12 +423,29 @@ evaluate_multiomics_accuracy <- function(
   # ============================================================================
   # 2. Cellular Structure & Clustering Accuracy (Category 3)
   # ============================================================================
+  # Extract modality 1 specific cell types and batches (handles vector, factor, data.frame, and named list inputs)
+  extract_label_vector <- function(x, n_expected, mod_name) {
+    if (is.null(x)) return(NULL)
+    if (is.data.frame(x)) {
+      v <- if (!is.null(x$CellType)) x$CellType else if (!is.null(x$Batch)) x$Batch else if (ncol(x) >= 2) x[[2]] else x[[1]]
+      if (length(v) == n_expected) return(as.character(v))
+    }
+    if (is.list(x) && !is.data.frame(x) && !is.factor(x)) {
+      if (!is.null(x[[mod_name]])) return(extract_label_vector(x[[mod_name]], n_expected, mod_name))
+      return(extract_label_vector(x[[1]], n_expected, mod_name))
+    }
+    if (length(x) == n_expected) return(as.character(x))
+    return(NULL)
+  }
+  ct_m1 <- extract_label_vector(cell_types, ncol(ref_multi[[1]]), m1_name)
+  bt_m1 <- extract_label_vector(batch_info, ncol(ref_multi[[1]]), m1_name)
+
   clustering_res <- list()
-  if (!is.null(cell_types)) {
+  if (!is.null(ct_m1)) {
     if (verbose) message("=== [Step 3] Evaluating Cellular Structure & Clustering Preservation ===")
     clu_eval <- evaluate_clustering_metrics(
       data = sim_multi[[1]],
-      cell_types = cell_types,
+      cell_types = ct_m1,
       ref_data = ref_multi[[1]]
     )
     clustering_res <- clu_eval
@@ -456,13 +473,13 @@ evaluate_multiomics_accuracy <- function(
   # 3. Batch Effect & Technical Confounder Mixing (Category 4)
   # ============================================================================
   batch_res <- list()
-  if (!is.null(batch_info)) {
+  if (!is.null(bt_m1)) {
     if (verbose) message("=== [Step 4] Evaluating Batch Integration & Technical Confounder Mixing ===")
     b_eval <- evaluate_batch_metrics(
       data = sim_multi[[1]],
-      batch_info = batch_info,
+      batch_info = bt_m1,
       pre_data = ref_multi[[1]],
-      cell_types = cell_types,
+      cell_types = ct_m1,
       verbose = FALSE
     )
     batch_res <- b_eval
@@ -475,7 +492,7 @@ evaluate_multiomics_accuracy <- function(
     for (bm in batch_metrics_to_record) {
       if (!is.null(b_eval[[bm]])) {
         master_rows[[length(master_rows) + 1]] <- data.frame(
-          Category = "Cellular Structure & Mixing",
+          Category = "Batch Effects & Confounder Mixing",
           Property = "batch_mixing",
           Metric = bm,
           Value = as.numeric(b_eval[[bm]]),
@@ -490,13 +507,13 @@ evaluate_multiomics_accuracy <- function(
   # 4. Biological Signal & Downstream Performance (Category 5)
   # ============================================================================
   signal_res <- list()
-  if (!is.null(cell_types)) {
+  if (!is.null(ct_m1)) {
     if (verbose) message("=== [Step 5] Evaluating Biological Signal Fidelity (SimBench DE/DV/DD/DP/BD) ===")
     sig_eval <- evaluate_simbench_signals(
       ref_mat = ref_multi[[1]],
       sim_mat = sim_multi[[1]],
-      ref_celltypes = cell_types,
-      sim_celltypes = cell_types
+      ref_celltypes = ct_m1,
+      sim_celltypes = ct_m1
     )
     signal_res$simbench_signals <- sig_eval
     
@@ -514,7 +531,7 @@ evaluate_multiomics_accuracy <- function(
     # Predictive cell identity classifier
     pred_model <- evaluate_predictive_de_model(
       data = sim_multi[[1]],
-      group = cell_types
+      group = ct_m1
     )
     signal_res$predictive_model <- pred_model
     master_rows[[length(master_rows) + 1]] <- data.frame(
@@ -536,10 +553,10 @@ evaluate_multiomics_accuracy <- function(
     
     # Deconvolution mixture accuracy
     deconv_res <- calc_deconvolution_accuracy(
-      true_proportions = cell_types,
-      estimated_proportions = cell_types,
-      batch_ref = batch_info,
-      batch_sim = batch_info
+      true_proportions = ct_m1,
+      estimated_proportions = ct_m1,
+      batch_ref = bt_m1,
+      batch_sim = bt_m1
     )
     signal_res$deconvolution <- deconv_res
     master_rows[[length(master_rows) + 1]] <- data.frame(
@@ -560,9 +577,9 @@ evaluate_multiomics_accuracy <- function(
     )
     
     # Delta variance if batch_info available
-    if (!is.null(batch_info)) {
-      dv_ref <- calc_delta_variance(ref_multi[[1]], replicates = batch_info, conditions = cell_types)
-      dv_sim <- calc_delta_variance(sim_multi[[1]], replicates = batch_info, conditions = cell_types)
+    if (!is.null(bt_m1)) {
+      dv_ref <- calc_delta_variance(ref_multi[[1]], replicates = bt_m1, conditions = ct_m1)
+      dv_sim <- calc_delta_variance(sim_multi[[1]], replicates = bt_m1, conditions = ct_m1)
       dv_mae <- mean(abs(dv_ref$delta_variance - dv_sim$delta_variance), na.rm = TRUE)
       master_rows[[length(master_rows) + 1]] <- data.frame(
         Category = "Biological Signal & Downstream",
@@ -582,8 +599,8 @@ evaluate_multiomics_accuracy <- function(
   traj_eval <- evaluate_trajectory_metrics(
     ref_data = ref_multi[[1]],
     sim_data = sim_multi[[1]],
-    cell_types_ref = cell_types,
-    cell_types_sim = cell_types
+    cell_types_ref = ct_m1,
+    cell_types_sim = ct_m1
   )
   master_rows[[length(master_rows) + 1]] <- data.frame(
     Category = "Trajectory Dynamics",
@@ -641,12 +658,13 @@ evaluate_multiomics_accuracy <- function(
     }
     
     # 2. FOSCTTM cell alignment in joint latent space (requires true cell pairing)
-    sub_m1 <- as.matrix(sim_multi[[1]])
-    sub_m2 <- as.matrix(sim_multi[[2]])
+    sub_m1 <- as.matrix(normalize_counts(sim_multi[[1]]))
+    sub_m2 <- as.matrix(normalize_counts(sim_multi[[2]]))
     min_c <- min(ncol(sub_m1), ncol(sub_m2))
     if (min_c >= 5) {
-      p1 <- stats::prcomp(t(sub_m1[, seq_len(min_c)]), rank. = min(5, min_c - 1))$x
-      p2 <- stats::prcomp(t(sub_m2[, seq_len(min_c)]), rank. = min(5, min_c - 1))$x
+      n_pcs_use <- min(15, min_c - 1)
+      p1 <- stats::prcomp(t(sub_m1[, seq_len(min_c), drop = FALSE]), rank. = n_pcs_use)$x
+      p2 <- stats::prcomp(t(sub_m2[, seq_len(min_c), drop = FALSE]), rank. = n_pcs_use)$x
       fos_res <- calc_foscttm(p1, p2)
       master_rows[[length(master_rows) + 1]] <- data.frame(
         Category = "Cross-Modal Relationships",

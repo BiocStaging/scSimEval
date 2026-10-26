@@ -248,7 +248,7 @@ template:
 
 home:
   title: "scSimEval: Unified Benchmarking for Single-Cell Multiomics Simulations"
-  description: "Unified Benchmarking and Accuracy Evaluation for Single-Cell Multiomics Simulation Methods without Artificial Ground Truth."
+  description: "Unified Benchmarking and Accuracy Evaluation for Single-Cell Multiomics Simulation Methods across 62 Evaluation Measures."
 
 navbar:
   title: "scSimEval"
@@ -338,18 +338,22 @@ reference:
       - example_scrna
       - example_scatac
       - example_multiomics
+      - example_rice_bud
+      - example_soybean_root
       - example_cell_types
       - example_batch_info
 
   - title: "Computational Utilities & Fast Kernels"
     desc: "High-performance matrix calculation helpers and internal dimension-reduction utilities."
     contents:
+      - standardize_benchmark_categories
       - fast_row_vars
       - fast_col_vars
       - fast_sparse_zero_fraction_cell
       - fast_sparse_zero_fraction_feature
       - fast_cross_distance_sq
       - fast_pca
+      - normalize_counts
       - subsample_dist_vector
 
   - title: "Category 1: Global & Marginal Distributions"

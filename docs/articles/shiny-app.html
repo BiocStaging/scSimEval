@@ -244,7 +244,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -311,9 +311,11 @@ single-cell and multiomics datasets.</p>
 </blockquote>
 <p>The studio is organized into <strong>seven primary navigation
 tabs</strong> in the top navigation bar, plus an <strong>eight-panel
-Visualizations module</strong> inside Tab 4. The sections below document
-every tab, every control, and all export options in the order they
-appear in the application.</p>
+Visualizations module</strong> inside Tab 4. The top-right corner of the
+navbar features an interactive <strong>Day/Night (Light/Dark mode)
+toggle switch</strong> (<code><a href="https://rstudio.github.io/bslib/reference/input_dark_mode.html" class="external-link">bslib::input_dark_mode()</a></code>), allowing
+instantaneous switching between light and dark themes across all cards,
+tables, modal dialogs, and diagnostic containers.</p>
 <hr>
 </div>
 <div class="section level2">
@@ -323,8 +325,7 @@ appear in the application.</p>
 explicitly highlighting simulation evaluation across single-cell RNA-seq
 (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell
 multiomics (scRNA-seq + scATAC-seq) datasets against real biological
-references across 62 evaluation measures without requiring synthetic
-ground truth.</p>
+references across 62 evaluation measures.</p>
 <p>In the standalone web deployment (<code>scSimEval_shiny</code>), a
 floating Google Analytics all-time pageview counter badge appears at the
 bottom-right corner, continuously reporting container-lifetime visits
@@ -390,7 +391,13 @@ simulated count matrix, runtime (seconds), and peak RAM (MiB). *
 table (<code>Cell_ID,Cell_Type</code>). Unlocks +12–15 clustering and
 biological signal metrics. * <strong>Batch Annotations
 (Optional):</strong> Vector / factor / 2-column table
-(<code>Cell_ID,Batch</code>). Unlocks +7 batch mixing metrics.</p>
+(<code>Cell_ID,Batch</code>). Unlocks +7 batch mixing metrics. *
+<strong>Compute &amp; Parallelization:</strong> Set the number of CPU
+worker threads (auto-detected via <code><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">parallel::detectCores()</a></code>,
+e.g., 4 or 8 threads). The app uses <code>BiocParallel</code> to
+parallelize 2D bivariate tests (Fasano-Franceschini, Peacock, KDE, EMD).
+A live badge (<code>Parallel: X CPU Cores</code>) in the action bar
+confirms the active hardware allocation.</p>
 </div>
 <div class="section level4">
 <h4 id="mode-3-multiomics-evaluation-scrna-seq-scatac-seq">Mode 3 — Multiomics Evaluation (scRNA-seq + scATAC-seq)<a class="anchor" aria-label="anchor" href="#mode-3-multiomics-evaluation-scrna-seq-scatac-seq"></a>
@@ -405,6 +412,16 @@ linkage.</li>
 <strong>Unpaired Profiling:</strong> Separate cells from the same
 tissue. Population-level cross-modal metrics evaluated; cell-pairing
 metrics safely skipped.</li>
+<li>
+<strong>Multi-Core Hardware Acceleration:</strong> Configure
+dedicated CPU threads for multiomics benchmarking. Accelerates
+dual-modality unimodal layers and Category VII cross-modality
+correlation calculations in parallel.</li>
+<li>
+<strong>Reproducible HPC Script Generation:</strong> Clicking
+<strong>Download R Script</strong> outputs an executable R script
+pre-configured with the chosen thread count
+(<code>threads = n_cores</code>) for cluster or server deployment.</li>
 </ul>
 </div>
 <div class="section level4">
@@ -573,10 +590,11 @@ benchmarks offline on compute nodes.</li>
 </h3>
 <p>The flagship visualization: every simulator × all 62 metrics in one
 colour-coded matrix. Bubble <strong>diameter</strong> is proportional to
-the normalized fidelity score. Scores ≥ 0.96 are rendered as bold square
-glyphs. Simulators are rank-ordered top-to-bottom by composite average
-score. * <strong>Multi-Dataset Selector Bar:</strong> Switch seamlessly
-between <strong>All Datasets (Cross-Dataset Average)</strong> or inspect
+the normalized fidelity score. The best-performing simulator for each
+metric is rendered with a bold circular outline. Simulators are
+rank-ordered top-to-bottom by composite average score. *
+<strong>Multi-Dataset Selector Bar:</strong> Switch seamlessly between
+<strong>All Datasets (Cross-Dataset Average)</strong> or inspect
 individual datasets (<strong>Dataset 1</strong>, <strong>Dataset
 2</strong>, …, <strong>Dataset N</strong>) separately. *
 <strong>Minimalist vs Publication Matrix:</strong> Toggle between a
@@ -793,11 +811,12 @@ issues link, and recommended citations.</p>
 </tr>
 </tbody>
 </table>
-<p>For complete parameter descriptions see the <a href="../reference/index.html">Reference</a> index.</p>
+<p>For complete parameter descriptions, refer to the individual package
+manual pages.</p>
 <hr>
 <pre><code><span><span class="co">#&gt; R version 4.6.1 (2026-06-24 ucrt)</span></span>
 <span><span class="co">#&gt; Platform: x86_64-w64-mingw32/x64</span></span>
-<span><span class="co">#&gt; Running under: Windows 11 x64 (build 26200)</span></span>
+<span><span class="co">#&gt; Running under: Windows 11 x64 (build 26300)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Matrix products: default</span></span>
 <span><span class="co">#&gt;   LAPACK version 3.12.1</span></span>

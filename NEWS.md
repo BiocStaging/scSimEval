@@ -2,28 +2,19 @@
 
 ## Major Improvements
 
-* **Configurable CPU Cores & Parallel Computing Acceleration:**
-  - Added interactive CPU core/thread selection (`Number of CPU Cores / Threads`) across Single-Cell (Unimodal) and Multiomics modes in both the sidebar and the main Data Hub panel.
-  - Automatically detects available system hardware cores (`parallel::detectCores(logical = TRUE)`) and displays a live parallel worker badge (`Parallel: X CPU Cores`) with immediate visual feedback.
-  - Integrated `BiocParallel` into `evaluate_simulation_accuracy()`, `evaluate_multiomics_accuracy()`, `calc_all_bivariate_metrics()`, and `calc_cross_modality_correlation()` to parallelize 2D bivariate evaluations (Fasano-Franceschini, Peacock, KDE, EMD) and paired peak-to-gene cross-modal correlations across user-specified threads.
-  - Updated reproducible R script downloaders to automatically configure the user-selected thread count (`threads = n_cores`) for HPC cluster and local parallel execution.
-
-* **Documentation & Vignette Synchronization for Multi-Core Workflows:**
-  - Updated `vignettes/shiny-app.Rmd`, `vignettes/scSimEval-workflow.Rmd`, and `vignettes/demo-multiomics.Rmd` to comprehensively document multi-core / multi-threaded execution options, explaining how parallelization accelerates large-scale single-cell and multiomics benchmarking.
-
-* **Day/Night Dark Mode Toggle & UI Accessibility Enhancements:**
-  - Added an interactive day and night (light/dark) mode toggle switch in the top-right corner of the application navbar via `bslib::input_dark_mode()`, allowing users to switch dynamically between light and dark themes.
-  - Provided comprehensive dark mode CSS styling across all panels, cards, tables, modal dialogs, and diagnostic containers.
-  - Enhanced contrast and visibility for the "View Formats & Full Breakdown →" action buttons in both Single-Cell and Multiomics simulation tabs by adopting styled, high-contrast controls.
-  - Fixed font and background contrast in the Metric Measurement Capacity modal breakdown table, ensuring that badge indicators across all experimental modes and metadata combinations are clearly legible in both light and dark modes.
-
-* **Diagnostic Visualization & Shiny Studio Robustness Enhancements:**
-  - Added safe validation guards for `output$ui_dist_dataset_selector` and `output$ui_emb_dataset_selector` to gracefully handle single-dataset or dynamically switching evaluation contexts without zero-length conditional errors.
-  - Added graceful validation checks in PCA and MDS ordination reactive plots (`metric_pca_reactive`, `metric_mds_reactive`), clearly guiding users when fewer than 3 simulators are evaluated instead of raising raw R stack traces.
-  - Synchronized cell embedding quality table evaluation by properly calling `compute_embedding_quality_metrics()`.
-  - Streamlined the Master Benchmark Scores Table and result download handlers (`.csv`, `.tsv`, `.xlsx`) to report exclusively the unstandardized raw evaluation metric values (`Score_Raw`), removing duplicate and redundant score columns.
-  - Eliminated k-means clustering iteration warnings (`iter.max = 50`) and ggplot2 boxplot scale clipping notices across distribution plots.
-  - Enhanced tabular data parsing in `read_uploaded_matrix()` to automatically infer separators, transposed gene/cell orientations, and row/column identifiers, accompanied by safe bounds-checked coordinate extraction for PCA, t-SNE, and UMAP embeddings.
+* **Visual Refinements & Usability Streamlining:**
+  - **Comparative Bubble Matrix:** Replaced square glyphs with high-contrast bold circular outlines (`shape = 21`, `stroke = 1.6`) highlighting the best-performing simulator for each evaluation metric, eliminating visual clutter.
+  - **Cell Embeddings (UMAP, t-SNE, PCA):** Fixed facet title for empirical reference to cleanly show as `"Reference"` instead of `"Reference (Reference)"`.
+  - **Per-Tab Assay Modality Selectors:** Added independent Modality dropdowns (scRNA-seq, scATAC-seq, Combined) across Metric Plots, Metric Heatmap, PCA Ordination, MDS Metric Space, and Cell Embeddings.
+  - **Metric Plots Clean Wordings:** Direction labels (`Higher is better` / `Lower is better`) are now displayed exclusively for raw scores, while normalized [0, 1] barplots display clean titles and standard `"Standardized Fidelity Score"` y-axis labels.
+  - **Unpaired Scalability Benchmarking:** Added modality breakdown options to plot scRNA-seq, scATAC-seq, or combined runtime and peak RAM for unpaired multiomics datasets.
+  - **Metric Heatmap Normalized Scores:** Ensured heatmap cell labels display normalized [0, 1] fidelity scores when relative scaling is active.
+  - **Cell Embeddings (Side-by-Side Comparison):** Resolved side-by-side layout visualization where only the reference panel was displayed; enabled robust dual-facet rendering (Reference vs. Single Simulator) with dynamic simulator selection and automatic fallback.
+  - **Hardware & Memory Guidelines:** Streamlined the Help page by replacing the bulky table with concise 3–4 line general guidelines for CPU and memory sizing across exploratory, large-scale multiomics, and HPC atlas-scale benchmarks.
+  - **Benchmark Export Streamlining:** Streamlined Benchmark Results Export to provide the comprehensive `.rds` session object for full analytical reproducibility, and added a dedicated download handler for the Master Benchmark Scores table.
+* **Data Transformation Audit & Empirical Ground-Truth Protocol:**
+  - Audited and updated metric calculations to ensure proper single-cell data transformations (CPM normalization, log2(CPM+1), library-size scaling, and low-dimensional PCA projections) across all 62 evaluation measures according to benchmark literature.
+  - Refined documentation and Shiny Studio descriptions to consistently reflect empirical reference-based evaluation across all 62 metrics without artificial zero-ground-truth claims.
 
 # scSimEval 0.99.7
 
@@ -91,7 +82,7 @@
   - Streamlined Data Hub ingestion controls and enhanced navigation linking directly to the methodology guide.
 
 * **Refined Multiomics Scope & Natural Language:**
-  - Clearly unified application terminology to emphasize simulation evaluation across single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) against empirical references across 62 ground-truth-free measures.
+  - Clearly unified application terminology to emphasize simulation evaluation across single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) against empirical references across 62 evaluation measures.
   - Replaced complex technical jargon with direct, human-friendly scientific explanations across all tabs.
 
 * **Methodology Guide & Normalization Pipeline:**

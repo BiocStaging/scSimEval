@@ -16,15 +16,21 @@ calc_signal_de <- function(exprs_mat, cell_types, p_sig = 0.05) {
   cell_types <- droplevels(as.factor(cell_types))
   if (nlevels(cell_types) != 2) stop("Requires exactly 2 cell types for pairwise DE.")
   
+  fit <- NULL
   if (requireNamespace("limma", quietly = TRUE)) {
     design <- stats::model.matrix(~ cell_types)
-    fit <- limma::lmFit(as.matrix(exprs_mat), design)
-    fit <- limma::eBayes(fit, trend = TRUE)
-    tt <- limma::topTable(fit, coef = 2, number = Inf, sort.by = "none")
-    p_adj <- stats::p.adjust(tt$P.Value, method = "BH")
-  } else {
-    # Vectorized Welch two-sample t-test fallback
-    idx1 <- which(cell_types == levels(cell_types)[1])
+    fit <- tryCatch({
+      f <- limma::lmFit(as.matrix(exprs_mat), design)
+      limma::eBayes(f, trend = TRUE)
+    }, error = function(e) NULL)
+    if (!is.null(fit)) {
+      tt <- limma::topTable(fit, coef = 2, number = Inf, sort.by = "none")
+      p_adj <- stats::p.adjust(tt$P.Value, method = "BH")
+      return(p_adj)
+    }
+  }
+  # Vectorized Welch two-sample t-test fallback
+  idx1 <- which(cell_types == levels(cell_types)[1])
     idx2 <- which(cell_types == levels(cell_types)[2])
     n1 <- length(idx1)
     n2 <- length(idx2)
@@ -39,8 +45,7 @@ calc_signal_de <- function(exprs_mat, cell_types, p_sig = 0.05) {
     df_welch[is.na(df_welch) | df_welch < 1] <- 1
     p_vals <- 2 * stats::pt(-abs(t_stat), df = df_welch)
     p_adj <- stats::p.adjust(p_vals, method = "BH")
-  }
-  return(p_adj)
+    return(p_adj)
 }
 
 #' Detect Differential Variability (DV) Genes (Bartlett Test)
@@ -185,8 +190,8 @@ evaluate_simbench_signals <- function(
   idx_ref <- which(ref_celltypes %in% top2)
   idx_sim <- which(sim_celltypes %in% top2)
   
-  r_sub <- ref_mat[, idx_ref]
-  s_sub <- sim_mat[, idx_sim]
+  r_sub <- normalize_counts(ref_mat[, idx_ref, drop = FALSE])
+  s_sub <- normalize_counts(sim_mat[, idx_sim, drop = FALSE])
   r_ct <- ref_celltypes[idx_ref]
   s_ct <- sim_celltypes[idx_sim]
   
@@ -245,7 +250,7 @@ evaluate_predictive_de_model <- function(
 ) {
   method <- match.arg(method)
   group <- as.factor(group)
-  data_mat <- as.matrix(data)
+  data_mat <- as.matrix(normalize_counts(data))
   
   if (is.null(de_features) || length(de_features) < 2) {
     vars <- apply(data_mat, 1, stats::var)

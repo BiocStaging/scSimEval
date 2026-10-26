@@ -43,7 +43,7 @@ light and dark themes across all cards, tables, modal dialogs, and diagnostic co
 
 ## Tab 1 — Home
 
-The landing page introduces **scSimEval Studio**, explicitly highlighting simulation evaluation across single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) datasets against real biological references across 62 evaluation measures without requiring synthetic ground truth.
+The landing page introduces **scSimEval Studio**, explicitly highlighting simulation evaluation across single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) datasets against real biological references across 62 evaluation measures.
 
 In the standalone web deployment (`scSimEval_shiny`), a floating Google Analytics all-time pageview counter badge appears at the bottom-right corner, continuously reporting container-lifetime visits without UI latency.
 
@@ -115,7 +115,7 @@ Interactive matrix viewer supporting browsing, filtering, and summary statistics
 ## Tab 3 — Comparative Bubble Matrix & Leaderboard
 
 ### Subtab 1: Comparative Bubble Matrix Figure
-The flagship visualization: every simulator × all 62 metrics in one colour-coded matrix. Bubble **diameter** is proportional to the normalized fidelity score. Scores ≥ 0.96 are rendered as bold square glyphs. Simulators are rank-ordered top-to-bottom by composite average score.
+The flagship visualization: every simulator × all 62 metrics in one colour-coded matrix. Bubble **diameter** is proportional to the normalized fidelity score. The best-performing simulator for each metric is rendered with a bold circular outline. Simulators are rank-ordered top-to-bottom by composite average score.
 * **Multi-Dataset Selector Bar:** Switch seamlessly between **All Datasets (Cross-Dataset Average)** or inspect individual datasets (**Dataset 1**, **Dataset 2**, ..., **Dataset N**) separately.
 * **Minimalist vs Publication Matrix:** Toggle between a sleek, dot-matrix view and a fully annotated publication matrix.
 * **Confirmation & Plot Action Button:** Click **Confirm & Generate Plot** to render with app-wide loading indicators.

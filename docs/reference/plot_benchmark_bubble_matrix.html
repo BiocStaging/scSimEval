@@ -225,7 +225,7 @@ canonical evaluation categories (I-VIII) displayed as colored header strips at t
 
     <a class="navbar-brand me-2" href="../index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -376,8 +376,8 @@ E.g. <code>list("scRNA-seq" = c("Splatter", "SymSim"), "Multiomics" = c("scDesig
     <p><img src="figures/benchmark_bubble_matrix.png" width="800" alt="Benchmarking Bubble Matrix"></p>
 <p><strong>Bubble encoding:</strong></p><ul><li><p><strong>Size</strong>: Normalized fidelity score [0, 1] – larger = better performance.</p></li>
 <li><p><strong>Fill color</strong>: Evaluation category (one of the eight canonical groups).</p></li>
-<li><p><strong>Circle (shape 21)</strong>: Regular performance (score &lt; 0.96).</p></li>
-<li><p><strong>Square (shape 22)</strong>: Top performer (score &gt;= 0.96).</p></li>
+<li><p><strong>Circle (standard outline)</strong>: Standard performance for that metric.</p></li>
+<li><p><strong>Bold outline circle (shape 21, stroke 1.6)</strong>: Top-performing simulator for that specific metric.</p></li>
 <li><p><strong>Small grey dot</strong>: Metric not available/computed for that method.</p></li>
 </ul><p><strong>Score normalization</strong> is direction-aware: distance/error metrics are inverted
 so that 1 always means best performance, while concordance/correlation metrics are used

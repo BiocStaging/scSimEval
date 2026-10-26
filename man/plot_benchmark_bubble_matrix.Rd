@@ -90,8 +90,8 @@ canonical evaluation categories (I-VIII) displayed as colored header strips at t
 \itemize{
   \item \strong{Size}: Normalized fidelity score [0, 1] -- larger = better performance.
   \item \strong{Fill color}: Evaluation category (one of the eight canonical groups).
-  \item \strong{Circle (shape 21)}: Regular performance (score < 0.96).
-  \item \strong{Square (shape 22)}: Top performer (score >= 0.96).
+  \item \strong{Circle (standard outline)}: Standard performance for that metric.
+  \item \strong{Bold outline circle (shape 21, stroke 1.6)}: Top-performing simulator for that specific metric.
   \item \strong{Small grey dot}: Metric not available/computed for that method.
 }
 

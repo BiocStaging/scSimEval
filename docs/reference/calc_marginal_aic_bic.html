@@ -225,7 +225,7 @@ across genes (scDesign3; Song et al., 2024)."><meta property="og:image" content=
 
     <a class="navbar-brand me-2" href="../index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -335,54 +335,52 @@ If NULL, estimated via method-of-moments.</p></dd>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">calc_marginal_aic_bic</span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">50</span><span class="op">)</span>, <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">50</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $total_loglik</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 37.56364</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] -43.7417</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $total_aic</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 24.87273</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 187.4834</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $total_bic</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] -75.12727</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 87.48339</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mean_gene_aic</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.4974546</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 3.749668</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mean_gene_bic</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] -1.502545</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.749668</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $gene_loglik</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1]  19.4391586  -1.9320021  -3.4099917   1.3698423  10.3553300  12.7520064</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] -34.4251317 -10.2453478  -0.2592849 -17.4280258 -12.7478252  -1.1869938</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [13]  -5.1654507 -10.6309281   2.5749955  11.5110631  -1.0604829   7.7038875</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [19]   6.7857360  -1.0797968  18.8770535  38.3236450   5.9748665  -0.8771513</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [25]  -4.8072462  -3.8229466 -12.0994475  -1.6269355 -16.0691805 -10.6291873</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [31]  -1.7592546 -19.6763180 -16.6616440  -0.6876524 -13.6640101  26.9435846</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [37]  -0.6022095  -4.6684055   8.8759707   2.3974766  -1.1905040  -1.3381321</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [43]  17.3315810  -1.4881821  -0.6454088  -0.1961475  13.6547496  51.1289504</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [49]  -5.0550334  -1.3000030</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1]  15.6413937  -1.3231873  -0.2111716  16.9557942   4.1777961  -1.2343906</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7]  -2.6900673  -3.2826071  -5.9050114  -0.8036092  -1.7429930  -1.3984022</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [13] -39.0850219 -34.6377767  -2.5802855  -1.3350425  -8.4311814  -2.8500707</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [19]  29.4110738  16.7410253 -14.7764771 -17.1449639 -20.5138452  -2.0879277</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [25]  -1.2067348 -16.5392858   4.0524087  15.4844897  -1.0433406  -1.3523903</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [31]  16.9278393  12.4452661  -1.3549374 -42.9677375  27.5383922  -1.2322132</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [37]  -1.0895696 -53.2439937  -1.1800445 -13.9603761 -10.0700085  40.4976266</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [43]  -0.8288681  -1.8821536  -0.8555016  -0.8138987  24.9160366  28.9754957</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [49]  -1.9724165  16.1211679</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $gene_aic</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1]  -36.8783173    5.8640043    8.8199835   -0.7396846  -18.7106600</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [6]  -23.5040128   70.8502634   22.4906956    2.5185698   36.8560517</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [11]   27.4956503    4.3739877   12.3309015   23.2618563   -3.1499909</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [16]  -21.0221262    4.1209658  -13.4077749  -11.5714720    4.1595936</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [21]  -35.7541069  -74.6472899   -9.9497330    3.7543027   11.6144924</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [26]    9.6458932   26.1988951    5.2538710   34.1383611   23.2583746</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [31]    5.5185091   41.3526360   35.3232880    3.3753049   29.3280202</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [36]  -51.8871693    3.2044190   11.3368110  -15.7519413   -2.7949533</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [41]    4.3810081    4.6762641  -32.6631621    4.9763642    3.2908177</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [46]    2.3922949  -25.3094993 -100.2579008   12.1100668    4.6000060</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] -29.282787   4.646375   2.422343 -31.911588  -6.355592   4.468781</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7]   7.380135   8.565214  13.810023   3.607218   5.485986   4.796804</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [13]  80.170044  71.275553   7.160571   4.670085  18.862363   7.700141</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [19] -56.822148 -31.482051  31.552954  36.289928  43.027690   6.175855</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [25]   4.413470  35.078572  -6.104817 -28.968979   4.086681   4.704781</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [31] -31.855679 -22.890532   4.709875  87.935475 -53.076784   4.464426</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [37]   4.179139 108.487987   4.360089  29.920752  22.140017 -78.995253</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [43]   3.657736   5.764307   3.711003   3.627797 -47.832073 -55.950991</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [49]   5.944833 -30.242336</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $gene_bic</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1]  -38.8783173    3.8640043    6.8199835   -2.7396846  -20.7106600</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [6]  -25.5040128   68.8502634   20.4906956    0.5185698   34.8560517</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [11]   25.4956503    2.3739877   10.3309015   21.2618563   -5.1499909</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [16]  -23.0221262    2.1209658  -15.4077749  -13.5714720    2.1595936</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [21]  -37.7541069  -76.6472899  -11.9497330    1.7543027    9.6144924</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [26]    7.6458932   24.1988951    3.2538710   32.1383611   21.2583746</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [31]    3.5185091   39.3526360   33.3232880    1.3753049   27.3280202</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [36]  -53.8871693    1.2044190    9.3368110  -17.7519413   -4.7949533</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [41]    2.3810081    2.6762641  -34.6631621    2.9763642    1.2908177</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [46]    0.3922949  -27.3094993 -102.2579008   10.1100668    2.6000060</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] -31.2827875   2.6463745   0.4223431 -33.9115883  -8.3555921   2.4687812</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7]   5.3801346   6.5652142  11.8100228   1.6072183   3.4859861   2.7968045</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [13]  78.1700438  69.2755534   5.1605711   2.6700850  16.8623627   5.7001414</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [19] -58.8221475 -33.4820507  29.5529541  34.2899278  41.0276905   4.1758553</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [25]   2.4134696  33.0785716  -8.1048174 -30.9689794   2.0866811   2.7047805</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [31] -33.8556787 -24.8905322   2.7098747  85.9354749 -55.0767844   2.4644263</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [37]   2.1791393 106.4879875   2.3600889  27.9207521  20.1400170 -80.9952532</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [43]   1.6577363   3.7643071   1.7110033   1.6277973 -49.8320732 -57.9509913</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [49]   3.9448331 -32.2423359</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>
     </div>

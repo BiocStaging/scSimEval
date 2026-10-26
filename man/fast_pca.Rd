@@ -4,7 +4,7 @@
 \alias{fast_pca}
 \title{Fast Truncated PCA on Top Highly Variable Features}
 \usage{
-fast_pca(mat, n_pcs = 20, n_hvg = 2000, scale = FALSE)
+fast_pca(mat, n_pcs = 20, n_hvg = 2000, scale = FALSE, normalize = FALSE)
 }
 \arguments{
 \item{mat}{Matrix or dgCMatrix (cells x features).}
@@ -14,6 +14,8 @@ fast_pca(mat, n_pcs = 20, n_hvg = 2000, scale = FALSE)
 \item{n_hvg}{Number of top highly variable genes to retain. Default 2000.}
 
 \item{scale}{Logical, whether to scale features. Default FALSE.}
+
+\item{normalize}{Logical, whether to apply library-size log-normalization if raw counts. Default FALSE.}
 }
 \value{
 Matrix of cell principal component embeddings (cells x n_pcs).

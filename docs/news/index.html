@@ -221,7 +221,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -254,6 +254,34 @@
       <small>Source: <a href="https://github.com/kabilanbio/scSimEval/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.99.8" id="scsimeval-0998">scSimEval 0.99.8<a class="anchor" aria-label="anchor" href="#scsimeval-0998"></a></h2>
+<div class="section level3">
+<h3 id="major-improvements-0-99-8">Major Improvements<a class="anchor" aria-label="anchor" href="#major-improvements-0-99-8"></a></h3>
+<ul><li>
+<strong>Visual Refinements &amp; Usability Streamlining:</strong>
+<ul><li>
+<strong>Comparative Bubble Matrix:</strong> Replaced square glyphs with high-contrast bold circular outlines (<code>shape = 21</code>, <code>stroke = 1.6</code>) highlighting the best-performing simulator for each evaluation metric, eliminating visual clutter.</li>
+<li>
+<strong>Cell Embeddings (UMAP, t-SNE, PCA):</strong> Fixed facet title for empirical reference to cleanly show as <code>"Reference"</code> instead of <code>"Reference (Reference)"</code>.</li>
+<li>
+<strong>Per-Tab Assay Modality Selectors:</strong> Added independent Modality dropdowns (scRNA-seq, scATAC-seq, Combined) across Metric Plots, Metric Heatmap, PCA Ordination, MDS Metric Space, and Cell Embeddings.</li>
+<li>
+<strong>Metric Plots Clean Wordings:</strong> Direction labels (<code>Higher is better</code> / <code>Lower is better</code>) are now displayed exclusively for raw scores, while normalized [0, 1] barplots display clean titles and standard <code>"Standardized Fidelity Score"</code> y-axis labels.</li>
+<li>
+<strong>Unpaired Scalability Benchmarking:</strong> Added modality breakdown options to plot scRNA-seq, scATAC-seq, or combined runtime and peak RAM for unpaired multiomics datasets.</li>
+<li>
+<strong>Metric Heatmap Normalized Scores:</strong> Ensured heatmap cell labels display normalized [0, 1] fidelity scores when relative scaling is active.</li>
+<li>
+<strong>Benchmark Export Streamlining:</strong> Streamlined Benchmark Results Export to provide the comprehensive <code>.rds</code> session object for full analytical reproducibility, and added a dedicated download handler for the Master Benchmark Scores table.</li>
+</ul></li>
+<li>
+<strong>Data Transformation Audit &amp; Empirical Ground-Truth Protocol:</strong>
+<ul><li>Audited and updated metric calculations to ensure proper single-cell data transformations (CPM normalization, log2(CPM+1), library-size scaling, and low-dimensional PCA projections) across all 62 evaluation measures according to benchmark literature.</li>
+<li>Refined documentation and Shiny Studio descriptions to consistently reflect empirical reference-based evaluation across all 62 metrics without artificial zero-ground-truth claims.</li>
+</ul></li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.99.7" id="scsimeval-0997">scSimEval 0.99.7<a class="anchor" aria-label="anchor" href="#scsimeval-0997"></a></h2>
 <div class="section level3">
@@ -346,7 +374,7 @@
 </ul></li>
 <li>
 <strong>Refined Multiomics Scope &amp; Natural Language:</strong>
-<ul><li>Clearly unified application terminology to emphasize simulation evaluation across single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) against empirical references across 62 ground-truth-free measures.</li>
+<ul><li>Clearly unified application terminology to emphasize simulation evaluation across single-cell RNA-seq (scRNA-seq), single-cell ATAC-seq (scATAC-seq), and single-cell multiomics (scRNA-seq + scATAC-seq) against empirical references across 62 evaluation measures.</li>
 <li>Replaced complex technical jargon with direct, human-friendly scientific explanations across all tabs.</li>
 </ul></li>
 <li>

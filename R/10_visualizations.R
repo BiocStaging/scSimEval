@@ -44,6 +44,10 @@ utils::globalVariables(c(
   "bcv_discrepancy"                  = "Biological CV (BCV)",
   "dropout_curve_midpoint_x0"        = "Dropout Midpoint (x0)",
   "dropout_curve_slope_k"            = "Dropout Slope (k)",
+  "midpoint_error"                   = "Dropout Midpoint Error",
+  "slope_error"                      = "Dropout Slope Error",
+  "r2_discrepancy"                   = "Dropout Curve R2 Discrepancy",
+  "excess_zero_weight_discrepancy"   = "Excess Zero Weight Discrepancy",
   "mean_variance_r2"                 = "Mean-Variance R2",
   "cell_pearson_cor"                 = "Cell Pearson Corr.",
   "feature_pearson_cor"              = "Feature Pearson Corr.",
@@ -125,6 +129,10 @@ utils::globalVariables(c(
   "bcv_discrepancy"                  = "(II) Correlations & Zero-Inflation",
   "dropout_curve_midpoint_x0"        = "(II) Correlations & Zero-Inflation",
   "dropout_curve_slope_k"            = "(II) Correlations & Zero-Inflation",
+  "midpoint_error"                   = "(II) Correlations & Zero-Inflation",
+  "slope_error"                      = "(II) Correlations & Zero-Inflation",
+  "r2_discrepancy"                   = "(II) Correlations & Zero-Inflation",
+  "excess_zero_weight_discrepancy"   = "(II) Correlations & Zero-Inflation",
   "mean_variance_r2"                 = "(II) Correlations & Zero-Inflation",
   "cell_pearson_cor"                 = "(II) Correlations & Zero-Inflation",
   "feature_pearson_cor"              = "(II) Correlations & Zero-Inflation",
@@ -407,8 +415,15 @@ standardize_benchmark_categories <- function(df) {
   }
   if ("Metric" %in% colnames(df)) {
     mc <- .METRIC_CATEGORY_MAP[df$Metric]
-    idx <- !is.na(mc)
-    df$Category[idx] <- mc[idx]
+    batch_metrics <- c("batch_silhouette", "shannon_entropy", "pcr_r2", "cms", "isi", "seurat_mixing_metric", "ldf_diff")
+    zero_metrics  <- c("midpoint_error", "slope_error", "r2_discrepancy", "excess_zero_weight_discrepancy", "dropout_curve_midpoint_x0", "dropout_curve_slope_k", "mean_variance_r2", "bcv_discrepancy")
+    
+    needs_reassign <- !is.na(mc) & (
+      is.na(df$Category) | df$Category == "" | df$Category == "Uncategorized" |
+      (df$Metric %in% batch_metrics & df$Category != "(IV) Batch Effects & Confounder Mixing") |
+      (df$Metric %in% zero_metrics & df$Category != "(II) Correlations & Zero-Inflation")
+    )
+    df$Category[needs_reassign] <- mc[needs_reassign]
   }
   df
 }
@@ -1088,10 +1103,13 @@ plot_individual_metric_bar <- function(
   df_sub <- df_all_norm[df_all_norm$Metric == metric, , drop = FALSE]
 
   if (any(duplicated(df_sub$Method))) {
+    cat_val <- if ("Category" %in% colnames(df_sub) && !is.na(df_sub$Category[1])) as.character(df_sub$Category[1]) else "Benchmark"
     df_sub <- stats::aggregate(
-      cbind(Score_Norm, Score_Raw) ~ Method + Metric + Category,
+      cbind(Score_Norm, Score_Raw) ~ Method,
       data = df_sub, FUN = mean, na.rm = TRUE
     )
+    df_sub$Category <- cat_val
+    df_sub$Metric <- metric
   }
 
   disp_m <- if (metric %in% names(.METRIC_DISPLAY_LABELS)) .METRIC_DISPLAY_LABELS[metric] else metric
@@ -1130,22 +1148,26 @@ plot_individual_metric_bar <- function(
       df_sub <- df_sub[order(df_sub$Score_Raw), ]
     }
   }
-  df_sub$Method <- factor(df_sub$Method, levels = df_sub$Method)
+  df_sub$Method <- factor(df_sub$Method, levels = unique(df_sub)$Method)
 
   y_var <- if (score_type == "normalized") "Score_Norm" else "Score_Raw"
   y_lab <- if (score_type == "normalized") {
-    "Standardized Fidelity Score [0, 1] (\u2191 Higher is Better)"
+    "Standardized Fidelity Score"
   } else {
-    sprintf("Raw Score Value: %s (%s)", disp_m, dir_txt)
+    disp_m
   }
 
-  title_txt <- sprintf("Benchmark Barplot: %s", disp_m)
-  sub_txt <- sprintf("Category: %s   |   Optimization: %s", cat_name, dir_txt)
+  title_txt <- disp_m
+  sub_txt <- if (score_type == "raw") {
+    sprintf("Category: %s (%s)", cat_name, ifelse(is_hib, "Higher is better", "Lower is better"))
+  } else {
+    sprintf("Category: %s", cat_name)
+  }
 
   cap_txt <- if (score_type == "normalized") {
-    "Direction-aware standardized score in [0, 1] (1.0 = best agreement with reference; distance/error inverted).\nSimulators ranked by fidelity from best performer (left) to lowest (right)."
+    "Standardized score in [0, 1] (1.0 = best agreement with reference).\nSimulators ranked by fidelity from best performer (left) to lowest (right)."
   } else {
-    sprintf("Unnormalized raw metric values in original units (%s).\nSimulators ranked from best performer (left) to lowest (right).", dir_txt)
+    sprintf("Unnormalized raw metric values in original measurement units (%s).\nSimulators ranked by performance from best (left) to lowest (right).", ifelse(is_hib, "Higher is better", "Lower is better"))
   }
 
   df_sub$Value_Label <- if (score_type == "normalized") {
@@ -1263,7 +1285,7 @@ plot_category_metric_bars <- function(
   is_hib <- df$Metric %in% .HIGHER_IS_BETTER_METRICS
   disp_m <- ifelse(df$Metric %in% names(.METRIC_DISPLAY_LABELS), .METRIC_DISPLAY_LABELS[df$Metric], df$Metric)
   dir_symbol <- ifelse(is_hib, "\u2191", "\u2193")
-  df$Display_Metric <- paste0(disp_m, " (", dir_symbol, ")")
+  df$Display_Metric <- if (score_type == "normalized") disp_m else paste0(disp_m, " (", dir_symbol, ")")
 
   unique_metrics <- unique(df$Metric)
   canonical_order <- names(.METRIC_DISPLAY_LABELS)
@@ -1275,7 +1297,7 @@ plot_category_metric_bars <- function(
     m_i <- ordered_m[i]
     dm <- if (m_i %in% names(.METRIC_DISPLAY_LABELS)) .METRIC_DISPLAY_LABELS[[m_i]] else m_i
     ds <- if (m_i %in% .HIGHER_IS_BETTER_METRICS) "\u2191" else "\u2193"
-    disp_levels[i] <- paste0(dm, " (", ds, ")")
+    disp_levels[i] <- if (score_type == "normalized") dm else paste0(dm, " (", ds, ")")
   }
   df$Display_Metric <- factor(df$Display_Metric, levels = disp_levels)
 
@@ -1312,18 +1334,18 @@ plot_category_metric_bars <- function(
   n_m <- length(unique(df$Metric))
   ncol_use <- if (!is.null(ncol)) ncol else if (n_m <= 4) n_m else 4
 
-  title_txt <- sprintf("Category Metric Benchmark: %s", category)
+  title_txt <- category
   sub_txt <- if (score_type == "normalized") {
-    "Standardized Fidelity Scores in [0, 1] per simulator (\u2191 Higher is Better; distance/error inverted)"
+    "Standardized Fidelity Scores across evaluated simulators"
   } else {
-    "Original unnormalized raw metric scores (\u2191 = Higher is better, \u2193 = Lower is better)"
+    "Original unnormalized raw metric scores"
   }
   cap_txt <- if (score_type == "normalized") {
-    "Bars represent standardized fidelity scores [0, 1] across evaluated metrics (1.0 = best observed agreement with reference).\nArrows in panel headers indicate optimization polarity: (\u2191) higher is better, (\u2193) lower is better."
+    "Bars represent standardized fidelity scores [0, 1] across evaluated metrics (1.0 = best observed agreement with reference)."
   } else {
-    "Bars represent unnormalized raw metric scores in native measurement units.\nArrows in panel headers indicate optimization polarity: (\u2191) higher is better, (\u2193) lower is better."
+    "Bars represent unnormalized raw metric scores in native measurement units."
   }
-  y_lab <- if (score_type == "normalized") "Fidelity Score [0, 1] (\u2191 Better)" else "Raw Metric Score"
+  y_lab <- if (score_type == "normalized") "Standardized Fidelity Score" else "Raw Metric Score"
 
   p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$Method, y = .data[[y_var]], fill = .data$Method)) +
     ggplot2::geom_col(width = 0.65, color = "#1E293B", linewidth = 0.4, alpha = 0.88) +
@@ -1389,6 +1411,8 @@ plot_category_metric_bars <- function(
 #'   Default \code{"composite"}.
 #' @param layout Character. For composite dashboards: \code{"4panel"} (runtime, memory, tradeoff, cost footprint)
 #'   or \code{"6panel"} (adds throughput). Default \code{"4panel"}.
+#' @param modality Character string specifying the modality layer to benchmark: \code{"total"} (default, combined runtime and memory),
+#'   \code{"rna"} (scRNA-seq layer only), or \code{"atac"} (scATAC-seq layer only).
 #' @param cell_count Integer. Number of cells processed in the benchmark, used to calculate
 #'   simulation throughput (\code{cells / second}). Default \code{1000}.
 #' @param palette Optional named character vector of simulator colors.
@@ -1403,19 +1427,42 @@ plot_scalability_benchmark <- function(
   benchmark_data,
   type       = c("composite", "runtime", "memory", "tradeoff", "cost", "throughput", "efficiency"),
   layout     = c("4panel", "6panel"),
+  modality   = c("total", "rna", "atac"),
   cell_count = 1000,
   palette    = NULL,
   base_size  = 11
 ) {
-  type   <- match.arg(type)
-  layout <- match.arg(layout)
+  type     <- match.arg(type)
+  layout   <- match.arg(layout)
+  modality <- if (!is.null(modality)) match.arg(modality) else "total"
 
   df <- .ingest_bubble_data(benchmark_data)
+  if ("Modality" %in% colnames(df)) {
+    if (modality == "rna") {
+      df <- df[grepl("RNA", df$Modality, ignore.case = TRUE), , drop = FALSE]
+    } else if (modality == "atac") {
+      df <- df[grepl("ATAC", df$Modality, ignore.case = TRUE), , drop = FALSE]
+    } else if (modality == "total") {
+      # Use total or computation, fall back to whole df if neither present
+      has_total <- any(df$Modality %in% c("Computation", "Total", "Combined"))
+      if (has_total) {
+        df <- df[df$Modality %in% c("Computation", "Total", "Combined"), , drop = FALSE]
+      }
+    }
+  }
+
   df$Metric[df$Metric == "elapsed_time"] <- "elapsed_time_seconds"
   df$Metric[df$Metric == "memory_mb"] <- "peak_memory_mb"
   sc_mets <- c("elapsed_time_seconds", "peak_memory_mb")
   sc_df <- df[df$Metric %in% sc_mets, , drop = FALSE]
   if (nrow(sc_df) == 0) stop("No computational scalability metrics (Category VIII) found in benchmark_data.")
+
+  mod_tag <- switch(modality,
+    rna   = " (scRNA-seq Layer)",
+    atac  = " (scATAC-seq Layer)",
+    total = " (Combined Total)",
+    ""
+  )
 
   wide_sc <- stats::reshape(
     sc_df[, c("Method", "Metric", "Score_Raw")],
@@ -1472,8 +1519,8 @@ plot_scalability_benchmark <- function(
     ggplot2::scale_fill_manual(values = active_pal, guide = "none") +
     ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.24))) +
     ggplot2::labs(
-      title    = "A. Elapsed Execution Time",
-      subtitle = "Wall-clock simulation elapsed time in seconds (lower is faster)",
+      title    = paste0("A. Elapsed Execution Time", mod_tag),
+      subtitle = paste0("Wall-clock simulation elapsed time in seconds (lower is faster)", mod_tag),
       x        = "Elapsed Time (Seconds, Lower = Faster)",
       y        = "Simulator"
     ) +
@@ -1492,8 +1539,8 @@ plot_scalability_benchmark <- function(
     ggplot2::scale_fill_manual(values = active_pal, guide = "none") +
     ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.24))) +
     ggplot2::labs(
-      title    = "B. Peak Memory Usage",
-      subtitle = "Maximum resident memory consumption in MiB (lower is better)",
+      title    = paste0("B. Peak Memory Usage", mod_tag),
+      subtitle = paste0("Maximum resident memory consumption in MiB (lower is better)", mod_tag),
       x        = "Peak RAM (MiB, Lower = More Efficient)",
       y        = NULL
     ) +
@@ -1812,25 +1859,32 @@ plot_metric_heatmap <- function(
     df          <- df[df$Display_Metric %in% top_props, , drop = FALSE]
   }
 
-  # Text color based on lightness & exact raw number formatting
-  df$Score_Label <- ifelse(is.na(df$Score_Raw), "-",
-                           ifelse(abs(df$Score_Raw) >= 100, sprintf("%.0f", df$Score_Raw),
-                           ifelse(abs(df$Score_Raw) >= 10,  sprintf("%.1f", df$Score_Raw),
-                           sprintf("%.2f", df$Score_Raw))))
+  # Text color based on lightness & exact number formatting
+  # When scale_fill == "relative", display normalized score [0, 1] inside cells
+  # When scale_fill == "raw", display unnormalized raw scores in native units
+  if (scale_fill == "relative") {
+    df$Score_Label <- ifelse(is.na(df$Score_Norm), "-", sprintf("%.2f", df$Score_Norm))
+  } else {
+    df$Score_Label <- ifelse(is.na(df$Score_Raw), "-",
+                             ifelse(abs(df$Score_Raw) >= 100, sprintf("%.0f", df$Score_Raw),
+                             ifelse(abs(df$Score_Raw) >= 10,  sprintf("%.1f", df$Score_Raw),
+                             sprintf("%.2f", df$Score_Raw))))
+  }
 
   row_order <- unique(df$Display_Metric)
   col_order <- unique(df$Method)
 
   # Reshape wide for optional clustering
   if ((cluster_rows || cluster_cols) && length(row_order) > 1 && length(col_order) > 1) {
+    wide_val_col <- if (scale_fill == "relative") "Score_Norm" else "Score_Raw"
     wide_m <- stats::reshape(
-      df[, c("Method", "Display_Metric", "Score_Raw")],
+      df[, c("Method", "Display_Metric", wide_val_col)],
       timevar = "Method", idvar = "Display_Metric", direction = "wide"
     )
     rnames <- wide_m$Display_Metric
     mat <- as.matrix(wide_m[, -1, drop = FALSE])
     rownames(mat) <- rnames
-    colnames(mat) <- gsub("^Score_Raw\\.", "", colnames(mat))
+    colnames(mat) <- gsub(paste0("^", wide_val_col, "\\."), "", colnames(mat))
     mat[is.na(mat)] <- 0
 
     if (cluster_rows && nrow(mat) > 1) {
@@ -1877,7 +1931,7 @@ plot_metric_heatmap <- function(
   } else {
     p <- p + ggplot2::scale_fill_gradient2(
       low = "#EBF5FB", mid = "#AED6F1", high = "#2E86AB",
-      na.value = "#F2F4F4", name = "Raw Score",
+      na.value = "#F2F4F4", name = "Raw Metric Score\n(Native Units)",
       guide = ggplot2::guide_colorbar(
         barwidth = ggplot2::unit(7, "cm"), barheight = ggplot2::unit(0.35, "cm"),
         title.position = "top", title.hjust = 0.5
@@ -1885,13 +1939,24 @@ plot_metric_heatmap <- function(
     )
   }
 
+  sub_heat <- if (scale_fill == "relative") {
+    "Cell text and fill color display standardized fidelity scores in [0, 1] (1.0 = optimal reference agreement)"
+  } else {
+    "Cell text and fill color display unnormalized raw metric scores in native measurement units"
+  }
+  cap_heat <- if (scale_fill == "relative") {
+    "Values displayed inside cells and fill colors indicate standardized fidelity [0, 1] (1.0 = best). (+) Higher is better, (-) Lower is better."
+  } else {
+    "Values displayed inside cells and fill intensity denote original unnormalized metric values in native units. (+) Higher is better, (-) Lower is better."
+  }
+
   p <- p +
     ggplot2::labs(
       title    = "Multi-Simulator Benchmark Heatmap Across Canonical Categories",
-      subtitle = "Cell text displays exact unnormalized raw scores; cell fill color indicates relative performance",
+      subtitle = sub_heat,
       x        = "Simulator Framework",
       y        = "Evaluated Biological & Computational Metric",
-      caption  = "Values displayed inside cells are original unnormalized scores. Fill indicates standardized fidelity [0, 1] (1.0 = best). (+) Higher is better, (-) Lower is better."
+      caption  = cap_heat
     ) +
     .pub_theme(base_size = base_size) +
     ggplot2::theme(
@@ -2356,15 +2421,19 @@ plot_metric_pca <- function(
   }
   df <- .ingest_bubble_data(benchmark_data)
 
+  # Robust score column detection: prioritize normalized fidelity scores [0, 1] for PCA ordination
+  val_c <- if ("Score_Norm" %in% colnames(df)) "Score_Norm" else
+           if ("Score"      %in% colnames(df)) "Score"      else
+           if ("Score_Raw"  %in% colnames(df)) "Score_Raw"  else "Value"
+
   if (anyDuplicated(df[, c("Method", "Metric")])) {
-    val_c <- if ("Score_Raw" %in% colnames(df)) "Score_Raw" else if ("Score" %in% colnames(df)) "Score" else "Value"
     agg_df <- stats::aggregate(
       df[[val_c]],
       by = list(Method = df$Method, Category = df$Category, Metric = df$Metric),
       FUN = mean,
       na.rm = TRUE
     )
-    colnames(agg_df)[4] <- "Score_Raw"
+    colnames(agg_df)[4] <- val_c
     df <- agg_df
   }
 
@@ -2409,10 +2478,34 @@ plot_metric_pca <- function(
   if (!is.null(metrics)) {
     df <- df[df$Metric %in% metrics, , drop = FALSE]
   }
-  if (nrow(df) == 0) stop("No data remaining after applying category/metric filters.")
+  if (nrow(df) == 0) {
+    p_empty <- ggplot2::ggplot() +
+      ggplot2::annotate(
+        "text", x = 0.5, y = 0.5,
+        label = "No benchmark data remaining after applying category and metric filters.",
+        size = base_size * 0.4, fontface = "italic", color = "#475569", hjust = 0.5
+      ) +
+      ggplot2::theme_void(base_size = base_size)
+    return(p_empty)
+  }
 
   score_col <- if ("Score_Norm" %in% colnames(df)) "Score_Norm" else
-               if ("Score_Raw"  %in% colnames(df)) "Score_Raw"  else "Score"
+               if ("Score"      %in% colnames(df)) "Score"      else
+               if ("Score_Raw"  %in% colnames(df)) "Score_Raw"  else "Value"
+
+  # Ensure strictly unique (Method, Metric) pairs before wide reshape
+  if (anyDuplicated(df[, c("Method", "Metric")])) {
+    agg_df <- stats::aggregate(
+      df[[score_col]],
+      by = list(Method = df$Method, Metric = df$Metric),
+      FUN = mean,
+      na.rm = TRUE
+    )
+    colnames(agg_df)[3] <- score_col
+    cat_map <- stats::setNames(df$Category, df$Metric)
+    agg_df$Category <- cat_map[agg_df$Metric]
+    df <- agg_df
+  }
 
   # Reshape: Simulators (rows) x Metrics (columns)
   wide_m <- stats::reshape(
@@ -2425,15 +2518,67 @@ plot_metric_pca <- function(
   mat <- as.matrix(wide_m[, -1, drop = FALSE])
   rownames(mat) <- rnames
   colnames(mat) <- gsub(paste0("^", score_col, "\\."), "", colnames(mat))
-  mat[is.na(mat)] <- 0
 
-  # Remove zero-variance columns for PCA
-  col_vars <- apply(mat, 2, stats::var)
-  mat <- mat[, col_vars > 1e-12, drop = FALSE]
+  # Replace all non-finite entries (NA, NaN, Inf, -Inf) with column finite mean or zero
+  for (j in seq_len(ncol(mat))) {
+    non_fin <- !is.finite(mat[, j])
+    if (any(non_fin)) {
+      fin_vals <- mat[!non_fin, j]
+      mat[non_fin, j] <- if (length(fin_vals) > 0) mean(fin_vals) else 0
+    }
+  }
 
-  if (nrow(mat) < 3 || ncol(mat) < 2) stop("PCA requires at least 3 simulators and 2 non-constant metrics.")
+  # Filter out invariant / zero-variance columns strictly (avoiding NA indexing)
+  col_sds <- apply(mat, 2, stats::sd)
+  valid_cols <- which(!is.na(col_sds) & is.finite(col_sds) & (col_sds > 1e-7))
+  mat <- mat[, valid_cols, drop = FALSE]
 
-  pca     <- stats::prcomp(mat, scale. = TRUE, center = TRUE)
+  if (nrow(mat) < 3 || ncol(mat) < 2) {
+    reason <- if (nrow(mat) < 3) {
+      sprintf("PCA requires at least 3 distinct simulators (found: %d).", nrow(mat))
+    } else {
+      sprintf("Category contains %d varying metric(s).\nPCA Biplot ordination requires at least 2 discriminating metrics with non-zero variance.\nPlease select 'All Categories' or a category with multiple metrics.", ncol(mat))
+    }
+    p_empty <- ggplot2::ggplot() +
+      ggplot2::annotate(
+        "text", x = 0.5, y = 0.5,
+        label = reason,
+        size = base_size * 0.4, fontface = "italic", color = "#475569", hjust = 0.5
+      ) +
+      ggplot2::labs(
+        title = "Simulator Performance Biplot (PCA Ordination)",
+        subtitle = "Insufficient dimensionality for 2D principal component ordination"
+      ) +
+      ggplot2::theme_void(base_size = base_size) +
+      ggplot2::theme(
+        plot.title = ggplot2::element_text(face = "bold", hjust = 0.5, color = "#1E293B"),
+        plot.subtitle = ggplot2::element_text(hjust = 0.5, color = "#64748B", margin = ggplot2::margin(b = 15)),
+        plot.margin = ggplot2::margin(20, 20, 20, 20)
+      )
+    return(p_empty)
+  }
+
+  pca <- tryCatch({
+    stats::prcomp(mat, scale. = TRUE, center = TRUE)
+  }, error = function(e) {
+    tryCatch({
+      stats::prcomp(mat, scale. = FALSE, center = TRUE)
+    }, error = function(e2) {
+      NULL
+    })
+  })
+
+  if (is.null(pca)) {
+    p_err <- ggplot2::ggplot() +
+      ggplot2::annotate(
+        "text", x = 0.5, y = 0.5,
+        label = "Unable to compute PCA ordination with the current metric matrix.\nPlease select another category or additional simulators.",
+        size = base_size * 0.4, fontface = "italic", color = "#EF4444", hjust = 0.5
+      ) +
+      ggplot2::theme_void(base_size = base_size)
+    return(p_err)
+  }
+
   pca_var <- round(100 * summary(pca)$importance[2, seq_len(2)], 1)
 
   # Scores data frame (Methods)
@@ -2631,8 +2776,8 @@ plot_metric_pca <- function(
 #' \itemize{
 #'   \item \strong{Size}: Normalized fidelity score [0, 1] -- larger = better performance.
 #'   \item \strong{Fill color}: Evaluation category (one of the eight canonical groups).
-#'   \item \strong{Circle (shape 21)}: Regular performance (score < 0.96).
-#'   \item \strong{Square (shape 22)}: Top performer (score >= 0.96).
+#'   \item \strong{Circle (standard outline)}: Standard performance for that metric.
+#'   \item \strong{Bold outline circle (shape 21, stroke 1.6)}: Top-performing simulator for that specific metric.
 #'   \item \strong{Small grey dot}: Metric not available/computed for that method.
 #' }
 #'
@@ -2859,7 +3004,16 @@ plot_benchmark_bubble_matrix <- function(
                                           if (has_other) "Other Methods"))
   }
 
-  df$Is_Top <- !is.na(df$Score_Norm) & df$Score_Norm >= 0.96
+  # Identify top-performing simulator for each evaluation metric
+  df$Is_Top <- FALSE
+  if (nrow(df) > 0) {
+    top_per_metric <- stats::aggregate(Score_Norm ~ Display_Metric, data = df, FUN = max, na.rm = TRUE)
+    colnames(top_per_metric)[2] <- "Score_Top"
+    df <- merge(df, top_per_metric, by = "Display_Metric", all.x = TRUE)
+    df$Is_Top <- !is.na(df$Score_Norm) & !is.na(df$Score_Top) &
+                 (df$Score_Norm >= df$Score_Top - 1e-5) & (df$Score_Norm > 0)
+    df$Score_Top <- NULL
+  }
 
   # --- 7. Category palette -----------------------------------------------
   base_pal <- .CANONICAL_CATEGORY_COLORS
@@ -2908,22 +3062,22 @@ plot_benchmark_bubble_matrix <- function(
     )
   }
 
-  # Regular bubbles (circles) - safe against NA
+  # Regular bubbles (circles with standard outline) - safe against NA
   df_reg <- df[!is.na(df$Score_Norm) & !df$Is_Top, , drop = FALSE]
   if (nrow(df_reg) > 0)
     p <- p + ggplot2::geom_point(
       data = df_reg,
       ggplot2::aes(size = .data$Score_Norm, fill = .data$Display_Category),
-      shape = 21, color = "#1E293B", stroke = 0.5, alpha = 0.92
+      shape = 21, color = "#64748B", stroke = 0.45, alpha = 0.90
     )
 
-  # Top performer bubbles (squares) - safe against NA
+  # Top performer bubbles (circles with bold outline - NO squares) - safe against NA
   df_top <- df[!is.na(df$Score_Norm) & df$Is_Top, , drop = FALSE]
   if (nrow(df_top) > 0)
     p <- p + ggplot2::geom_point(
       data = df_top,
       ggplot2::aes(size = .data$Score_Norm, fill = .data$Display_Category),
-      shape = 22, color = "#0F172A", stroke = 0.90, alpha = 0.98
+      shape = 21, color = "#0F172A", stroke = 1.6, alpha = 1.0
     )
 
   if (show_score_labels)
@@ -2984,7 +3138,7 @@ plot_benchmark_bubble_matrix <- function(
       x        = NULL,
       y        = y_title,
       caption  = paste0(
-        "Circle: standard performance (< 0.96)  |  Square: top performer (>= 0.96)",
+        "Circle: standard performance  |  Bold circle outline: top-performing simulator for the metric",
         if (show_missing_dots) "  |  Grey dot: metric not computed." else ".\n",
         if (show_missing_dots) "\n" else "",
         "All ", length(unique(df$Display_Metric)), " metrics direction-normalized: for error/distance metrics, scores are inverted as 1 - norm(x) so 1.0 always indicates closest agreement to empirical reference."
@@ -3149,10 +3303,12 @@ plot_bubble_matrix <- plot_benchmark_bubble_matrix
 # @keywords internal
 .normalize_bubble_scores <- function(df) {
   df$Score_Norm <- NA_real_
-  for (met in unique(df$Metric)) {
-    idx     <- df$Metric == met
+  metric_key <- if ("Property" %in% colnames(df)) paste0(df$Property, "___", df$Metric) else df$Metric
+  for (m_key in unique(metric_key)) {
+    idx     <- metric_key == m_key
+    met     <- df$Metric[idx][1]
     raw_val <- df$Score_Raw[idx]
-    non_na  <- raw_val[!is.na(raw_val)]
+    non_na  <- raw_val[!is.na(raw_val) & is.finite(raw_val)]
     if (length(non_na) == 0) {
       df$Score_Norm[idx] <- NA_real_
       next
@@ -3161,12 +3317,26 @@ plot_bubble_matrix <- plot_benchmark_bubble_matrix
     min_v   <- min(non_na)
     max_v   <- max(non_na)
     rng     <- max_v - min_v
-    if (rng < 1e-10) {
-      normed <- rep(1.0, sum(idx))
+    if (is.na(rng) || !is.finite(rng)) rng <- 0
+
+    is_naturally_01 <- isTRUE(grepl("^(KS|OV|ari|nmi|ami|v_measure|ECDF_DiffArea|Fasano|Peacock|accuracy|F1|Top_DEG_Jaccard)", met, ignore.case = TRUE)) ||
+                       isTRUE(min_v >= 0 && max_v <= 1 && rng <= 1)
+    if (is_naturally_01) {
+      if (is_hib) {
+        normed <- pmax(0, pmin(1, raw_val))
+      } else {
+        normed <- pmax(0, pmin(1, 1 - raw_val))
+      }
+    } else if (rng < 1e-10) {
+      if (is_hib) {
+        normed <- if (max_v > 0) pmin(1, raw_val / max(1, max_v)) else rep(0.5, sum(idx))
+      } else {
+        normed <- 1 / (1 + pmax(0, raw_val))
+      }
     } else if (is_hib) {
       normed <- (raw_val - min_v) / rng
     } else {
-      normed <- 1 - (raw_val - min_v) / rng   # invert: lower raw = better = higher score
+      normed <- 1 - (raw_val - min_v) / rng
     }
     df$Score_Norm[idx] <- pmax(0, pmin(1, normed))
   }
@@ -3238,16 +3408,23 @@ plot_evaluation_summary <- function(
   }
 
   if ("Metric" %in% colnames(df)) {
+    missing_cat <- is.na(df$Display_Category) | df$Display_Category == "" | df$Display_Category == "Uncategorized"
     mc_override <- .METRIC_CATEGORY_MAP[df$Metric]
-    idx         <- !is.na(mc_override)
+    idx         <- missing_cat & !is.na(mc_override)
     df$Display_Category[idx] <- mc_override[idx]
   }
 
   # 3. Score normalization
-  if (normalize_scores && "Score_Raw" %in% colnames(df)) {
-    df <- .normalize_bubble_scores(df)
-  } else if (!"Score_Norm" %in% colnames(df)) {
-    df$Score_Norm <- pmax(0, pmin(1, df$Score_Raw))
+  score_var <- if (normalize_scores) "Score_Norm" else "Score_Plot"
+  if (normalize_scores) {
+    if ("Score_Raw" %in% colnames(df)) {
+      df <- .normalize_bubble_scores(df)
+    } else if (!"Score_Norm" %in% colnames(df)) {
+      df$Score_Norm <- pmax(0, pmin(1, df$Score_Raw))
+    }
+  } else {
+    raw_col <- if ("Score_Raw" %in% colnames(df)) "Score_Raw" else if ("Score" %in% colnames(df)) "Score" else "Value"
+    df$Score_Plot <- df[[raw_col]]
   }
 
   # 4. Method classes (optional)
@@ -3264,34 +3441,70 @@ plot_evaluation_summary <- function(
 
   strip_map <- c(
     "(I) Distributional Properties"              = "(I)\nDistribution",
+    "Distributional Properties"                  = "(I)\nDistribution",
+    "Distribution"                               = "(I)\nDistribution",
     "(II) Correlations & Zero-Inflation"         = "(II)\nCorrelation",
+    "Correlations & Zero-Inflation"              = "(II)\nCorrelation",
+    "Correlation & Dependencies"                 = "(II)\nCorrelation",
+    "Correlation"                                = "(II)\nCorrelation",
     "(III) Cellular Structure & Concordance"     = "(III)\nCell Structure",
+    "Cellular Structure & Concordance"           = "(III)\nCell Structure",
+    "Cellular Structure & Mixing"                = "(III)\nCell Structure",
+    "Cell Structure"                             = "(III)\nCell Structure",
     "(IV) Batch Effects & Confounder Mixing"     = "(IV)\nBatch Mixing",
+    "Batch Effects & Confounder Mixing"          = "(IV)\nBatch Mixing",
+    "Batch Mixing"                               = "(IV)\nBatch Mixing",
     "(V) Biological Signal & Downstream Fidelity"= "(V)\nBio-Signal & DE",
+    "Biological Signal & Downstream Fidelity"    = "(V)\nBio-Signal & DE",
+    "Biological Signal & Downstream"             = "(V)\nBio-Signal & DE",
+    "Bio-Signal & DE"                            = "(V)\nBio-Signal & DE",
     "(VI) Trajectory & Lineage Dynamics"         = "(VI)\nTraj.",
+    "Trajectory & Lineage Dynamics"              = "(VI)\nTraj.",
+    "Trajectory Dynamics"                        = "(VI)\nTraj.",
+    "Trajectory"                                 = "(VI)\nTraj.",
+    "Traj."                                      = "(VI)\nTraj.",
     "(VII) Cross-Modal Coupling & Modularity"    = "(VII)\nCross-Modal",
-    "(VIII) Computational Scalability"           = "(VIII)\nScalability"
+    "Cross-Modal Coupling & Modularity"          = "(VII)\nCross-Modal",
+    "Cross-Modal Relationships"                  = "(VII)\nCross-Modal",
+    "Cross-Modal"                                = "(VII)\nCross-Modal",
+    "(VIII) Computational Scalability"           = "(VIII)\nScalability",
+    "Computational Scalability"                  = "(VIII)\nScalability",
+    "Scalability"                                = "(VIII)\nScalability"
   )
 
   df$Display_Category <- as.character(df$Display_Category)
   df$Short_Category <- strip_map[df$Display_Category]
-  df$Short_Category[is.na(df$Short_Category)] <- "(I)\nDistribution"
+  unmatched <- is.na(df$Short_Category)
+  if (any(unmatched)) {
+    for (u_i in which(unmatched)) {
+      dc <- df$Display_Category[u_i]
+      if (grepl("Distribut", dc, ignore.case = TRUE)) df$Short_Category[u_i] <- "(I)\nDistribution"
+      else if (grepl("Correlat|Zero", dc, ignore.case = TRUE)) df$Short_Category[u_i] <- "(II)\nCorrelation"
+      else if (grepl("Cell|Cluster|Concord", dc, ignore.case = TRUE)) df$Short_Category[u_i] <- "(III)\nCell Structure"
+      else if (grepl("Batch|Confound", dc, ignore.case = TRUE)) df$Short_Category[u_i] <- "(IV)\nBatch Mixing"
+      else if (grepl("Bio|Signal|DE|Downstream", dc, ignore.case = TRUE)) df$Short_Category[u_i] <- "(V)\nBio-Signal & DE"
+      else if (grepl("Traj|Lineage", dc, ignore.case = TRUE)) df$Short_Category[u_i] <- "(VI)\nTraj."
+      else if (grepl("Cross|Modal", dc, ignore.case = TRUE)) df$Short_Category[u_i] <- "(VII)\nCross-Modal"
+      else if (grepl("Scalab|Comput", dc, ignore.case = TRUE)) df$Short_Category[u_i] <- "(VIII)\nScalability"
+      else df$Short_Category[u_i] <- "(I)\nDistribution"
+    }
+  }
 
   # 5. Aggregate category means
   group_cols <- c("Method", "Short_Category")
   if (has_classes) group_cols <- c(group_cols, "Method_Class")
   cat_means <- stats::aggregate(
-    stats::as.formula(paste("Score_Norm ~", paste(group_cols, collapse = " + "))),
-    data = df, FUN = mean
+    stats::as.formula(paste(score_var, "~", paste(group_cols, collapse = " + "))),
+    data = df, FUN = function(x) mean(x, na.rm = TRUE)
   )
   colnames(cat_means)[colnames(cat_means) == "Short_Category"] <- "Panel"
 
-  # 6. Aggregate overall means
+  # 6. Aggregate overall means (macro-average across categories)
   ov_group_cols <- "Method"
   if (has_classes) ov_group_cols <- c(ov_group_cols, "Method_Class")
   overall_means <- stats::aggregate(
-    stats::as.formula(paste("Score_Norm ~", paste(ov_group_cols, collapse = " + "))),
-    data = df, FUN = mean
+    stats::as.formula(paste(score_var, "~", paste(ov_group_cols, collapse = " + "))),
+    data = cat_means, FUN = function(x) mean(x, na.rm = TRUE)
   )
   overall_means$Panel <- "Overall\nScore"
 
@@ -3301,17 +3514,18 @@ plot_evaluation_summary <- function(
   if (!is.null(simulators_order)) {
     ranked_methods <- simulators_order
   } else if (has_classes) {
-    cls_ord <- order(overall_means$Method_Class, -overall_means$Score_Norm)
+    cls_ord <- order(overall_means$Method_Class, -overall_means[[score_var]])
     ranked_methods <- unique(overall_means$Method[cls_ord])
   } else {
-    ord <- order(overall_means$Score_Norm, decreasing = TRUE)
+    ord <- order(overall_means[[score_var]], decreasing = TRUE)
     ranked_methods <- overall_means$Method[ord]
   }
 
   combined$Method <- factor(combined$Method, levels = rev(ranked_methods))
 
   panel_levels <- c(unname(strip_map[.CANONICAL_CATEGORY_ORDER]), "Overall\nScore")
-  combined$Panel <- factor(combined$Panel, levels = panel_levels)
+  present_panels <- intersect(panel_levels, unique(combined$Panel))
+  combined$Panel <- factor(combined$Panel, levels = present_panels)
 
   if (has_classes) {
     combined$Method_Class <- factor(combined$Method_Class, levels = unique(df$Method_Class))
@@ -3336,7 +3550,14 @@ plot_evaluation_summary <- function(
     }
   }
 
-  combined$Label <- sprintf("%.2f", combined$Score_Norm)
+  combined$Label <- if (normalize_scores) {
+    sprintf("%.2f", combined[[score_var]])
+  } else {
+    ifelse(is.na(combined[[score_var]]), "-",
+    ifelse(abs(combined[[score_var]]) >= 100, sprintf("%.1f", combined[[score_var]]),
+    ifelse(abs(combined[[score_var]]) >= 1,   sprintf("%.2f", combined[[score_var]]),
+    sprintf("%.3f", combined[[score_var]]))))
+  }
 
   # Zebra striping
   n_methods <- length(ranked_methods)
@@ -3347,7 +3568,7 @@ plot_evaluation_summary <- function(
   )
   zebra_df <- zebra_df[zebra_df$is_even, ]
 
-  p <- ggplot2::ggplot(combined, ggplot2::aes(x = Score_Norm, y = Method))
+  p <- ggplot2::ggplot(combined, ggplot2::aes(x = .data[[score_var]], y = Method))
 
   if (!has_classes) {
     p <- p + ggplot2::geom_rect(
@@ -3358,28 +3579,36 @@ plot_evaluation_summary <- function(
     ggplot2::geom_hline(yintercept = seq(0.5, n_methods + 0.5, by = 1), color = "#E2E8F0", linewidth = 0.5)
   }
 
-  p <- p +
-    ggplot2::geom_vline(xintercept = 0, color = "#475569", linewidth = 0.6) +
-    ggplot2::geom_vline(xintercept = 0.5, linetype = "dotted", color = "#CBD5E1", linewidth = 0.4) +
-    ggplot2::geom_vline(xintercept = 1.0, linetype = "dashed", color = "#64748B", linewidth = 0.5) +
-    ggplot2::geom_col(
-      ggplot2::aes(fill = Panel),
-      width     = 0.68,
-      color     = "#1E293B",
-      linewidth = 0.45,
-      alpha     = 0.95
-    )
+  p <- p + ggplot2::geom_vline(xintercept = 0, color = "#475569", linewidth = 0.6)
+  if (normalize_scores) {
+    p <- p +
+      ggplot2::geom_vline(xintercept = 0.5, linetype = "dotted", color = "#CBD5E1", linewidth = 0.4) +
+      ggplot2::geom_vline(xintercept = 1.0, linetype = "dashed", color = "#64748B", linewidth = 0.5)
+  }
+
+  p <- p + ggplot2::geom_col(
+    ggplot2::aes(fill = Panel),
+    width     = 0.68,
+    color     = "#1E293B",
+    linewidth = 0.45,
+    alpha     = 0.95
+  )
+
+  max_score_val <- max(combined[[score_var]], na.rm = TRUE)
+  if (!is.finite(max_score_val) || max_score_val <= 0) max_score_val <- 1
+  thresh <- if (normalize_scores) 0.28 else max_score_val * 0.28
+  offset <- if (normalize_scores) 0.02 else max_score_val * 0.02
 
   if (show_labels) {
     p <- p +
       ggplot2::geom_text(
-        data = combined[combined$Score_Norm < 0.28, ],
-        ggplot2::aes(x = Score_Norm + 0.02, label = Label),
+        data = combined[combined[[score_var]] < thresh, ],
+        ggplot2::aes(x = .data[[score_var]] + offset, label = Label),
         hjust = 0, size = base_size * 0.29, fontface = "bold", color = "#0F172A"
       ) +
       ggplot2::geom_text(
-        data = combined[combined$Score_Norm >= 0.28, ],
-        ggplot2::aes(x = Score_Norm - 0.03, label = Label),
+        data = combined[combined[[score_var]] >= thresh, ],
+        ggplot2::aes(x = .data[[score_var]] - offset, label = Label),
         hjust = 1, size = base_size * 0.29, fontface = "bold", color = "#0F172A"
       )
   }
@@ -3390,18 +3619,33 @@ plot_evaluation_summary <- function(
     p <- p + ggplot2::facet_grid(. ~ Panel, scales = "fixed")
   }
 
-  p <- p +
-    ggplot2::scale_fill_manual(values = default_colors, guide = "none") +
-    ggplot2::scale_x_continuous(
+  p <- p + ggplot2::scale_fill_manual(values = default_colors, guide = "none")
+
+  x_lab <- if (normalize_scores) "Average Evaluation Score (0 - 1, Higher = Better)" else "Average Raw Metric Score (Native Units)"
+  sub_txt <- if (normalize_scores) {
+    if (identical(subtitle, "Average fidelity scores across 8 evaluation categories")) "Average fidelity scores across 8 evaluation categories (Direction-normalized [0, 1])" else subtitle
+  } else {
+    if (identical(subtitle, "Average fidelity scores across 8 evaluation categories")) "Average unnormalized raw metric values across evaluation categories" else subtitle
+  }
+
+  if (normalize_scores) {
+    p <- p + ggplot2::scale_x_continuous(
       limits = c(0, 1.18),
       breaks = c(0, 0.5, 1.0),
       labels = c("0", "0.5", "1.0"),
       expand = c(0, 0)
-    ) +
+    )
+  } else {
+    p <- p + ggplot2::scale_x_continuous(
+      expand = ggplot2::expansion(mult = c(0.04, 0.20))
+    )
+  }
+
+  p <- p +
     ggplot2::labs(
       title    = title,
-      subtitle = subtitle,
-      x        = "Average Evaluation Score (0 - 1, Higher = Better)",
+      subtitle = sub_txt,
+      x        = x_lab,
       y        = "Ranked Simulators"
     ) +
     ggplot2::theme_minimal(base_size = base_size) +
@@ -3717,17 +3961,53 @@ plot_dataset_embeddings <- function(embedding_data,
   df <- embedding_data
   red_label <- switch(reduction, "umap" = "UMAP", "tsne" = "t-SNE", "pca" = "PCA")
   
-  # Filter selected methods if requested
-  if (!is.null(selected_methods) && length(selected_methods) > 0) {
-    keep_datasets <- c("Reference", selected_methods)
-    df <- df[df$Dataset %in% keep_datasets, , drop = FALSE]
+  # Sanitize selected_methods (strip empty strings / whitespace)
+  if (!is.null(selected_methods)) {
+    selected_methods <- as.character(selected_methods)
+    selected_methods <- selected_methods[nzchar(trimws(selected_methods))]
+    if (length(selected_methods) == 0) selected_methods <- NULL
   }
   
   if (layout == "side_by_side") {
-    sim_levels <- setdiff(unique(as.character(df$Dataset)), "Reference")
-    chosen_sim <- if (length(sim_levels) > 0) sim_levels[1] else NULL
+    all_sims <- setdiff(unique(as.character(df$Dataset)), "Reference")
+    chosen_sim <- NULL
+    if (length(all_sims) > 0) {
+      if (!is.null(selected_methods) && length(selected_methods) >= 1) {
+        # Check direct match
+        hit <- which(all_sims %in% selected_methods)
+        if (length(hit) == 0) {
+          # Check base name match
+          base_sims <- sub("(_Dataset.*| \\(Dataset.*\\))", "", all_sims)
+          hit <- which(base_sims %in% selected_methods)
+        }
+        if (length(hit) == 0) {
+          # Check partial or case-insensitive match
+          hit <- which(tolower(all_sims) %in% tolower(selected_methods))
+        }
+        if (length(hit) > 0) {
+          chosen_sim <- all_sims[hit[1]]
+        }
+      }
+      # If no match or selected_methods was empty/NULL, fallback to the first available simulator
+      if (is.null(chosen_sim)) {
+        chosen_sim <- all_sims[1]
+      }
+    }
+    
     if (!is.null(chosen_sim)) {
       df <- df[df$Dataset %in% c("Reference", chosen_sim), , drop = FALSE]
+      df$Dataset <- factor(as.character(df$Dataset), levels = c("Reference", chosen_sim))
+    }
+  } else {
+    # Filter selected methods if requested in facet or overlay layout
+    if (!is.null(selected_methods) && length(selected_methods) > 0) {
+      keep_datasets <- c("Reference", selected_methods)
+      df_datasets <- as.character(df$Dataset)
+      base_datasets <- sub("(_Dataset.*| \\(Dataset.*\\))", "", df_datasets)
+      keep_idx <- df_datasets %in% keep_datasets | base_datasets %in% selected_methods
+      if (any(keep_idx & df_datasets != "Reference")) {
+        df <- df[keep_idx, , drop = FALSE]
+      }
     }
   }
   

@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 
 In single-cell RNA sequencing (scRNA-seq), evaluating the quality of simulated count data is important before testing analysis tools such as clustering, batch correction, or differential expression algorithms.
 
-This tutorial shows how to evaluate synthetic scRNA-seq data step-by-step using **`scSimEval`** without needing any artificial ground truth.
+This tutorial shows how to evaluate synthetic scRNA-seq data step-by-step using **`scSimEval`** across 62 evaluation measures.
 
 ---
 
@@ -175,7 +175,7 @@ plot_distribution_qc(
 
 # 5. Conclusion
 
-This demonstration illustrates how `scSimEval` comprehensively assesses scRNA-seq simulations across distributions, zero patterns, clustering, batch integration, marker genes, and trajectory dynamics without requiring artificial ground-truth labels.
+This demonstration illustrates how `scSimEval` comprehensively assesses scRNA-seq simulations across distributions, zero patterns, clustering, batch integration, marker genes, and trajectory dynamics across all 62 evaluation measures.
 
 ```{r session-info}
 sessionInfo()

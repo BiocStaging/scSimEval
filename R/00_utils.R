@@ -277,11 +277,16 @@ fast_cross_distance_sq <- function(X, Y) {
 #' @param n_pcs Number of principal components. Default 20.
 #' @param n_hvg Number of top highly variable genes to retain. Default 2000.
 #' @param scale Logical, whether to scale features. Default FALSE.
+#' @param normalize Logical, whether to apply library-size log-normalization if raw counts. Default FALSE.
 #' @return Matrix of cell principal component embeddings (cells x n_pcs).
 #' @export
-fast_pca <- function(mat, n_pcs = 20, n_hvg = 2000, scale = FALSE) {
+fast_pca <- function(mat, n_pcs = 20, n_hvg = 2000, scale = FALSE, normalize = FALSE) {
   if (inherits(mat, "Matrix")) {
     mat <- as.matrix(mat)
+  }
+  if (normalize) {
+    # mat is cells x features; normalize_counts expects features x cells
+    mat <- t(as.matrix(normalize_counts(t(mat))))
   }
   n_feats <- ncol(mat)
   if (n_feats > n_hvg) {
@@ -313,5 +318,56 @@ subsample_dist_vector <- function(x, max_n = 3000) {
     x
   }
 }
+
+#' Normalize Single-Cell Count Matrix (Library Size + Log Transformation)
+#'
+#' Converts raw single-cell sequencing count matrices to library-size normalized,
+#' log-transformed values (e.g. log2(CPM + 1) or log(normalized counts + 1)),
+#' mitigating library size confounding across distance, correlation, and manifold metrics
+#' as established across benchmark literature (SimCH, scDesign3, SPsimSeq, GDSim, SymBench, cfDiffusion, scCross).
+#'
+#' @param mat Expression or count matrix (features x cells), dgCMatrix, SingleCellExperiment, or Seurat object.
+#' @param scale_factor Numeric scaling factor for counts per cell. Default is 1e6 (CPM); can use 1e4.
+#' @param log_base Numeric base for the logarithm: 2 (default, for log2(CPM+1)) or natural log \code{exp(1)}.
+#' @param pseudo_count Numeric pseudo-count added before logarithm. Default is 1.
+#' @return Normalized matrix of log-transformed expression values.
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' norm_mat <- normalize_counts(example_scrna$ref)
+#' @export
+normalize_counts <- function(mat, scale_factor = 1e6, log_base = 2, pseudo_count = 1) {
+  if (is.null(mat)) return(NULL)
+  if (inherits(mat, "SingleCellExperiment")) {
+    mat <- SummarizedExperiment::assay(mat, "counts")
+  } else if (inherits(mat, "Seurat")) {
+    mat <- Seurat::GetAssayData(mat, slot = "counts")
+  }
+  
+  # Check if matrix is already log-normalized (max < 35 and has fractional values)
+  sample_vals <- if (inherits(mat, "dgCMatrix")) head(mat@x, 100) else as.numeric(mat[seq_len(min(10, nrow(mat))), seq_len(min(10, ncol(mat)))])
+  sample_vals <- sample_vals[!is.na(sample_vals)]
+  is_already_lognorm <- length(sample_vals) > 0 && max(sample_vals) < 35 && any(sample_vals %% 1 != 0)
+  if (is_already_lognorm) {
+    return(mat)
+  }
+  
+  libs <- as.numeric(Matrix::colSums(mat))
+  libs[libs == 0] <- 1
+  
+  if (inherits(mat, "dgCMatrix")) {
+    norm_mat <- mat
+    cell_factors <- scale_factor / libs
+    col_idx <- rep(seq_len(ncol(mat)), diff(mat@p))
+    scaled_x <- norm_mat@x * cell_factors[col_idx] + pseudo_count
+    norm_mat@x <- if (log_base == 2) log2(scaled_x) else log(scaled_x)
+    return(norm_mat)
+  } else {
+    mat <- as.matrix(mat)
+    scaled <- t(t(mat) / libs) * scale_factor + pseudo_count
+    norm_mat <- if (log_base == 2) log2(scaled) else log(scaled)
+    return(norm_mat)
+  }
+}
+
 
 

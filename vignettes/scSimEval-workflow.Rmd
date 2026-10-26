@@ -29,9 +29,7 @@ knitr::opts_chunk$set(
 
 Computer simulations of single-cell technologies—specifically single-cell RNA sequencing (**scRNA-seq**), single-cell ATAC sequencing (**scATAC-seq**), and paired **scRNA-seq + scATAC-seq multiomics**—are widely used in bioinformatics research. They help scientists test computational pipelines, optimize analysis workflows, and evaluate statistical models. A critical question is always: *how realistic is the simulated data compared to genuine biological experiments?*
 
-Many existing evaluation tools require artificial "ground truth" labels that are rarely known in real experiments, such as predefined true gene networks or synthetic marker lists.
-
-**`scSimEval`** solves this problem by providing **62 evaluation measures organized into 8 easy-to-understand categories**. It works directly with the real experimental data and simulated data you already have, without needing any artificial ground truth:
+**`scSimEval`** provides a comprehensive evaluation framework by calculating **62 evaluation measures organized into 8 easy-to-understand categories**. It directly benchmarks simulated data against empirical reference datasets using:
 
 1. **Real experimental reference data** (`ref_rna`, `ref_atac`)
 2. **Simulated synthetic data** (`sim_rna`, `sim_atac`)
@@ -139,7 +137,7 @@ To evaluate your datasets, `scSimEval` accepts standard single-cell matrices and
 | **Unpaired Multiomics** *(Independent cells)* | **RNA + ATAC + Cell Types (+ Batch)** | **Up to ~58 Metrics** | *Essential for unpaired designs:* Unlocks cluster-matched cross-modal label transfer concordance, cell-type regulatory linkage, and technical donor integration. |
 
 ### Step 2: Calculate Evaluation Measures
-`scSimEval` calculates 62 evaluation measures across 8 core categories without needing any artificial ground truth.
+`scSimEval` calculates 62 evaluation measures across 8 core categories.
 
 ### Step 3: Run the Complete Benchmark
 Execute the complete evaluation in a single command using `evaluate_simulation_accuracy()`, `evaluate_multiomics_accuracy()`, or `evaluate_multiple_datasets()`.
@@ -155,7 +153,7 @@ In single-cell benchmarking, different metrics have completely different units a
 
 To make fair and intuitive comparisons, `scSimEval` uses an automated **two-step score normalization pipeline**, followed by clear **visual mapping**:
 
-```{r score-norm-workflow, echo=FALSE, fig.align='center', out.width='100%', fig.cap='**Figure 2: Score normalization and visual mapping workflow in scSimEval.** Box 1 shows the two-step normalization process: direction inversion for lower-is-better metrics followed by min-max scaling to a standard 0 to 1 range. Box 2 illustrates the visual mapping into bubble matrices, where bubble size reflects simulation quality and top performers are highlighted with bold squares.'}
+```{r score-norm-workflow, echo=FALSE, fig.align='center', out.width='100%', fig.cap='**Figure 2: Score normalization and visual mapping workflow in scSimEval.** Box 1 shows the two-step normalization process: direction inversion for lower-is-better metrics followed by min-max scaling to a standard 0 to 1 range. Box 2 illustrates the visual mapping into bubble matrices, where bubble size reflects simulation quality and top performers for each metric are highlighted with bold circular outlines.'}
 knitr::include_graphics("figures/score_normalization_workflow.png")
 ```
 
@@ -173,7 +171,7 @@ knitr::include_graphics("figures/score_normalization_workflow.png")
 ### 3.2 Visual Mapping to Bubble Matrices
 
 * **Bubble Size:** Directly represents the standardized score ($0.00$ to $1.00$). Larger bubbles indicate higher simulation quality and closer match to real biology.
-* **Top-Performer Highlighting:** Outstanding scores ($\ge 0.96$) are shown as bold squares, while standard scores are shown as filled circles.
+* **Top-Performer Highlighting:** The best-performing simulator for each evaluation metric is highlighted with a bold circular outline, while standard scores are shown as circles with standard outlines.
 * **Category Color Themes:** Each metric category has its own distinct color (for example, blue for distributions, green for marker genes, and orange for computer speed).
 * **Missing Feature Dots:** Features or modalities not supported by a simulator appear as neutral, small grey dots.
 * **Overall Leaderboard Ranking:** Simulators are arranged vertically from top to bottom by their composite average score across all criteria.
@@ -399,7 +397,7 @@ table(summary_df$Category)
 
 The flagship visualization **`plot_benchmark_bubble_matrix()`** summarizes multi-simulator performance across the 8 evaluation categories. Bubble sizes indicate normalized simulation fidelity (larger bubbles = better performance):
 
-```{r plot-bubble-matrix-fig, echo=FALSE, fig.align='center', out.width='100%', fig.cap='**Figure 5: Flagship multi-dimensional benchmarking bubble matrix.** Ranks simulation methods top-to-bottom across the 8 evaluation categories. Bubble size reflects standardized fidelity score ($0.00$ to $1.00$), and top performers are highlighted with bold squares.'}
+```{r plot-bubble-matrix-fig, echo=FALSE, fig.align='center', out.width='100%', fig.cap='**Figure 5: Flagship multi-dimensional benchmarking bubble matrix.** Ranks simulation methods top-to-bottom across the 8 evaluation categories. Bubble size reflects standardized fidelity score ($0.00$ to $1.00$), and top performers for each metric are highlighted with bold circular outlines.'}
 knitr::include_graphics("figures/benchmark_bubble_matrix.png")
 ```
 
@@ -732,7 +730,7 @@ Consequently, the package can be readily extended to benchmark simulations acros
 
 ## 18. Summary
 
-`scSimEval` provides a unified, objective, and ground-truth-free evaluation toolkit for benchmarking single-cell and multiomics simulation methods. With 62 metrics organized into 8 clear categories, automated score normalization, and intuitive visualizations, it enables researchers to select and validate simulation methods with confidence.
+`scSimEval` provides a unified, objective, and reference-based evaluation toolkit for benchmarking single-cell and multiomics simulation methods. With 62 metrics organized into 8 clear categories, automated score normalization, and intuitive visualizations, it enables researchers to select and validate simulation methods with confidence.
 
 ---
 

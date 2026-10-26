@@ -8,6 +8,7 @@ export(fast_sparse_zero_fraction_cell)
 export(fast_sparse_zero_fraction_feature)
 export(fast_cross_distance_sq)
 export(fast_pca)
+export(normalize_counts)
 export(subsample_dist_vector)
 
 # 01_metrics_distribution

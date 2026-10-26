@@ -17,8 +17,8 @@
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
 <meta property="og:title" content="scSimEval: Unified Benchmarking for Single-Cell Multiomics Simulations">
-<meta name="description" content="Unified Benchmarking and Accuracy Evaluation for Single-Cell Multiomics Simulation Methods without Artificial Ground Truth.">
-<meta property="og:description" content="Unified Benchmarking and Accuracy Evaluation for Single-Cell Multiomics Simulation Methods without Artificial Ground Truth.">
+<meta name="description" content="Unified Benchmarking and Accuracy Evaluation for Single-Cell Multiomics Simulation Methods across 62 Evaluation Measures.">
+<meta property="og:description" content="Unified Benchmarking and Accuracy Evaluation for Single-Cell Multiomics Simulation Methods across 62 Evaluation Measures.">
 <meta property="og:image" content="https://kabilanbio.github.io/scSimEval/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -247,7 +247,7 @@
 
     <a class="navbar-brand me-2" href="index.html">scSimEval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.99.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -312,7 +312,7 @@
 </h2>
 <ul>
 <li>
-<strong>Zero External Ground Truth Required:</strong> Operates directly on the empirical reference matrices and simulated matrices you already have.</li>
+<strong>Comprehensive Empirical Benchmarking:</strong> Directly evaluates simulated datasets against real biological reference data across 62 evaluation measures.</li>
 <li>
 <strong>62 Evaluation Measures Across 8 Canonical Categories:</strong> Comprehensively evaluates distributions, zero counts, cell clustering, batch mixing, marker genes, developmental lineages, cross-modal coupling, and runtime/RAM scalability.</li>
 <li>
@@ -359,7 +359,7 @@
 <div class="section level3">
 <h3 id="step-2-calculate-evaluation-measures">Step 2: Calculate Evaluation Measures<a class="anchor" aria-label="anchor" href="#step-2-calculate-evaluation-measures"></a>
 </h3>
-<p><code>scSimEval</code> calculates 62 evaluation measures across 8 core categories without needing any artificial ground truth.</p>
+<p><code>scSimEval</code> calculates 62 evaluation measures across 8 core categories.</p>
 </div>
 <div class="section level3">
 <h3 id="step-3-run-the-complete-benchmark">Step 3: Run the Complete Benchmark<a class="anchor" aria-label="anchor" href="#step-3-run-the-complete-benchmark"></a>
@@ -607,7 +607,7 @@
 <li>
 <strong>Bubble Size:</strong> Directly proportional to the standardized score (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>0.00</mn><annotation encoding="application/x-tex">0.00</annotation></semantics></math> to <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>1.00</mn><annotation encoding="application/x-tex">1.00</annotation></semantics></math>). Larger bubbles indicate higher simulation quality.</li>
 <li>
-<strong>Glyph Shape:</strong> Top-performing tools (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>≥</mo><mn>0.96</mn></mrow><annotation encoding="application/x-tex">\ge 0.96</annotation></semantics></math>) are highlighted with bold squares, while standard scores are shown as circles.</li>
+<strong>Glyph Highlighting:</strong> The best-performing simulator for each metric is highlighted with a bold circular outline, while standard scores are shown as circles with standard outlines.</li>
 <li>
 <strong>Category Colors:</strong> Distinct color for each evaluation category.</li>
 <li>

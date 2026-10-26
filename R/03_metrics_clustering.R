@@ -14,8 +14,12 @@ calc_silhouette <- function(dist_mat, cluster_labels) {
   }
   cluster_labels <- as.numeric(as.factor(cluster_labels))
   if (requireNamespace("cluster", quietly = TRUE)) {
-    sil <- cluster::silhouette(cluster_labels, dist_mat)
-    mean(sil[, 3], na.rm = TRUE)
+    sil <- tryCatch(cluster::silhouette(cluster_labels, dist_mat), error = function(e) NULL)
+    if (is.null(sil) || is.na(sil)[1] || (!is.matrix(sil) && !inherits(sil, "silhouette"))) {
+      NA_real_
+    } else {
+      mean(sil[, 3], na.rm = TRUE)
+    }
   } else {
     NA_real_
   }
@@ -482,7 +486,7 @@ calc_neighborhood_purity <- function(data, cluster_labels, k = NULL, is_distance
 #' Compute Clustering Deviation Index (CDI) for Single-Cell Clustering Evaluation
 #'
 #' Evaluates the deviation and goodness-of-fit of single-cell clustering labels directly
-#' from raw or normalized count matrices without requiring ground-truth cell-type labels
+#' from raw or normalized count matrices when evaluating unsupervised cell state purity
 #' (Fang et al., Genome Biology 2022; benchmarked in scDesign3, Song et al., Nat Biotechnol 2024).
 #' CDI calculates the penalized log-likelihood (CDI-AIC and CDI-BIC) of count data
 #' under a cluster-specific Poisson or Negative Binomial GLM with cell size factors.
@@ -642,12 +646,13 @@ evaluate_clustering_metrics <- function(
   }
   cluster_info <- as.factor(cluster_info)
   
-  d_use <- if (inherits(data, "Matrix")) as.matrix(data) else data
+  d_use <- normalize_counts(data)
+  if (inherits(d_use, "Matrix")) d_use <- as.matrix(d_use)
 
-  # Fast low-dimensional PCA projection for high-dimensional single-cell clustering
+  # Fast low-dimensional PCA projection for high-dimensional single-cell clustering (scDesign3, scVI standard)
   pca_coords <- NULL
   if (nrow(d_use) > 30) {
-    pca_coords <- fast_pca(t(d_use), n_pcs = min(30, ncol(d_use) - 1, nrow(d_use) - 1), n_hvg = 2000)
+    pca_coords <- fast_pca(t(d_use), n_pcs = min(30, ncol(d_use) - 1, nrow(d_use) - 1), n_hvg = 2000, scale = FALSE)
   }
   
   if (is.null(dist_mat)) {
@@ -669,8 +674,9 @@ evaluate_clustering_metrics <- function(
   )
   
   if (!is.null(ref_data)) {
-    r_use <- if (inherits(ref_data, "Matrix")) as.matrix(ref_data) else ref_data
-    ref_pca <- if (nrow(r_use) > 30) fast_pca(t(r_use), n_pcs = min(30, ncol(r_use) - 1, nrow(r_use) - 1), n_hvg = 2000) else NULL
+    r_use <- normalize_counts(ref_data)
+    if (inherits(r_use, "Matrix")) r_use <- as.matrix(r_use)
+    ref_pca <- if (nrow(r_use) > 30) fast_pca(t(r_use), n_pcs = min(30, ncol(r_use) - 1, nrow(r_use) - 1), n_hvg = 2000, scale = FALSE) else NULL
     ref_dist <- if (!is.null(ref_pca)) stats::dist(ref_pca) else stats::dist(t(as.matrix(r_use)))
     ref_cl <- if (!is.null(ref_cell_types) && length(ref_cell_types) == ncol(r_use)) {
       as.factor(ref_cell_types)
@@ -792,19 +798,35 @@ calc_generative_precision_recall <- function(
     sim_mat <- sim_mat[seq_len(n_common), , drop = FALSE]
   }
   
+  # Standard protocol: library-size normalize & log-transform counts
+  ref_norm <- normalize_counts(ref_mat)
+  sim_norm <- normalize_counts(sim_mat)
+  
   # Subsample features to top HVGs if large
-  if (nrow(ref_mat) > max_features) {
-    rv <- fast_row_vars(ref_mat)
+  if (nrow(ref_norm) > max_features) {
+    rv <- fast_row_vars(ref_norm)
     top_f <- order(rv, decreasing = TRUE)[seq_len(max_features)]
-    ref_mat <- ref_mat[top_f, , drop = FALSE]
-    sim_mat <- sim_mat[top_f, , drop = FALSE]
+    ref_norm <- ref_norm[top_f, , drop = FALSE]
+    sim_norm <- sim_norm[top_f, , drop = FALSE]
   }
   
-  x <- t(as.matrix(ref_mat))
-  y <- t(as.matrix(sim_mat))
+  x_raw <- t(as.matrix(ref_norm))
+  y_raw <- t(as.matrix(sim_norm))
   
-  if (nrow(x) > max_cells) x <- x[sample(nrow(x), max_cells), , drop = FALSE]
-  if (nrow(y) > max_cells) y <- y[sample(nrow(y), max_cells), , drop = FALSE]
+  if (nrow(x_raw) > max_cells) x_raw <- x_raw[sample(nrow(x_raw), max_cells), , drop = FALSE]
+  if (nrow(y_raw) > max_cells) y_raw <- y_raw[sample(nrow(y_raw), max_cells), , drop = FALSE]
+  
+  # Joint PCA projection (30 PCs) for density sphere calculation
+  combined <- rbind(x_raw, y_raw)
+  n_pcs_use <- min(30, ncol(combined) - 1, nrow(combined) - 1)
+  if (n_pcs_use >= 2 && ncol(combined) > n_pcs_use) {
+    pca_comb <- fast_pca(combined, n_pcs = n_pcs_use, scale = FALSE)
+    x <- pca_comb[seq_len(nrow(x_raw)), , drop = FALSE]
+    y <- pca_comb[(nrow(x_raw) + 1):nrow(combined), , drop = FALSE]
+  } else {
+    x <- x_raw
+    y <- y_raw
+  }
   
   m <- nrow(x)
   n <- nrow(y)

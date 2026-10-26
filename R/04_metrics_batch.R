@@ -35,7 +35,8 @@ calc_cms <- function(
   batch_info <- as.factor(batch_info)
   
   if (is.null(coords)) {
-    d_use <- if (inherits(data, "Matrix")) as.matrix(data) else data
+    d_use <- normalize_counts(data)
+    d_use <- if (inherits(d_use, "Matrix")) as.matrix(d_use) else d_use
     coords <- fast_pca(t(d_use), n_pcs = n_pcs, n_hvg = 2000, scale = FALSE)
   }
   
@@ -404,7 +405,8 @@ evaluate_batch_metrics <- function(
   }
   
   if (verbose) message("Running PCA for batch evaluation...")
-  sub_mat <- as.matrix(data)
+  data_norm <- normalize_counts(data)
+  sub_mat <- as.matrix(data_norm)
   gene_vars <- apply(sub_mat, 1, stats::var)
   n_hvg <- min(2000, length(gene_vars))
   hvg_idx <- order(gene_vars, decreasing = TRUE)[seq_len(n_hvg)]
@@ -425,8 +427,10 @@ evaluate_batch_metrics <- function(
     }, error = function(e) NA_real_)
   } else if (requireNamespace("cluster", quietly = TRUE)) {
     dist_pca <- stats::dist(pca_coords)
-    sil_res <- cluster::silhouette(as.numeric(batch_info), dist_pca)
-    batch_sil <- mean(sil_res[, 3], na.rm = TRUE)
+    sil_res <- tryCatch(cluster::silhouette(as.numeric(as.factor(batch_info)), dist_pca), error = function(e) NULL)
+    if (!is.null(sil_res) && (is.matrix(sil_res) || inherits(sil_res, "silhouette"))) {
+      batch_sil <- mean(sil_res[, 3], na.rm = TRUE)
+    }
   }
   
   # 2. Shannon Entropy of Batch Proportions in k-NN neighborhoods
@@ -481,7 +485,7 @@ evaluate_batch_metrics <- function(
   loc_struct_val <- NA_real_
   if (!is.null(pre_data)) {
     if (verbose) message("Calculating LDF difference and Local Structure Preservation...")
-    pre_mat <- as.matrix(pre_data)
+    pre_mat <- as.matrix(normalize_counts(pre_data))
     pre_vars <- apply(pre_mat, 1, stats::var)
     pre_hvg <- order(pre_vars, decreasing = TRUE)[seq_len(min(2000, length(pre_vars)))]
     pre_pca <- stats::prcomp(t(pre_mat[pre_hvg, , drop = FALSE]),
