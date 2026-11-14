@@ -9,13 +9,71 @@ library(DT)
 library(Matrix)
 library(scSimEval)
 
-# If running in local checkout, source updated visualizations to guarantee latest bugfixes
-.local_viz_loaded <- FALSE
-for (p in c("10_visualizations.R", "R/10_visualizations.R", "../../R/10_visualizations.R", "../../../R/10_visualizations.R")) {
-  if (file.exists(p)) {
-    res_src <- try(source(p, local = FALSE), silent = TRUE)
-    if (!inherits(res_src, "try-error")) .local_viz_loaded <- TRUE
-    break
+# Source all local package R files to guarantee latest bugfixes override installed package
+local_r_files <- c(
+  "00_utils.R", "01_metrics_distribution.R", "02_extract_properties.R",
+  "03_metrics_clustering.R", "04_metrics_batch.R", "05_metrics_de_signal.R",
+  "06_metrics_trajectory.R", "07_multiomics_coupling.R", "08_metrics_scalability.R",
+  "09_evaluate_benchmark.R", "10_visualizations.R", "12_seurat_counts.R"
+)
+for (rf in local_r_files) {
+  for (cand_p in c(rf, file.path("R", rf), file.path("../../R", rf), file.path("../../../R", rf))) {
+    if (file.exists(cand_p)) {
+      try(source(cand_p, local = FALSE), silent = TRUE)
+      break
+    }
+  }
+}
+
+# Ensure internal scSimEval helpers used directly in Shiny UI/server are available
+if (!exists(".convert_time_to_seconds", mode = "function")) {
+  .convert_time_to_seconds <- if (isNamespaceLoaded("scSimEval") && exists(".convert_time_to_seconds", envir = asNamespace("scSimEval"), mode = "function")) {
+    get(".convert_time_to_seconds", envir = asNamespace("scSimEval"))
+  } else {
+    function(elapsed_time, time_unit = "seconds") {
+      if (is.null(elapsed_time) || length(elapsed_time) == 0) return(NULL)
+      val <- as.numeric(elapsed_time[1])
+      if (is.na(val)) return(NA_real_)
+      if (identical(tolower(trimws(as.character(time_unit[1]))), "minutes")) val * 60 else val
+    }
+  }
+}
+if (!exists(".convert_memory_to_mib", mode = "function")) {
+  .convert_memory_to_mib <- if (isNamespaceLoaded("scSimEval") && exists(".convert_memory_to_mib", envir = asNamespace("scSimEval"), mode = "function")) {
+    get(".convert_memory_to_mib", envir = asNamespace("scSimEval"))
+  } else {
+    function(memory_val, memory_unit = "MiB") {
+      if (is.null(memory_val) || length(memory_val) == 0) return(NULL)
+      val <- as.numeric(memory_val[1])
+      if (is.na(val)) return(NA_real_)
+      if (identical(toupper(trimws(as.character(memory_unit[1]))), "MB")) val * (1000^2 / 1024^2) else val
+    }
+  }
+}
+
+# Ensure internal scSimEval helpers used directly in Shiny UI/server are available
+if (!exists(".convert_time_to_seconds", mode = "function")) {
+  .convert_time_to_seconds <- if (isNamespaceLoaded("scSimEval") && exists(".convert_time_to_seconds", envir = asNamespace("scSimEval"), mode = "function")) {
+    get(".convert_time_to_seconds", envir = asNamespace("scSimEval"))
+  } else {
+    function(elapsed_time, time_unit = "seconds") {
+      if (is.null(elapsed_time) || length(elapsed_time) == 0) return(NULL)
+      val <- as.numeric(elapsed_time[1])
+      if (is.na(val)) return(NA_real_)
+      if (identical(tolower(trimws(as.character(time_unit[1]))), "minutes")) val * 60 else val
+    }
+  }
+}
+if (!exists(".convert_memory_to_mib", mode = "function")) {
+  .convert_memory_to_mib <- if (isNamespaceLoaded("scSimEval") && exists(".convert_memory_to_mib", envir = asNamespace("scSimEval"), mode = "function")) {
+    get(".convert_memory_to_mib", envir = asNamespace("scSimEval"))
+  } else {
+    function(memory_val, memory_unit = "MiB") {
+      if (is.null(memory_val) || length(memory_val) == 0) return(NULL)
+      val <- as.numeric(memory_val[1])
+      if (is.na(val)) return(NA_real_)
+      if (identical(toupper(trimws(as.character(memory_unit[1]))), "MB")) val * (1000^2 / 1024^2) else val
+    }
   }
 }
 
@@ -2110,34 +2168,6 @@ ui <- page_navbar(
         color: #4ADE80 !important;
       }
 
-      /* Hardcoded purples become radiant soft lavender */
-      [data-bs-theme='dark'] [style*='color: #581C87'],
-      [data-bs-theme='dark'] [style*='color: #581C87'] *,
-      [data-bs-theme='dark'] [style*='color:#581C87'],
-      [data-bs-theme='dark'] [style*='color:#581C87'] *,
-      [data-bs-theme='dark'] [style*='color: #581c87'],
-      [data-bs-theme='dark'] [style*='color: #581c87'] *,
-      [data-bs-theme='dark'] [style*='color:#581c87'],
-      [data-bs-theme='dark'] [style*='color:#581c87'] *,
-      [data-bs-theme='dark'] [style*='color: #5B21B6'],
-      [data-bs-theme='dark'] [style*='color: #5B21B6'] *,
-      [data-bs-theme='dark'] [style*='color:#5B21B6'],
-      [data-bs-theme='dark'] [style*='color:#5B21B6'] *,
-      [data-bs-theme='dark'] [style*='color: #5b21b6'],
-      [data-bs-theme='dark'] [style*='color: #5b21b6'] *,
-      [data-bs-theme='dark'] [style*='color:#5b21b6'],
-      [data-bs-theme='dark'] [style*='color:#5b21b6'] *,
-      [data-bs-theme='dark'] [style*='color: #7C3AED'],
-      [data-bs-theme='dark'] [style*='color: #7C3AED'] *,
-      [data-bs-theme='dark'] [style*='color:#7C3AED'],
-      [data-bs-theme='dark'] [style*='color:#7C3AED'] *,
-      [data-bs-theme='dark'] [style*='color: #7c3aed'],
-      [data-bs-theme='dark'] [style*='color: #7c3aed'] *,
-      [data-bs-theme='dark'] [style*='color:#7c3aed'],
-      [data-bs-theme='dark'] [style*='color:#7c3aed'] * {
-        color: #DDD6FE !important;
-      }
-
       /* Hardcoded amber/browns become soft light gold */
       [data-bs-theme='dark'] [style*='color: #92400E'],
       [data-bs-theme='dark'] [style*='color: #92400E'] *,
@@ -2154,15 +2184,7 @@ ui <- page_navbar(
       [data-bs-theme='dark'] [style*='color: #78350f'],
       [data-bs-theme='dark'] [style*='color: #78350f'] *,
       [data-bs-theme='dark'] [style*='color:#78350f'],
-      [data-bs-theme='dark'] [style*='color:#78350f'] *,
-      [data-bs-theme='dark'] [style*='color: #713F12'],
-      [data-bs-theme='dark'] [style*='color: #713F12'] *,
-      [data-bs-theme='dark'] [style*='color:#713F12'],
-      [data-bs-theme='dark'] [style*='color:#713F12'] *,
-      [data-bs-theme='dark'] [style*='color: #713f12'],
-      [data-bs-theme='dark'] [style*='color: #713f12'] *,
-      [data-bs-theme='dark'] [style*='color:#713f12'],
-      [data-bs-theme='dark'] [style*='color:#713f12'] * {
+      [data-bs-theme='dark'] [style*='color:#78350f'] * {
         color: #FCD34D !important;
       }
 
@@ -2235,39 +2257,10 @@ ui <- page_navbar(
         color: #D1FAE5 !important;
       }
 
-      [data-bs-theme='dark'] [style*='background: #FAF5FF'],
-      [data-bs-theme='dark'] [style*='background:#FAF5FF'],
-      [data-bs-theme='dark'] [style*='background: #F5F3FF'],
-      [data-bs-theme='dark'] [style*='background:#F5F3FF'],
-      [data-bs-theme='dark'] [style*='background-color: #FAF5FF'],
-      [data-bs-theme='dark'] [style*='background-color:#FAF5FF'],
-      [data-bs-theme='dark'] .quickstart-step3 {
-        background: #3B0764 !important;
-        color: #F3E8FF !important;
-      }
-      [data-bs-theme='dark'] [style*='background: #FAF5FF'] b,
-      [data-bs-theme='dark'] [style*='background:#FAF5FF'] b,
-      [data-bs-theme='dark'] [style*='background: #FAF5FF'] strong,
-      [data-bs-theme='dark'] [style*='background:#FAF5FF'] strong,
-      [data-bs-theme='dark'] .quickstart-step3 b,
-      [data-bs-theme='dark'] .quickstart-step3 strong {
-        color: #FFFFFF !important;
-      }
-
       [data-bs-theme='dark'] [style*='background: #FFFBEB'],
-      [data-bs-theme='dark'] [style*='background:#FFFBEB'],
-      [data-bs-theme='dark'] [style*='background: #FEFCE8'],
-      [data-bs-theme='dark'] [style*='background:#FEFCE8'],
-      [data-bs-theme='dark'] [style*='background: #FEF3C7'],
-      [data-bs-theme='dark'] [style*='background:#FEF3C7'] {
-        background: #78350F !important;
+      [data-bs-theme='dark'] [style*='background:#FFFBEB'] {
+        background: #451A03 !important;
         color: #FEF3C7 !important;
-      }
-      [data-bs-theme='dark'] [style*='background: #FEFCE8'] b,
-      [data-bs-theme='dark'] [style*='background:#FEFCE8'] b,
-      [data-bs-theme='dark'] [style*='background: #FFFBEB'] b,
-      [data-bs-theme='dark'] [style*='background:#FFFBEB'] b {
-        color: #FFFFFF !important;
       }
 
       [data-bs-theme='dark'] [style*='background: #FEF2F2'],
@@ -4433,8 +4426,7 @@ ui <- page_navbar(
                   column(
                     4,
                     div(
-                      class = "quickstart-step3",
-                      style = "background: #FAF5FF; border-radius: 6px; padding: 10px 12px; height: 100%; font-size: 0.85rem; color: #581C87;",
+                      style = "background: #FEFCE8; border-radius: 6px; padding: 10px 12px; height: 100%; font-size: 0.85rem; color: #713F12;",
                       tags$b("Step 3 — View Charts & Export:"), br(),
                       "Explore the 8 plot panels in ", tags$b("Visualizations"), " or download your full results table in ", tags$b("Benchmark Results & Export"), "."
                     )
@@ -6032,6 +6024,10 @@ server <- function(input, output, session) {
   generate_hpc_script <- function(mode = "unimodal") {
     date_str <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
     is_uni <- (mode == "unimodal")
+    safe_num <- function(x, default_val) {
+      val <- suppressWarnings(as.numeric(x))
+      if (length(val) == 0 || is.na(val[1]) || !is.finite(val[1])) default_val else val[1]
+    }
     n_dsets <- if (is_uni) (input$num_uni_datasets %||% 1) else (input$num_multi_datasets %||% 1)
     n_sims  <- if (is_uni) (input$num_uni_sims %||% 1) else (input$num_multi_sims %||% 1)
     is_paired <- identical(input$opt_multi_pairing, "paired")
@@ -6191,9 +6187,9 @@ server <- function(input, output, session) {
           sname <- if (!is.null(sname_custom) && trimws(sname_custom) != "") trimws(sname_custom) else sprintf("Simulator %d", s)
           sim_f <- input[[paste0("file_uni_sim_", s, "_", d)]]$name
           if (is.null(sim_f) || sim_f == "") sim_f <- sprintf("sim_%s_%s.rds", make.names(sname), make.names(dname))
-          sim_t <- as.numeric(input[[paste0("uni_sim_time_", s, "_", d)]]) %||% round(20 + s * 10 + d * 5, 1)
+          sim_t <- safe_num(input[[paste0("uni_sim_time_", s, "_", d)]], round(20 + s * 10 + d * 5, 1))
           sim_tu <- input[[paste0("uni_sim_time_unit_", s, "_", d)]] %||% "seconds"
-          sim_m <- as.numeric(input[[paste0("uni_sim_mem_", s, "_", d)]]) %||% round(500 + s * 150 + d * 50, 0)
+          sim_m <- safe_num(input[[paste0("uni_sim_mem_", s, "_", d)]], round(500 + s * 150 + d * 50, 0))
           sim_mu <- input[[paste0("uni_sim_mem_unit_", s, "_", d)]] %||% "MiB"
           sim_c <- suppressWarnings(as.integer(input[[paste0("uni_sim_cores_", s, "_", d)]]))
           if (is.na(sim_c) || length(sim_c) == 0 || sim_c < 1L) sim_c <- 1L
@@ -6226,7 +6222,6 @@ server <- function(input, output, session) {
             sprintf("    cell_types_sim = sim_ct_%d_%d,", s, d),
             sprintf("    batch_ref = bt_vec_%d,", d),
             sprintf("    batch_sim = sim_bt_%d_%d,", s, d),
-            sprintf("    batch_sim = bt_vec_%d,", d),
             sprintf("    modality = '%s',", uni_mod_str),
             sprintf("    memory_mb = sim_mem_%d_%d,", s, d),
             sprintf("    elapsed_time = sim_time_%d_%d,", s, d),
@@ -6261,7 +6256,7 @@ server <- function(input, output, session) {
           sprintf("cat('[scSimEval] Processing %s [%d/%d]...\n')", dname, d, n_dsets),
           sprintf("dset_name_%d     <- '%s'", d, dname),
           sprintf("ref_file_%d      <- '%s'", d, ref_f),
-          sprintf("ref_val_%d       <- validate_multiomics_input(load_matrix_safe(ref_file_%d, placeholder = paste0('Reference Multiomics ', dset_name_%d)))", d, d, d),
+          sprintf("ref_val_%d       <- validate_multiomics_input(if (file.exists(ref_file_%d)) readRDS(ref_file_%d) else load_matrix_safe(ref_file_%d, placeholder = paste0('Reference Multiomics ', dset_name_%d)))", d, d, d, d, d),
           sprintf("ref_rna_%d       <- ref_val_%d$m1", d, d),
           sprintf("ref_atac_%d      <- ref_val_%d$m2", d, d),
           sprintf("ref_rna_obj_%d   <- ref_val_%d$m1_obj", d, d),
@@ -6287,9 +6282,9 @@ server <- function(input, output, session) {
           if (is.null(sim_f) || sim_f == "") sim_f <- sprintf("sim_multi_%s_%s.rds", make.names(sname), make.names(dname))
           scal_mode <- input[[paste0("multi_sim_scal_mode_", s, "_", d)]] %||% (if (is_paired) "combined" else "separate")
           if (identical(scal_mode, "combined")) {
-            sim_t <- as.numeric(input[[paste0("multi_sim_time_", s, "_", d)]]) %||% round(45 + s * 15 + d * 10, 1)
+            sim_t <- safe_num(input[[paste0("multi_sim_time_", s, "_", d)]], round(45 + s * 15 + d * 10, 1))
             sim_tu <- input[[paste0("multi_sim_time_unit_", s, "_", d)]] %||% "seconds"
-            sim_m <- as.numeric(input[[paste0("multi_sim_mem_", s, "_", d)]]) %||% round(1200 + s * 250 + d * 100, 0)
+            sim_m <- safe_num(input[[paste0("multi_sim_mem_", s, "_", d)]], round(1200 + s * 250 + d * 100, 0))
             sim_mu <- input[[paste0("multi_sim_mem_unit_", s, "_", d)]] %||% "MiB"
             sim_c <- suppressWarnings(as.integer(input[[paste0("multi_sim_cores_", s, "_", d)]]))
             if (is.na(sim_c) || length(sim_c) == 0 || sim_c < 1L) sim_c <- 1L
@@ -6308,12 +6303,12 @@ server <- function(input, output, session) {
               sprintf("    sim_cores    = sim_cores_%d_%d,", s, d)
             )
           } else {
-            tr_val <- as.numeric(input[[paste0("multi_sim_time_rna_", s, "_", d)]]) %||% round((45 + s * 15 + d * 10) * 0.45, 1)
-            ta_val <- as.numeric(input[[paste0("multi_sim_time_atac_", s, "_", d)]]) %||% round((45 + s * 15 + d * 10) * 0.55, 1)
+            tr_val <- safe_num(input[[paste0("multi_sim_time_rna_", s, "_", d)]], round((45 + s * 15 + d * 10) * 0.45, 1))
+            ta_val <- safe_num(input[[paste0("multi_sim_time_atac_", s, "_", d)]], round((45 + s * 15 + d * 10) * 0.55, 1))
             tr_u <- input[[paste0("multi_sim_time_unit_rna_", s, "_", d)]] %||% "seconds"
             ta_u <- input[[paste0("multi_sim_time_unit_atac_", s, "_", d)]] %||% "seconds"
-            mr_val <- as.numeric(input[[paste0("multi_sim_mem_rna_", s, "_", d)]]) %||% round((1200 + s * 250 + d * 100) * 0.85, 0)
-            ma_val <- as.numeric(input[[paste0("multi_sim_mem_atac_", s, "_", d)]]) %||% round((1200 + s * 250 + d * 100) * 0.95, 0)
+            mr_val <- safe_num(input[[paste0("multi_sim_mem_rna_", s, "_", d)]], round((1200 + s * 250 + d * 100) * 0.85, 0))
+            ma_val <- safe_num(input[[paste0("multi_sim_mem_atac_", s, "_", d)]], round((1200 + s * 250 + d * 100) * 0.95, 0))
             mr_u <- input[[paste0("multi_sim_mem_unit_rna_", s, "_", d)]] %||% "MiB"
             ma_u <- input[[paste0("multi_sim_mem_unit_atac_", s, "_", d)]] %||% "MiB"
             cr_val <- suppressWarnings(as.integer(input[[paste0("multi_sim_cores_rna_", s, "_", d)]]))
@@ -6352,7 +6347,7 @@ server <- function(input, output, session) {
             sprintf("  sim_file_%d_%d      <- '%s'", s, d, sim_f),
             scal_var_lines,
             sprintf("  cat('[scSimEval]   Evaluating ', sim_name_%d_%d, ' on ', dset_name_%d, '...\n')", s, d, d),
-            sprintf("  sim_val_%d_%d   <- validate_multiomics_input(load_matrix_safe(sim_file_%d_%d, placeholder = paste0(sim_name_%d_%d, ' multiomics')))", s, d, s, d, s, d),
+            sprintf("  sim_val_%d_%d   <- validate_multiomics_input(if (file.exists(sim_file_%d_%d)) readRDS(sim_file_%d_%d) else load_matrix_safe(sim_file_%d_%d, placeholder = paste0(sim_name_%d_%d, ' multiomics')))", s, d, s, d, s, d, s, d, s, d),
             sprintf("  sim_rna_%d_%d   <- sim_val_%d_%d$m1", s, d, s, d),
             sprintf("  sim_atac_%d_%d  <- sim_val_%d_%d$m2", s, d, s, d),
             sprintf("  sim_rna_obj_%d_%d  <- sim_val_%d_%d$m1_obj", s, d, s, d),
@@ -6379,7 +6374,7 @@ server <- function(input, output, session) {
             sprintf("    threads      = %d,", n_cores),
             "    verbose      = FALSE",
             "  )",
-            sprintf("  tbl_%d_%d <- if (!is.null(res_%d_%d$metrics_summary_table)) res_%d_%d$metrics_summary_table else res_%d_%d$benchmark_summary_table", s, d, s, d, s, d),
+            sprintf("  tbl_%d_%d <- if (!is.null(res_%d_%d$metrics_summary_table)) res_%d_%d$metrics_summary_table else res_%d_%d$benchmark_summary_table", s, d, s, d, s, d, s, d),
             sprintf("  tbl_%d_%d$Method  <- sim_name_%d_%d", s, d, s, d),
             sprintf("  tbl_%d_%d$Dataset <- dset_name_%d", s, d, d),
             sprintf("  if (!'Score' %%in%% colnames(tbl_%d_%d) && 'Value' %%in%% colnames(tbl_%d_%d)) tbl_%d_%d$Score <- tbl_%d_%d$Value", s, d, s, d, s, d, s, d),
