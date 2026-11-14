@@ -455,6 +455,8 @@ evaluate_multiomics_integration <- function(
             ct_vec <- as.character(cell_types)
           } else if (is.list(cell_types) && length(cell_types) >= 2) {
             ct_vec <- c(as.character(cell_types[[1]]), as.character(cell_types[[2]]))
+          } else if (length(cell_types) == n1) {
+            ct_vec <- c(as.character(cell_types), rep("Unannotated", n2))
           }
         }
       }
@@ -497,7 +499,7 @@ evaluate_multiomics_integration <- function(
                          scale(p2[, seq_len(min_p), drop = FALSE]))
     cross_embed[is.na(cross_embed)] <- 0
     cross_batch <- c(rep("Modality_1", n1), rep("Modality_2", n2))
-    cross_ct <- c(ct_vec, if (length(ct_vec) == n1) ct_vec else rep(ct_vec, length.out = n2))
+    cross_ct <- if (length(ct_vec) == (n1 + n2)) ct_vec else c(ct_vec[seq_len(min(length(ct_vec), n1))], rep("Modality_2", n2))
     
     b_asw <- calc_batch_asw(cross_embed, cross_batch, cross_ct)
   } else {

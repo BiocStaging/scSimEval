@@ -179,6 +179,12 @@ calc_neighborhood_purity <- function(data, cluster_labels, k = NULL, is_distance
   
   if (is_distance) {
     dist_mat <- as.matrix(data)
+    n_eval <- min(n_cells, nrow(dist_mat), ncol(dist_mat))
+    if (n_eval < 2) return(numeric(0))
+    dist_mat <- dist_mat[seq_len(n_eval), seq_len(n_eval), drop = FALSE]
+    cluster_labels <- cluster_labels[seq_len(n_eval)]
+    n_cells <- n_eval
+    k <- min(k, n_cells - 1)
   } else {
     mat <- if (nrow(data) == n_cells) as.matrix(data) else t(as.matrix(data))
     if (requireNamespace("RANN", quietly = TRUE)) {

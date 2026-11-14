@@ -7539,10 +7539,17 @@ server <- function(input, output, session) {
             ref_atac_d <- ref_val$m2
             ref_rna_obj <- ref_val$m1_obj
             ref_atac_obj <- ref_val$m2_obj
-            ct_r_disp <- if (is.list(ref_val$cell_types)) ref_val$cell_types$RNA else ref_val$cell_types
-            ct_a_disp <- if (is.list(ref_val$cell_types)) ref_val$cell_types$ATAC else ref_val$cell_types
-            bt_r_disp <- if (is.list(ref_val$batch_info)) ref_val$batch_info$RNA else ref_val$batch_info
-            bt_a_disp <- if (is.list(ref_val$batch_info)) ref_val$batch_info$ATAC else ref_val$batch_info
+            ct_r_disp <- if (is.list(ref_val$cell_types)) (ref_val$cell_types$RNA %||% ref_val$cell_types[[1]]) else ref_val$cell_types
+            ct_a_disp <- if (is.list(ref_val$cell_types)) (ref_val$cell_types$ATAC %||% ref_val$cell_types$peaks %||% ref_val$cell_types$chromatin %||% ref_val$cell_types[[2]]) else ref_val$cell_types
+            bt_r_disp <- if (is.list(ref_val$batch_info)) (ref_val$batch_info$RNA %||% ref_val$batch_info[[1]]) else ref_val$batch_info
+            bt_a_disp <- if (is.list(ref_val$batch_info)) (ref_val$batch_info$ATAC %||% ref_val$batch_info$peaks %||% ref_val$batch_info$chromatin %||% ref_val$batch_info[[2]]) else ref_val$batch_info
+            
+            # Auto-detect whether modalities are genuinely paired
+            r_c1 <- colnames(ref_rna_d)
+            r_c2 <- colnames(ref_atac_d)
+            if (is_paired && (!is.null(r_c1) && !is.null(r_c2) && (length(r_c1) != length(r_c2) || !identical(r_c1, r_c2)))) {
+              is_paired <- FALSE
+            }
             eval_ct <- if (is_paired) (ct_r_disp %||% ct_a_disp) else list(RNA = ct_r_disp, ATAC = ct_a_disp)
             eval_bt <- if (is_paired) (bt_r_disp %||% bt_a_disp) else list(RNA = bt_r_disp, ATAC = bt_a_disp)
           } else {
@@ -7665,10 +7672,10 @@ server <- function(input, output, session) {
               sim_atac_d <- sim_val$m2
               sim_rna_obj <- sim_val$m1_obj
               sim_atac_obj <- sim_val$m2_obj
-              sim_ct_r <- if (is.list(sim_val$cell_types)) sim_val$cell_types$RNA else (sim_val$cell_types %||% ct_r_disp)
-              sim_ct_a <- if (is.list(sim_val$cell_types)) sim_val$cell_types$ATAC else (sim_val$cell_types %||% ct_a_disp)
-              sim_bt_r <- if (is.list(sim_val$batch_info)) sim_val$batch_info$RNA else (sim_val$batch_info %||% bt_r_disp)
-              sim_bt_a <- if (is.list(sim_val$batch_info)) sim_val$batch_info$ATAC else (sim_val$batch_info %||% bt_a_disp)
+              sim_ct_r <- if (is.list(sim_val$cell_types)) (sim_val$cell_types$RNA %||% sim_val$cell_types[[1]] %||% ct_r_disp) else (sim_val$cell_types %||% ct_r_disp)
+              sim_ct_a <- if (is.list(sim_val$cell_types)) (sim_val$cell_types$ATAC %||% sim_val$cell_types$peaks %||% sim_val$cell_types$chromatin %||% sim_val$cell_types[[2]] %||% ct_a_disp) else (sim_val$cell_types %||% ct_a_disp)
+              sim_bt_r <- if (is.list(sim_val$batch_info)) (sim_val$batch_info$RNA %||% sim_val$batch_info[[1]] %||% bt_r_disp) else (sim_val$batch_info %||% bt_r_disp)
+              sim_bt_a <- if (is.list(sim_val$batch_info)) (sim_val$batch_info$ATAC %||% sim_val$batch_info$peaks %||% sim_val$batch_info$chromatin %||% sim_val$batch_info[[2]] %||% bt_a_disp) else (sim_val$batch_info %||% bt_a_disp)
             } else {
               sim_rna_d  <- read_uploaded_matrix(sim_rna_file$datapath, sim_rna_file$name)
               sim_atac_d <- read_uploaded_matrix(sim_atac_file$datapath, sim_atac_file$name)
@@ -8494,10 +8501,10 @@ server <- function(input, output, session) {
               sim_val <- validate_multiomics_input(sim_raw, sim_name)
               sim_rna_d <- sim_val$m1
               sim_atac_d <- sim_val$m2
-              sim_ct_r <- if (is.list(sim_val$cell_types)) sim_val$cell_types$RNA else (sim_val$cell_types %||% ct_r_vec)
-              sim_ct_a <- if (is.list(sim_val$cell_types)) sim_val$cell_types$ATAC else (sim_val$cell_types %||% ct_a_vec)
-              sim_bt_r <- if (is.list(sim_val$batch_info)) sim_val$batch_info$RNA else (sim_val$batch_info %||% bt_r_vec)
-              sim_bt_a <- if (is.list(sim_val$batch_info)) sim_val$batch_info$ATAC else (sim_val$batch_info %||% bt_a_vec)
+              sim_ct_r <- if (is.list(sim_val$cell_types)) (sim_val$cell_types$RNA %||% sim_val$cell_types[[1]] %||% ct_r_vec) else (sim_val$cell_types %||% ct_r_vec)
+              sim_ct_a <- if (is.list(sim_val$cell_types)) (sim_val$cell_types$ATAC %||% sim_val$cell_types$peaks %||% sim_val$cell_types$chromatin %||% sim_val$cell_types[[2]] %||% ct_a_vec) else (sim_val$cell_types %||% ct_a_vec)
+              sim_bt_r <- if (is.list(sim_val$batch_info)) (sim_val$batch_info$RNA %||% sim_val$batch_info[[1]] %||% bt_r_vec) else (sim_val$batch_info %||% bt_r_vec)
+              sim_bt_a <- if (is.list(sim_val$batch_info)) (sim_val$batch_info$ATAC %||% sim_val$batch_info$peaks %||% sim_val$batch_info$chromatin %||% sim_val$batch_info[[2]] %||% bt_a_vec) else (sim_val$batch_info %||% bt_a_vec)
 
               s_r <- extract_dataset_summary(
                 sim_rna_d, role = "Simulated (RNA)", method_name = paste0(sim_name, " RNA (", d_label, ")"),

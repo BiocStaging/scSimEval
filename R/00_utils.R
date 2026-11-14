@@ -794,8 +794,28 @@ validate_multiomics_input <- function(obj, arg_name = "multi_data", reduction_na
       v1 <- validate_sc_object(o1, paste0(arg_name, "[[1]]"), reduction_name = reduction_name)
       v2 <- validate_sc_object(o2, paste0(arg_name, "[[2]]"), reduction_name = reduction_name)
       
-      ct <- if (!is.null(v1$cell_types)) v1$cell_types else v2$cell_types
-      bt <- if (!is.null(v1$batch_info)) v1$batch_info else v2$batch_info
+      c1 <- colnames(v1$counts)
+      c2 <- colnames(v2$counts)
+      is_paired_cells <- !is.null(c1) && !is.null(c2) && length(c1) == length(c2) && identical(c1, c2)
+      
+      ct <- if (is_paired_cells) {
+        if (!is.null(v1$cell_types)) v1$cell_types else v2$cell_types
+      } else {
+        if (!is.null(v1$cell_types) || !is.null(v2$cell_types)) {
+          stats::setNames(list(v1$cell_types, v2$cell_types), c(nm1, nm2))
+        } else {
+          NULL
+        }
+      }
+      bt <- if (is_paired_cells) {
+        if (!is.null(v1$batch_info)) v1$batch_info else v2$batch_info
+      } else {
+        if (!is.null(v1$batch_info) || !is.null(v2$batch_info)) {
+          stats::setNames(list(v1$batch_info, v2$batch_info), c(nm1, nm2))
+        } else {
+          NULL
+        }
+      }
       emb <- if (!is.null(v1$embedding)) v1$embedding else v2$embedding
       
       return(list(

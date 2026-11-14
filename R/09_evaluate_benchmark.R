@@ -776,6 +776,14 @@ evaluate_multiomics_accuracy <- function(
     pairing <- match.arg(pairing)
   }
   
+  c1_cells <- colnames(ref_multi[[1]])
+  c2_cells <- colnames(ref_multi[[2]])
+  if (pairing == "paired" && (!is.null(c1_cells) && !is.null(c2_cells) && (length(c1_cells) != length(c2_cells) || !identical(c1_cells, c2_cells)))) {
+    if (verbose) message(sprintf("scSimEval Note: Modality cell counts/barcodes differ (%s: %d cells vs %s: %d cells). Automatically enforcing unpaired multiomics mode.", m1_name, length(c1_cells), m2_name, length(c2_cells)))
+    pairing <- "unpaired"
+    is_paired <- FALSE
+  }
+  
   threads <- max(1L, as.integer(threads %||% 1L))
   if (requireNamespace("RcppParallel", quietly = TRUE)) {
     try(RcppParallel::setThreadOptions(numThreads = threads), silent = TRUE)
@@ -837,6 +845,11 @@ evaluate_multiomics_accuracy <- function(
     }
     if (is.list(x) && !is.data.frame(x) && !is.factor(x)) {
       if (!is.null(x[[mod_name]])) return(extract_label_vector(x[[mod_name]], n_expected, mod_name, fallback_idx))
+      alias_names <- if (grepl("atac|peak|chromatin", tolower(mod_name))) c("atac", "peaks", "chromatin") else c("rna", "gene")
+      for (anm in alias_names) {
+        m_idx <- match(anm, tolower(names(x)))
+        if (!is.na(m_idx)) return(extract_label_vector(x[[m_idx]], n_expected, mod_name, fallback_idx))
+      }
       m_idx <- match(tolower(mod_name), tolower(names(x)))
       if (!is.na(m_idx)) return(extract_label_vector(x[[m_idx]], n_expected, mod_name, fallback_idx))
       if (length(x) >= fallback_idx) return(extract_label_vector(x[[fallback_idx]], n_expected, mod_name, fallback_idx))
@@ -900,34 +913,38 @@ evaluate_multiomics_accuracy <- function(
   # 3. Batch Effect & Technical Confounder Mixing (Category 4)
   # ============================================================================
   batch_res <- list()
-  if (!is.null(bt_m1)) {
+  if (!is.null(bt_m1) && length(unique(bt_m1[!is.na(bt_m1)])) >= 2) {
     if (verbose) message("=== [Step 4] Evaluating Batch Integration & Technical Confounder Mixing ===")
-    b_eval <- evaluate_batch_metrics(
-      data = sim_multi[[1]],
-      batch_info = bt_m1,
-      cell_types = ct_m1,
-      verbose = FALSE
-    )
-    batch_res[[m1_name]] <- b_eval
-    
-    batch_metrics_to_record <- c(
-      "batch_silhouette", "pcr_r2", "cms", "isi",
-      "cross_batch_F1"
-    )
-    for (bm in batch_metrics_to_record) {
-      if (!is.null(b_eval[[bm]])) {
-        master_rows[[length(master_rows) + 1]] <- data.frame(
-          Category = "Technical Variation & Batch Mixing Dynamics",
-          Property = "batch_mixing",
-          Metric = bm,
-          Value = as.numeric(b_eval[[bm]]),
-          Modality = m1_name,
-          stringsAsFactors = FALSE
-        )
+    b_eval <- tryCatch({
+      evaluate_batch_metrics(
+        data = sim_multi[[1]],
+        batch_info = bt_m1,
+        cell_types = ct_m1,
+        verbose = FALSE
+      )
+    }, error = function(e) NULL)
+    if (!is.null(b_eval)) {
+      batch_res[[m1_name]] <- b_eval
+      
+      batch_metrics_to_record <- c(
+        "batch_silhouette", "pcr_r2", "cms", "isi",
+        "cross_batch_F1"
+      )
+      for (bm in batch_metrics_to_record) {
+        if (!is.null(b_eval[[bm]])) {
+          master_rows[[length(master_rows) + 1]] <- data.frame(
+            Category = "Technical Variation & Batch Mixing Dynamics",
+            Property = "batch_mixing",
+            Metric = bm,
+            Value = as.numeric(b_eval[[bm]]),
+            Modality = m1_name,
+            stringsAsFactors = FALSE
+          )
+        }
       }
     }
   }
-  if (!is.null(bt_m2)) {
+  if (!is.null(bt_m2) && length(unique(bt_m2[!is.na(bt_m2)])) >= 2) {
     b_eval_m2 <- tryCatch({
       evaluate_batch_metrics(
         data = sim_multi[[2]],
@@ -1086,8 +1103,8 @@ evaluate_multiomics_accuracy <- function(
     evaluate_multiomics_integration(
       ref_multi = ref_multi_orig,
       sim_multi = sim_multi_orig,
-      cell_types = ct_m1,
-      batch_info = bt_m1,
+      cell_types = if (is.list(cell_types)) cell_types else if (!is.null(ct_m1) && !is.null(ct_m2)) list(ct_m1, ct_m2) else ct_m1,
+      batch_info = if (is.list(batch_info)) batch_info else if (!is.null(bt_m1) && !is.null(bt_m2)) list(bt_m1, bt_m2) else bt_m1,
       n_pcs = 15,
       threads = threads,
       verbose = verbose
