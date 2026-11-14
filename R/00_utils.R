@@ -865,24 +865,35 @@ validate_multiomics_input <- function(obj, arg_name = "multi_data", reduction_na
         if (all(m1_cells %in% colnames(obj)) && length(m1_cells) < ncol(obj)) {
           o1 <- obj
           try(SeuratObject::DefaultAssay(o1) <- a1_name, silent = TRUE)
-          m1_obj <- o1[, m1_cells]
+          m1_obj <- tryCatch(o1[, m1_cells], error = function(e) NULL)
+          if (is.null(m1_obj)) {
+            md1 <- obj@meta.data[intersect(m1_cells, rownames(obj@meta.data)), , drop = FALSE]
+            m1_obj <- tryCatch(SeuratObject::CreateSeuratObject(counts = m1, meta.data = md1), error = function(e) m1)
+          }
         }
         if (all(m2_cells %in% colnames(obj)) && length(m2_cells) < ncol(obj)) {
           o2 <- obj
           try(SeuratObject::DefaultAssay(o2) <- a2_name, silent = TRUE)
-          m2_obj <- o2[, m2_cells]
+          m2_obj <- tryCatch(o2[, m2_cells], error = function(e) NULL)
+          if (is.null(m2_obj)) {
+            md2 <- obj@meta.data[intersect(m2_cells, rownames(obj@meta.data)), , drop = FALSE]
+            m2_obj <- tryCatch(SeuratObject::CreateSeuratObject(counts = m2, meta.data = md2), error = function(e) m2)
+          }
         }
-        ct_col <- intersect(c("cell_type", "celltype", "CellType"), colnames(obj@meta.data))[1]
-        if (!is.na(ct_col)) {
-          ct_val <- stats::setNames(list(as.character(m1_obj@meta.data[[ct_col]]),
-                                         as.character(m2_obj@meta.data[[ct_col]])),
-                                    c(a1_name, a2_name))
+        md_cols <- tolower(colnames(obj@meta.data))
+        ct_idx <- which(md_cols %in% tolower(.SC_CELLTYPE_COLS))[1]
+        if (!is.na(ct_idx)) {
+          ct_col <- colnames(obj@meta.data)[ct_idx]
+          ct1 <- if (inherits(m1_obj, "Seurat") && ct_col %in% colnames(m1_obj@meta.data)) as.character(m1_obj@meta.data[[ct_col]]) else as.character(obj@meta.data[m1_cells, ct_col])
+          ct2 <- if (inherits(m2_obj, "Seurat") && ct_col %in% colnames(m2_obj@meta.data)) as.character(m2_obj@meta.data[[ct_col]]) else as.character(obj@meta.data[m2_cells, ct_col])
+          ct_val <- stats::setNames(list(ct1, ct2), c(a1_name, a2_name))
         }
-        bt_col <- intersect(c("batch", "Batch", "sample", "replicate"), colnames(obj@meta.data))[1]
-        if (!is.na(bt_col)) {
-          bt_val <- stats::setNames(list(as.character(m1_obj@meta.data[[bt_col]]),
-                                         as.character(m2_obj@meta.data[[bt_col]])),
-                                    c(a1_name, a2_name))
+        bt_idx <- which(md_cols %in% tolower(.SC_BATCH_COLS))[1]
+        if (!is.na(bt_idx)) {
+          bt_col <- colnames(obj@meta.data)[bt_idx]
+          bt1 <- if (inherits(m1_obj, "Seurat") && bt_col %in% colnames(m1_obj@meta.data)) as.character(m1_obj@meta.data[[bt_col]]) else as.character(obj@meta.data[m1_cells, bt_col])
+          bt2 <- if (inherits(m2_obj, "Seurat") && bt_col %in% colnames(m2_obj@meta.data)) as.character(m2_obj@meta.data[[bt_col]]) else as.character(obj@meta.data[m2_cells, bt_col])
+          bt_val <- stats::setNames(list(bt1, bt2), c(a1_name, a2_name))
         }
       }
 
