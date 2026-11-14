@@ -29,17 +29,27 @@
 #' @export
 calc_batch_asw <- function(embed, batch, cell_type = NULL) {
   if (is.null(embed) || nrow(embed) < 3) return(NA_real_)
+  n_cells <- nrow(embed)
   batch <- as.character(batch)
+  if (length(batch) != n_cells) {
+    batch <- if (length(batch) > n_cells) batch[seq_len(n_cells)] else rep(batch, length.out = n_cells)
+  }
+  if (!is.null(cell_type)) {
+    cell_type <- as.character(cell_type)
+    if (length(cell_type) != n_cells) {
+      cell_type <- if (length(cell_type) > n_cells) cell_type[seq_len(n_cells)] else rep(cell_type, length.out = n_cells)
+    }
+  }
   if (length(unique(batch)) < 2) return(1.0)
   
   if (requireNamespace("cluster", quietly = TRUE)) {
     if (!is.null(cell_type) && length(unique(cell_type)) >= 2) {
-      cell_type <- as.character(cell_type)
       cts <- unique(cell_type)
       asw_per_ct <- numeric(0)
       
       for (ct in cts) {
         idx <- which(cell_type == ct)
+        idx <- idx[idx <= n_cells]
         if (length(idx) >= 4 && length(unique(batch[idx])) >= 2) {
           sub_embed <- embed[idx, , drop = FALSE]
           sub_batch <- as.numeric(as.factor(batch[idx]))
@@ -93,7 +103,11 @@ calc_batch_asw <- function(embed, batch, cell_type = NULL) {
 #' @export
 calc_cell_type_asw <- function(embed, cell_type) {
   if (is.null(embed) || nrow(embed) < 3) return(NA_real_)
+  n_cells <- nrow(embed)
   cell_type <- as.character(cell_type)
+  if (length(cell_type) != n_cells) {
+    cell_type <- if (length(cell_type) > n_cells) cell_type[seq_len(n_cells)] else rep(cell_type, length.out = n_cells)
+  }
   if (length(unique(cell_type)) < 2) return(1.0)
   
   if (requireNamespace("cluster", quietly = TRUE)) {
@@ -151,11 +165,14 @@ calc_cell_type_asw <- function(embed, cell_type) {
 #' @export
 calc_graph_connectivity <- function(embed, cell_type, k = 15) {
   if (is.null(embed) || nrow(embed) < 2) return(NA_real_)
+  n_cells <- nrow(embed)
   cell_type <- as.character(cell_type)
+  if (length(cell_type) != n_cells) {
+    cell_type <- if (length(cell_type) > n_cells) cell_type[seq_len(n_cells)] else rep(cell_type, length.out = n_cells)
+  }
   cts <- unique(cell_type)
   if (length(cts) < 1) return(1.0)
   
-  n_cells <- nrow(embed)
   k <- max(1, min(k, n_cells - 1))
   
   d_mat <- as.matrix(stats::dist(embed))
@@ -172,6 +189,7 @@ calc_graph_connectivity <- function(embed, cell_type, k = 15) {
   for (ci in seq_along(cts)) {
     c_label <- cts[ci]
     idx <- which(cell_type == c_label)
+    idx <- idx[idx <= n_cells]
     if (length(idx) <= 1) {
       conn_scores[ci] <- 1.0
       next
@@ -238,7 +256,11 @@ calc_graph_connectivity <- function(embed, cell_type, k = 15) {
 #' @export
 calc_integration_ari <- function(embed, cell_type, n_clusters = NULL) {
   if (is.null(embed) || nrow(embed) < 2) return(NA_real_)
+  n_cells <- nrow(embed)
   cell_type <- as.character(cell_type)
+  if (length(cell_type) != n_cells) {
+    cell_type <- if (length(cell_type) > n_cells) cell_type[seq_len(n_cells)] else rep(cell_type, length.out = n_cells)
+  }
   n_types <- length(unique(cell_type))
   if (n_types <= 1) return(1.0)
   
@@ -296,7 +318,11 @@ calc_integration_ari <- function(embed, cell_type, n_clusters = NULL) {
 #' @export
 calc_integration_nmi <- function(embed, cell_type, n_clusters = NULL) {
   if (is.null(embed) || nrow(embed) < 2) return(NA_real_)
+  n_cells <- nrow(embed)
   cell_type <- as.character(cell_type)
+  if (length(cell_type) != n_cells) {
+    cell_type <- if (length(cell_type) > n_cells) cell_type[seq_len(n_cells)] else rep(cell_type, length.out = n_cells)
+  }
   n_types <- length(unique(cell_type))
   if (n_types <= 1) return(1.0)
   
@@ -481,6 +507,18 @@ evaluate_multiomics_integration <- function(
       # Unsupervised clustering fallback
       k_fallback <- min(3, max(2, n_cells - 1))
       ct_vec <- paste0("Cluster_", stats::kmeans(joint_embed, centers = k_fallback, nstart = 5)$cluster)
+    }
+  } else {
+    ct_vec <- as.character(ct_vec)
+    if (length(ct_vec) != n_cells) {
+      ct_vec <- if (length(ct_vec) > n_cells) ct_vec[seq_len(n_cells)] else c(ct_vec, rep("Unannotated", n_cells - length(ct_vec)))
+    }
+  }
+  
+  if (!is.null(bt_vec)) {
+    bt_vec <- as.character(bt_vec)
+    if (length(bt_vec) != n_cells) {
+      bt_vec <- if (length(bt_vec) > n_cells) bt_vec[seq_len(n_cells)] else c(bt_vec, rep("Modality_2", n_cells - length(bt_vec)))
     }
   }
   

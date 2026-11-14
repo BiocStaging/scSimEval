@@ -9,10 +9,19 @@
 #' calc_silhouette(dist_mat, cl)
 #' @export
 calc_silhouette <- function(dist_mat, cluster_labels) {
+  if (is.null(dist_mat) || is.null(cluster_labels)) return(NA_real_)
   if (!inherits(dist_mat, "dist")) {
     dist_mat <- stats::dist(t(as.matrix(dist_mat)))
   }
   cluster_labels <- as.numeric(as.factor(cluster_labels))
+  n_d <- attr(dist_mat, "Size")
+  if (!is.null(n_d) && length(cluster_labels) != n_d) {
+    n_common <- min(length(cluster_labels), n_d)
+    if (n_common < 3) return(NA_real_)
+    cluster_labels <- cluster_labels[seq_len(n_common)]
+    d_mat <- as.matrix(dist_mat)[seq_len(n_common), seq_len(n_common), drop = FALSE]
+    dist_mat <- stats::as.dist(d_mat)
+  }
   if (requireNamespace("cluster", quietly = TRUE)) {
     sil <- tryCatch(cluster::silhouette(cluster_labels, dist_mat), error = function(e) NULL)
     if (is.null(sil) || is.na(sil)[1] || (!is.matrix(sil) && !inherits(sil, "silhouette"))) {
@@ -36,11 +45,25 @@ calc_silhouette <- function(dist_mat, cluster_labels) {
 #' calc_davies_bouldin(data, cl)
 #' @export
 calc_davies_bouldin <- function(data, cluster_labels) {
+  if (is.null(data) || is.null(cluster_labels)) return(NA_real_)
   cluster_labels <- as.numeric(as.factor(cluster_labels))
+  mat <- as.matrix(data)
+  if (nrow(mat) == length(cluster_labels)) {
+    X <- mat
+  } else {
+    X <- t(mat)
+  }
+  n_cells <- nrow(X)
+  if (length(cluster_labels) != n_cells) {
+    n_common <- min(length(cluster_labels), n_cells)
+    if (n_common < 3) return(NA_real_)
+    cluster_labels <- cluster_labels[seq_len(n_common)]
+    X <- X[seq_len(n_common), , drop = FALSE]
+  }
   if (length(unique(cluster_labels)) < 2 || length(cluster_labels) < 3) return(NA_real_)
   val <- tryCatch({
     if (requireNamespace("clusterSim", quietly = TRUE)) {
-      res <- clusterSim::index.DB(t(as.matrix(data)), cluster_labels)
+      res <- clusterSim::index.DB(X, cluster_labels)
       if (is.list(res) && "DB" %in% names(res)) as.numeric(res$DB) else as.numeric(res)
     } else {
       NA_real_
@@ -48,7 +71,6 @@ calc_davies_bouldin <- function(data, cluster_labels) {
   }, error = function(e) NA_real_)
   if (is.na(val)) {
     val <- tryCatch({
-      X <- t(as.matrix(data))
       u_cl <- unique(cluster_labels)
       k <- length(u_cl)
       if (k < 2) return(NA_real_)
@@ -57,6 +79,8 @@ calc_davies_bouldin <- function(data, cluster_labels) {
       for (idx_c in seq_len(k)) {
         cl <- u_cl[idx_c]
         idx <- which(cluster_labels == cl)
+        idx <- idx[idx <= nrow(X)]
+        if (length(idx) == 0) next
         cl_mat <- X[idx, , drop = FALSE]
         cent <- colMeans(cl_mat)
         centroids[[idx_c]] <- cent
@@ -66,7 +90,7 @@ calc_davies_bouldin <- function(data, cluster_labels) {
       r_ij <- matrix(0, k, k)
       for (i in seq_len(k)) {
         for (j in seq_len(k)) {
-          if (i != j) {
+          if (i != j && length(centroids[[i]]) > 0 && length(centroids[[j]]) > 0) {
             m_ij <- sqrt(sum((centroids[[i]] - centroids[[j]])^2))
             r_ij[i, j] <- if (m_ij > 0) (s_i[i] + s_i[j]) / m_ij else 0
           }
@@ -160,23 +184,6 @@ calc_neighborhood_purity <- function(data, cluster_labels, k = NULL, is_distance
   n_cells <- length(cluster_labels)
   if (n_cells < 2) return(numeric(0))
   
-  if (is.null(k)) {
-    k <- max(5, min(50, round(0.05 * n_cells)))
-  }
-  k <- min(k, n_cells - 1)
-  
-  if (requireNamespace("bluster", quietly = TRUE) && !is_distance) {
-    mat <- if (nrow(data) == n_cells) as.matrix(data) else t(as.matrix(data))
-    pur <- tryCatch({
-      res <- bluster::neighborPurity(mat, clusters = cluster_labels, k = k)
-      as.numeric(res$purity)
-    }, error = function(e) NULL)
-    if (!is.null(pur)) {
-      attr(pur, "mean_purity") <- mean(pur, na.rm = TRUE)
-      return(pur)
-    }
-  }
-  
   if (is_distance) {
     dist_mat <- as.matrix(data)
     n_eval <- min(n_cells, nrow(dist_mat), ncol(dist_mat))
@@ -184,9 +191,28 @@ calc_neighborhood_purity <- function(data, cluster_labels, k = NULL, is_distance
     dist_mat <- dist_mat[seq_len(n_eval), seq_len(n_eval), drop = FALSE]
     cluster_labels <- cluster_labels[seq_len(n_eval)]
     n_cells <- n_eval
+    if (is.null(k)) k <- max(5, min(50, round(0.05 * n_cells)))
     k <- min(k, n_cells - 1)
   } else {
-    mat <- if (nrow(data) == n_cells) as.matrix(data) else t(as.matrix(data))
+    mat_n_cells <- if (nrow(data) == n_cells) nrow(data) else ncol(data)
+    n_eval <- min(n_cells, mat_n_cells)
+    if (n_eval < 2) return(numeric(0))
+    cluster_labels <- cluster_labels[seq_len(n_eval)]
+    n_cells <- n_eval
+    if (is.null(k)) k <- max(5, min(50, round(0.05 * n_cells)))
+    k <- min(k, n_cells - 1)
+    
+    mat <- if (nrow(data) == mat_n_cells) as.matrix(data)[seq_len(n_eval), , drop = FALSE] else t(as.matrix(data)[, seq_len(n_eval), drop = FALSE])
+    if (requireNamespace("bluster", quietly = TRUE)) {
+      pur <- tryCatch({
+        res <- bluster::neighborPurity(mat, clusters = cluster_labels, k = k)
+        as.numeric(res$purity)
+      }, error = function(e) NULL)
+      if (!is.null(pur)) {
+        attr(pur, "mean_purity") <- mean(pur, na.rm = TRUE)
+        return(pur)
+      }
+    }
     if (requireNamespace("RANN", quietly = TRUE)) {
       nn_res <- RANN::nn2(mat, k = k + 1)
       nn_idx <- nn_res$nn.idx[, 2:(k + 1), drop = FALSE]

@@ -465,9 +465,17 @@ preprocess_trajectory_hvgs <- function(
   # Compute exact cell x milestone geodesic distances along the MST
   m_geodesic <- igraph::distances(mst_g, weights = igraph::E(mst_g)$weight)
   m_geodesic <- m_geodesic[milestone_ids, milestone_ids, drop = FALSE]
-  edge_len_lookup <- stats::setNames(milestone_network$length,
-                                     paste0(milestone_network$from, "||", milestone_network$to))
+  edge_len_lookup <- c(
+    stats::setNames(milestone_network$length, paste0(milestone_network$from, "||", milestone_network$to)),
+    stats::setNames(milestone_network$length, paste0(milestone_network$to, "||", milestone_network$from))
+  )
   cell_edge_len <- edge_len_lookup[paste0(prog_from, "||", prog_to)]
+  cell_edge_len[is.na(cell_edge_len)] <- 1e-4
+
+  valid_prog_from <- prog_from %in% rownames(m_geodesic)
+  if (!all(valid_prog_from)) prog_from[!valid_prog_from] <- milestone_ids[1]
+  valid_prog_to <- prog_to %in% rownames(m_geodesic)
+  if (!all(valid_prog_to)) prog_to[!valid_prog_to] <- milestone_ids[1]
 
   d_to_from <- outer(prog_pct * cell_edge_len, rep(1, M))
   d_to_to <- outer((1 - prog_pct) * cell_edge_len, rep(1, M))

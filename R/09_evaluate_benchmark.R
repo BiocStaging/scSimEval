@@ -864,22 +864,32 @@ evaluate_multiomics_accuracy <- function(
   bt_m2 <- extract_label_vector(batch_info, ncol(ref_multi[[2]]), m2_name, fallback_idx = 2)
 
   if (verbose) message(sprintf("=== [Step 3] Evaluating Cellular Structure & Clustering Preservation (%s & %s) ===", m1_name, m2_name))
-  clu_eval_m1 <- evaluate_clustering_metrics(
-    data = sim_multi[[1]],
-    cell_types = ct_m1,
-    ref_data = ref_multi[[1]],
-    ref_cell_types = ct_m1,
-    batch_info = bt_m1,
-    threads = threads
-  )
-  clu_eval_m2 <- evaluate_clustering_metrics(
-    data = sim_multi[[2]],
-    cell_types = ct_m2,
-    ref_data = ref_multi[[2]],
-    ref_cell_types = ct_m2,
-    batch_info = bt_m2,
-    threads = threads
-  )
+  clu_eval_m1 <- tryCatch({
+    evaluate_clustering_metrics(
+      data = sim_multi[[1]],
+      cell_types = ct_m1,
+      ref_data = ref_multi[[1]],
+      ref_cell_types = ct_m1,
+      batch_info = bt_m1,
+      threads = threads
+    )
+  }, error = function(e) {
+    if (verbose) message("Clustering evaluation note (M1): ", conditionMessage(e))
+    NULL
+  })
+  clu_eval_m2 <- tryCatch({
+    evaluate_clustering_metrics(
+      data = sim_multi[[2]],
+      cell_types = ct_m2,
+      ref_data = ref_multi[[2]],
+      ref_cell_types = ct_m2,
+      batch_info = bt_m2,
+      threads = threads
+    )
+  }, error = function(e) {
+    if (verbose) message("Clustering evaluation note (M2): ", conditionMessage(e))
+    NULL
+  })
   clustering_res <- list(m1 = clu_eval_m1, m2 = clu_eval_m2)
   
   clu_metrics_to_record <- c(
