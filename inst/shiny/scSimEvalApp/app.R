@@ -10,6 +10,7 @@ library(Matrix)
 library(scSimEval)
 
 # Source all local package R files to guarantee latest bugfixes override installed package
+.local_viz_loaded <- FALSE
 local_r_files <- c(
   "00_utils.R", "01_metrics_distribution.R", "02_extract_properties.R",
   "03_metrics_clustering.R", "04_metrics_batch.R", "05_metrics_de_signal.R",
@@ -19,7 +20,10 @@ local_r_files <- c(
 for (rf in local_r_files) {
   for (cand_p in c(rf, file.path("R", rf), file.path("../../R", rf), file.path("../../../R", rf))) {
     if (file.exists(cand_p)) {
-      try(source(cand_p, local = FALSE), silent = TRUE)
+      res_src <- try(source(cand_p, local = FALSE), silent = TRUE)
+      if (!inherits(res_src, "try-error") && identical(rf, "10_visualizations.R")) {
+        .local_viz_loaded <- TRUE
+      }
       break
     }
   }
