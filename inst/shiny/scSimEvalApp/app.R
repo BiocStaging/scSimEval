@@ -55,32 +55,6 @@ if (!exists(".convert_memory_to_mib", mode = "function")) {
   }
 }
 
-# Ensure internal scSimEval helpers used directly in Shiny UI/server are available
-if (!exists(".convert_time_to_seconds", mode = "function")) {
-  .convert_time_to_seconds <- if (isNamespaceLoaded("scSimEval") && exists(".convert_time_to_seconds", envir = asNamespace("scSimEval"), mode = "function")) {
-    get(".convert_time_to_seconds", envir = asNamespace("scSimEval"))
-  } else {
-    function(elapsed_time, time_unit = "seconds") {
-      if (is.null(elapsed_time) || length(elapsed_time) == 0) return(NULL)
-      val <- as.numeric(elapsed_time[1])
-      if (is.na(val)) return(NA_real_)
-      if (identical(tolower(trimws(as.character(time_unit[1]))), "minutes")) val * 60 else val
-    }
-  }
-}
-if (!exists(".convert_memory_to_mib", mode = "function")) {
-  .convert_memory_to_mib <- if (isNamespaceLoaded("scSimEval") && exists(".convert_memory_to_mib", envir = asNamespace("scSimEval"), mode = "function")) {
-    get(".convert_memory_to_mib", envir = asNamespace("scSimEval"))
-  } else {
-    function(memory_val, memory_unit = "MiB") {
-      if (is.null(memory_val) || length(memory_val) == 0) return(NULL)
-      val <- as.numeric(memory_val[1])
-      if (is.na(val)) return(NA_real_)
-      if (identical(toupper(trimws(as.character(memory_unit[1]))), "MB")) val * (1000^2 / 1024^2) else val
-    }
-  }
-}
-
 # Set max upload size to 10 GB for large single-cell datasets
 options(shiny.maxRequestSize = 10 * 1024^3)
 
@@ -89,6 +63,7 @@ max_sys_cores <- tryCatch({
   mc <- parallel::detectCores(logical = TRUE)
   if (is.na(mc) || mc < 1) 1L else as.integer(mc)
 }, error = function(e) 1L)
+ui_max_cores <- max(128L, max_sys_cores)
 default_n_cores <- max(1L, min(4L, max_sys_cores - 1L))
 
 
@@ -1447,7 +1422,7 @@ ui <- page_navbar(
       /* ===== GLOBAL APP-WIDE LOADING INDICATOR ===== */
       .app-global-loader {
         position: fixed;
-        top: 14px;
+        top: 64px;
         right: 22px;
         background: linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%);
         color: #FFFFFF;
@@ -3456,7 +3431,7 @@ ui <- page_navbar(
           numericInput("num_uni_datasets", "Number of Datasets:", value = 1, min = 1, max = 50, step = 1),
           numericInput("num_uni_sims", "Number of Simulators:", value = 1, min = 1, max = 10, step = 1),
           tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 10px; margin-bottom: 4px;", "2. Compute & Acceleration"),
-          numericInput("num_uni_cores", "Evaluation CPU Cores / Threads:", value = default_n_cores, min = 1, max = max_sys_cores, step = 1),
+          numericInput("num_uni_cores", "Evaluation CPU Cores / Threads:", value = default_n_cores, min = 1, max = ui_max_cores, step = 1),
           span(class = "text-muted", style = "font-size: 0.74rem; display: block; margin-top: -6px; margin-bottom: 8px;", sprintf("System detected: %d CPU cores", max_sys_cores)),
           hr(style = "margin: 12px 0;"),
           checkboxInput("chk_append_uni", "Add to current benchmark results", value = FALSE),
@@ -3489,7 +3464,7 @@ ui <- page_navbar(
           numericInput("num_uni_datasets_atac", "Number of Datasets:", value = 1, min = 1, max = 50, step = 1),
           numericInput("num_uni_sims_atac", "Number of Simulators:", value = 1, min = 1, max = 10, step = 1),
           tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 10px; margin-bottom: 4px;", "2. Compute & Acceleration"),
-          numericInput("num_uni_cores_atac", "Evaluation CPU Cores / Threads:", value = default_n_cores, min = 1, max = max_sys_cores, step = 1),
+          numericInput("num_uni_cores_atac", "Evaluation CPU Cores / Threads:", value = default_n_cores, min = 1, max = ui_max_cores, step = 1),
           span(class = "text-muted", style = "font-size: 0.74rem; display: block; margin-top: -6px; margin-bottom: 8px;", sprintf("System detected: %d CPU cores", max_sys_cores)),
           hr(style = "margin: 12px 0;"),
           checkboxInput("chk_append_uni_atac", "Add to current benchmark results", value = FALSE),
@@ -3534,7 +3509,7 @@ ui <- page_navbar(
           numericInput("num_multi_datasets", "Number of Datasets:", value = 1, min = 1, max = 30, step = 1),
           numericInput("num_multi_sims", "Number of Simulators:", value = 1, min = 1, max = 8, step = 1),
           tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 10px; margin-bottom: 4px;", "2. Compute & Acceleration"),
-          numericInput("num_multi_cores", "Evaluation CPU Cores / Threads:", value = default_n_cores, min = 1, max = max_sys_cores, step = 1),
+          numericInput("num_multi_cores", "Evaluation CPU Cores / Threads:", value = default_n_cores, min = 1, max = ui_max_cores, step = 1),
           span(class = "text-muted", style = "font-size: 0.74rem; display: block; margin-top: -6px; margin-bottom: 8px;", sprintf("System detected: %d CPU cores", max_sys_cores)),
           hr(style = "margin: 12px 0;"),
           checkboxInput("chk_append_multi", "Add to current benchmark results", value = FALSE),
@@ -5041,7 +5016,46 @@ ui <- page_navbar(
         div(
           id = "sc_log_body",
           class = "log-terminal-body",
-          uiOutput("ui_log_console")
+          uiOutput("ui_log_console"),
+          tags$script(HTML("
+            if (!window._scLiveLogInit) {
+              window._scLiveLogInit = true;
+              Shiny.addCustomMessageHandler('sc_live_log', function(entry) {
+                var container = document.getElementById('ui_log_console');
+                var bodyEl = document.getElementById('sc_log_body');
+                if (!container) return;
+                // Remove empty placeholder if present
+                if (container.children.length === 1 && container.innerText.indexOf('No Log Events') !== -1) {
+                  container.innerHTML = '';
+                }
+                var row = document.createElement('div');
+                row.className = 'log-entry-row';
+                var t = document.createElement('span');
+                t.className = 'log-time';
+                t.textContent = entry.time || '';
+                var lvl = document.createElement('span');
+                lvl.className = 'log-lvl-badge log-lvl-' + (entry.level || 'INFO');
+                lvl.textContent = entry.level || 'INFO';
+                var comp = document.createElement('span');
+                comp.className = 'log-comp';
+                comp.textContent = '[' + (entry.component || 'System') + ']';
+                var msgWrap = document.createElement('div');
+                msgWrap.className = 'log-text';
+                var msgSpan = document.createElement('span');
+                msgSpan.textContent = entry.message || '';
+                msgWrap.appendChild(msgSpan);
+                row.appendChild(t);
+                row.appendChild(lvl);
+                row.appendChild(comp);
+                row.appendChild(msgWrap);
+                container.appendChild(row);
+                var autoChk = document.getElementById('log_autoscroll');
+                if (bodyEl && (!autoChk || autoChk.checked)) {
+                  bodyEl.scrollTop = bodyEl.scrollHeight;
+                }
+              });
+            }
+          "))
         )
       ),
       
@@ -5213,6 +5227,19 @@ server <- function(input, output, session) {
     )
     log_storage$entries[[log_storage$counter]] <- new_entry
     
+    # Stream immediately to the Logs tab over WebSocket during long computations
+    tryCatch({
+      if (!is.null(session) && is.function(session$sendCustomMessage)) {
+        session$sendCustomMessage("sc_live_log", list(
+          time = new_entry$time,
+          level = new_entry$level,
+          component = new_entry$component,
+          message = new_entry$message,
+          details = new_entry$details %||% ""
+        ))
+      }
+    }, error = function(e) NULL)
+
     # Notify reactive consumers safely without error if outside reactive consumer
     tryCatch({
       isolate({
@@ -5221,6 +5248,26 @@ server <- function(input, output, session) {
     }, error = function(e) NULL)
     
     invisible(new_entry)
+  }
+
+  # Capture all R message() and warning() terminal output into live sc_log()
+  run_with_live_logs <- function(expr, component = "Evaluation") {
+    withCallingHandlers(
+      expr,
+      message = function(m) {
+        txt <- trimws(conditionMessage(m))
+        if (nzchar(txt)) {
+          lvl <- if (grepl("^===|\\[Step|complete|SUCCESS", txt, ignore.case = TRUE)) "INFO" else "NOTE"
+          sc_log(lvl, txt, component)
+        }
+      },
+      warning = function(w) {
+        txt <- trimws(conditionMessage(w))
+        if (nzchar(txt)) {
+          sc_log("WARNING", txt, component)
+        }
+      }
+    )
   }
 
   # Startup Diagnostic Log Sequence
@@ -6035,7 +6082,11 @@ server <- function(input, output, session) {
     n_dsets <- if (is_uni) (input$num_uni_datasets %||% 1) else (input$num_multi_datasets %||% 1)
     n_sims  <- if (is_uni) (input$num_uni_sims %||% 1) else (input$num_multi_sims %||% 1)
     is_paired <- identical(input$opt_multi_pairing, "paired")
-    n_cores <- if (is_uni) as.integer(input$num_uni_cores %||% default_n_cores) else as.integer(input$num_multi_cores %||% default_n_cores)
+    n_cores <- if (is_uni) {
+      as.integer((if (identical(input$opt_data_mode, "scatac")) input$num_uni_cores_atac else input$num_uni_cores) %||% default_n_cores)
+    } else {
+      as.integer(input$num_multi_cores %||% default_n_cores)
+    }
     if (is.na(n_cores) || n_cores < 1) n_cores <- 1L
     
     out <- c(
@@ -6465,8 +6516,9 @@ server <- function(input, output, session) {
   # ----------------------------------------------------------------------------
   
   # Reactive Parallel Cores Badges
-  output$ui_uni_cores_badge <- renderUI({
-    n_cores <- as.integer(input$num_uni_cores %||% default_n_cores)
+  render_uni_cores_badge <- function() {
+    is_atac_mode <- identical(input$opt_data_mode, "scatac")
+    n_cores <- as.integer((if (is_atac_mode) input$num_uni_cores_atac else input$num_uni_cores) %||% default_n_cores)
     if (is.na(n_cores) || n_cores < 1) n_cores <- 1L
     span(
       class = "badge px-3 py-2 border shadow-sm",
@@ -6474,17 +6526,9 @@ server <- function(input, output, session) {
       icon("microchip", class = "me-1 text-success"),
       sprintf("Parallel: %d CPU Core%s", n_cores, if (n_cores > 1) "s" else "")
     )
-  })
-  output$ui_uni_cores_badge_bottom <- renderUI({
-    n_cores <- as.integer(input$num_uni_cores %||% default_n_cores)
-    if (is.na(n_cores) || n_cores < 1) n_cores <- 1L
-    span(
-      class = "badge px-3 py-2 border shadow-sm",
-      style = "background: #F0FDF4; color: #166534; border-color: #BBF7D0 !important; font-size: 0.84rem;",
-      icon("microchip", class = "me-1 text-success"),
-      sprintf("Parallel: %d CPU Core%s", n_cores, if (n_cores > 1) "s" else "")
-    )
-  })
+  }
+  output$ui_uni_cores_badge <- renderUI({ render_uni_cores_badge() })
+  output$ui_uni_cores_badge_bottom <- renderUI({ render_uni_cores_badge() })
 
   output$ui_multi_cores_badge <- renderUI({
     n_cores <- as.integer(input$num_multi_cores %||% default_n_cores)
@@ -6615,11 +6659,11 @@ server <- function(input, output, session) {
 
   # Single-Cell Evaluation Core Runner Function
   run_single_cell_evaluation <- function() {
+    is_atac_mode <- identical(input$opt_data_mode, "scatac")
     n_dsets <- input$num_uni_datasets %||% 1
     n_sims <- input$num_uni_sims %||% 1
-    n_cores_uni <- as.integer(input$num_uni_cores %||% default_n_cores)
+    n_cores_uni <- as.integer((if (is_atac_mode) input$num_uni_cores_atac else input$num_uni_cores) %||% default_n_cores)
     if (is.na(n_cores_uni) || n_cores_uni < 1) n_cores_uni <- 1L
-    is_atac_mode <- identical(input$opt_data_mode, "scatac")
     mod_key <- if (is_atac_mode) "atac" else "rna"
     mod_label <- if (is_atac_mode) "scATAC-seq" else "scRNA-seq"
     
@@ -6849,10 +6893,11 @@ server <- function(input, output, session) {
               modality = mod_label, cell_types = ct_vec, batch_info = bt_vec
             )
             
-            n_cores_uni <- as.integer(input$num_uni_cores %||% default_n_cores)
+            n_cores_uni <- as.integer((if (is_atac_mode) input$num_uni_cores_atac else input$num_uni_cores) %||% default_n_cores)
             if (is.na(n_cores_uni) || n_cores_uni < 1) n_cores_uni <- 1L
             
-            res_sd <- evaluate_simulation_accuracy(
+            sc_log("INFO", sprintf("Starting single-cell evaluation: %s on %s (%d cores)...", sim_name, d_label, n_cores_uni), "Evaluation")
+            res_sd <- run_with_live_logs(evaluate_simulation_accuracy(
               ref_data = ref_obj_d %||% ref_mat_d,
               sim_data = sim_obj_d %||% sim_mat_d,
               modality = mod_label,
@@ -6860,12 +6905,12 @@ server <- function(input, output, session) {
               elapsed_time = sim_time,
               compute_bivariate = TRUE,
               threads = n_cores_uni,
-              verbose = FALSE,
+              verbose = TRUE,
               time_unit = sim_t_unit,
               memory_unit = sim_m_unit,
               sim_cores = sim_cores_used,
               include_trajectory = FALSE
-            )
+            ), component = "Evaluation")
             tbl_sd <- if (!is.null(res_sd$metrics_summary_table)) {
               res_sd$metrics_summary_table
             } else if (!is.null(res_sd$benchmark_summary_table)) {
@@ -7703,7 +7748,8 @@ server <- function(input, output, session) {
             n_cores_multi <- as.integer(input$num_multi_cores %||% default_n_cores)
             if (is.na(n_cores_multi) || n_cores_multi < 1) n_cores_multi <- 1L
             
-            res_multi_sd <- evaluate_multiomics_accuracy(
+            sc_log("INFO", sprintf("Starting multiomics evaluation: %s on %s (%d cores, %s)...", sim_name, d_label, n_cores_multi, if (is_paired) "paired" else "unpaired"), "Evaluation")
+            res_multi_sd <- run_with_live_logs(evaluate_multiomics_accuracy(
               ref_multi = list(RNA = ref_rna_obj %||% ref_rna_d, ATAC = ref_atac_obj %||% ref_atac_d),
               sim_multi = list(RNA = sim_rna_obj %||% sim_rna_d, ATAC = sim_atac_obj %||% sim_atac_d),
               is_paired = is_paired,
@@ -7713,7 +7759,7 @@ server <- function(input, output, session) {
               elapsed_time = sim_time,
               compute_bivariate = TRUE,
               threads = n_cores_multi,
-              verbose = FALSE,
+              verbose = TRUE,
               time_unit = sim_t_unit,
               memory_unit = sim_m_unit,
               sim_cores = sim_cores_used,
@@ -7727,7 +7773,7 @@ server <- function(input, output, session) {
               memory_unit_atac = sep_scal_args$memory_unit_atac,
               sim_cores_rna = sep_scal_args$sim_cores_rna,
               sim_cores_atac = sep_scal_args$sim_cores_atac
-            )
+            ), component = "Evaluation")
             tbl_m_sd <- if (!is.null(res_multi_sd$metrics_summary_table)) {
               res_multi_sd$metrics_summary_table
             } else if (!is.null(res_multi_sd$benchmark_summary_table)) {

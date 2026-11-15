@@ -97,7 +97,7 @@ run_edger_qlf_detrate <- function(
   if (requireNamespace("edgeR", quietly = TRUE)) {
     res_df <- tryCatch({
       dge <- edgeR::DGEList(counts = sub_counts, group = group)
-      dge <- edgeR::calcNormFactors(dge)
+      dge <- suppressMessages(edgeR::calcNormFactors(dge))
       dge <- edgeR::estimateDisp(dge, design = design)
       fit <- edgeR::glmQLFit(dge, design = design)
       qlf <- edgeR::glmQLFTest(fit, coef = ncol(design))
@@ -665,6 +665,146 @@ evaluate_predictive_de_model <- function(
   as.numeric(max(0.0, min(1.0, 1.0 - as.numeric(ks_stat))))
 }
 
+.run_pairwise_pb_contrasts <- function(
+  pb_ref,
+  pb_sim,
+  common_types,
+  fdr_cutoff = 0.05,
+  logfc_cutoff = 0,
+  sub_category = "scRNA-seq Differential Expression",
+  col_true = "N_true_DEG",
+  col_sim = "N_sim_DEG",
+  col_jaccard = "Top_DEG_Jaccard",
+  threads = 1L
+) {
+  pairs <- utils::combn(common_types, 2, simplify = FALSE)
+  threads <- if (is.null(threads) || length(threads) == 0L || is.na(threads[1L])) 1L else max(1L, as.integer(threads[1L]))
+  n_pairs <- length(pairs)
+  n_workers <- min(threads, max(1L, n_pairs))
+  inner_th <- max(1L, as.integer(floor(threads / max(1L, n_workers))))
+
+  pair_res_list <- .sc_parallel_lapply(seq_along(pairs), function(i) {
+    if (n_workers > 1L && requireNamespace("RhpcBLASctl", quietly = TRUE)) {
+      try(RhpcBLASctl::blas_set_num_threads(inner_th), silent = TRUE)
+      try(RhpcBLASctl::omp_set_num_threads(inner_th), silent = TRUE)
+    }
+
+    ct1 <- pairs[[i]][1]
+    ct2 <- pairs[[i]][2]
+    pair_name <- paste0(ct1, "_vs_", ct2)
+
+    # Combine pseudobulks for ct1 and ct2 in reference
+    mat_r1 <- pb_ref[[ct1]]; mat_r2 <- pb_ref[[ct2]]
+    common_f_r <- intersect(rownames(mat_r1), rownames(mat_r2))
+    if (length(common_f_r) < 2) return(NULL)
+    comb_r <- cbind(mat_r1[common_f_r, , drop = FALSE], mat_r2[common_f_r, , drop = FALSE])
+    grp_r <- factor(c(rep(ct1, ncol(mat_r1)), rep(ct2, ncol(mat_r2))))
+    colnames(comb_r) <- paste0(as.character(grp_r), "_", colnames(comb_r), "_", seq_len(ncol(comb_r)))
+
+    # Combine pseudobulks for ct1 and ct2 in simulation
+    mat_s1 <- pb_sim[[ct1]]; mat_s2 <- pb_sim[[ct2]]
+    common_f_s <- intersect(rownames(mat_s1), rownames(mat_s2))
+    if (length(common_f_s) < 2) return(NULL)
+    comb_s <- cbind(mat_s1[common_f_s, , drop = FALSE], mat_s2[common_f_s, , drop = FALSE])
+    grp_s <- factor(c(rep(ct1, ncol(mat_s1)), rep(ct2, ncol(mat_s2))))
+    colnames(comb_s) <- paste0(as.character(grp_s), "_", colnames(comb_s), "_", seq_len(ncol(comb_s)))
+
+    # Run edgeR-QLF on pseudobulks
+    de_r <- run_edger_qlf_da(comb_r, groups = grp_r, fdr_cutoff = fdr_cutoff, logfc_cutoff = logfc_cutoff, norm_method = "TMM")
+    de_s <- run_edger_qlf_da(comb_s, groups = grp_s, fdr_cutoff = fdr_cutoff, logfc_cutoff = logfc_cutoff, norm_method = "TMM")
+
+    shared_feats <- intersect(de_r$feature, de_s$feature)
+    if (length(shared_feats) < 2) {
+      return(list(pair_name = pair_name, de_r = de_r, de_s = de_s, row = NULL))
+    }
+
+    sub_r <- de_r[shared_feats, , drop = FALSE]
+    sub_s <- de_s[shared_feats, , drop = FALSE]
+
+    n_total <- length(shared_feats)
+    y_true  <- as.logical(sub_r$is_da)
+    y_pred  <- as.logical(sub_s$is_da)
+
+    n_r <- sum(y_true, na.rm = TRUE)
+    n_s <- sum(y_pred, na.rm = TRUE)
+
+    tp <- sum(y_true & y_pred, na.rm = TRUE)
+    fp <- sum(!y_true & y_pred, na.rm = TRUE)
+    fn <- sum(y_true & !y_pred, na.rm = TRUE)
+    tn <- sum(!y_true & !y_pred, na.rm = TRUE)
+
+    acc_val <- (tp + tn) / max(1, n_total)
+    prec_val <- if ((tp + fp) > 0) tp / (tp + fp) else (if (n_r == 0) 1.0 else 0.0)
+    rec_val <- if ((tp + fn) > 0) tp / (tp + fn) else (if (n_s == 0) 1.0 else 0.0)
+    f1_val <- if ((prec_val + rec_val) > 0) (2 * prec_val * rec_val) / (prec_val + rec_val) else 0.0
+
+    sim_scores <- -log10(pmax(sub_s$PValue, 1e-300))
+    auc_val <- .calc_roc_auc(sim_scores, y_true)
+
+    null_pvals <- sub_s$PValue[!y_true]
+    if (length(null_pvals) < 5) null_pvals <- sub_s$PValue
+    pval_dist_val <- .calc_pval_distribution_score(null_pvals)
+
+    pcc_logfc <- NA_real_
+    scc_logfc <- NA_real_
+    if (length(shared_feats) >= 5) {
+      lfc_r <- sub_r$logFC
+      lfc_s <- sub_s$logFC
+      pcc_logfc <- tryCatch(stats::cor(lfc_r, lfc_s, method = "pearson"), error = function(e) NA_real_)
+      scc_logfc <- tryCatch(stats::cor(lfc_r, lfc_s, method = "spearman"), error = function(e) NA_real_)
+    }
+
+    n_top <- min(100, length(shared_feats))
+    top_r <- sub_r$feature[order(sub_r$PValue)][seq_len(n_top)]
+    top_s <- sub_s$feature[order(sub_s$PValue)][seq_len(n_top)]
+    jaccard_top <- length(intersect(top_r, top_s)) / max(1, length(union(top_r, top_s)))
+
+    row_out <- data.frame(
+      Pair = pair_name,
+      SubCategory = sub_category,
+      N_total = n_total,
+      stringsAsFactors = FALSE
+    )
+    row_out[[col_true]] <- n_r
+    row_out[[col_sim]] <- n_s
+    row_out$TP <- tp
+    row_out$FP <- fp
+    row_out$FN <- fn
+    row_out$TN <- tn
+    row_out$pval_dist_score <- pval_dist_val
+    row_out$accuracy <- acc_val
+    row_out$precision <- prec_val
+    row_out$recall <- rec_val
+    row_out$f1_score <- f1_val
+    row_out$auc <- auc_val
+    row_out$LogFC_Pearson_r <- pcc_logfc
+    row_out$LogFC_Spearman_rho <- scc_logfc
+    row_out[[col_jaccard]] <- jaccard_top
+
+    list(pair_name = pair_name, de_r = de_r, de_s = de_s, row = row_out)
+  }, threads = threads)
+
+  .set_parallel_threads(threads)
+
+  pair_rows <- list()
+  res_ref_list <- list()
+  res_sim_list <- list()
+  for (res_item in pair_res_list) {
+    if (is.null(res_item)) next
+    res_ref_list[[res_item$pair_name]] <- res_item$de_r
+    res_sim_list[[res_item$pair_name]] <- res_item$de_s
+    if (!is.null(res_item$row)) {
+      pair_rows[[length(pair_rows) + 1L]] <- res_item$row
+    }
+  }
+
+  list(
+    pair_rows = pair_rows,
+    res_ref_list = res_ref_list,
+    res_sim_list = res_sim_list
+  )
+}
+
 
 #' Evaluate scRNA-seq Differential Expression (DE) Fidelity (Sub-category V-A)
 #'
@@ -698,6 +838,7 @@ evaluate_predictive_de_model <- function(
 #' @param classifier Classifier algorithm for marker gene predictability: "svm" (default), "knn", or "rf".
 #' @param min_cells Minimum number of cells per cell type (default 3).
 #' @param min_reps Minimum number of replicates per group (default 2).
+#' @param threads Number of CPU threads for parallel pairwise contrast evaluation (default 1).
 #'
 #' @return A list containing:
 #'   \item{deg_summary_table}{Tidy summary data.frame with 6 scRNA-seq DE metrics: \code{de_score}, \code{pval_dist_score}, \code{true_proportion}, \code{accuracy}, \code{precision}, \code{recall}, \code{f1_score}, and \code{auc}}
@@ -719,7 +860,8 @@ evaluate_deg_fidelity <- function(
   logfc_cutoff = 0,
   classifier = c("svm", "knn", "rf"),
   min_cells = 3,
-  min_reps = 2
+  min_reps = 2,
+  threads = 1
 ) {
   classifier <- match.arg(classifier)
   
@@ -791,117 +933,21 @@ evaluate_deg_fidelity <- function(
     ))
   }
   
-  pairs <- utils::combn(common_types, 2, simplify = FALSE)
-  pair_rows <- list()
-  de_ref_list <- list()
-  de_sim_list <- list()
-  
-  for (i in seq_along(pairs)) {
-    ct1 <- pairs[[i]][1]
-    ct2 <- pairs[[i]][2]
-    pair_name <- paste0(ct1, "_vs_", ct2)
-    
-    # Combine pseudobulks for ct1 and ct2 in reference
-    mat_r1 <- pb_ref[[ct1]]; mat_r2 <- pb_ref[[ct2]]
-    common_g_r <- intersect(rownames(mat_r1), rownames(mat_r2))
-    if (length(common_g_r) < 2) next
-    comb_r <- cbind(mat_r1[common_g_r, , drop = FALSE], mat_r2[common_g_r, , drop = FALSE])
-    grp_r <- factor(c(rep(ct1, ncol(mat_r1)), rep(ct2, ncol(mat_r2))))
-    colnames(comb_r) <- paste0(as.character(grp_r), "_", colnames(comb_r), "_", seq_len(ncol(comb_r)))
-    
-    # Combine pseudobulks for ct1 and ct2 in simulation
-    mat_s1 <- pb_sim[[ct1]]; mat_s2 <- pb_sim[[ct2]]
-    common_g_s <- intersect(rownames(mat_s1), rownames(mat_s2))
-    if (length(common_g_s) < 2) next
-    comb_s <- cbind(mat_s1[common_g_s, , drop = FALSE], mat_s2[common_g_s, , drop = FALSE])
-    grp_s <- factor(c(rep(ct1, ncol(mat_s1)), rep(ct2, ncol(mat_s2))))
-    colnames(comb_s) <- paste0(as.character(grp_s), "_", colnames(comb_s), "_", seq_len(ncol(comb_s)))
-    
-    # Run edgeR-QLF DE on pseudobulks
-    de_r <- run_edger_qlf_da(comb_r, groups = grp_r, fdr_cutoff = fdr_cutoff, logfc_cutoff = logfc_cutoff, norm_method = "TMM")
-    de_s <- run_edger_qlf_da(comb_s, groups = grp_s, fdr_cutoff = fdr_cutoff, logfc_cutoff = logfc_cutoff, norm_method = "TMM")
-    
-    de_ref_list[[pair_name]] <- de_r
-    de_sim_list[[pair_name]] <- de_s
-    
-    sig_r <- de_r$feature[de_r$is_da]
-    sig_s <- de_s$feature[de_s$is_da]
-    
-    shared_genes <- intersect(de_r$feature, de_s$feature)
-    if (length(shared_genes) < 2) next
-    
-    sub_r <- de_r[shared_genes, , drop = FALSE]
-    sub_s <- de_s[shared_genes, , drop = FALSE]
-    
-    n_total <- length(shared_genes)
-    y_true  <- as.logical(sub_r$is_da)
-    y_pred  <- as.logical(sub_s$is_da)
-    
-    n_r <- sum(y_true, na.rm = TRUE)
-    n_s <- sum(y_pred, na.rm = TRUE)
-    
-    tp <- sum(y_true & y_pred, na.rm = TRUE)
-    fp <- sum(!y_true & y_pred, na.rm = TRUE)
-    fn <- sum(y_true & !y_pred, na.rm = TRUE)
-    tn <- sum(!y_true & !y_pred, na.rm = TRUE)
-    
-    # 8 simpipe / benchmarking metrics for scRNA-seq DE analysis:
-    acc_val <- (tp + tn) / max(1, n_total)
-    prec_val <- if ((tp + fp) > 0) tp / (tp + fp) else (if (n_r == 0) 1.0 else 0.0)
-    rec_val <- if ((tp + fn) > 0) tp / (tp + fn) else (if (n_s == 0) 1.0 else 0.0)
-    f1_val <- if ((prec_val + rec_val) > 0) (2 * prec_val * rec_val) / (prec_val + rec_val) else 0.0
-    # In simutils::true_DEGs_proportion: proportion of true DEGs identified = length(intersect) / length(ground_truth_DEGs)
-    true_prop_val <- if (n_r > 0) tp / n_r else (if (n_s == 0) 1.0 else 0.0)
-    
-    sim_scores <- -log10(pmax(sub_s$PValue, 1e-300))
-    auc_val <- .calc_roc_auc(sim_scores, y_true)
-    
-    null_pvals <- sub_s$PValue[!y_true]
-    if (length(null_pvals) < 5) null_pvals <- sub_s$PValue
-    pval_dist_val <- .calc_pval_distribution_score(null_pvals)
-    
-    # In Simpipe (Duo et al. 2024), the DEG detection evaluation score is formed
-    # directly by the binary-classification metrics (Accuracy, Precision, Recall, F1-Score, and AUC):
-    de_score_val <- mean(c(acc_val, prec_val, rec_val, f1_val, auc_val), na.rm = TRUE)
-    
-    # Gene logFC correlation across shared tested genes
-    pcc_logfc <- NA_real_
-    scc_logfc <- NA_real_
-    if (length(shared_genes) >= 5) {
-      lfc_r <- sub_r$logFC
-      lfc_s <- sub_s$logFC
-      pcc_logfc <- tryCatch(stats::cor(lfc_r, lfc_s, method = "pearson"), error = function(e) NA_real_)
-      scc_logfc <- tryCatch(stats::cor(lfc_r, lfc_s, method = "spearman"), error = function(e) NA_real_)
-    }
-    
-    # Top DEG Jaccard overlap (top 100 or all)
-    n_top <- min(100, length(shared_genes))
-    top_r <- sub_r$feature[order(sub_r$PValue)][seq_len(n_top)]
-    top_s <- sub_s$feature[order(sub_s$PValue)][seq_len(n_top)]
-    jaccard_top <- length(intersect(top_r, top_s)) / max(1, length(union(top_r, top_s)))
-    
-    pair_rows[[i]] <- data.frame(
-      Pair = pair_name,
-      SubCategory = "scRNA-seq Differential Expression",
-      N_total = n_total,
-      N_true_DEG = n_r,
-      N_sim_DEG = n_s,
-      TP = tp,
-      FP = fp,
-      FN = fn,
-      TN = tn,
-      pval_dist_score = pval_dist_val,
-      accuracy = acc_val,
-      precision = prec_val,
-      recall = rec_val,
-      f1_score = f1_val,
-      auc = auc_val,
-      LogFC_Pearson_r = pcc_logfc,
-      LogFC_Spearman_rho = scc_logfc,
-      Top_DEG_Jaccard = jaccard_top,
-      stringsAsFactors = FALSE
-    )
-  }
+  pb_res <- .run_pairwise_pb_contrasts(
+    pb_ref = pb_ref,
+    pb_sim = pb_sim,
+    common_types = common_types,
+    fdr_cutoff = fdr_cutoff,
+    logfc_cutoff = logfc_cutoff,
+    sub_category = "scRNA-seq Differential Expression",
+    col_true = "N_true_DEG",
+    col_sim = "N_sim_DEG",
+    col_jaccard = "Top_DEG_Jaccard",
+    threads = threads
+  )
+  pair_rows <- pb_res$pair_rows
+  de_ref_list <- pb_res$res_ref_list
+  de_sim_list <- pb_res$res_sim_list
   
   if (length(pair_rows) == 0) {
     return(list(
@@ -1180,7 +1226,7 @@ run_edger_qlf_da <- function(
     res_df <- tryCatch({
       y <- edgeR::DGEList(counts = sub_mat, group = groups)
       if (norm_method != "none") {
-        y <- edgeR::calcNormFactors(y, method = norm_method)
+        y <- suppressMessages(edgeR::calcNormFactors(y, method = norm_method))
       }
       y <- edgeR::estimateDisp(y, design)
       fit <- edgeR::glmQLFit(y, design)
@@ -1291,6 +1337,7 @@ run_edger_qlf_da <- function(
 #' @param logfc_cutoff Absolute log2 fold-change cutoff (default 0).
 #' @param min_cells Minimum number of cells per cell type (default 3).
 #' @param min_reps Minimum number of replicates per group (default 2).
+#' @param threads Number of CPU threads for parallel pairwise contrast evaluation (default 1).
 #'
 #' @return A list containing:
 #'   \item{da_summary_table}{Tidy summary data.frame with 6 scATAC-seq DA metrics: \code{da_score}, \code{pval_dist_score}, \code{true_proportion}, \code{accuracy}, \code{precision}, \code{recall}, \code{f1_score}, and \code{auc}}
@@ -1323,7 +1370,8 @@ evaluate_atac_da_fidelity <- function(
   fdr_cutoff = 0.05,
   logfc_cutoff = 0,
   min_cells = 3,
-  min_reps = 2
+  min_reps = 2,
+  threads = 1
 ) {
   # Strict Requirement: biological replicates must be provided
   if (is.null(batch_ref) || is.null(batch_sim)) {
@@ -1389,119 +1437,21 @@ evaluate_atac_da_fidelity <- function(
     ))
   }
   
-  # Pairs of cell types for contrast
-  pairs <- utils::combn(common_types, 2, simplify = FALSE)
-  
-  pair_rows <- list()
-  da_ref_list <- list()
-  da_sim_list <- list()
-  
-  for (i in seq_along(pairs)) {
-    ct1 <- pairs[[i]][1]
-    ct2 <- pairs[[i]][2]
-    pair_name <- paste0(ct1, "_vs_", ct2)
-    
-    # Combine pseudobulks for ct1 and ct2 in reference
-    mat_r1 <- pb_ref[[ct1]]; mat_r2 <- pb_ref[[ct2]]
-    common_p_r <- intersect(rownames(mat_r1), rownames(mat_r2))
-    if (length(common_p_r) < 2) next
-    comb_r <- cbind(mat_r1[common_p_r, , drop = FALSE], mat_r2[common_p_r, , drop = FALSE])
-    grp_r <- factor(c(rep(ct1, ncol(mat_r1)), rep(ct2, ncol(mat_r2))))
-    colnames(comb_r) <- paste0(as.character(grp_r), "_", colnames(comb_r), "_", seq_len(ncol(comb_r)))
-    
-    # Combine pseudobulks for ct1 and ct2 in simulation
-    mat_s1 <- pb_sim[[ct1]]; mat_s2 <- pb_sim[[ct2]]
-    common_p_s <- intersect(rownames(mat_s1), rownames(mat_s2))
-    if (length(common_p_s) < 2) next
-    comb_s <- cbind(mat_s1[common_p_s, , drop = FALSE], mat_s2[common_p_s, , drop = FALSE])
-    grp_s <- factor(c(rep(ct1, ncol(mat_s1)), rep(ct2, ncol(mat_s2))))
-    colnames(comb_s) <- paste0(as.character(grp_s), "_", colnames(comb_s), "_", seq_len(ncol(comb_s)))
-    
-    # Run edgeR-QLF DA
-    da_r <- run_edger_qlf_da(comb_r, groups = grp_r, fdr_cutoff = fdr_cutoff, logfc_cutoff = logfc_cutoff)
-    da_s <- run_edger_qlf_da(comb_s, groups = grp_s, fdr_cutoff = fdr_cutoff, logfc_cutoff = logfc_cutoff)
-    
-    da_ref_list[[pair_name]] <- da_r
-    da_sim_list[[pair_name]] <- da_s
-    
-    sig_r <- da_r$feature[da_r$is_da]
-    sig_s <- da_s$feature[da_s$is_da]
-    
-    shared_peaks <- intersect(da_r$feature, da_s$feature)
-    if (length(shared_peaks) < 2) next
-    
-    sub_r <- da_r[shared_peaks, , drop = FALSE]
-    sub_s <- da_s[shared_peaks, , drop = FALSE]
-    
-    n_total <- length(shared_peaks)
-    y_true  <- as.logical(sub_r$is_da)
-    y_pred  <- as.logical(sub_s$is_da)
-    
-    n_r <- sum(y_true, na.rm = TRUE)
-    n_s <- sum(y_pred, na.rm = TRUE)
-    
-    tp <- sum(y_true & y_pred, na.rm = TRUE)
-    fp <- sum(!y_true & y_pred, na.rm = TRUE)
-    fn <- sum(y_true & !y_pred, na.rm = TRUE)
-    tn <- sum(!y_true & !y_pred, na.rm = TRUE)
-    
-    # 8 simpipe / benchmarking metrics for scATAC-seq DA analysis:
-    acc_val <- (tp + tn) / max(1, n_total)
-    prec_val <- if ((tp + fp) > 0) tp / (tp + fp) else (if (n_r == 0) 1.0 else 0.0)
-    rec_val <- if ((tp + fn) > 0) tp / (tp + fn) else (if (n_s == 0) 1.0 else 0.0)
-    f1_val <- if ((prec_val + rec_val) > 0) (2 * prec_val * rec_val) / (prec_val + rec_val) else 0.0
-    # In simutils::true_DEGs_proportion: proportion of true DARs identified = length(intersect) / length(ground_truth_DARs)
-    true_prop_val <- if (n_r > 0) tp / n_r else (if (n_s == 0) 1.0 else 0.0)
-    
-    sim_scores <- -log10(pmax(sub_s$PValue, 1e-300))
-    auc_val <- .calc_roc_auc(sim_scores, y_true)
-    
-    null_pvals <- sub_s$PValue[!y_true]
-    if (length(null_pvals) < 5) null_pvals <- sub_s$PValue
-    pval_dist_val <- .calc_pval_distribution_score(null_pvals)
-    
-    # In Simpipe (Duo et al. 2024), the DAR detection evaluation score is formed
-    # directly by the binary-classification metrics (Accuracy, Precision, Recall, F1-Score, and AUC):
-    da_score_val <- mean(c(acc_val, prec_val, rec_val, f1_val, auc_val), na.rm = TRUE)
-    
-    # Peak logFC correlation across shared tested peaks
-    pcc_logfc <- NA_real_
-    scc_logfc <- NA_real_
-    if (length(shared_peaks) >= 5) {
-      lfc_r <- sub_r$logFC
-      lfc_s <- sub_s$logFC
-      pcc_logfc <- tryCatch(stats::cor(lfc_r, lfc_s, method = "pearson"), error = function(e) NA_real_)
-      scc_logfc <- tryCatch(stats::cor(lfc_r, lfc_s, method = "spearman"), error = function(e) NA_real_)
-    }
-    
-    # Top DAR Jaccard overlap (top 100 or all)
-    n_top <- min(100, length(shared_peaks))
-    top_r <- sub_r$feature[order(sub_r$PValue)][seq_len(n_top)]
-    top_s <- sub_s$feature[order(sub_s$PValue)][seq_len(n_top)]
-    jaccard_top <- length(intersect(top_r, top_s)) / max(1, length(union(top_r, top_s)))
-    
-    pair_rows[[i]] <- data.frame(
-      Pair = pair_name,
-      SubCategory = "scATAC-seq Differential Accessibility",
-      N_total = n_total,
-      N_true_DAR = n_r,
-      N_sim_DAR = n_s,
-      TP = tp,
-      FP = fp,
-      FN = fn,
-      TN = tn,
-      pval_dist_score = pval_dist_val,
-      accuracy = acc_val,
-      precision = prec_val,
-      recall = rec_val,
-      f1_score = f1_val,
-      auc = auc_val,
-      LogFC_Pearson_r = pcc_logfc,
-      LogFC_Spearman_rho = scc_logfc,
-      Top_DAR_Jaccard = jaccard_top,
-      stringsAsFactors = FALSE
-    )
-  }
+  pb_res <- .run_pairwise_pb_contrasts(
+    pb_ref = pb_ref,
+    pb_sim = pb_sim,
+    common_types = common_types,
+    fdr_cutoff = fdr_cutoff,
+    logfc_cutoff = logfc_cutoff,
+    sub_category = "scATAC-seq Differential Accessibility",
+    col_true = "N_true_DAR",
+    col_sim = "N_sim_DAR",
+    col_jaccard = "Top_DAR_Jaccard",
+    threads = threads
+  )
+  pair_rows <- pb_res$pair_rows
+  da_ref_list <- pb_res$res_ref_list
+  da_sim_list <- pb_res$res_sim_list
   
   if (length(pair_rows) == 0) {
     return(list(

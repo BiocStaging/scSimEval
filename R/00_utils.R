@@ -944,3 +944,67 @@ validate_multiomics_input <- function(obj, arg_name = "multi_data", reduction_na
     arg_name, paste(class(obj), collapse = "/")
   ), call. = FALSE)
 }
+
+.set_parallel_threads <- function(threads = 1L) {
+  threads <- if (is.null(threads) || length(threads) == 0L || is.na(threads[1L])) {
+    1L
+  } else {
+    max(1L, as.integer(threads[1L]))
+  }
+  th_str <- as.character(threads)
+  try(Sys.setenv(
+    OMP_NUM_THREADS = th_str,
+    MKL_NUM_THREADS = th_str,
+    OPENBLAS_NUM_THREADS = th_str,
+    VECLIB_MAXIMUM_THREADS = th_str,
+    NUMEXPR_NUM_THREADS = th_str
+  ), silent = TRUE)
+  options(mc.cores = threads)
+  if (requireNamespace("RcppParallel", quietly = TRUE)) {
+    try(RcppParallel::setThreadOptions(numThreads = threads), silent = TRUE)
+  }
+  if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
+    try(RhpcBLASctl::blas_set_num_threads(threads), silent = TRUE)
+    try(RhpcBLASctl::omp_set_num_threads(threads), silent = TRUE)
+  }
+  if (requireNamespace("data.table", quietly = TRUE)) {
+    try(data.table::setDTthreads(threads), silent = TRUE)
+  }
+  invisible(threads)
+}
+
+.sc_parallel_lapply <- function(X, FUN, threads = 1L, ...) {
+  threads <- if (is.null(threads) || length(threads) == 0L || is.na(threads[1L])) {
+    1L
+  } else {
+    max(1L, as.integer(threads[1L]))
+  }
+  n_tasks <- length(X)
+  if (threads <= 1L || n_tasks <= 1L) {
+    return(lapply(X, FUN, ...))
+  }
+  if (.Platform$OS.type != "windows") {
+    res <- tryCatch({
+      mclapply_fn <- getExportedValue("parallel", "mclapply")
+      mclapply_fn(X, FUN, ..., mc.cores = min(threads, n_tasks), mc.preschedule = FALSE)
+    }, error = function(e) NULL)
+    if (!is.null(res) && length(res) == n_tasks &&
+        !any(vapply(res, inherits, logical(1), "try-error"))) {
+      return(res)
+    }
+    return(lapply(X, FUN, ...))
+  }
+  if (requireNamespace("BiocParallel", quietly = TRUE)) {
+    res <- tryCatch(
+      suppressWarnings(BiocParallel::bplapply(
+        X, FUN, ...,
+        BPPARAM = BiocParallel::SnowParam(workers = min(threads, n_tasks))
+      )),
+      error = function(e) NULL
+    )
+    if (!is.null(res) && length(res) == n_tasks) {
+      return(res)
+    }
+  }
+  lapply(X, FUN, ...)
+}

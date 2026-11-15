@@ -516,12 +516,13 @@ calc_cdi <- function(
   G_eval <- nrow(sub_mat)
   N_eval <- ncol(sub_mat)
   threads <- max(1L, as.integer(threads))
+  n_cdi_workers <- min(threads, max(1L, G_eval))
 
-  bpparam <- if (threads > 1L && (G_eval * K_eval >= 1500L || .Platform$OS.type != "windows")) {
+  bpparam <- if (threads > 1L && G_eval >= 2L && (G_eval * K_eval >= 1500L || .Platform$OS.type != "windows")) {
     if (.Platform$OS.type == "windows") {
-      BiocParallel::SnowParam(workers = threads)
+      BiocParallel::SnowParam(workers = n_cdi_workers)
     } else {
-      BiocParallel::MulticoreParam(workers = threads)
+      BiocParallel::MulticoreParam(workers = n_cdi_workers)
     }
   } else {
     BiocParallel::SerialParam()

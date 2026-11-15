@@ -1,3 +1,26 @@
+.knn_coords <- function(coords, k) {
+  coords <- as.matrix(coords)
+  n_cells <- nrow(coords)
+  k <- max(1L, min(as.integer(k), n_cells - 1L))
+  if (requireNamespace("RANN", quietly = TRUE)) {
+    nn <- RANN::nn2(coords, k = k + 1L)
+    return(list(
+      idx = nn$nn.idx[, -1L, drop = FALSE],
+      dists = nn$nn.dists[, -1L, drop = FALSE]
+    ))
+  }
+  dist_mat <- as.matrix(stats::dist(coords))
+  diag(dist_mat) <- Inf
+  idx_mat <- matrix(0L, nrow = n_cells, ncol = k)
+  dist_out <- matrix(0, nrow = n_cells, ncol = k)
+  for (i in seq_len(n_cells)) {
+    nn_i <- order(dist_mat[i, ])[seq_len(k)]
+    idx_mat[i, ] <- nn_i
+    dist_out[i, ] <- dist_mat[i, nn_i]
+  }
+  list(idx = idx_mat, dists = dist_out)
+}
+
 #' Cell-Specific Mixing Score (CMS)
 #'
 #' Tests the hypothesis that group-specific distance distributions of k-nearest
@@ -13,6 +36,7 @@
 #' @param coords Optional precomputed embedding matrix (cells x dimensions, e.g. PCA or UMAP).
 #' @param cell_min Minimum number of cells per batch in neighborhood to perform test. Default is 4.
 #' @param unbalanced Logical, whether to set pure neighborhoods to NA. Default is FALSE.
+#' @param threads Number of CPU threads (default 1).
 #'
 #' @return A named list:
 #'   \item{cms_scores}{Numeric vector of CMS p-values for each cell (higher means better mixed)}
@@ -30,7 +54,8 @@ calc_cms <- function(
   n_pcs = 30,
   coords = NULL,
   cell_min = 4,
-  unbalanced = FALSE
+  unbalanced = FALSE,
+  threads = 1
 ) {
   batch_info <- as.factor(batch_info)
   
@@ -67,40 +92,52 @@ calc_cms <- function(
     if (!is.null(res_cms)) return(res_cms)
   }
   
-  # Native implementation
-  dist_mat <- as.matrix(stats::dist(coords))
-  diag(dist_mat) <- Inf
+  # Native implementation (RANN k-NN + parallel cell chunks)
+  knn_res <- .knn_coords(coords, k)
+  nn_idx_mat <- knn_res$idx
+  nn_dist_mat <- knn_res$dists
   has_ksamples <- requireNamespace("kSamples", quietly = TRUE)
-  
-  p_vals <- vapply(seq_len(n_cells), function(i) {
-    nn_idx <- order(dist_mat[i, ])[seq_len(k)]
-    nn_dists <- dist_mat[i, nn_idx]
-    nn_batches <- batch_info[nn_idx]
-    
-    dist_by_b <- split(nn_dists, nn_batches)
-    dist_by_b <- dist_by_b[vapply(dist_by_b, length, integer(1)) >= cell_min]
-    
-    if (length(dist_by_b) <= 1) {
-      return(if (unbalanced) NA_real_ else 0)
-    }
-    
-    if (has_ksamples) {
-      ad_res <- tryCatch(kSamples::ad.test(dist_by_b), error = function(e) NULL)
-      if (!is.null(ad_res)) {
-        return(mean(ad_res$ad[, " asympt. P-value"], na.rm = TRUE))
+
+  eval_cms_cells <- function(cell_indices) {
+    vapply(cell_indices, function(i) {
+      nn_idx <- nn_idx_mat[i, ]
+      nn_dists <- nn_dist_mat[i, ]
+      nn_batches <- batch_info[nn_idx]
+
+      dist_by_b <- split(nn_dists, nn_batches)
+      dist_by_b <- dist_by_b[vapply(dist_by_b, length, integer(1)) >= cell_min]
+
+      if (length(dist_by_b) <= 1) {
+        return(if (unbalanced) NA_real_ else 0)
       }
-    }
-    
-    if (length(dist_by_b) == 2) {
-      ks_res <- tryCatch(stats::ks.test(dist_by_b[[1]], dist_by_b[[2]]), error = function(e) NULL)
-      return(if (!is.null(ks_res)) ks_res$p.value else NA_real_)
-    } else {
-      flat_dists <- unlist(dist_by_b, use.names = FALSE)
-      flat_groups <- factor(rep(names(dist_by_b), lengths(dist_by_b)))
-      kw_res <- tryCatch(stats::kruskal.test(flat_dists ~ flat_groups), error = function(e) NULL)
-      return(if (!is.null(kw_res)) kw_res$p.value else NA_real_)
-    }
-  }, numeric(1))
+
+      if (has_ksamples) {
+        ad_res <- tryCatch(kSamples::ad.test(dist_by_b), error = function(e) NULL)
+        if (!is.null(ad_res)) {
+          return(mean(ad_res$ad[, " asympt. P-value"], na.rm = TRUE))
+        }
+      }
+
+      if (length(dist_by_b) == 2) {
+        ks_res <- tryCatch(stats::ks.test(dist_by_b[[1]], dist_by_b[[2]]), error = function(e) NULL)
+        return(if (!is.null(ks_res)) ks_res$p.value else NA_real_)
+      } else {
+        flat_dists <- unlist(dist_by_b, use.names = FALSE)
+        flat_groups <- factor(rep(names(dist_by_b), lengths(dist_by_b)))
+        kw_res <- tryCatch(stats::kruskal.test(flat_dists ~ flat_groups), error = function(e) NULL)
+        return(if (!is.null(kw_res)) kw_res$p.value else NA_real_)
+      }
+    }, numeric(1))
+  }
+
+  threads <- if (is.null(threads) || length(threads) == 0L || is.na(threads[1L])) 1L else max(1L, as.integer(threads[1L]))
+  if (threads > 1L && n_cells >= 200L) {
+    n_chunks <- min(threads, 32L, n_cells)
+    chunks <- split(seq_len(n_cells), ceiling(seq_len(n_cells) / ceiling(n_cells / n_chunks)))
+    p_vals <- unlist(.sc_parallel_lapply(chunks, eval_cms_cells, threads = n_chunks), use.names = FALSE)
+  } else {
+    p_vals <- eval_cms_cells(seq_len(n_cells))
+  }
   
   list(
     cms_scores = p_vals,
@@ -119,6 +156,7 @@ calc_cms <- function(
 #' @param batch_info Factor or character vector of batch assignments.
 #' @param k Number of nearest neighbors. Default is 30.
 #' @param weighted Logical, whether to weight neighbor contributions by inverse distance. Default is TRUE.
+#' @param threads Number of CPU threads (default 1).
 #'
 #' @return A named list:
 #'   \item{isi_scores}{Numeric vector of cell-level ISI values}
@@ -129,37 +167,49 @@ calc_cms <- function(
 #' batch <- factor(rep(c("B1", "B2"), length.out = 50))
 #' calc_isi(coords, batch)
 #' @export
-calc_isi <- function(coords, batch_info, k = 30, weighted = TRUE) {
+calc_isi <- function(coords, batch_info, k = 30, weighted = TRUE, threads = 1) {
   batch_info <- as.factor(batch_info)
   coords <- as.matrix(coords)
   n_cells <- nrow(coords)
   k <- min(k, n_cells - 1)
-  
-  dist_mat <- as.matrix(stats::dist(coords))
-  diag(dist_mat) <- Inf
+
+  knn_res <- .knn_coords(coords, k)
+  nn_idx_mat <- knn_res$idx
+  nn_dist_mat <- knn_res$dists
   batch_levels <- levels(batch_info)
   n_batch <- length(batch_levels)
-  
-  isi_vals <- vapply(seq_len(n_cells), function(i) {
-    nn_idx <- order(dist_mat[i, ])[seq_len(k)]
-    nn_b <- batch_info[nn_idx]
-    nn_d <- dist_mat[i, nn_idx]
-    
-    if (weighted) {
-      weights <- 1 / (nn_d + 1)
-      p_b <- vapply(batch_levels, function(b) {
-        sum(weights[nn_b == b]) / sum(weights)
-      }, numeric(1))
-    } else {
-      p_b <- vapply(batch_levels, function(b) {
-        sum(nn_b == b) / k
-      }, numeric(1))
-    }
-    
-    simpson <- sum(p_b^2)
-    if (simpson <= 0) as.numeric(n_batch) else 1 / simpson
-  }, numeric(1))
-  
+
+  eval_isi_cells <- function(cell_indices) {
+    vapply(cell_indices, function(i) {
+      nn_idx <- nn_idx_mat[i, ]
+      nn_b <- batch_info[nn_idx]
+      nn_d <- nn_dist_mat[i, ]
+
+      if (weighted) {
+        weights <- 1 / (nn_d + 1)
+        p_b <- vapply(batch_levels, function(b) {
+          sum(weights[nn_b == b]) / sum(weights)
+        }, numeric(1))
+      } else {
+        p_b <- vapply(batch_levels, function(b) {
+          sum(nn_b == b) / k
+        }, numeric(1))
+      }
+
+      simpson <- sum(p_b^2)
+      if (simpson <= 0) as.numeric(n_batch) else 1 / simpson
+    }, numeric(1))
+  }
+
+  threads <- if (is.null(threads) || length(threads) == 0L || is.na(threads[1L])) 1L else max(1L, as.integer(threads[1L]))
+  if (threads > 1L && n_cells >= 500L) {
+    n_chunks <- min(threads, 32L, n_cells)
+    chunks <- split(seq_len(n_cells), ceiling(seq_len(n_cells) / ceiling(n_cells / n_chunks)))
+    isi_vals <- unlist(.sc_parallel_lapply(chunks, eval_isi_cells, threads = n_chunks), use.names = FALSE)
+  } else {
+    isi_vals <- eval_isi_cells(seq_len(n_cells))
+  }
+
   list(
     isi_scores = isi_vals,
     mean_isi = mean(isi_vals, na.rm = TRUE),
@@ -180,6 +230,7 @@ calc_isi <- function(coords, batch_info, k = 30, weighted = TRUE) {
 #' @param k Neighborhood size k for k-NN graph and mixing metrics. Default is min(table(batch_info))/2.
 #' @param n_pcs Number of principal components for embedding evaluation. Default is 30.
 #' @param cell_types Optional factor or character vector of cell types for cross-batch evaluation.
+#' @param threads Number of CPU threads (default 1).
 #' @param verbose Logical, whether to print progress.
 #'
 #' @return A named list of batch metrics:
@@ -199,9 +250,15 @@ evaluate_batch_metrics <- function(
   k = NULL,
   n_pcs = 30,
   cell_types = NULL,
+  threads = 1,
   verbose = FALSE
 ) {
   batch_info <- as.factor(batch_info)
+  if (inherits(data, "SingleCellExperiment")) {
+    data <- SummarizedExperiment::assay(data, "counts")
+  } else if (inherits(data, "Seurat")) {
+    data <- .get_seurat_counts(data)
+  }
   n_cells <- ncol(data)
   
   if (is.null(k)) {
@@ -211,7 +268,7 @@ evaluate_batch_metrics <- function(
   if (verbose) message("Running PCA for batch evaluation...")
   data_norm <- normalize_counts(data)
   sub_mat <- as.matrix(data_norm)
-  gene_vars <- apply(sub_mat, 1, stats::var)
+  gene_vars <- fast_row_vars(sub_mat)
   n_hvg <- min(2000, length(gene_vars))
   hvg_idx <- order(gene_vars, decreasing = TRUE)[seq_len(n_hvg)]
   
@@ -257,12 +314,12 @@ evaluate_batch_metrics <- function(
   
   # 3. Cell-Specific Mixing Score (CMS, CellMixS)
   if (verbose) message("Calculating CMS (CellMixS)...")
-  cms_res <- calc_cms(data = sub_mat, batch_info = batch_info, k = k, coords = pca_coords)
+  cms_res <- calc_cms(data = sub_mat, batch_info = batch_info, k = k, coords = pca_coords, threads = threads)
   cms_score <- cms_res$mean_cms
   
   # 4. Inverse Simpson Index (ISI, CellMixS)
   if (verbose) message("Calculating Inverse Simpson Index (ISI)...")
-  isi_res <- calc_isi(coords = pca_coords, batch_info = batch_info, k = k, weighted = TRUE)
+  isi_res <- calc_isi(coords = pca_coords, batch_info = batch_info, k = k, weighted = TRUE, threads = threads)
   isi_score <- isi_res$mean_isi
   
   # 5. Cross-Batch Cell Type Classification Macro F1

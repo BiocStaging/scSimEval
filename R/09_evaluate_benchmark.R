@@ -161,30 +161,47 @@ evaluate_simulation_accuracy <- function(
     }
   }
   
-  threads <- max(1L, as.integer(threads %||% 1L))
-  if (requireNamespace("RcppParallel", quietly = TRUE)) {
-    try(RcppParallel::setThreadOptions(numThreads = threads), silent = TRUE)
-  }
-  if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
-    try(RhpcBLASctl::blas_set_num_threads(threads), silent = TRUE)
-    try(RhpcBLASctl::omp_set_num_threads(threads), silent = TRUE)
-  }
-  if (requireNamespace("data.table", quietly = TRUE)) {
-    try(data.table::setDTthreads(threads), silent = TRUE)
-  }
+  threads <- .set_parallel_threads(threads)
 
   # Resolve modality early so ATAC uses TF-IDF transformation (simPIC/Signac standard)
   is_atac <- .is_atac_modality(val_ref$object, modality) || .is_atac_modality(val_sim$object, modality)
   modality_resolved <- if (is_atac) "scATAC-seq" else "scRNA-seq"
 
-  # Step 1: Extract properties
+  # Step 1 & 2: Extract cell-level & feature-level properties (in parallel on Unix when threads >= 2)
   if (verbose) message("[1/5] Extracting cell-level properties...")
-  ref_cell <- extract_cell_properties(ref_data, modality = modality_resolved, verbose = FALSE)
-  sim_cell <- extract_cell_properties(sim_data, modality = modality_resolved, verbose = FALSE)
-  
   if (verbose) message("[2/5] Extracting feature-level properties...")
-  ref_feat <- extract_feature_properties(ref_data, modality = modality_resolved, verbose = FALSE)
-  sim_feat <- extract_feature_properties(sim_data, modality = modality_resolved, verbose = FALSE)
+  prop_ext <- NULL
+  if (threads >= 2L && .Platform$OS.type != "windows") {
+    inner_ext_th <- max(1L, as.integer(floor(threads / 4L)))
+    prop_ext <- tryCatch(
+      .sc_parallel_lapply(seq_len(4L), function(task_i) {
+        if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
+          try(RhpcBLASctl::blas_set_num_threads(inner_ext_th), silent = TRUE)
+          try(RhpcBLASctl::omp_set_num_threads(inner_ext_th), silent = TRUE)
+        }
+        switch(
+          task_i,
+          extract_cell_properties(ref_data, modality = modality_resolved, verbose = FALSE),
+          extract_cell_properties(sim_data, modality = modality_resolved, verbose = FALSE),
+          extract_feature_properties(ref_data, modality = modality_resolved, verbose = FALSE),
+          extract_feature_properties(sim_data, modality = modality_resolved, verbose = FALSE)
+        )
+      }, threads = min(threads, 4L)),
+      error = function(e) NULL
+    )
+    .set_parallel_threads(threads)
+  }
+  if (!is.null(prop_ext) && length(prop_ext) == 4L && !any(vapply(prop_ext, is.null, logical(1)))) {
+    ref_cell <- prop_ext[[1L]]
+    sim_cell <- prop_ext[[2L]]
+    ref_feat <- prop_ext[[3L]]
+    sim_feat <- prop_ext[[4L]]
+  } else {
+    ref_cell <- extract_cell_properties(ref_data, modality = modality_resolved, verbose = FALSE)
+    sim_cell <- extract_cell_properties(sim_data, modality = modality_resolved, verbose = FALSE)
+    ref_feat <- extract_feature_properties(ref_data, modality = modality_resolved, verbose = FALSE)
+    sim_feat <- extract_feature_properties(sim_data, modality = modality_resolved, verbose = FALSE)
+  }
   
   # Step 2: Compute Univariate Accuracy Metrics (Cell & Feature Level) in Parallel
   if (verbose) message("[3/5] Computing univariate accuracy metrics...")
@@ -208,29 +225,17 @@ evaluate_simulation_accuracy <- function(
   )
   all_props <- all_props[vapply(all_props, function(x) !is.null(x$r) && !is.null(x$s) && length(x$r) > 0, logical(1))]
 
-  if (threads > 1 && length(all_props) > 1 && requireNamespace("BiocParallel", quietly = TRUE)) {
-    bparam_u <- if (.Platform$OS.type == "windows") {
-      BiocParallel::SnowParam(workers = min(threads, length(all_props)))
-    } else {
-      BiocParallel::MulticoreParam(workers = min(threads, length(all_props)))
-    }
-    prop_results <- tryCatch({
-      suppressWarnings(BiocParallel::bplapply(all_props, function(item) {
-        calc_all_univariate_metrics(item$r, item$s, item$name)
-      }, BPPARAM = bparam_u))
-    }, error = function(e) NULL)
-    
-    if (!is.null(prop_results)) {
-      for (idx in seq_along(all_props)) {
-        item <- all_props[[idx]]
-        if (item$type == "cell") cell_results[[item$name]] <- prop_results[[idx]]
-        else feat_results[[item$name]] <- prop_results[[idx]]
-      }
-    } else {
-      for (item in all_props) {
-        if (item$type == "cell") cell_results[[item$name]] <- calc_all_univariate_metrics(item$r, item$s, item$name)
-        else feat_results[[item$name]] <- calc_all_univariate_metrics(item$r, item$s, item$name)
-      }
+  prop_results <- tryCatch(
+    .sc_parallel_lapply(all_props, function(item) {
+      calc_all_univariate_metrics(item$r, item$s, item$name)
+    }, threads = threads),
+    error = function(e) NULL
+  )
+  if (!is.null(prop_results) && length(prop_results) == length(all_props)) {
+    for (idx in seq_along(all_props)) {
+      item <- all_props[[idx]]
+      if (item$type == "cell") cell_results[[item$name]] <- prop_results[[idx]]
+      else feat_results[[item$name]] <- prop_results[[idx]]
     }
   } else {
     for (item in all_props) {
@@ -259,25 +264,20 @@ evaluate_simulation_accuracy <- function(
                                 prefix = "mean_vs_dispersion")
     )
 
-    if (threads > 1 && requireNamespace("BiocParallel", quietly = TRUE)) {
-      bparam <- if (.Platform$OS.type == "windows") {
-        BiocParallel::SnowParam(workers = min(threads, length(biv_configs)))
-      } else {
-        BiocParallel::MulticoreParam(workers = min(threads, length(biv_configs)))
-      }
-      biv_list <- tryCatch({
-        suppressWarnings(BiocParallel::bplapply(biv_configs, function(cfg) {
-          calc_all_bivariate_metrics(cfg$ref, cfg$sim, cfg$prefix, threads = 1)
-        }, BPPARAM = bparam))
-      }, error = function(e) NULL)
-      if (!is.null(biv_list)) {
-        bivariate_results <- stats::setNames(biv_list, names(biv_configs))
-      } else {
-        for (nm in names(biv_configs)) {
-          cfg <- biv_configs[[nm]]
-          bivariate_results[[nm]] <- calc_all_bivariate_metrics(cfg$ref, cfg$sim, cfg$prefix, threads = threads)
-        }
-      }
+    n_biv_workers <- min(threads, length(biv_configs))
+    inner_biv_threads <- max(1L, as.integer(floor(threads / max(1L, n_biv_workers))))
+    biv_list <- if (threads > 1L && length(biv_configs) > 1L) {
+      tryCatch(
+        .sc_parallel_lapply(biv_configs, function(cfg) {
+          calc_all_bivariate_metrics(cfg$ref, cfg$sim, cfg$prefix, threads = inner_biv_threads)
+        }, threads = n_biv_workers),
+        error = function(e) NULL
+      )
+    } else {
+      NULL
+    }
+    if (!is.null(biv_list) && length(biv_list) == length(biv_configs)) {
+      bivariate_results <- stats::setNames(biv_list, names(biv_configs))
     } else {
       for (nm in names(biv_configs)) {
         cfg <- biv_configs[[nm]]
@@ -288,13 +288,37 @@ evaluate_simulation_accuracy <- function(
   
   # Step 5: Dropout, Zero-Inflation, & Generative Manifold
   if (verbose) message("[5/5] Computing zero-probability and manifold distances...")
-  zero_prob_eval <- if (!is_atac) evaluate_zero_probability_curve(ref_data, sim_data) else NULL
-  acc_sparsity_eval <- if (is_atac) evaluate_accessibility_sparsity_curve(ref_data, sim_data) else NULL
-  ref_excess_w <- calc_excess_zero_weights(ref_data)
-  sim_excess_w <- calc_excess_zero_weights(sim_data)
-  
-  gen_pr <- calc_generative_precision_recall(ref_data, sim_data)
-  mmd_eval <- calc_mmd(ref_data, sim_data)
+  sp_res <- NULL
+  if (threads >= 2L && .Platform$OS.type != "windows") {
+    sp_res <- tryCatch(
+      .sc_parallel_lapply(seq_len(5L), function(task_i) {
+        switch(
+          task_i,
+          if (!is_atac) evaluate_zero_probability_curve(ref_data, sim_data) else evaluate_accessibility_sparsity_curve(ref_data, sim_data),
+          calc_excess_zero_weights(ref_data),
+          calc_excess_zero_weights(sim_data),
+          calc_generative_precision_recall(ref_data, sim_data),
+          calc_mmd(ref_data, sim_data)
+        )
+      }, threads = min(threads, 5L)),
+      error = function(e) NULL
+    )
+  }
+  if (!is.null(sp_res) && length(sp_res) == 5L) {
+    zero_prob_eval <- if (!is_atac) sp_res[[1L]] else NULL
+    acc_sparsity_eval <- if (is_atac) sp_res[[1L]] else NULL
+    ref_excess_w <- sp_res[[2L]]
+    sim_excess_w <- sp_res[[3L]]
+    gen_pr <- sp_res[[4L]]
+    mmd_eval <- sp_res[[5L]]
+  } else {
+    zero_prob_eval <- if (!is_atac) evaluate_zero_probability_curve(ref_data, sim_data) else NULL
+    acc_sparsity_eval <- if (is_atac) evaluate_accessibility_sparsity_curve(ref_data, sim_data) else NULL
+    ref_excess_w <- calc_excess_zero_weights(ref_data)
+    sim_excess_w <- calc_excess_zero_weights(sim_data)
+    gen_pr <- calc_generative_precision_recall(ref_data, sim_data)
+    mmd_eval <- calc_mmd(ref_data, sim_data)
+  }
   
   # Build tidy summary table
   summary_rows <- list()
@@ -452,6 +476,7 @@ evaluate_simulation_accuracy <- function(
         data = sim_data,
         batch_info = batch_sim,
         cell_types = cell_types_sim,
+        threads = threads,
         verbose = FALSE
       )
     }, error = function(e) NULL)
@@ -489,7 +514,8 @@ evaluate_simulation_accuracy <- function(
             ref_celltypes = cell_types_ref,
             sim_celltypes = cell_types_sim,
             batch_ref = batch_ref,
-            batch_sim = batch_sim
+            batch_sim = batch_sim,
+            threads = threads
           )
         }, error = function(e) {
           if (verbose) message("scATAC-seq DA evaluation note: ", conditionMessage(e))
@@ -516,7 +542,8 @@ evaluate_simulation_accuracy <- function(
             ref_celltypes = cell_types_ref,
             sim_celltypes = cell_types_sim,
             batch_ref = batch_ref,
-            batch_sim = batch_sim
+            batch_sim = batch_sim,
+            threads = threads
           )
         }, error = function(e) {
           if (verbose) message("scRNA-seq pseudobulk DE evaluation note: ", conditionMessage(e))
@@ -784,17 +811,7 @@ evaluate_multiomics_accuracy <- function(
     is_paired <- FALSE
   }
   
-  threads <- max(1L, as.integer(threads %||% 1L))
-  if (requireNamespace("RcppParallel", quietly = TRUE)) {
-    try(RcppParallel::setThreadOptions(numThreads = threads), silent = TRUE)
-  }
-  if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
-    try(RhpcBLASctl::blas_set_num_threads(threads), silent = TRUE)
-    try(RhpcBLASctl::omp_set_num_threads(threads), silent = TRUE)
-  }
-  if (requireNamespace("data.table", quietly = TRUE)) {
-    try(data.table::setDTthreads(threads), silent = TRUE)
-  }
+  threads <- .set_parallel_threads(threads)
   
   # Modality names already resolved and assigned to ref_multi / sim_multi
   
@@ -864,32 +881,54 @@ evaluate_multiomics_accuracy <- function(
   bt_m2 <- extract_label_vector(batch_info, ncol(ref_multi[[2]]), m2_name, fallback_idx = 2)
 
   if (verbose) message(sprintf("=== [Step 3] Evaluating Cellular Structure & Clustering Preservation (%s & %s) ===", m1_name, m2_name))
-  clu_eval_m1 <- tryCatch({
-    evaluate_clustering_metrics(
-      data = sim_multi[[1]],
-      cell_types = ct_m1,
-      ref_data = ref_multi[[1]],
-      ref_cell_types = ct_m1,
-      batch_info = bt_m1,
-      threads = threads
-    )
-  }, error = function(e) {
-    if (verbose) message("Clustering evaluation note (M1): ", conditionMessage(e))
-    NULL
-  })
-  clu_eval_m2 <- tryCatch({
-    evaluate_clustering_metrics(
-      data = sim_multi[[2]],
-      cell_types = ct_m2,
-      ref_data = ref_multi[[2]],
-      ref_cell_types = ct_m2,
-      batch_info = bt_m2,
-      threads = threads
-    )
-  }, error = function(e) {
-    if (verbose) message("Clustering evaluation note (M2): ", conditionMessage(e))
-    NULL
-  })
+  if (threads >= 2L && .Platform$OS.type != "windows") {
+    clu_half_th <- max(1L, as.integer(floor(threads / 2L)))
+    clu_pair <- .sc_parallel_lapply(seq_len(2L), function(mod_idx) {
+      tryCatch({
+        res_m <- evaluate_clustering_metrics(
+          data = sim_multi[[mod_idx]],
+          cell_types = if (mod_idx == 1L) ct_m1 else ct_m2,
+          ref_data = ref_multi[[mod_idx]],
+          ref_cell_types = if (mod_idx == 1L) ct_m1 else ct_m2,
+          batch_info = if (mod_idx == 1L) bt_m1 else bt_m2,
+          threads = clu_half_th
+        )
+        list(res = res_m, err = NULL)
+      }, error = function(e) list(res = NULL, err = conditionMessage(e)))
+    }, threads = 2L)
+    .set_parallel_threads(threads)
+    clu_eval_m1 <- clu_pair[[1L]]$res
+    clu_eval_m2 <- clu_pair[[2L]]$res
+    if (verbose && !is.null(clu_pair[[1L]]$err)) message("Clustering evaluation note (M1): ", clu_pair[[1L]]$err)
+    if (verbose && !is.null(clu_pair[[2L]]$err)) message("Clustering evaluation note (M2): ", clu_pair[[2L]]$err)
+  } else {
+    clu_eval_m1 <- tryCatch({
+      evaluate_clustering_metrics(
+        data = sim_multi[[1]],
+        cell_types = ct_m1,
+        ref_data = ref_multi[[1]],
+        ref_cell_types = ct_m1,
+        batch_info = bt_m1,
+        threads = threads
+      )
+    }, error = function(e) {
+      if (verbose) message("Clustering evaluation note (M1): ", conditionMessage(e))
+      NULL
+    })
+    clu_eval_m2 <- tryCatch({
+      evaluate_clustering_metrics(
+        data = sim_multi[[2]],
+        cell_types = ct_m2,
+        ref_data = ref_multi[[2]],
+        ref_cell_types = ct_m2,
+        batch_info = bt_m2,
+        threads = threads
+      )
+    }, error = function(e) {
+      if (verbose) message("Clustering evaluation note (M2): ", conditionMessage(e))
+      NULL
+    })
+  }
   clustering_res <- list(m1 = clu_eval_m1, m2 = clu_eval_m2)
   
   clu_metrics_to_record <- c(
@@ -930,6 +969,7 @@ evaluate_multiomics_accuracy <- function(
         data = sim_multi[[1]],
         batch_info = bt_m1,
         cell_types = ct_m1,
+        threads = threads,
         verbose = FALSE
       )
     }, error = function(e) NULL)
@@ -960,6 +1000,7 @@ evaluate_multiomics_accuracy <- function(
         data = sim_multi[[2]],
         batch_info = bt_m2,
         cell_types = ct_m2,
+        threads = threads,
         verbose = FALSE
       )
     }, error = function(e) NULL)
@@ -1003,7 +1044,8 @@ evaluate_multiomics_accuracy <- function(
           ref_celltypes = ct_m1,
           sim_celltypes = sim_ct_m1,
           batch_ref = bt_m1,
-          batch_sim = sim_bt_m1
+          batch_sim = sim_bt_m1,
+          threads = threads
         )
       }, error = function(e) {
         if (verbose) message("scRNA-seq pseudobulk DE evaluation note: ", conditionMessage(e))
@@ -1047,7 +1089,8 @@ evaluate_multiomics_accuracy <- function(
           ref_celltypes = ct_m2,
           sim_celltypes = sim_ct_m2,
           batch_ref = bt_m2,
-          batch_sim = sim_bt_m2
+          batch_sim = sim_bt_m2,
+          threads = threads
         )
       }, error = function(e) {
         if (verbose) message("scATAC-seq DA evaluation note in multiomics: ", conditionMessage(e))

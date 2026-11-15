@@ -174,15 +174,23 @@ calc_graph_connectivity <- function(embed, cell_type, k = 15) {
   if (length(cts) < 1) return(1.0)
   
   k <- max(1, min(k, n_cells - 1))
-  
-  d_mat <- as.matrix(stats::dist(embed))
-  diag(d_mat) <- Inf
-  
+
   adj <- matrix(FALSE, nrow = n_cells, ncol = n_cells)
-  for (i in seq_len(n_cells)) {
-    nn <- order(d_mat[i, ])[seq_len(k)]
-    adj[i, nn] <- TRUE
-    adj[nn, i] <- TRUE
+  if (requireNamespace("RANN", quietly = TRUE)) {
+    nn_mat <- RANN::nn2(as.matrix(embed), k = k + 1L)$nn.idx[, -1L, drop = FALSE]
+    for (i in seq_len(n_cells)) {
+      nn <- nn_mat[i, ]
+      adj[i, nn] <- TRUE
+      adj[nn, i] <- TRUE
+    }
+  } else {
+    d_mat <- as.matrix(stats::dist(embed))
+    diag(d_mat) <- Inf
+    for (i in seq_len(n_cells)) {
+      nn <- order(d_mat[i, ])[seq_len(k)]
+      adj[i, nn] <- TRUE
+      adj[nn, i] <- TRUE
+    }
   }
   
   conn_scores <- numeric(length(cts))
