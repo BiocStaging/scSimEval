@@ -9,8 +9,51 @@ library(DT)
 library(Matrix)
 library(scSimEval)
 
-# Source all local package R files to guarantee latest bugfixes override installed package
+# Source all local package R files and hot-patch scSimEval namespace so latest fixes take effect immediately
 .local_viz_loaded <- FALSE
+.source_and_patch_scSimEval <- function(cand_p) {
+  tmp_env <- new.env(parent = .GlobalEnv)
+  res_src <- try(source(cand_p, local = tmp_env, encoding = "UTF-8"), silent = TRUE)
+  if (inherits(res_src, "try-error")) return(FALSE)
+
+  ns <- if (isNamespaceLoaded("scSimEval")) asNamespace("scSimEval") else NULL
+  pkg_env <- if ("package:scSimEval" %in% search()) as.environment("package:scSimEval") else NULL
+
+  for (nm in ls(tmp_env, all.names = TRUE)) {
+    val <- get(nm, envir = tmp_env, inherits = FALSE)
+    val_global <- val
+    if (is.function(val_global)) environment(val_global) <- .GlobalEnv
+    assign(nm, val_global, envir = .GlobalEnv)
+    if (!is.null(ns)) {
+      val_ns <- val
+      if (is.function(val_ns)) environment(val_ns) <- ns
+      if (exists(nm, envir = ns, inherits = FALSE) && bindingIsLocked(nm, ns)) {
+        try(unlockBinding(nm, ns), silent = TRUE)
+        try(assign(nm, val_ns, envir = ns), silent = TRUE)
+        try(lockBinding(nm, ns), silent = TRUE)
+      } else {
+        try(assign(nm, val_ns, envir = ns), silent = TRUE)
+      }
+    }
+    if (!is.null(pkg_env) && exists(nm, envir = pkg_env, inherits = FALSE)) {
+      val_pkg <- if (is.function(val) && !is.null(ns)) {
+        v2 <- val
+        environment(v2) <- ns
+        v2
+      } else {
+        val
+      }
+      if (bindingIsLocked(nm, pkg_env)) {
+        try(unlockBinding(nm, pkg_env), silent = TRUE)
+        try(assign(nm, val_pkg, envir = pkg_env), silent = TRUE)
+        try(lockBinding(nm, pkg_env), silent = TRUE)
+      } else {
+        try(assign(nm, val_pkg, envir = pkg_env), silent = TRUE)
+      }
+    }
+  }
+  TRUE
+}
 local_r_files <- c(
   "00_utils.R", "01_metrics_distribution.R", "02_extract_properties.R",
   "03_metrics_clustering.R", "04_metrics_batch.R", "05_metrics_de_signal.R",
@@ -20,8 +63,7 @@ local_r_files <- c(
 for (rf in local_r_files) {
   for (cand_p in c(rf, file.path("R", rf), file.path("../../R", rf), file.path("../../../R", rf))) {
     if (file.exists(cand_p)) {
-      res_src <- try(source(cand_p, local = FALSE), silent = TRUE)
-      if (!inherits(res_src, "try-error") && identical(rf, "10_visualizations.R")) {
+      if (.source_and_patch_scSimEval(cand_p) && identical(rf, "10_visualizations.R")) {
         .local_viz_loaded <- TRUE
       }
       break
@@ -99,31 +141,7 @@ for (dc in demo_candidates) {
 }
 initial_demo <- if (nzchar(demo_data_path) && file.exists(demo_data_path)) readRDS(demo_data_path) else NULL
 
-# Source local package backend modules (00_utils through 09_evaluate_benchmark) if running in local checkout
-# so internal helpers (e.g. validate_multiomics_input, validate_sc_object, .is_atac_modality) are in scope
-.local_r_dir <- NULL
-for (d_cand in c("R", "../../R", "../../../R")) {
-  if (file.exists(file.path(d_cand, "00_utils.R")) && file.exists(file.path(d_cand, "09_evaluate_benchmark.R"))) {
-    .local_r_dir <- d_cand
-    break
-  }
-}
-if (!is.null(.local_r_dir)) {
-  local_r_files <- c(
-    "00_utils.R", "01_metrics_distribution.R", "02_extract_properties.R",
-    "03_metrics_clustering.R", "04_metrics_batch.R", "05_metrics_de_signal.R",
-    "06_metrics_trajectory.R", "07_multiomics_coupling.R", "08_metrics_scalability.R",
-    "09_evaluate_benchmark.R"
-  )
-  for (rf in local_r_files) {
-    rf_path <- file.path(.local_r_dir, rf)
-    if (file.exists(rf_path)) {
-      try(source(rf_path, local = FALSE), silent = TRUE)
-    }
-  }
-}
-
-# Standardize Category names to canonical 8 package categories (fallback only if local 10_visualizations.R not sourced)
+# Standardized Category names to canonical 8 package categories (fallback only if local 10_visualizations.R not sourced)
 if (!isTRUE(.local_viz_loaded) || !exists("standardize_benchmark_categories", mode = "function")) {
 standardize_benchmark_categories <- function(df) {
   if (exists("standardize_benchmark_categories", where = asNamespace("scSimEval"), mode = "function")) {

@@ -269,6 +269,7 @@ evaluate_simulation_accuracy <- function(
     biv_list <- if (threads > 1L && length(biv_configs) > 1L) {
       tryCatch(
         .sc_parallel_lapply(biv_configs, function(cfg) {
+          .set_parallel_threads(inner_biv_threads)
           calc_all_bivariate_metrics(cfg$ref, cfg$sim, cfg$prefix, threads = inner_biv_threads)
         }, threads = n_biv_workers),
         error = function(e) NULL
@@ -276,6 +277,7 @@ evaluate_simulation_accuracy <- function(
     } else {
       NULL
     }
+    .set_parallel_threads(threads)
     if (!is.null(biv_list) && length(biv_list) == length(biv_configs)) {
       bivariate_results <- stats::setNames(biv_list, names(biv_configs))
     } else {
@@ -881,54 +883,32 @@ evaluate_multiomics_accuracy <- function(
   bt_m2 <- extract_label_vector(batch_info, ncol(ref_multi[[2]]), m2_name, fallback_idx = 2)
 
   if (verbose) message(sprintf("=== [Step 3] Evaluating Cellular Structure & Clustering Preservation (%s & %s) ===", m1_name, m2_name))
-  if (threads >= 2L && .Platform$OS.type != "windows") {
-    clu_half_th <- max(1L, as.integer(floor(threads / 2L)))
-    clu_pair <- .sc_parallel_lapply(seq_len(2L), function(mod_idx) {
-      tryCatch({
-        res_m <- evaluate_clustering_metrics(
-          data = sim_multi[[mod_idx]],
-          cell_types = if (mod_idx == 1L) ct_m1 else ct_m2,
-          ref_data = ref_multi[[mod_idx]],
-          ref_cell_types = if (mod_idx == 1L) ct_m1 else ct_m2,
-          batch_info = if (mod_idx == 1L) bt_m1 else bt_m2,
-          threads = clu_half_th
-        )
-        list(res = res_m, err = NULL)
-      }, error = function(e) list(res = NULL, err = conditionMessage(e)))
-    }, threads = 2L)
-    .set_parallel_threads(threads)
-    clu_eval_m1 <- clu_pair[[1L]]$res
-    clu_eval_m2 <- clu_pair[[2L]]$res
-    if (verbose && !is.null(clu_pair[[1L]]$err)) message("Clustering evaluation note (M1): ", clu_pair[[1L]]$err)
-    if (verbose && !is.null(clu_pair[[2L]]$err)) message("Clustering evaluation note (M2): ", clu_pair[[2L]]$err)
-  } else {
-    clu_eval_m1 <- tryCatch({
-      evaluate_clustering_metrics(
-        data = sim_multi[[1]],
-        cell_types = ct_m1,
-        ref_data = ref_multi[[1]],
-        ref_cell_types = ct_m1,
-        batch_info = bt_m1,
-        threads = threads
-      )
-    }, error = function(e) {
-      if (verbose) message("Clustering evaluation note (M1): ", conditionMessage(e))
-      NULL
-    })
-    clu_eval_m2 <- tryCatch({
-      evaluate_clustering_metrics(
-        data = sim_multi[[2]],
-        cell_types = ct_m2,
-        ref_data = ref_multi[[2]],
-        ref_cell_types = ct_m2,
-        batch_info = bt_m2,
-        threads = threads
-      )
-    }, error = function(e) {
-      if (verbose) message("Clustering evaluation note (M2): ", conditionMessage(e))
-      NULL
-    })
-  }
+  clu_eval_m1 <- tryCatch({
+    evaluate_clustering_metrics(
+      data = sim_multi[[1]],
+      cell_types = ct_m1,
+      ref_data = ref_multi[[1]],
+      ref_cell_types = ct_m1,
+      batch_info = bt_m1,
+      threads = threads
+    )
+  }, error = function(e) {
+    if (verbose) message("Clustering evaluation note (M1): ", conditionMessage(e))
+    NULL
+  })
+  clu_eval_m2 <- tryCatch({
+    evaluate_clustering_metrics(
+      data = sim_multi[[2]],
+      cell_types = ct_m2,
+      ref_data = ref_multi[[2]],
+      ref_cell_types = ct_m2,
+      batch_info = bt_m2,
+      threads = threads
+    )
+  }, error = function(e) {
+    if (verbose) message("Clustering evaluation note (M2): ", conditionMessage(e))
+    NULL
+  })
   clustering_res <- list(m1 = clu_eval_m1, m2 = clu_eval_m2)
   
   clu_metrics_to_record <- c(
@@ -963,14 +943,14 @@ evaluate_multiomics_accuracy <- function(
   # ============================================================================
   batch_res <- list()
   if (!is.null(bt_m1) && length(unique(bt_m1[!is.na(bt_m1)])) >= 2) {
-    if (verbose) message("=== [Step 4] Evaluating Batch Integration & Technical Confounder Mixing ===")
+    if (verbose) message(sprintf("=== [Step 4] Evaluating Batch Integration & Technical Confounder Mixing (%s) ===", m1_name))
     b_eval <- tryCatch({
       evaluate_batch_metrics(
         data = sim_multi[[1]],
         batch_info = bt_m1,
         cell_types = ct_m1,
         threads = threads,
-        verbose = FALSE
+        verbose = verbose
       )
     }, error = function(e) NULL)
     if (!is.null(b_eval)) {
@@ -995,13 +975,14 @@ evaluate_multiomics_accuracy <- function(
     }
   }
   if (!is.null(bt_m2) && length(unique(bt_m2[!is.na(bt_m2)])) >= 2) {
+    if (verbose) message(sprintf("=== [Step 4] Evaluating Batch Integration & Technical Confounder Mixing (%s) ===", m2_name))
     b_eval_m2 <- tryCatch({
       evaluate_batch_metrics(
         data = sim_multi[[2]],
         batch_info = bt_m2,
         cell_types = ct_m2,
         threads = threads,
-        verbose = FALSE
+        verbose = verbose
       )
     }, error = function(e) NULL)
     if (!is.null(b_eval_m2)) {

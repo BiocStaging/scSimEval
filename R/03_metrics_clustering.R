@@ -592,6 +592,7 @@ evaluate_clustering_metrics <- function(
   batch_info = NULL,
   threads = 1L
 ) {
+  threads <- .set_parallel_threads(threads)
   n_cells_sim <- ncol(data)
   if (is.null(cluster_info) && !is.null(cell_types)) {
     if (is.list(cell_types) && !is.data.frame(cell_types) && !is.factor(cell_types)) {
@@ -606,6 +607,10 @@ evaluate_clustering_metrics <- function(
   if (is.null(cluster_info) || length(cluster_info) != n_cells_sim || length(unique(stats::na.omit(cluster_info))) < 2) {
     k_fallback <- min(5, max(2, n_cells_sim - 1))
     d_norm_temp <- normalize_counts(data)
+    if (nrow(d_norm_temp) > 2000L) {
+      gv_temp <- fast_row_vars(d_norm_temp)
+      d_norm_temp <- d_norm_temp[order(gv_temp, decreasing = TRUE)[seq_len(2000L)], , drop = FALSE]
+    }
     if (inherits(d_norm_temp, "Matrix")) d_norm_temp <- as.matrix(d_norm_temp)
     pca_temp <- fast_pca(t(d_norm_temp), n_pcs = min(15, n_cells_sim - 1, nrow(d_norm_temp) - 1), n_hvg = 2000, scale = FALSE)
     km_fallback <- tryCatch(
@@ -631,17 +636,32 @@ evaluate_clustering_metrics <- function(
     }
   }
   
+  dist_mat_provided <- !is.null(dist_mat)
   d_use <- normalize_counts(data)
-  if (inherits(d_use, "Matrix")) d_use <- as.matrix(d_use)
 
   # Fast low-dimensional PCA projection for high-dimensional single-cell clustering (scDesign3, scVI standard)
   pca_coords <- NULL
   if (nrow(d_use) > 30) {
-    pca_coords <- fast_pca(t(d_use), n_pcs = min(30, ncol(d_use) - 1, nrow(d_use) - 1), n_hvg = 2000, scale = FALSE)
+    d_hvg <- if (nrow(d_use) > 2000L) {
+      gv_sim <- fast_row_vars(d_use)
+      as.matrix(d_use[order(gv_sim, decreasing = TRUE)[seq_len(2000L)], , drop = FALSE])
+    } else if (inherits(d_use, "Matrix")) {
+      as.matrix(d_use)
+    } else {
+      d_use
+    }
+    pca_coords <- fast_pca(t(d_hvg), n_pcs = min(30, ncol(d_hvg) - 1, nrow(d_hvg) - 1), n_hvg = 2000, scale = FALSE)
+  } else if (inherits(d_use, "Matrix")) {
+    d_use <- as.matrix(d_use)
   }
   
-  if (is.null(dist_mat)) {
-    dist_mat <- if (!is.null(pca_coords)) stats::dist(pca_coords) else stats::dist(t(as.matrix(d_use)))
+  use_par_sil <- !dist_mat_provided && !is.null(pca_coords) &&
+    threads > 1L && n_cells_sim >= 60L && exists(".parallel_batch_silhouette", mode = "function")
+
+  if (!dist_mat_provided && is.null(pca_coords)) {
+    dist_mat <- stats::dist(t(as.matrix(d_use)))
+  } else if (!dist_mat_provided && !use_par_sil) {
+    dist_mat <- stats::dist(pca_coords)
   }
   
   db_sim <- if (length(unique(stats::na.omit(cluster_info))) > 1) {
@@ -650,19 +670,27 @@ evaluate_clustering_metrics <- function(
     NA_real_
   }
 
+  sil_sim <- if (use_par_sil) {
+    .parallel_batch_silhouette(pca_coords, cluster_info, threads = threads)
+  } else {
+    calc_silhouette(dist_mat, cluster_info)
+  }
+  np_sim <- if (!dist_mat_provided && !is.null(pca_coords)) {
+    mean(calc_neighborhood_purity(pca_coords, cluster_info, is_distance = FALSE), na.rm = TRUE)
+  } else {
+    mean(calc_neighborhood_purity(dist_mat, cluster_info, is_distance = TRUE), na.rm = TRUE)
+  }
+
   res <- list(
-    silhouette_sim = calc_silhouette(dist_mat, cluster_info),
-    silhouette = calc_silhouette(dist_mat, cluster_info),
+    silhouette_sim = sil_sim,
+    silhouette = sil_sim,
     davies_bouldin = db_sim,
     davies_bouldin_sim = db_sim,
-    neighborhood_purity = mean(calc_neighborhood_purity(dist_mat, cluster_info, is_distance = TRUE), na.rm = TRUE)
+    neighborhood_purity = np_sim
   )
   
   if (!is.null(ref_data)) {
     r_use <- normalize_counts(ref_data)
-    if (inherits(r_use, "Matrix")) r_use <- as.matrix(r_use)
-    ref_pca <- if (nrow(r_use) > 30) fast_pca(t(r_use), n_pcs = min(30, ncol(r_use) - 1, nrow(r_use) - 1), n_hvg = 2000, scale = FALSE) else NULL
-    ref_dist <- if (!is.null(ref_pca)) stats::dist(ref_pca) else stats::dist(t(as.matrix(r_use)))
     ref_cl <- if (!is.null(ref_cell_types) && length(ref_cell_types) == ncol(r_use)) {
       as.factor(ref_cell_types)
     } else if (length(cluster_info) == ncol(r_use)) {
@@ -678,12 +706,30 @@ evaluate_clustering_metrics <- function(
         if (length(keep_ref) >= 10 && length(unique(ref_cl[keep_ref])) >= 2) {
           r_use <- r_use[, keep_ref, drop = FALSE]
           ref_cl <- droplevels(factor(ref_cl[keep_ref]))
-          ref_dist <- stats::dist(t(as.matrix(r_use)))
         }
       }
     }
+    ref_pca <- if (nrow(r_use) > 30) {
+      r_hvg <- if (nrow(r_use) > 2000L) {
+        gv_ref <- fast_row_vars(r_use)
+        as.matrix(r_use[order(gv_ref, decreasing = TRUE)[seq_len(2000L)], , drop = FALSE])
+      } else if (inherits(r_use, "Matrix")) {
+        as.matrix(r_use)
+      } else {
+        r_use
+      }
+      fast_pca(t(r_hvg), n_pcs = min(30, ncol(r_hvg) - 1, nrow(r_hvg) - 1), n_hvg = 2000, scale = FALSE)
+    } else {
+      if (inherits(r_use, "Matrix")) r_use <- as.matrix(r_use)
+      NULL
+    }
     if (!is.null(ref_cl) && length(unique(stats::na.omit(ref_cl))) > 1) {
-      res$silhouette_ref <- calc_silhouette(ref_dist, ref_cl)
+      res$silhouette_ref <- if (!is.null(ref_pca) && threads > 1L && ncol(r_use) >= 60L && exists(".parallel_batch_silhouette", mode = "function")) {
+        .parallel_batch_silhouette(ref_pca, ref_cl, threads = threads)
+      } else {
+        ref_dist <- if (!is.null(ref_pca)) stats::dist(ref_pca) else stats::dist(t(as.matrix(r_use)))
+        calc_silhouette(ref_dist, ref_cl)
+      }
       res$davies_bouldin_ref <- calc_davies_bouldin(if (!is.null(ref_pca)) t(ref_pca) else r_use, ref_cl)
     }
   }

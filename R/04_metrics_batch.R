@@ -21,6 +21,57 @@
   list(idx = idx_mat, dists = dist_out)
 }
 
+.parallel_batch_silhouette <- function(coords, batch_info, threads = 1L, return_scores = FALSE) {
+  coords <- as.matrix(coords)
+  n_raw <- nrow(coords)
+  if (n_raw < 3L) return(if (return_scores) numeric(0) else NA_real_)
+  valid <- which(!is.na(batch_info) & stats::complete.cases(coords))
+  if (length(valid) < 3L) return(if (return_scores) numeric(0) else NA_real_)
+  coords <- coords[valid, , drop = FALSE]
+  g_fac <- droplevels(as.factor(batch_info[valid]))
+  g <- as.integer(g_fac)
+  K <- max(g)
+  if (K < 2L) return(if (return_scores) numeric(0) else NA_real_)
+  tab <- tabulate(g, nbins = K)
+  if (all(tab <= 1L)) return(if (return_scores) numeric(0) else NA_real_)
+
+  n_cells <- nrow(coords)
+  threads <- if (is.null(threads) || length(threads) == 0L || is.na(threads[1L])) 1L else max(1L, as.integer(threads[1L]))
+  n_chunks <- if (threads > 1L && n_cells >= 60L) min(threads, n_cells) else 1L
+  chunks <- split(seq_len(n_cells), ceiling(seq_len(n_cells) / ceiling(n_cells / n_chunks)))
+
+  eval_sil_chunk <- function(chunk_idx) {
+    m <- length(chunk_idx)
+    res <- numeric(m)
+    block_starts <- seq(1L, m, by = 512L)
+    for (bs in block_starts) {
+      be <- min(m, bs + 511L)
+      sub_pos <- bs:be
+      idx_sub <- chunk_idx[sub_pos]
+      d_sub <- sqrt(fast_cross_distance_sq(coords[idx_sub, , drop = FALSE], coords))
+      d_sub[cbind(seq_along(idx_sub), idx_sub)] <- 0
+      g_sums <- rowsum(t(d_sub), group = g, reorder = TRUE)
+      g_means <- g_sums / tab
+      for (r in seq_along(idx_sub)) {
+        gi <- g[idx_sub[r]]
+        if (tab[gi] <= 1L) {
+          res[sub_pos[r]] <- 0
+        } else {
+          a_i <- g_sums[gi, r] / (tab[gi] - 1L)
+          b_i <- min(g_means[-gi, r])
+          denom <- max(a_i, b_i)
+          res[sub_pos[r]] <- if (denom > 0) (b_i - a_i) / denom else 0
+        }
+      }
+    }
+    res
+  }
+
+  sil_vals <- unlist(.sc_parallel_lapply(chunks, eval_sil_chunk, threads = n_chunks), use.names = FALSE)
+  if (return_scores) return(sil_vals)
+  mean(sil_vals, na.rm = TRUE)
+}
+
 #' Cell-Specific Mixing Score (CMS)
 #'
 #' Tests the hypothesis that group-specific distance distributions of k-nearest
@@ -71,28 +122,7 @@ calc_cms <- function(
   }
   k <- min(k, n_cells - 1)
   
-  # Check if CellMixS is available
-  if (requireNamespace("CellMixS", quietly = TRUE) &&
-      requireNamespace("SingleCellExperiment", quietly = TRUE) &&
-      !is.null(data)) {
-    res_cms <- tryCatch({
-      sce <- SingleCellExperiment::SingleCellExperiment(
-        list(counts = as.matrix(data)),
-        colData = data.frame(batch = batch_info)
-      )
-      SingleCellExperiment::reducedDim(sce, "PCA") <- coords
-      eval_res <- CellMixS::cms(sce, k = k, group = "batch", dim_red = "PCA", n_dim = ncol(coords))
-      p_vals <- eval_res$cms
-      return(list(
-        cms_scores = p_vals,
-        mean_cms = mean(p_vals, na.rm = TRUE),
-        median_cms = stats::median(p_vals, na.rm = TRUE)
-      ))
-    }, error = function(e) NULL)
-    if (!is.null(res_cms)) return(res_cms)
-  }
-  
-  # Native implementation (RANN k-NN + parallel cell chunks)
+  # Native parallel implementation (RANN k-NN + parallel cell chunks)
   knn_res <- .knn_coords(coords, k)
   nn_idx_mat <- knn_res$idx
   nn_dist_mat <- knn_res$dists
@@ -131,8 +161,8 @@ calc_cms <- function(
   }
 
   threads <- if (is.null(threads) || length(threads) == 0L || is.na(threads[1L])) 1L else max(1L, as.integer(threads[1L]))
-  if (threads > 1L && n_cells >= 200L) {
-    n_chunks <- min(threads, 32L, n_cells)
+  if (threads > 1L && n_cells >= 30L) {
+    n_chunks <- min(threads, n_cells)
     chunks <- split(seq_len(n_cells), ceiling(seq_len(n_cells) / ceiling(n_cells / n_chunks)))
     p_vals <- unlist(.sc_parallel_lapply(chunks, eval_cms_cells, threads = n_chunks), use.names = FALSE)
   } else {
@@ -202,8 +232,8 @@ calc_isi <- function(coords, batch_info, k = 30, weighted = TRUE, threads = 1) {
   }
 
   threads <- if (is.null(threads) || length(threads) == 0L || is.na(threads[1L])) 1L else max(1L, as.integer(threads[1L]))
-  if (threads > 1L && n_cells >= 500L) {
-    n_chunks <- min(threads, 32L, n_cells)
+  if (threads > 1L && n_cells >= 30L) {
+    n_chunks <- min(threads, n_cells)
     chunks <- split(seq_len(n_cells), ceiling(seq_len(n_cells) / ceiling(n_cells / n_chunks)))
     isi_vals <- unlist(.sc_parallel_lapply(chunks, eval_isi_cells, threads = n_chunks), use.names = FALSE)
   } else {
@@ -253,6 +283,7 @@ evaluate_batch_metrics <- function(
   threads = 1,
   verbose = FALSE
 ) {
+  threads <- .set_parallel_threads(threads)
   batch_info <- as.factor(batch_info)
   if (inherits(data, "SingleCellExperiment")) {
     data <- SummarizedExperiment::assay(data, "counts")
@@ -267,57 +298,71 @@ evaluate_batch_metrics <- function(
   
   if (verbose) message("Running PCA for batch evaluation...")
   data_norm <- normalize_counts(data)
-  sub_mat <- as.matrix(data_norm)
-  gene_vars <- fast_row_vars(sub_mat)
-  n_hvg <- min(2000, length(gene_vars))
+  gene_vars <- fast_row_vars(data_norm)
+  n_hvg <- min(2000L, length(gene_vars))
   hvg_idx <- order(gene_vars, decreasing = TRUE)[seq_len(n_hvg)]
+  hvg_mat <- as.matrix(data_norm[hvg_idx, , drop = FALSE])
+  n_pcs_use <- max(1L, min(as.integer(n_pcs), n_cells - 1L, nrow(hvg_mat) - 1L))
+  pca_res <- if (requireNamespace("irlba", quietly = TRUE) && min(n_cells, nrow(hvg_mat)) > (n_pcs_use * 2L + 2L)) {
+    tryCatch(
+      irlba::prcomp_irlba(t(hvg_mat), n = n_pcs_use, center = TRUE, scale. = FALSE),
+      error = function(e) stats::prcomp(t(hvg_mat), center = TRUE, scale. = FALSE, rank. = n_pcs_use)
+    )
+  } else {
+    stats::prcomp(t(hvg_mat), center = TRUE, scale. = FALSE, rank. = n_pcs_use)
+  }
+  pca_coords <- pca_res$x[, seq_len(min(n_pcs_use, ncol(pca_res$x))), drop = FALSE]
   
-  pca_res <- stats::prcomp(t(sub_mat[hvg_idx, , drop = FALSE]),
-                           center = TRUE, scale. = FALSE,
-                           rank. = min(n_pcs, n_cells - 1))
-  pca_coords <- pca_res$x
-  
-  # 1. Batch Silhouette Width (kBET::batch_sil or cluster::silhouette)
+  # 1. Batch Silhouette Width (parallel Euclidean silhouette, with kBET/cluster fallback)
   if (verbose) message("Calculating batch silhouette width...")
-  batch_sil <- NA_real_
+  batch_sil <- if (threads > 1L && n_cells >= 60L) {
+    .parallel_batch_silhouette(pca_coords, batch_info, threads = threads)
+  } else {
+    NA_real_
+  }
   pkg_kbet <- "kBET"
-  if (requireNamespace(pkg_kbet, quietly = TRUE)) {
-    batch_sil <- tryCatch({
-      kbet_batch_sil <- getExportedValue(pkg_kbet, "batch_sil")
-      kbet_batch_sil(pca.data = pca_res, batch = batch_info, nPCs = min(n_pcs, ncol(pca_coords)))
-    }, error = function(e) NA_real_)
-  } else if (requireNamespace("cluster", quietly = TRUE)) {
-    dist_pca <- stats::dist(pca_coords)
-    sil_res <- tryCatch(cluster::silhouette(as.numeric(as.factor(batch_info)), dist_pca), error = function(e) NULL)
-    if (!is.null(sil_res) && (is.matrix(sil_res) || inherits(sil_res, "silhouette"))) {
-      batch_sil <- mean(sil_res[, 3], na.rm = TRUE)
+  if (is.na(batch_sil)) {
+    if (requireNamespace(pkg_kbet, quietly = TRUE)) {
+      batch_sil <- tryCatch({
+        kbet_batch_sil <- getExportedValue(pkg_kbet, "batch_sil")
+        kbet_batch_sil(pca.data = pca_res, batch = batch_info, nPCs = min(n_pcs, ncol(pca_coords)))
+      }, error = function(e) NA_real_)
+    }
+    if (is.na(batch_sil)) {
+      batch_sil <- .parallel_batch_silhouette(pca_coords, batch_info, threads = threads)
+    }
+    if (is.na(batch_sil) && requireNamespace("cluster", quietly = TRUE)) {
+      dist_pca <- stats::dist(pca_coords)
+      sil_res <- tryCatch(cluster::silhouette(as.numeric(as.factor(batch_info)), dist_pca), error = function(e) NULL)
+      if (!is.null(sil_res) && (is.matrix(sil_res) || inherits(sil_res, "silhouette"))) {
+        batch_sil <- mean(sil_res[, 3], na.rm = TRUE)
+      }
     }
   }
   
-  # 2. Principal Component Regression (PCR) R2
+  # 2. Principal Component Regression (PCR) R2 (parallel across PCs)
   if (verbose) message("Calculating principal component regression (PCR)...")
-  pcr_r2 <- NA_real_
-  if (requireNamespace(pkg_kbet, quietly = TRUE)) {
-    pcr_res <- tryCatch({
-      kbet_pcr <- getExportedValue(pkg_kbet, "pcRegression")
-      kbet_pcr(pca.data = pca_res, batch = as.character(batch_info), n_top = min(n_pcs, ncol(pca_coords)))
-    }, error = function(e) NULL)
-    if (!is.null(pcr_res)) pcr_r2 <- pcr_res$R2Var
+  n_pc_cols <- ncol(pca_coords)
+  r2_vals <- if (threads > 1L && n_pc_cols > 1L) {
+    unlist(.sc_parallel_lapply(seq_len(n_pc_cols), function(pc_idx) {
+      fit <- stats::lm(pca_coords[, pc_idx] ~ batch_info)
+      summary(fit)$r.squared
+    }, threads = min(threads, n_pc_cols)), use.names = FALSE)
   } else {
-    r2_vals <- vapply(seq_len(ncol(pca_coords)), function(pc_idx) {
+    vapply(seq_len(n_pc_cols), function(pc_idx) {
       fit <- stats::lm(pca_coords[, pc_idx] ~ batch_info)
       summary(fit)$r.squared
     }, numeric(1))
-    pc_vars <- pca_res$sdev[seq_len(ncol(pca_coords))]^2
-    pcr_r2 <- sum(r2_vals * pc_vars) / sum(pc_vars)
   }
+  pc_vars <- pca_res$sdev[seq_len(n_pc_cols)]^2
+  pcr_r2 <- sum(r2_vals * pc_vars) / sum(pc_vars)
   
-  # 3. Cell-Specific Mixing Score (CMS, CellMixS)
+  # 3. Cell-Specific Mixing Score (CMS)
   if (verbose) message("Calculating CMS (CellMixS)...")
-  cms_res <- calc_cms(data = sub_mat, batch_info = batch_info, k = k, coords = pca_coords, threads = threads)
+  cms_res <- calc_cms(data = NULL, batch_info = batch_info, k = k, coords = pca_coords, threads = threads)
   cms_score <- cms_res$mean_cms
   
-  # 4. Inverse Simpson Index (ISI, CellMixS)
+  # 4. Inverse Simpson Index (ISI)
   if (verbose) message("Calculating Inverse Simpson Index (ISI)...")
   isi_res <- calc_isi(coords = pca_coords, batch_info = batch_info, k = k, weighted = TRUE, threads = threads)
   isi_score <- isi_res$mean_isi
@@ -330,7 +375,8 @@ evaluate_batch_metrics <- function(
       coords = pca_coords,
       cell_types = cell_types,
       batch_info = batch_info,
-      k = min(5, k)
+      k = min(5, k),
+      threads = threads
     )
     cross_batch_f1 <- cb_res$mean_cross_batch_F1
   }
@@ -355,6 +401,7 @@ evaluate_batch_metrics <- function(
 #' @param cell_types Factor or character vector of ground-truth cell type labels.
 #' @param batch_info Factor or character vector of batch assignments.
 #' @param k Integer number of nearest neighbors for the k-NN classifier (default 5).
+#' @param threads Number of CPU threads (default 1).
 #'
 #' @return A list containing:
 #'   \item{mean_cross_batch_F1}{Overall mean macro-averaged F1 score across all directed batch pairs}
@@ -364,7 +411,7 @@ evaluate_batch_metrics <- function(
 #' ct <- factor(rep(c("TypeA", "TypeB"), length.out = 50))
 #' evaluate_cross_batch_prediction(coords, ct, batch)
 #' @export
-evaluate_cross_batch_prediction <- function(coords, cell_types, batch_info, k = 5) {
+evaluate_cross_batch_prediction <- function(coords, cell_types, batch_info, k = 5, threads = 1) {
   cell_types <- as.factor(cell_types)
   batch_info <- as.factor(batch_info)
   coords <- as.matrix(coords)
@@ -374,30 +421,69 @@ evaluate_cross_batch_prediction <- function(coords, cell_types, batch_info, k = 
   pair_f1 <- matrix(NA_real_, nrow = n_b, ncol = n_b)
   cls <- levels(cell_types)
   
+  pair_list <- list()
   for (i in seq_along(batches)) {
     train_idx <- which(batch_info == batches[i])
-    train_x <- coords[train_idx, , drop = FALSE]
     train_y <- cell_types[train_idx]
-    
     if (length(unique(train_y)) < 2) next
-    
     for (j in seq_along(batches)) {
       if (i == j) next
       test_idx <- which(batch_info == batches[j])
-      test_x <- coords[test_idx, , drop = FALSE]
-      test_y <- cell_types[test_idx]
-      
-      k_use <- min(k, length(train_idx) - 1)
-      pred_y <- class::knn(train = train_x, test = test_x, cl = train_y, k = k_use)
-      
-      f1s <- vapply(cls, function(c) {
-        tp <- sum(pred_y == c & test_y == c)
-        fp <- sum(pred_y == c & test_y != c)
-        fn <- sum(pred_y != c & test_y == c)
-        if ((2 * tp + fp + fn) > 0) (2 * tp) / (2 * tp + fp + fn) else 0
-      }, numeric(1))
-      pair_f1[i, j] <- mean(f1s[cls %in% test_y], na.rm = TRUE)
+      if (length(test_idx) == 0L) next
+      k_use <- max(1L, min(k, length(train_idx) - 1L))
+      pair_list[[length(pair_list) + 1L]] <- list(
+        i = i, j = j, train_idx = train_idx, test_idx = test_idx, k_use = k_use
+      )
     }
+  }
+  if (length(pair_list) == 0L) {
+    return(list(mean_cross_batch_F1 = NA_real_))
+  }
+
+  threads <- if (is.null(threads) || length(threads) == 0L || is.na(threads[1L])) 1L else max(1L, as.integer(threads[1L]))
+  chunks_per_pair <- if (threads > 1L) max(1L, as.integer(ceiling(threads / length(pair_list)))) else 1L
+
+  tasks <- list()
+  for (p_idx in seq_along(pair_list)) {
+    t_idx <- pair_list[[p_idx]]$test_idx
+    n_ch <- min(chunks_per_pair, length(t_idx))
+    if (n_ch > 1L) {
+      grps <- split(seq_along(t_idx), ceiling(seq_along(t_idx) / ceiling(length(t_idx) / n_ch)))
+      for (g_pos in grps) {
+        tasks[[length(tasks) + 1L]] <- list(p_idx = p_idx, pos = g_pos, test_idx = t_idx[g_pos])
+      }
+    } else {
+      tasks[[length(tasks) + 1L]] <- list(p_idx = p_idx, pos = seq_along(t_idx), test_idx = t_idx)
+    }
+  }
+
+  task_preds <- .sc_parallel_lapply(tasks, function(tk) {
+    pr <- pair_list[[tk$p_idx]]
+    as.character(class::knn(
+      train = coords[pr$train_idx, , drop = FALSE],
+      test = coords[tk$test_idx, , drop = FALSE],
+      cl = cell_types[pr$train_idx],
+      k = pr$k_use
+    ))
+  }, threads = threads)
+
+  preds_by_pair <- lapply(pair_list, function(pr) character(length(pr$test_idx)))
+  for (tk_i in seq_along(tasks)) {
+    tk <- tasks[[tk_i]]
+    preds_by_pair[[tk$p_idx]][tk$pos] <- task_preds[[tk_i]]
+  }
+
+  for (p_idx in seq_along(pair_list)) {
+    pr <- pair_list[[p_idx]]
+    pred_y <- preds_by_pair[[p_idx]]
+    test_y <- cell_types[pr$test_idx]
+    f1s <- vapply(cls, function(c) {
+      tp <- sum(pred_y == c & test_y == c)
+      fp <- sum(pred_y == c & test_y != c)
+      fn <- sum(pred_y != c & test_y == c)
+      if ((2 * tp + fp + fn) > 0) (2 * tp) / (2 * tp + fp + fn) else 0
+    }, numeric(1))
+    pair_f1[pr$i, pr$j] <- mean(f1s[cls %in% test_y], na.rm = TRUE)
   }
   
   list(

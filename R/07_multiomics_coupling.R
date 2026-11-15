@@ -15,6 +15,7 @@
 #' @param embed Numeric matrix of cell coordinates (cells x dimensions, e.g. PCA or joint embedding).
 #' @param batch Vector or factor of batch or modality labels for each cell.
 #' @param cell_type Optional vector or factor of cell-type labels for each cell.
+#' @param threads Number of CPU threads (default 1).
 #'
 #' @return Numeric scalar between 0 and 1, where 1 indicates optimal batch mixing.
 #' @references
@@ -27,7 +28,7 @@
 #' ct <- rep(c("T1", "T2"), 50)
 #' calc_batch_asw(emb, bt, ct)
 #' @export
-calc_batch_asw <- function(embed, batch, cell_type = NULL) {
+calc_batch_asw <- function(embed, batch, cell_type = NULL, threads = 1) {
   if (is.null(embed) || nrow(embed) < 3) return(NA_real_)
   n_cells <- nrow(embed)
   batch <- as.character(batch)
@@ -41,41 +42,63 @@ calc_batch_asw <- function(embed, batch, cell_type = NULL) {
     }
   }
   if (length(unique(batch)) < 2) return(1.0)
-  
-  if (requireNamespace("cluster", quietly = TRUE)) {
-    if (!is.null(cell_type) && length(unique(cell_type)) >= 2) {
-      cts <- unique(cell_type)
-      asw_per_ct <- numeric(0)
-      
-      for (ct in cts) {
-        idx <- which(cell_type == ct)
-        idx <- idx[idx <= n_cells]
-        if (length(idx) >= 4 && length(unique(batch[idx])) >= 2) {
-          sub_embed <- embed[idx, , drop = FALSE]
-          sub_batch <- as.numeric(as.factor(batch[idx]))
-          tb <- table(sub_batch)
-          if (all(tb >= 2)) {
-            d_mat <- stats::dist(sub_embed)
-            sil <- tryCatch(cluster::silhouette(sub_batch, d_mat), error = function(e) NULL)
-            if (!is.null(sil) && inherits(sil, "silhouette")) {
-              s_vals <- sil[, 3]
-              asw_score <- mean(1 - abs(s_vals), na.rm = TRUE)
-              asw_per_ct <- c(asw_per_ct, asw_score)
-            }
-          }
+  threads <- if (is.null(threads) || length(threads) == 0L || is.na(threads[1L])) 1L else max(1L, as.integer(threads[1L]))
+  has_par_sil <- exists(".parallel_batch_silhouette", mode = "function")
+
+  if (!is.null(cell_type) && length(unique(cell_type)) >= 2) {
+    cts <- unique(cell_type)
+    valid_groups <- list()
+    for (ct in cts) {
+      idx <- which(cell_type == ct)
+      idx <- idx[idx <= n_cells]
+      if (length(idx) >= 4 && length(unique(batch[idx])) >= 2) {
+        sub_batch <- as.numeric(as.factor(batch[idx]))
+        tb <- table(sub_batch)
+        if (all(tb >= 2)) {
+          valid_groups[[length(valid_groups) + 1L]] <- list(idx = idx, sub_batch = sub_batch)
         }
       }
-      if (length(asw_per_ct) > 0) {
+    }
+    if (length(valid_groups) > 0L) {
+      inner_th <- max(1L, as.integer(floor(threads / max(1L, length(valid_groups)))))
+      eval_grp <- function(vg, grp_threads) {
+        sub_embed <- embed[vg$idx, , drop = FALSE]
+        s_vals <- if (has_par_sil && (grp_threads > 1L || !requireNamespace("cluster", quietly = TRUE))) {
+          .parallel_batch_silhouette(sub_embed, vg$sub_batch, threads = grp_threads, return_scores = TRUE)
+        } else if (requireNamespace("cluster", quietly = TRUE)) {
+          d_mat <- stats::dist(sub_embed)
+          sil <- tryCatch(cluster::silhouette(vg$sub_batch, d_mat), error = function(e) NULL)
+          if (!is.null(sil) && inherits(sil, "silhouette")) sil[, 3] else numeric(0)
+        } else {
+          numeric(0)
+        }
+        if (length(s_vals) > 0L) mean(1 - abs(s_vals), na.rm = TRUE) else NA_real_
+      }
+      asw_per_ct <- if (threads > 1L && length(valid_groups) >= 2L && exists(".sc_parallel_lapply", mode = "function")) {
+        unlist(.sc_parallel_lapply(valid_groups, function(vg) eval_grp(vg, inner_th), threads = min(threads, length(valid_groups))), use.names = FALSE)
+      } else {
+        vapply(valid_groups, function(vg) eval_grp(vg, threads), numeric(1))
+      }
+      asw_per_ct <- asw_per_ct[!is.na(asw_per_ct)]
+      if (length(asw_per_ct) > 0L) {
         return(max(0, min(1, mean(asw_per_ct))))
       }
     }
-    # Fallback to global batch silhouette
+  }
+
+  # Fallback to global batch silhouette
+  b_num <- as.numeric(as.factor(batch))
+  s_vals <- if (has_par_sil && ((threads > 1L && n_cells >= 60L) || !requireNamespace("cluster", quietly = TRUE))) {
+    .parallel_batch_silhouette(embed, b_num, threads = threads, return_scores = TRUE)
+  } else if (requireNamespace("cluster", quietly = TRUE)) {
     d_mat <- stats::dist(embed)
-    b_num <- as.numeric(as.factor(batch))
     sil <- tryCatch(cluster::silhouette(b_num, d_mat), error = function(e) NULL)
-    if (!is.null(sil) && inherits(sil, "silhouette")) {
-      return(max(0, min(1, mean(1 - abs(sil[, 3]), na.rm = TRUE))))
-    }
+    if (!is.null(sil) && inherits(sil, "silhouette")) sil[, 3] else numeric(0)
+  } else {
+    numeric(0)
+  }
+  if (length(s_vals) > 0L) {
+    return(max(0, min(1, mean(1 - abs(s_vals), na.rm = TRUE))))
   }
   1.0
 }
@@ -90,6 +113,7 @@ calc_batch_asw <- function(embed, batch, cell_type = NULL) {
 #'
 #' @param embed Numeric matrix of cell coordinates (cells x dimensions).
 #' @param cell_type Vector or factor of cell-type labels for each cell.
+#' @param threads Number of CPU threads (default 1).
 #'
 #' @return Numeric scalar between 0 and 1, where 1 indicates distinct, tight cell-type clusters.
 #' @references
@@ -101,7 +125,7 @@ calc_batch_asw <- function(embed, batch, cell_type = NULL) {
 #' ct <- rep(c("T1", "T2"), each = 50)
 #' calc_cell_type_asw(emb, ct)
 #' @export
-calc_cell_type_asw <- function(embed, cell_type) {
+calc_cell_type_asw <- function(embed, cell_type, threads = 1) {
   if (is.null(embed) || nrow(embed) < 3) return(NA_real_)
   n_cells <- nrow(embed)
   cell_type <- as.character(cell_type)
@@ -109,31 +133,36 @@ calc_cell_type_asw <- function(embed, cell_type) {
     cell_type <- if (length(cell_type) > n_cells) cell_type[seq_len(n_cells)] else rep(cell_type, length.out = n_cells)
   }
   if (length(unique(cell_type)) < 2) return(1.0)
-  
-  if (requireNamespace("cluster", quietly = TRUE)) {
-    n <- nrow(embed)
-    if (n > 3000) {
-      idx <- sample(seq_len(n), 3000)
-      embed <- embed[idx, , drop = FALSE]
-      cell_type <- cell_type[idx]
-    }
-    ct_num <- as.numeric(as.factor(cell_type))
-    tb <- table(ct_num)
-    if (any(tb < 2)) {
-      valid_classes <- as.numeric(names(tb)[tb >= 2])
-      keep <- ct_num %in% valid_classes
-      embed <- embed[keep, , drop = FALSE]
-      ct_num <- ct_num[keep]
-    }
-    if (length(unique(ct_num)) < 2) return(1.0)
-    
+  threads <- if (is.null(threads) || length(threads) == 0L || is.na(threads[1L])) 1L else max(1L, as.integer(threads[1L]))
+
+  n <- nrow(embed)
+  if (n > 3000) {
+    idx <- sample(seq_len(n), 3000)
+    embed <- embed[idx, , drop = FALSE]
+    cell_type <- cell_type[idx]
+  }
+  ct_num <- as.numeric(as.factor(cell_type))
+  tb <- table(ct_num)
+  if (any(tb < 2)) {
+    valid_classes <- as.numeric(names(tb)[tb >= 2])
+    keep <- ct_num %in% valid_classes
+    embed <- embed[keep, , drop = FALSE]
+    ct_num <- ct_num[keep]
+  }
+  if (length(unique(ct_num)) < 2) return(1.0)
+
+  raw_asw <- if (exists(".parallel_batch_silhouette", mode = "function") &&
+                 ((threads > 1L && nrow(embed) >= 60L) || !requireNamespace("cluster", quietly = TRUE))) {
+    .parallel_batch_silhouette(embed, ct_num, threads = threads)
+  } else if (requireNamespace("cluster", quietly = TRUE)) {
     d_mat <- stats::dist(embed)
     sil <- tryCatch(cluster::silhouette(ct_num, d_mat), error = function(e) NULL)
-    if (!is.null(sil) && inherits(sil, "silhouette")) {
-      raw_asw <- mean(sil[, 3], na.rm = TRUE)
-      scaled_asw <- (raw_asw + 1) / 2
-      return(max(0, min(1, scaled_asw)))
-    }
+    if (!is.null(sil) && inherits(sil, "silhouette")) mean(sil[, 3], na.rm = TRUE) else NA_real_
+  } else {
+    NA_real_
+  }
+  if (!is.na(raw_asw)) {
+    return(max(0, min(1, (raw_asw + 1) / 2)))
   }
   1.0
 }
@@ -398,6 +427,20 @@ calc_integration_nmi <- function(embed, cell_type, n_clusters = NULL) {
 #' ct <- rep(c("A", "B"), each = 50)
 #' res <- evaluate_multiomics_integration(sim_multi = example_multiomics$sim_multi, cell_types = ct)
 #' @export
+.fast_mod_pca <- function(m, n_pcs = 15) {
+  m_norm <- normalize_counts(m)
+  if (nrow(m_norm) > 2000L) {
+    gv <- fast_row_vars(m_norm)
+    hvg_idx <- order(gv, decreasing = TRUE)[seq_len(2000L)]
+    m_hvg <- as.matrix(m_norm[hvg_idx, , drop = FALSE])
+  } else if (inherits(m_norm, "Matrix")) {
+    m_hvg <- as.matrix(m_norm)
+  } else {
+    m_hvg <- m_norm
+  }
+  fast_pca(t(m_hvg), n_pcs = min(n_pcs, ncol(m_hvg) - 1L, nrow(m_hvg) - 1L))
+}
+
 evaluate_multiomics_integration <- function(
   ref_multi = NULL,
   sim_multi,
@@ -410,6 +453,7 @@ evaluate_multiomics_integration <- function(
   threads = 1,
   verbose = TRUE
 ) {
+  threads <- .set_parallel_threads(threads)
   # Strict standardization check (Seurat / SingleCellExperiment)
   val_sim <- validate_multiomics_input(sim_multi, "sim_multi", reduction_name = reduction_name)
   sim_multi <- list(val_sim$m1, val_sim$m2)
@@ -433,20 +477,24 @@ evaluate_multiomics_integration <- function(
   joint_embed <- embed
   ct_vec <- NULL
   bt_vec <- NULL
+  p1_cached <- NULL
+  p2_cached <- NULL
   
   if (is.null(joint_embed)) {
     if (is.matrix(sim_multi) || (is.data.frame(sim_multi) && !is.list(sim_multi))) {
       joint_embed <- as.matrix(sim_multi)
     } else if (is.list(sim_multi) && length(sim_multi) >= 2) {
-      m1 <- as.matrix(sim_multi[[1]])
-      m2 <- as.matrix(sim_multi[[2]])
+      m1 <- sim_multi[[1]]
+      m2 <- sim_multi[[2]]
       n1 <- ncol(m1)
       n2 <- ncol(m2)
       
       # Paired multiomics (equal cell counts)
       if (n1 == n2) {
-        p1 <- fast_pca(t(normalize_counts(m1)), n_pcs = min(n_pcs, n1 - 1, nrow(m1) - 1))
-        p2 <- fast_pca(t(normalize_counts(m2)), n_pcs = min(n_pcs, n2 - 1, nrow(m2) - 1))
+        p1 <- .fast_mod_pca(m1, n_pcs = n_pcs)
+        p2 <- .fast_mod_pca(m2, n_pcs = n_pcs)
+        p1_cached <- p1
+        p2_cached <- p2
         s1 <- scale(p1)
         s2 <- scale(p2)
         s1[is.na(s1)] <- 0
@@ -476,8 +524,10 @@ evaluate_multiomics_integration <- function(
         }
       } else {
         # Unpaired multiomics: modalities stacked
-        p1 <- fast_pca(t(normalize_counts(m1)), n_pcs = min(n_pcs, n1 - 1, nrow(m1) - 1))
-        p2 <- fast_pca(t(normalize_counts(m2)), n_pcs = min(n_pcs, n2 - 1, nrow(m2) - 1))
+        p1 <- .fast_mod_pca(m1, n_pcs = n_pcs)
+        p2 <- .fast_mod_pca(m2, n_pcs = n_pcs)
+        p1_cached <- p1
+        p2_cached <- p2
         min_p <- min(ncol(p1), ncol(p2))
         joint_embed <- rbind(scale(p1[, seq_len(min_p), drop = FALSE]),
                              scale(p2[, seq_len(min_p), drop = FALSE]))
@@ -495,8 +545,7 @@ evaluate_multiomics_integration <- function(
         }
       }
     } else if (is.list(sim_multi) && length(sim_multi) == 1) {
-      m1 <- as.matrix(sim_multi[[1]])
-      joint_embed <- fast_pca(t(normalize_counts(m1)), n_pcs = min(n_pcs, ncol(m1) - 1, nrow(m1) - 1))
+      joint_embed <- .fast_mod_pca(sim_multi[[1]], n_pcs = n_pcs)
     }
   }
   
@@ -534,12 +583,12 @@ evaluate_multiomics_integration <- function(
   eval_modality_mixing <- is.null(bt_vec) || length(unique(bt_vec)) < 2
   
   if (eval_modality_mixing && is.list(sim_multi) && length(sim_multi) >= 2) {
-    m1 <- as.matrix(sim_multi[[1]])
-    m2 <- as.matrix(sim_multi[[2]])
+    m1 <- sim_multi[[1]]
+    m2 <- sim_multi[[2]]
     n1 <- ncol(m1)
     n2 <- ncol(m2)
-    p1 <- fast_pca(t(normalize_counts(m1)), n_pcs = min(n_pcs, n1 - 1, nrow(m1) - 1))
-    p2 <- fast_pca(t(normalize_counts(m2)), n_pcs = min(n_pcs, n2 - 1, nrow(m2) - 1))
+    p1 <- if (!is.null(p1_cached)) p1_cached else .fast_mod_pca(m1, n_pcs = n_pcs)
+    p2 <- if (!is.null(p2_cached)) p2_cached else .fast_mod_pca(m2, n_pcs = n_pcs)
     min_p <- min(ncol(p1), ncol(p2))
     cross_embed <- rbind(scale(p1[, seq_len(min_p), drop = FALSE]),
                          scale(p2[, seq_len(min_p), drop = FALSE]))
@@ -547,13 +596,13 @@ evaluate_multiomics_integration <- function(
     cross_batch <- c(rep("Modality_1", n1), rep("Modality_2", n2))
     cross_ct <- if (length(ct_vec) == (n1 + n2)) ct_vec else c(ct_vec[seq_len(min(length(ct_vec), n1))], rep("Modality_2", n2))
     
-    b_asw <- calc_batch_asw(cross_embed, cross_batch, cross_ct)
+    b_asw <- calc_batch_asw(cross_embed, cross_batch, cross_ct, threads = threads)
   } else {
     bt_target <- if (!is.null(bt_vec)) bt_vec else rep("Batch_1", n_cells)
-    b_asw <- calc_batch_asw(joint_embed, bt_target, ct_vec)
+    b_asw <- calc_batch_asw(joint_embed, bt_target, ct_vec, threads = threads)
   }
   
-  ct_asw <- calc_cell_type_asw(joint_embed, ct_vec)
+  ct_asw <- calc_cell_type_asw(joint_embed, ct_vec, threads = threads)
   g_conn <- calc_graph_connectivity(joint_embed, ct_vec, k = min(15, n_cells - 1))
   ari_val <- calc_integration_ari(joint_embed, ct_vec)
   nmi_val <- calc_integration_nmi(joint_embed, ct_vec)
