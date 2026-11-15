@@ -272,6 +272,27 @@ fast_cross_distance_sq <- function(X, Y) {
   d2
 }
 
+.run_prcomp_irlba <- function(X, n, center = TRUE, scale. = FALSE) {
+  if (!requireNamespace("irlba", quietly = TRUE)) return(NULL)
+  has_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  if (has_seed) {
+    old_seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    on.exit(assign(".Random.seed", old_seed, envir = .GlobalEnv), add = TRUE)
+  } else {
+    on.exit(
+      if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+        rm(".Random.seed", envir = .GlobalEnv)
+      },
+      add = TRUE
+    )
+  }
+  set.seed(42L)
+  tryCatch(
+    suppressWarnings(irlba::prcomp_irlba(X, n = n, center = center, scale. = scale.)),
+    error = function(e) NULL
+  )
+}
+
 #' Fast Truncated PCA on Top Highly Variable Features
 #' @param mat Matrix or dgCMatrix (cells x features).
 #' @param n_pcs Number of principal components. Default 20.
@@ -298,8 +319,8 @@ fast_pca <- function(mat, n_pcs = 20, n_hvg = 2000, scale = FALSE, normalize = F
   if (rank_use < 2) return(as.matrix(mat)[, seq_len(min(1, ncol(mat))), drop = FALSE])
   
   min_dim <- min(nrow(mat), ncol(mat))
-  if (requireNamespace("irlba", quietly = TRUE) && rank_use >= 3 && min_dim > 50 && rank_use < 0.5 * min_dim) {
-    res <- tryCatch(suppressWarnings(irlba::prcomp_irlba(as.matrix(mat), n = rank_use, scale. = scale)), error = function(e) NULL)
+  if (rank_use >= 3 && min_dim > 50 && rank_use < 0.5 * min_dim) {
+    res <- .run_prcomp_irlba(as.matrix(mat), n = rank_use, center = TRUE, scale. = scale)
     if (!is.null(res)) return(res$x)
   }
   stats::prcomp(as.matrix(mat), rank. = rank_use, scale. = scale)$x
@@ -945,12 +966,132 @@ validate_multiomics_input <- function(obj, arg_name = "multi_data", reduction_na
   ), call. = FALSE)
 }
 
+.sc_parallel_cache <- new.env(parent = emptyenv())
+.sc_parallel_cache$bp <- NULL
+.sc_parallel_cache$workers <- 0L
+.sc_parallel_cache$target_threads <- 1L
+.sc_parallel_cache$exported_sig <- ""
+
+.init_windows_bp_worker <- function(idx, fn_list, sig, force_wait = FALSE) {
+  if (!exists(".sc_parallel_cache", envir = .GlobalEnv, inherits = FALSE)) {
+    assign(".sc_parallel_cache", new.env(parent = emptyenv()), envir = .GlobalEnv)
+  }
+  already <- isTRUE(identical(.GlobalEnv$.sc_bp_sync_sig, sig))
+  if (!already) {
+    ns_w <- if (isNamespaceLoaded("scSimEval")) asNamespace("scSimEval") else NULL
+    for (nm in names(fn_list)) {
+      fn <- fn_list[[nm]]
+      if (is.function(fn)) {
+        fn_g <- fn
+        environment(fn_g) <- .GlobalEnv
+        assign(nm, fn_g, envir = .GlobalEnv)
+        if (!is.null(ns_w) && exists(nm, envir = ns_w, inherits = FALSE)) {
+          fn_n <- fn
+          environment(fn_n) <- ns_w
+          if (bindingIsLocked(nm, ns_w)) {
+            try(unlockBinding(nm, ns_w), silent = TRUE)
+            try(assign(nm, fn_n, envir = ns_w), silent = TRUE)
+            try(lockBinding(nm, ns_w), silent = TRUE)
+          } else {
+            try(assign(nm, fn_n, envir = ns_w), silent = TRUE)
+          }
+        }
+      }
+    }
+    assign(".sc_bp_sync_sig", sig, envir = .GlobalEnv)
+  }
+  if (!already || isTRUE(force_wait)) {
+    Sys.sleep(if (isTRUE(force_wait)) 0.15 else 0.05)
+  }
+  Sys.getpid()
+}
+
+.sync_windows_bp_functions <- function(bp) {
+  if (is.null(bp) || !isTRUE(tryCatch(BiocParallel::bpisup(bp), error = function(e) FALSE))) {
+    return(invisible(FALSE))
+  }
+
+  ns <- if (isNamespaceLoaded("scSimEval")) asNamespace("scSimEval") else NULL
+  fn_list <- list()
+  n_ns <- 0L
+  if (!is.null(ns)) {
+    for (nm in ls(ns, all.names = TRUE)) {
+      val <- tryCatch(get(nm, envir = ns, inherits = FALSE), error = function(e) NULL)
+      if (is.function(val) &&
+          (identical(environment(val), ns) || identical(environment(val), .GlobalEnv))) {
+        fn_list[[nm]] <- val
+        n_ns <- n_ns + 1L
+      }
+    }
+  }
+
+  n_glob <- 0L
+  for (nm in ls(.GlobalEnv, all.names = TRUE)) {
+    val <- tryCatch(get(nm, envir = .GlobalEnv, inherits = FALSE), error = function(e) NULL)
+    if (is.function(val) && identical(environment(val), .GlobalEnv)) {
+      fn_list[[nm]] <- val
+      n_glob <- n_glob + 1L
+    }
+  }
+
+  sig <- paste(n_ns, n_glob, sep = ":")
+  if (identical(.sc_parallel_cache$exported_sig, sig)) {
+    return(invisible(TRUE))
+  }
+
+  n_w <- max(1L, as.integer(BiocParallel::bpworkers(bp)))
+  seen_pids <- integer(0)
+  for (attempt in seq_len(3L)) {
+    pids <- tryCatch(
+      suppressWarnings(unlist(BiocParallel::bplapply(
+        seq_len(n_w),
+        .init_windows_bp_worker,
+        fn_list = fn_list,
+        sig = sig,
+        force_wait = (attempt > 1L),
+        BPPARAM = bp
+      ))),
+      error = function(e) integer(0)
+    )
+    seen_pids <- unique(c(seen_pids, as.integer(pids)))
+    if (length(seen_pids) >= n_w) break
+  }
+
+  .sc_parallel_cache$exported_sig <- sig
+  invisible(TRUE)
+}
+
+.get_windows_bpparam <- function(workers) {
+  target_w <- max(as.integer(workers), as.integer(.sc_parallel_cache$target_threads), 2L)
+  bp_cur <- .sc_parallel_cache$bp
+  w_cur <- .sc_parallel_cache$workers
+  if (!is.null(bp_cur) && !is.null(w_cur) && w_cur >= workers &&
+      isTRUE(tryCatch(BiocParallel::bpisup(bp_cur), error = function(e) FALSE))) {
+    .sync_windows_bp_functions(bp_cur)
+    return(bp_cur)
+  }
+  if (!is.null(bp_cur)) {
+    try(BiocParallel::bpstop(bp_cur), silent = TRUE)
+    .sc_parallel_cache$bp <- NULL
+    .sc_parallel_cache$workers <- 0L
+    .sc_parallel_cache$exported_sig <- ""
+  }
+  bp_new <- BiocParallel::SnowParam(workers = target_w)
+  BiocParallel::bpstart(bp_new)
+  .sc_parallel_cache$bp <- bp_new
+  .sc_parallel_cache$workers <- target_w
+  .sc_parallel_cache$exported_sig <- ""
+  .sync_windows_bp_functions(bp_new)
+  bp_new
+}
+
 .set_parallel_threads <- function(threads = 1L) {
   threads <- if (is.null(threads) || length(threads) == 0L || is.na(threads[1L])) {
     1L
   } else {
     max(1L, as.integer(threads[1L]))
   }
+  .sc_parallel_cache$target_threads <- threads
   th_str <- as.character(threads)
   try(Sys.setenv(
     OMP_NUM_THREADS = th_str,
@@ -986,7 +1127,7 @@ validate_multiomics_input <- function(obj, arg_name = "multi_data", reduction_na
   if (.Platform$OS.type != "windows") {
     res <- tryCatch({
       mclapply_fn <- getExportedValue("parallel", "mclapply")
-      mclapply_fn(X, FUN, ..., mc.cores = min(threads, n_tasks), mc.preschedule = FALSE)
+      mclapply_fn(X, FUN, ..., mc.cores = min(threads, n_tasks), mc.preschedule = TRUE)
     }, error = function(e) NULL)
     if (!is.null(res) && length(res) == n_tasks &&
         !any(vapply(res, inherits, logical(1), "try-error"))) {
@@ -998,7 +1139,7 @@ validate_multiomics_input <- function(obj, arg_name = "multi_data", reduction_na
     res <- tryCatch(
       suppressWarnings(BiocParallel::bplapply(
         X, FUN, ...,
-        BPPARAM = BiocParallel::SnowParam(workers = min(threads, n_tasks))
+        BPPARAM = .get_windows_bpparam(min(threads, n_tasks))
       )),
       error = function(e) NULL
     )

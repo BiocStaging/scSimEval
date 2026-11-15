@@ -170,6 +170,7 @@ calc_nmi <- function(pred, truth) {
 #' @param cluster_labels Vector of cluster or cell-type labels.
 #' @param k Number of nearest neighbors (default 5\% of cells).
 #' @param is_distance Logical, whether data is already a distance matrix. Default FALSE.
+#' @param threads Integer number of CPU threads (default 1L).
 #'
 #' @return A numeric vector of neighborhood purity scores (values from 0 to 1),
 #'   with an attribute "mean_purity" containing the overall average.
@@ -179,10 +180,11 @@ calc_nmi <- function(pred, truth) {
 #' dist_mat <- stats::dist(data)
 #' calc_neighborhood_purity(data, cl)
 #' @export
-calc_neighborhood_purity <- function(data, cluster_labels, k = NULL, is_distance = FALSE) {
+calc_neighborhood_purity <- function(data, cluster_labels, k = NULL, is_distance = FALSE, threads = 1L) {
   cluster_labels <- as.character(cluster_labels)
   n_cells <- length(cluster_labels)
   if (n_cells < 2) return(numeric(0))
+  threads <- if (is.null(threads) || length(threads) == 0L || is.na(threads[1L])) 1L else max(1L, as.integer(threads[1L]))
   
   if (is_distance) {
     dist_mat <- as.matrix(data)
@@ -203,7 +205,7 @@ calc_neighborhood_purity <- function(data, cluster_labels, k = NULL, is_distance
     k <- min(k, n_cells - 1)
     
     mat <- if (nrow(data) == mat_n_cells) as.matrix(data)[seq_len(n_eval), , drop = FALSE] else t(as.matrix(data)[, seq_len(n_eval), drop = FALSE])
-    if (requireNamespace("bluster", quietly = TRUE)) {
+    if (threads <= 1L && requireNamespace("bluster", quietly = TRUE)) {
       pur <- tryCatch({
         res <- bluster::neighborPurity(mat, clusters = cluster_labels, k = k)
         as.numeric(res$purity)
@@ -212,6 +214,16 @@ calc_neighborhood_purity <- function(data, cluster_labels, k = NULL, is_distance
         attr(pur, "mean_purity") <- mean(pur, na.rm = TRUE)
         return(pur)
       }
+    }
+    if (exists(".knn_coords", mode = "function")) {
+      nn_idx <- .knn_coords(mat, k = k, threads = threads)$idx
+      purities <- rowMeans(
+        matrix(cluster_labels[nn_idx] == rep(cluster_labels, times = ncol(nn_idx)),
+               nrow = n_cells, ncol = ncol(nn_idx)),
+        na.rm = TRUE
+      )
+      attr(purities, "mean_purity") <- mean(purities, na.rm = TRUE)
+      return(purities)
     }
     if (requireNamespace("RANN", quietly = TRUE)) {
       nn_res <- RANN::nn2(mat, k = k + 1)
@@ -675,18 +687,25 @@ evaluate_clustering_metrics <- function(
   } else {
     calc_silhouette(dist_mat, cluster_info)
   }
-  np_sim <- if (!dist_mat_provided && !is.null(pca_coords) && requireNamespace("RANN", quietly = TRUE)) {
+  np_sim <- if (!dist_mat_provided && !is.null(pca_coords) && exists(".knn_coords", mode = "function")) {
     k_np <- min(max(5L, min(50L, as.integer(round(0.05 * nrow(pca_coords))))), nrow(pca_coords) - 1L)
-    nn_np <- RANN::nn2(pca_coords, k = k_np + 1L)$nn.idx[, -1L, drop = FALSE]
+    nn_np <- .knn_coords(pca_coords, k = k_np, threads = threads)$idx
     cl_chr <- as.character(cluster_info)
-    mean(vapply(seq_len(nrow(pca_coords)), function(i) {
-      mean(cl_chr[nn_np[i, ]] == cl_chr[i], na.rm = TRUE)
-    }, numeric(1)), na.rm = TRUE)
+    mean(
+      rowMeans(
+        matrix(cl_chr[nn_np] == rep(cl_chr, times = ncol(nn_np)),
+               nrow = nrow(pca_coords), ncol = ncol(nn_np)),
+        na.rm = TRUE
+      ),
+      na.rm = TRUE
+    )
+  } else if (!dist_mat_provided && !is.null(pca_coords)) {
+    mean(calc_neighborhood_purity(pca_coords, cluster_info, is_distance = FALSE, threads = threads), na.rm = TRUE)
   } else {
     if (is.null(dist_mat)) {
-      dist_mat <- if (!is.null(pca_coords)) stats::dist(pca_coords) else stats::dist(t(as.matrix(d_use)))
+      dist_mat <- stats::dist(t(as.matrix(d_use)))
     }
-    mean(calc_neighborhood_purity(dist_mat, cluster_info, is_distance = TRUE), na.rm = TRUE)
+    mean(calc_neighborhood_purity(dist_mat, cluster_info, is_distance = TRUE, threads = threads), na.rm = TRUE)
   }
 
   res <- list(

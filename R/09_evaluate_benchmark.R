@@ -85,6 +85,9 @@
 #'   (default \code{10000L}, per Saelens et al. 2019).
 #' @param include_trajectory Logical; whether to evaluate Category VII trajectory & lineage topology
 #'   metrics when \code{modality} is scRNA-seq (automatically skipped for \code{scATAC-seq}). Default is \code{TRUE}.
+#' @param include_downstream Logical; whether to evaluate Category III clustering, Category IV batch mixing,
+#'   and Category V biological signal differential expression/accessibility metrics when metadata are available.
+#'   Default is \code{TRUE}.
 #'
 #' @return A list containing tidy summary tables and detailed metric lists.
 #' @examples
@@ -110,7 +113,8 @@ evaluate_simulation_accuracy <- function(
   memory_unit = c("MiB", "MB"),
   sim_cores = NULL,
   trajectory_num_trees = 10000L,
-  include_trajectory = TRUE
+  include_trajectory = TRUE,
+  include_downstream = TRUE
 ) {
   # Strict standardization check (Seurat / SingleCellExperiment)
   val_ref <- validate_sc_object(ref_data, "ref_data")
@@ -440,134 +444,137 @@ evaluate_simulation_accuracy <- function(
     stringsAsFactors = FALSE
   )
   
-  clu_eval_uni <- tryCatch({
-    evaluate_clustering_metrics(
-      data = sim_data,
-      cell_types = cell_types_sim,
-      ref_data = ref_data,
-      ref_cell_types = cell_types_ref,
-      batch_info = batch_sim,
-      threads = threads
-    )
-  }, error = function(e) NULL)
-  
-  if (!is.null(clu_eval_uni)) {
-    clu_uni_metrics <- c(
-      "silhouette_sim", "cdi",
-      "neighborhood_purity", "ari", "nmi"
-    )
-    for (cm in clu_uni_metrics) {
-      if (!is.null(clu_eval_uni[[cm]]) && !is.na(clu_eval_uni[[cm]])) {
-        summary_rows[[length(summary_rows) + 1]] <- data.frame(
-          Category = "Cellular Manifold & Clustering Concordance",
-          Property = "clustering",
-          Metric = cm,
-          Value = as.numeric(clu_eval_uni[[cm]]),
-          stringsAsFactors = FALSE
-        )
-      }
-    }
-  }
-  
-  # Step 5a: Technical Variation & Batch Mixing Dynamics (Category IV - if batch_sim / batch_info provided)
+  clu_eval_uni <- NULL
   b_eval_uni <- NULL
-  if (!is.null(batch_sim)) {
-    if (verbose) message("Evaluating batch integration & confounder mixing...")
-    b_eval_uni <- tryCatch({
-      evaluate_batch_metrics(
+  signal_eval_uni <- NULL
+  if (isTRUE(include_downstream)) {
+    clu_eval_uni <- tryCatch({
+      evaluate_clustering_metrics(
         data = sim_data,
-        batch_info = batch_sim,
         cell_types = cell_types_sim,
-        threads = threads,
-        verbose = FALSE
+        ref_data = ref_data,
+        ref_cell_types = cell_types_ref,
+        batch_info = batch_sim,
+        threads = threads
       )
     }, error = function(e) NULL)
     
-    if (!is.null(b_eval_uni)) {
-      batch_metrics_to_record <- c(
-        "batch_silhouette", "pcr_r2", "cms", "isi", "cross_batch_F1"
+    if (!is.null(clu_eval_uni)) {
+      clu_uni_metrics <- c(
+        "silhouette_sim", "cdi",
+        "neighborhood_purity", "ari", "nmi"
       )
-      for (bm in batch_metrics_to_record) {
-        if (!is.null(b_eval_uni[[bm]])) {
+      for (cm in clu_uni_metrics) {
+        if (!is.null(clu_eval_uni[[cm]]) && !is.na(clu_eval_uni[[cm]])) {
           summary_rows[[length(summary_rows) + 1]] <- data.frame(
-            Category = "Technical Variation & Batch Mixing Dynamics",
-            Property = "batch_mixing",
-            Metric = bm,
-            Value = as.numeric(b_eval_uni[[bm]]),
+            Category = "Cellular Manifold & Clustering Concordance",
+            Property = "clustering",
+            Metric = cm,
+            Value = as.numeric(clu_eval_uni[[cm]]),
             stringsAsFactors = FALSE
           )
         }
       }
     }
-  }
-  
-  # Step 5b: Biological Signal Fidelity (Category V - Libra Pseudobulk edgeR-QLF)
-  # Strictly requires biological replicates (batch_ref and batch_sim / batch_info)
-  # for BOTH scRNA-seq and scATAC-seq (without batch_info, Category V cannot run)
-  signal_eval_uni <- NULL
-  if (!is.null(cell_types_ref) && !is.null(cell_types_sim)) {
-    if (!is.null(batch_ref) && !is.null(batch_sim)) {
-      if (is_atac) {
-        if (verbose) message("Evaluating scATAC-seq biological signal fidelity (Libra Pseudobulk edgeR-QLF)...")
-        signal_eval_uni <- tryCatch({
-          evaluate_atac_da_fidelity(
-            ref_data = ref_data,
-            sim_data = sim_data,
-            ref_celltypes = cell_types_ref,
-            sim_celltypes = cell_types_sim,
-            batch_ref = batch_ref,
-            batch_sim = batch_sim,
-            threads = threads
-          )
-        }, error = function(e) {
-          if (verbose) message("scATAC-seq DA evaluation note: ", conditionMessage(e))
-          NULL
-        })
-        
-        if (!is.null(signal_eval_uni) && nrow(signal_eval_uni$da_summary_table) > 0) {
-          for (row_i in seq_len(nrow(signal_eval_uni$da_summary_table))) {
+    
+    # Step 5a: Technical Variation & Batch Mixing Dynamics (Category IV - if batch_sim / batch_info provided)
+    if (!is.null(batch_sim)) {
+      if (verbose) message("Evaluating batch integration & confounder mixing...")
+      b_eval_uni <- tryCatch({
+        evaluate_batch_metrics(
+          data = sim_data,
+          batch_info = batch_sim,
+          cell_types = cell_types_sim,
+          threads = threads,
+          verbose = FALSE
+        )
+      }, error = function(e) NULL)
+      
+      if (!is.null(b_eval_uni)) {
+        batch_metrics_to_record <- c(
+          "batch_silhouette", "pcr_r2", "cms", "isi", "cross_batch_F1"
+        )
+        for (bm in batch_metrics_to_record) {
+          if (!is.null(b_eval_uni[[bm]])) {
             summary_rows[[length(summary_rows) + 1]] <- data.frame(
-              Category = "Biological Signal & Differential Fidelity",
-              Property = "scATAC_differential_accessibility",
-              Metric = signal_eval_uni$da_summary_table$Metric[row_i],
-              Value = as.numeric(signal_eval_uni$da_summary_table$Value[row_i]),
-              stringsAsFactors = FALSE
-            )
-          }
-        }
-      } else {
-        if (verbose) message("Evaluating scRNA-seq biological signal fidelity (Libra Pseudobulk edgeR-QLF)...")
-        signal_eval_uni <- tryCatch({
-          evaluate_deg_fidelity(
-            ref_data = ref_data,
-            sim_data = sim_data,
-            ref_celltypes = cell_types_ref,
-            sim_celltypes = cell_types_sim,
-            batch_ref = batch_ref,
-            batch_sim = batch_sim,
-            threads = threads
-          )
-        }, error = function(e) {
-          if (verbose) message("scRNA-seq pseudobulk DE evaluation note: ", conditionMessage(e))
-          NULL
-        })
-        
-        if (!is.null(signal_eval_uni) && nrow(signal_eval_uni$deg_summary_table) > 0) {
-          for (row_i in seq_len(nrow(signal_eval_uni$deg_summary_table))) {
-            summary_rows[[length(summary_rows) + 1]] <- data.frame(
-              Category = "Biological Signal & Differential Fidelity",
-              Property = "scRNA_differential_expression",
-              Metric = signal_eval_uni$deg_summary_table$Metric[row_i],
-              Value = as.numeric(signal_eval_uni$deg_summary_table$Value[row_i]),
+              Category = "Technical Variation & Batch Mixing Dynamics",
+              Property = "batch_mixing",
+              Metric = bm,
+              Value = as.numeric(b_eval_uni[[bm]]),
               stringsAsFactors = FALSE
             )
           }
         }
       }
-    } else {
-      if (verbose) {
-        mod_name_str <- if (is_atac) "scATAC-seq" else "scRNA-seq"
-        message(sprintf("Biological replicate annotations ('batch_info') not provided: skipping Category V pseudobulk analysis for %s.", mod_name_str))
+    }
+    
+    # Step 5b: Biological Signal Fidelity (Category V - Libra Pseudobulk edgeR-QLF)
+    # Strictly requires biological replicates (batch_ref and batch_sim / batch_info)
+    # for BOTH scRNA-seq and scATAC-seq (without batch_info, Category V cannot run)
+    if (!is.null(cell_types_ref) && !is.null(cell_types_sim)) {
+      if (!is.null(batch_ref) && !is.null(batch_sim)) {
+        if (is_atac) {
+          if (verbose) message("Evaluating scATAC-seq biological signal fidelity (Libra Pseudobulk edgeR-QLF)...")
+          signal_eval_uni <- tryCatch({
+            evaluate_atac_da_fidelity(
+              ref_data = ref_data,
+              sim_data = sim_data,
+              ref_celltypes = cell_types_ref,
+              sim_celltypes = cell_types_sim,
+              batch_ref = batch_ref,
+              batch_sim = batch_sim,
+              threads = threads
+            )
+          }, error = function(e) {
+            if (verbose) message("scATAC-seq DA evaluation note: ", conditionMessage(e))
+            NULL
+          })
+          
+          if (!is.null(signal_eval_uni) && nrow(signal_eval_uni$da_summary_table) > 0) {
+            for (row_i in seq_len(nrow(signal_eval_uni$da_summary_table))) {
+              summary_rows[[length(summary_rows) + 1]] <- data.frame(
+                Category = "Biological Signal & Differential Fidelity",
+                Property = "scATAC_differential_accessibility",
+                Metric = signal_eval_uni$da_summary_table$Metric[row_i],
+                Value = as.numeric(signal_eval_uni$da_summary_table$Value[row_i]),
+                stringsAsFactors = FALSE
+              )
+            }
+          }
+        } else {
+          if (verbose) message("Evaluating scRNA-seq biological signal fidelity (Libra Pseudobulk edgeR-QLF)...")
+          signal_eval_uni <- tryCatch({
+            evaluate_deg_fidelity(
+              ref_data = ref_data,
+              sim_data = sim_data,
+              ref_celltypes = cell_types_ref,
+              sim_celltypes = cell_types_sim,
+              batch_ref = batch_ref,
+              batch_sim = batch_sim,
+              threads = threads
+            )
+          }, error = function(e) {
+            if (verbose) message("scRNA-seq pseudobulk DE evaluation note: ", conditionMessage(e))
+            NULL
+          })
+          
+          if (!is.null(signal_eval_uni) && nrow(signal_eval_uni$deg_summary_table) > 0) {
+            for (row_i in seq_len(nrow(signal_eval_uni$deg_summary_table))) {
+              summary_rows[[length(summary_rows) + 1]] <- data.frame(
+                Category = "Biological Signal & Differential Fidelity",
+                Property = "scRNA_differential_expression",
+                Metric = signal_eval_uni$deg_summary_table$Metric[row_i],
+                Value = as.numeric(signal_eval_uni$deg_summary_table$Value[row_i]),
+                stringsAsFactors = FALSE
+              )
+            }
+          }
+        }
+      } else {
+        if (verbose) {
+          mod_name_str <- if (is_atac) "scATAC-seq" else "scRNA-seq"
+          message(sprintf("Biological replicate annotations ('batch_info') not provided: skipping Category V pseudobulk analysis for %s.", mod_name_str))
+        }
       }
     }
   }
@@ -830,7 +837,8 @@ evaluate_multiomics_accuracy <- function(
     compute_bivariate = compute_bivariate,
     threads = threads,
     verbose = verbose,
-    include_trajectory = FALSE
+    include_trajectory = FALSE,
+    include_downstream = FALSE
   )
   t1 <- m1_eval$metrics_summary_table
   t1 <- t1[t1$Property != "clustering" & !grepl("Trajectory", t1$Category, ignore.case = TRUE), , drop = FALSE]
@@ -845,7 +853,8 @@ evaluate_multiomics_accuracy <- function(
     compute_bivariate = compute_bivariate,
     threads = threads,
     verbose = verbose,
-    include_trajectory = FALSE
+    include_trajectory = FALSE,
+    include_downstream = FALSE
   )
   t2 <- m2_eval$metrics_summary_table
   t2 <- t2[t2$Property != "clustering" & !grepl("Trajectory", t2$Category, ignore.case = TRUE), , drop = FALSE]
@@ -1097,6 +1106,11 @@ evaluate_multiomics_accuracy <- function(
       if (verbose) message("Biological replicate annotations ('batch_info') not provided: skipping Category V pseudobulk DA analysis for scATAC-seq modality.")
     }
   }
+
+  if (!is.null(batch_res[[m1_name]])) m1_eval$batch_effects <- batch_res[[m1_name]]
+  if (!is.null(batch_res[[m2_name]])) m2_eval$batch_effects <- batch_res[[m2_name]]
+  if (!is.null(signal_res[[m1_name]])) m1_eval$biological_signal <- signal_res[[m1_name]]
+  if (!is.null(signal_res[[m2_name]])) m2_eval$biological_signal <- signal_res[[m2_name]]
   
   # ============================================================================
   # 5. Trajectory & Lineage Topology (Category VII - dynverse workflow; scRNA-seq only)

@@ -557,21 +557,28 @@ evaluate_predictive_de_model <- function(
 ) {
   method <- match.arg(method)
   group <- as.factor(group)
-  data_mat <- as.matrix(normalize_counts(data))
-  
+  data_norm <- normalize_counts(data)
+  if (is.null(rownames(data_norm)) && nrow(data_norm) > 0L) {
+    rownames(data_norm) <- paste0("Gene_", seq_len(nrow(data_norm)))
+  }
+
   if (is.null(de_features) || length(de_features) < 2) {
-    vars <- apply(data_mat, 1, stats::var)
-    n_sel <- min(n_top, nrow(data_mat))
+    vars <- fast_row_vars(data_norm)
+    names(vars) <- rownames(data_norm)
+    n_sel <- min(n_top, nrow(data_norm))
     de_features <- names(sort(vars, decreasing = TRUE))[seq_len(n_sel)]
   } else {
-    de_features <- intersect(de_features, rownames(data_mat))
+    de_features <- intersect(de_features, rownames(data_norm))
+    if (length(de_features) > n_top) {
+      de_features <- de_features[seq_len(n_top)]
+    }
   }
-  
+
   if (length(de_features) < 2 || nlevels(group) < 2) {
     return(list(accuracy = NA_real_, F1 = NA_real_, precision = NA_real_, recall = NA_real_))
   }
-  
-  sub_data <- as.data.frame(t(data_mat[de_features, , drop = FALSE]))
+
+  sub_data <- as.data.frame(t(as.matrix(data_norm[de_features, , drop = FALSE])))
   n_cells <- nrow(sub_data)
   
   train_idx <- which(seq_len(n_cells) %% 5L != 0L)
@@ -963,10 +970,26 @@ evaluate_deg_fidelity <- function(
   
   pair_df <- do.call(rbind, pair_rows)
   
-  # Approach 3: Cell identity predictability on simulated top DEGs
-  all_sim_degs <- unique(unlist(lapply(de_sim_list, function(x) x$feature[x$is_da])))
-  if (length(all_sim_degs) < 5) {
-    all_sim_degs <- unique(unlist(lapply(de_sim_list, function(x) x$feature[order(x$PValue)][seq_len(min(20, nrow(x)))])))
+  # Approach 3: Cell identity predictability on simulated top DEGs (ranked by minimum PValue, capped at 50)
+  sig_tables <- lapply(de_sim_list, function(x) x[x$is_da %in% TRUE, c("feature", "PValue"), drop = FALSE])
+  sig_df <- do.call(rbind, sig_tables)
+  if (!is.null(sig_df) && nrow(sig_df) > 0L) {
+    sig_df$PValue[is.na(sig_df$PValue)] <- 1
+    min_p <- tapply(sig_df$PValue, sig_df$feature, min)
+    all_sim_degs <- names(sort(min_p))[seq_len(min(50L, length(min_p)))]
+  } else {
+    all_sim_degs <- character(0)
+  }
+  if (length(all_sim_degs) < 5L) {
+    top_tables <- lapply(de_sim_list, function(x) {
+      x[order(x$PValue)[seq_len(min(20L, nrow(x)))], c("feature", "PValue"), drop = FALSE]
+    })
+    top_df <- do.call(rbind, top_tables)
+    if (!is.null(top_df) && nrow(top_df) > 0L) {
+      top_df$PValue[is.na(top_df$PValue)] <- 1
+      min_p_top <- tapply(top_df$PValue, top_df$feature, min)
+      all_sim_degs <- names(sort(min_p_top))[seq_len(min(50L, length(min_p_top)))]
+    }
   }
   ml_res <- evaluate_predictive_de_model(
     data = sim_data,

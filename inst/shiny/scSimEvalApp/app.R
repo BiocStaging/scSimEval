@@ -6887,6 +6887,7 @@ server <- function(input, output, session) {
             
             sim_file <- input[[paste0("file_uni_sim_", s, "_", d)]]
             has_upload_sim <- !is.null(sim_file) && nrow(sim_file) > 0
+            sim_val <- NULL
             
             if (has_upload_sim) {
               incProgress(0.7 / (n_sims * n_dsets), detail = sprintf("Evaluating %s on %s...", sim_name, d_label))
@@ -6910,6 +6911,43 @@ server <- function(input, output, session) {
               sim_mat_d, role = "Simulated", method_name = paste0(sim_name, " (", d_label, ")"),
               modality = mod_label, cell_types = ct_vec, batch_info = bt_vec
             )
+
+            # Align cell types and batches prior to unimodal evaluation so downstream steps use threads = n_cores_uni once
+            ct_sim <- NULL
+            ct_ref <- NULL
+            if (!is.null(ct_vec) && length(ct_vec) > 0) {
+              if (!is.null(names(ct_vec)) && !is.null(colnames(sim_mat_d)) && any(colnames(sim_mat_d) %in% names(ct_vec))) {
+                ct_sim <- ct_vec[colnames(sim_mat_d)]
+              } else if (length(ct_vec) == ncol(sim_mat_d)) {
+                ct_sim <- ct_vec
+              }
+              if (!is.null(names(ct_vec)) && !is.null(colnames(ref_mat_d)) && any(colnames(ref_mat_d) %in% names(ct_vec))) {
+                ct_ref <- ct_vec[colnames(ref_mat_d)]
+              } else if (length(ct_vec) == ncol(ref_mat_d)) {
+                ct_ref <- ct_vec
+              }
+            }
+            if (!is.null(sim_val) && !is.null(sim_val$cell_types)) {
+              ct_sim <- sim_val$cell_types
+            }
+
+            bt_sim <- NULL
+            bt_ref <- NULL
+            if (!is.null(bt_vec) && length(bt_vec) > 0) {
+              if (!is.null(names(bt_vec)) && !is.null(colnames(sim_mat_d)) && any(colnames(sim_mat_d) %in% names(bt_vec))) {
+                bt_sim <- bt_vec[colnames(sim_mat_d)]
+              } else if (length(bt_vec) == ncol(sim_mat_d)) {
+                bt_sim <- bt_vec
+              }
+              if (!is.null(names(bt_vec)) && !is.null(colnames(ref_mat_d)) && any(colnames(ref_mat_d) %in% names(bt_vec))) {
+                bt_ref <- bt_vec[colnames(ref_mat_d)]
+              } else if (length(bt_vec) == ncol(ref_mat_d)) {
+                bt_ref <- bt_vec
+              }
+            }
+            if (!is.null(sim_val) && !is.null(sim_val$batch_info)) {
+              bt_sim <- sim_val$batch_info
+            }
             
             n_cores_uni <- as.integer((if (is_atac_mode) input$num_uni_cores_atac else input$num_uni_cores) %||% default_n_cores)
             if (is.na(n_cores_uni) || n_cores_uni < 1) n_cores_uni <- 1L
@@ -6918,6 +6956,10 @@ server <- function(input, output, session) {
             res_sd <- run_with_live_logs(evaluate_simulation_accuracy(
               ref_data = ref_obj_d %||% ref_mat_d,
               sim_data = sim_obj_d %||% sim_mat_d,
+              cell_types_ref = ct_ref,
+              cell_types_sim = ct_sim,
+              batch_ref = bt_ref,
+              batch_sim = bt_sim,
               modality = mod_label,
               memory_mb = sim_mem,
               elapsed_time = sim_time,
@@ -6940,36 +6982,17 @@ server <- function(input, output, session) {
               stop(sprintf("Failed to retrieve single-cell evaluation table for '%s'.", sim_name))
             }
             
-            # Align cell types if provided
-            ct_sim <- NULL
-            ct_ref <- NULL
-            if (!is.null(ct_vec) && length(ct_vec) > 0) {
-              if (!is.null(names(ct_vec)) && !is.null(colnames(sim_mat_d)) && any(colnames(sim_mat_d) %in% names(ct_vec))) {
-                ct_sim <- ct_vec[colnames(sim_mat_d)]
-              } else if (length(ct_vec) == ncol(sim_mat_d)) {
-                ct_sim <- ct_vec
-              }
-              if (!is.null(names(ct_vec)) && !is.null(colnames(ref_mat_d)) && any(colnames(ref_mat_d) %in% names(ct_vec))) {
-                ct_ref <- ct_vec[colnames(ref_mat_d)]
-              } else if (length(ct_vec) == ncol(ref_mat_d)) {
-                ct_ref <- ct_vec
-              }
-            }
-            
-            # Align batches if provided
-            bt_sim <- NULL
-            if (!is.null(bt_vec) && length(bt_vec) > 0) {
-              if (!is.null(names(bt_vec)) && !is.null(colnames(sim_mat_d)) && any(colnames(sim_mat_d) %in% names(bt_vec))) {
-                bt_sim <- bt_vec[colnames(sim_mat_d)]
-              } else if (length(bt_vec) == ncol(sim_mat_d)) {
-                bt_sim <- bt_vec
-              }
-            }
-            
-            # Cellular Manifold & Clustering Concordance (Category III)
-            if (!is.null(ct_sim) && length(ct_sim) > 0 && length(unique(stats::na.omit(ct_sim))) > 1) {
+            # Cellular Manifold & Clustering Concordance (Category III fallback if absent)
+            if (!"clustering" %in% tbl_sd$Property && !is.null(ct_sim) && length(ct_sim) > 0 && length(unique(stats::na.omit(ct_sim))) > 1) {
               try({
-                clu <- evaluate_clustering_metrics(data = sim_mat_d, cell_types = ct_sim, ref_data = ref_mat_d)
+                clu <- evaluate_clustering_metrics(
+                  data = sim_mat_d,
+                  cell_types = ct_sim,
+                  ref_data = ref_mat_d,
+                  ref_cell_types = ct_ref,
+                  batch_info = bt_sim,
+                  threads = n_cores_uni
+                )
                 clu_names <- c("silhouette_sim", "cdi", "neighborhood_purity", "ari", "nmi")
                 clu_rows <- list()
                 for (cm in clu_names) {
@@ -6990,12 +7013,10 @@ server <- function(input, output, session) {
               }, silent = TRUE)
             }
             
-            # Technical Variation & Batch Mixing Dynamics (Category IV)
-            if (!is.null(bt_sim) && length(bt_sim) > 0 && length(unique(stats::na.omit(bt_sim))) > 1) {
+            # Technical Variation & Batch Mixing Dynamics (Category IV fallback if absent)
+            if (!"batch_mixing" %in% tbl_sd$Property && !is.null(bt_sim) && length(bt_sim) > 0 && length(unique(stats::na.omit(bt_sim))) > 1) {
               try({
-                sim_m_num <- as.matrix(as_sparse_or_matrix(sim_mat_d))
-                mode(sim_m_num) <- "double"
-                bat <- evaluate_batch_metrics(data = sim_m_num, batch_info = bt_sim, cell_types = ct_sim)
+                bat <- evaluate_batch_metrics(data = sim_mat_d, batch_info = bt_sim, cell_types = ct_sim, threads = n_cores_uni)
                 bat_names <- c("batch_silhouette", "pcr_r2", "cms", "isi", "cross_batch_F1")
                 bat_rows <- list()
                 for (bm in bat_names) {
@@ -7016,45 +7037,28 @@ server <- function(input, output, session) {
               }, silent = TRUE)
             }
             
-            # Biological Signal & Differential Fidelity (Category V - Simpipe DEG)
-            if (!is.null(ct_sim) && !is.null(ct_ref) && length(unique(stats::na.omit(ct_sim))) > 1 && length(unique(stats::na.omit(ct_ref))) > 1) {
+            # Biological Signal & Differential Fidelity (Category V fallback if absent)
+            if (!any(grepl("differential", tbl_sd$Property, ignore.case = TRUE)) &&
+                !is.null(ct_sim) && !is.null(ct_ref) && !is.null(bt_sim) && !is.null(bt_ref) &&
+                length(unique(stats::na.omit(ct_sim))) > 1 && length(unique(stats::na.omit(ct_ref))) > 1) {
               try({
-                deg_eval <- evaluate_deg_fidelity(ref_data = ref_mat_d, sim_data = sim_mat_d, ref_celltypes = ct_ref, sim_celltypes = ct_sim)
-                if (!is.null(deg_eval)) {
+                deg_eval <- evaluate_deg_fidelity(
+                  ref_data = ref_mat_d,
+                  sim_data = sim_mat_d,
+                  ref_celltypes = ct_ref,
+                  sim_celltypes = ct_sim,
+                  batch_ref = bt_ref,
+                  batch_sim = bt_sim,
+                  threads = n_cores_uni
+                )
+                if (!is.null(deg_eval) && !is.null(deg_eval$deg_summary_table) && nrow(deg_eval$deg_summary_table) > 0) {
                   sig_rows <- list()
-                  if (!is.null(deg_eval$deg_ratio_results$P) && !is.na(deg_eval$deg_ratio_results$P)) {
+                  for (r_i in seq_len(nrow(deg_eval$deg_summary_table))) {
                     sig_rows[[length(sig_rows) + 1]] <- data.frame(
                       Category = "(V) Biological Signal & Differential Fidelity",
-                      Property = "differential_expression",
-                      Metric = "simpipe_true_deg_recovery",
-                      Value = as.numeric(deg_eval$deg_ratio_results$P),
-                      stringsAsFactors = FALSE
-                    )
-                  }
-                  if (!is.null(deg_eval$deg_ratio_results$deg_ratio) && !is.na(deg_eval$deg_ratio_results$deg_ratio)) {
-                    sig_rows[[length(sig_rows) + 1]] <- data.frame(
-                      Category = "(V) Biological Signal & Differential Fidelity",
-                      Property = "differential_expression",
-                      Metric = "simpipe_deg_ratio",
-                      Value = as.numeric(deg_eval$deg_ratio_results$deg_ratio),
-                      stringsAsFactors = FALSE
-                    )
-                  }
-                  if (!is.null(deg_eval$distribution_score_results$distribution_score) && !is.na(deg_eval$distribution_score_results$distribution_score)) {
-                    sig_rows[[length(sig_rows) + 1]] <- data.frame(
-                      Category = "(V) Biological Signal & Differential Fidelity",
-                      Property = "differential_expression",
-                      Metric = "simpipe_distribution_score",
-                      Value = as.numeric(deg_eval$distribution_score_results$distribution_score),
-                      stringsAsFactors = FALSE
-                    )
-                  }
-                  if (!is.null(deg_eval$ml_classification$F1) && !is.na(deg_eval$ml_classification$F1)) {
-                    sig_rows[[length(sig_rows) + 1]] <- data.frame(
-                      Category = "(V) Biological Signal & Differential Fidelity",
-                      Property = "cell_identity_prediction",
-                      Metric = "predictive_macro_F1",
-                      Value = as.numeric(deg_eval$ml_classification$F1),
+                      Property = if (is_atac_mode) "scATAC_differential_accessibility" else "scRNA_differential_expression",
+                      Metric = deg_eval$deg_summary_table$Metric[r_i],
+                      Value = as.numeric(deg_eval$deg_summary_table$Value[r_i]),
                       stringsAsFactors = FALSE
                     )
                   }
