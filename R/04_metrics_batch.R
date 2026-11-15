@@ -121,7 +121,45 @@ calc_cms <- function(
     k <- max(10, round(min(table(batch_info)) / 2))
   }
   k <- min(k, n_cells - 1)
-  
+  threads <- if (is.null(threads) || length(threads) == 0L || is.na(threads[1L])) 1L else max(1L, as.integer(threads[1L]))
+
+  # Delegate to CellMixS::cms with explicit BiocParallel backend when available
+  if (requireNamespace("CellMixS", quietly = TRUE) &&
+      requireNamespace("SingleCellExperiment", quietly = TRUE) &&
+      requireNamespace("BiocParallel", quietly = TRUE)) {
+    res_cms <- tryCatch({
+      bpparam <- if (threads > 1L) {
+        if (.Platform$OS.type == "windows") {
+          BiocParallel::SnowParam(workers = threads)
+        } else {
+          BiocParallel::MulticoreParam(workers = threads)
+        }
+      } else {
+        BiocParallel::SerialParam()
+      }
+      dummy_counts <- matrix(0, nrow = 2L, ncol = n_cells)
+      if (!is.null(rownames(coords)) && length(rownames(coords)) == n_cells) {
+        colnames(dummy_counts) <- rownames(coords)
+      }
+      sce <- SingleCellExperiment::SingleCellExperiment(
+        list(counts = dummy_counts),
+        colData = data.frame(batch = batch_info)
+      )
+      SingleCellExperiment::reducedDim(sce, "PCA") <- coords
+      eval_res <- CellMixS::cms(
+        sce, k = k, group = "batch", dim_red = "PCA",
+        n_dim = ncol(coords), BPPARAM = bpparam
+      )
+      p_vals <- eval_res$cms
+      return(list(
+        cms_scores = p_vals,
+        mean_cms = mean(p_vals, na.rm = TRUE),
+        median_cms = stats::median(p_vals, na.rm = TRUE)
+      ))
+    }, error = function(e) NULL)
+    if (!is.null(res_cms)) return(res_cms)
+  }
+
   # Native parallel implementation (RANN k-NN + parallel cell chunks)
   knn_res <- .knn_coords(coords, k)
   nn_idx_mat <- knn_res$idx
@@ -302,15 +340,10 @@ evaluate_batch_metrics <- function(
   n_hvg <- min(2000L, length(gene_vars))
   hvg_idx <- order(gene_vars, decreasing = TRUE)[seq_len(n_hvg)]
   hvg_mat <- as.matrix(data_norm[hvg_idx, , drop = FALSE])
-  n_pcs_use <- max(1L, min(as.integer(n_pcs), n_cells - 1L, nrow(hvg_mat) - 1L))
-  pca_res <- if (requireNamespace("irlba", quietly = TRUE) && min(n_cells, nrow(hvg_mat)) > (n_pcs_use * 2L + 2L)) {
-    tryCatch(
-      irlba::prcomp_irlba(t(hvg_mat), n = n_pcs_use, center = TRUE, scale. = FALSE),
-      error = function(e) stats::prcomp(t(hvg_mat), center = TRUE, scale. = FALSE, rank. = n_pcs_use)
-    )
-  } else {
-    stats::prcomp(t(hvg_mat), center = TRUE, scale. = FALSE, rank. = n_pcs_use)
-  }
+  n_pcs_use <- max(1L, min(as.integer(n_pcs), n_cells - 1L))
+  pca_res <- stats::prcomp(t(hvg_mat),
+                           center = TRUE, scale. = FALSE,
+                           rank. = n_pcs_use)
   pca_coords <- pca_res$x[, seq_len(min(n_pcs_use, ncol(pca_res$x))), drop = FALSE]
   
   # 1. Batch Silhouette Width (parallel Euclidean silhouette, with kBET/cluster fallback)
@@ -340,22 +373,32 @@ evaluate_batch_metrics <- function(
     }
   }
   
-  # 2. Principal Component Regression (PCR) R2 (parallel across PCs)
+  # 2. Principal Component Regression (PCR) R2
   if (verbose) message("Calculating principal component regression (PCR)...")
-  n_pc_cols <- ncol(pca_coords)
-  r2_vals <- if (threads > 1L && n_pc_cols > 1L) {
-    unlist(.sc_parallel_lapply(seq_len(n_pc_cols), function(pc_idx) {
-      fit <- stats::lm(pca_coords[, pc_idx] ~ batch_info)
-      summary(fit)$r.squared
-    }, threads = min(threads, n_pc_cols)), use.names = FALSE)
-  } else {
-    vapply(seq_len(n_pc_cols), function(pc_idx) {
-      fit <- stats::lm(pca_coords[, pc_idx] ~ batch_info)
-      summary(fit)$r.squared
-    }, numeric(1))
+  pcr_r2 <- NA_real_
+  if (requireNamespace(pkg_kbet, quietly = TRUE)) {
+    pcr_res <- tryCatch({
+      kbet_pcr <- getExportedValue(pkg_kbet, "pcRegression")
+      kbet_pcr(pca.data = pca_res, batch = as.character(batch_info), n_top = min(n_pcs, ncol(pca_coords)))
+    }, error = function(e) NULL)
+    if (!is.null(pcr_res)) pcr_r2 <- pcr_res$R2Var
   }
-  pc_vars <- pca_res$sdev[seq_len(n_pc_cols)]^2
-  pcr_r2 <- sum(r2_vals * pc_vars) / sum(pc_vars)
+  if (is.na(pcr_r2)) {
+    n_pc_cols <- ncol(pca_coords)
+    r2_vals <- if (threads > 1L && n_pc_cols > 1L) {
+      unlist(.sc_parallel_lapply(seq_len(n_pc_cols), function(pc_idx) {
+        fit <- stats::lm(pca_coords[, pc_idx] ~ batch_info)
+        summary(fit)$r.squared
+      }, threads = min(threads, n_pc_cols)), use.names = FALSE)
+    } else {
+      vapply(seq_len(n_pc_cols), function(pc_idx) {
+        fit <- stats::lm(pca_coords[, pc_idx] ~ batch_info)
+        summary(fit)$r.squared
+      }, numeric(1))
+    }
+    pc_vars <- pca_res$sdev[seq_len(n_pc_cols)]^2
+    pcr_r2 <- sum(r2_vals * pc_vars) / sum(pc_vars)
+  }
   
   # 3. Cell-Specific Mixing Score (CMS)
   if (verbose) message("Calculating CMS (CellMixS)...")

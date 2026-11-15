@@ -675,9 +675,17 @@ evaluate_clustering_metrics <- function(
   } else {
     calc_silhouette(dist_mat, cluster_info)
   }
-  np_sim <- if (!dist_mat_provided && !is.null(pca_coords)) {
-    mean(calc_neighborhood_purity(pca_coords, cluster_info, is_distance = FALSE), na.rm = TRUE)
+  np_sim <- if (!dist_mat_provided && !is.null(pca_coords) && requireNamespace("RANN", quietly = TRUE)) {
+    k_np <- min(max(5L, min(50L, as.integer(round(0.05 * nrow(pca_coords))))), nrow(pca_coords) - 1L)
+    nn_np <- RANN::nn2(pca_coords, k = k_np + 1L)$nn.idx[, -1L, drop = FALSE]
+    cl_chr <- as.character(cluster_info)
+    mean(vapply(seq_len(nrow(pca_coords)), function(i) {
+      mean(cl_chr[nn_np[i, ]] == cl_chr[i], na.rm = TRUE)
+    }, numeric(1)), na.rm = TRUE)
   } else {
+    if (is.null(dist_mat)) {
+      dist_mat <- if (!is.null(pca_coords)) stats::dist(pca_coords) else stats::dist(t(as.matrix(d_use)))
+    }
     mean(calc_neighborhood_purity(dist_mat, cluster_info, is_distance = TRUE), na.rm = TRUE)
   }
 
