@@ -43,8 +43,6 @@ navbar:
       href: index.html
     - text: "Getting Started"
       href: articles/scSimEval-workflow.html
-    - text: "Shiny Studio"
-      href: articles/shiny-app.html
     - text: "Demonstrations"
       menu:
         - text: "1. scRNA-seq Simulation Evaluation"
