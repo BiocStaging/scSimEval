@@ -36,6 +36,11 @@ home:
   title: "scSimEval: Unified Benchmarking for Single-Cell Multiomics Simulations"
   description: "Unified Benchmarking and Accuracy Evaluation for Single-Cell Multiomics Simulation Methods across 56 Curated Evaluation Measures."
 
+footer:
+  structure:
+    left: []
+    right: built_with
+
 navbar:
   title: "scSimEval"
   left:
@@ -240,7 +245,6 @@ articles:
     navbar: "Workflow Guides"
     contents:
       - scSimEval-workflow
-      - shiny-app
 
   - title: "Demonstrations"
     navbar: "Demonstrations"

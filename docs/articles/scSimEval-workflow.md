@@ -98,10 +98,3 @@ saveRDS(sce, file = "dataset.rds")
 | **Category VII (Trajectory & Dynverse)** | 20 cores | Random Forest trees (`ranger`) and geodesic distances scale across all cores. |
 | **Category VIII (Computational Scalability)** | 1 core | Measures wall-clock runtime (`core_seconds`) and peak resident memory (RAM MiB). |
 
-------------------------------------------------------------------------
-
-## 5. Session Information
-
-```r
-sessionInfo()
-```

@@ -77,40 +77,66 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a></h2>
 <p><strong><code>scSimEval</code></strong> is a unified evaluation and benchmarking toolkit designed to systematically quantify how faithfully single-cell and multiomics simulation methods reproduce empirical biological experiments.</p>
-<p>The package provides a standardized, reference-based benchmarking framework computing <strong>56 curated evaluation measures organized into 8 foundational categories</strong>:</p>
-<ol style="list-style-type: decimal">
-<li><strong>Category I: Distributional Properties (14 Metrics)</strong> — Univariate and bivariate distribution distances across cell- and feature-level statistical moments.</li>
-<li><strong>Category II: Sparsity &amp; Zero-Inflation Dynamics (4 Metrics)</strong> — Logistic dropout curves (scRNA-seq), accessibility-sparsity curves (scATAC-seq), and posterior excess zero weights.</li>
-<li><strong>Category III: Cellular Manifold &amp; Clustering Concordance (8 Metrics)</strong> — Global manifold fidelity (MMD), local topology coverage (Generative Precision &amp; Recall), Cluster Silhouette ASW, Clustering Deviation Index (CDI), Neighborhood Purity, Adjusted Rand Index (ARI), and Normalized Mutual Information (NMI).</li>
-<li><strong>Category IV: Technical Variation &amp; Batch Mixing Dynamics (5 Metrics)</strong> — Batch Silhouette ASW, PC Regression <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math> (PCR), Cell-Specific Mixing Score (CMS), Inverse Simpson Index (ISI / LISI), and Cross-Batch cell-type classification transfer F1.</li>
-<li><strong>Category V: Biological Signal &amp; Differential Fidelity (6 Metrics per modality)</strong> — Pseudobulk <code>edgeR-QLF</code> models across biological replicates evaluating DE and DA null <em>p</em>-value uniformity, accuracy, precision, recall, F1-score, and ROC-AUC.</li>
-<li><strong>Category VI: Multiomics Integration &amp; Alignment (5 Metrics)</strong> — Cross-modal alignment in shared latent space via joint Batch ASW, Cell-Type ASW, <em>k</em>-NN Graph Connectivity, Integration ARI, and Integration NMI (<em>active for Paired and Unpaired Multiomics</em>).</li>
-<li><strong>Category VII: Trajectory &amp; Lineage Topology (5 Metrics)</strong> — Dynverse lineage benchmark evaluating HIM topology similarity, edge-flip distance, geodesic correlation, branch assignment F1, and Random Forest feature importance-weighted correlation (<code>wcor_features</code>).</li>
-<li><strong>Category VIII: Computational Scalability &amp; Efficiency (2 Metrics)</strong> — Standardized core-normalized execution runtime (<code>core_seconds</code>) and resident memory footprint per core (<code>memory_per_core_mib</code>).</li>
-</ol>
-<div class="section level3">
-<h3 id="supported-operational-modalities">Supported Operational Modalities<a class="anchor" aria-label="anchor" href="#supported-operational-modalities"></a></h3>
+<p>The package provides a standardized, reference-based benchmarking framework supporting four primary operational modalities:</p>
 <ul>
-<li><strong><code>scRNA-seq</code></strong> (Unimodal Transcriptome: <strong>45 metrics</strong> across 7 categories)</li>
-<li><strong><code>scATAC-seq</code></strong> (Unimodal Epigenome / Chromatin Accessibility: <strong>32 metrics</strong> across 6 categories)</li>
-<li><strong><code>Paired Multiomics</code></strong> (Simultaneous Co-assay, e.g., 10x Chromium Multiome, SHARE-seq: <strong>all 56 metrics</strong> across all 8 canonical categories)</li>
-<li><strong><code>Unpaired Multiomics</code></strong> (Independent Biological Specimens: <strong>53 metrics</strong> across 7 categories)</li>
+<li><strong><code>scRNA-seq</code></strong> (Single-cell transcriptomic count matrices)</li>
+<li><strong><code>scATAC-seq</code></strong> (Single-cell chromatin accessibility peak matrices)</li>
+<li><strong><code>Paired Multiomics</code></strong> (Simultaneous co-assays across identical cells, e.g., 10x Chromium Multiome, SHARE-seq)</li>
+<li><strong><code>Unpaired Multiomics</code></strong> (Independent scRNA-seq and scATAC-seq profiled from separate cells of the same biological system)</li>
 </ul>
-<p align="center">
-<img src="articles/figures/workflow_diagram.png" width="95%" alt="scSimEval Workflow Architecture">
-</p>
-</div>
 <hr>
 </div>
+
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a></h2>
-<p>Install the development version of <strong><code>scSimEval</code></strong> from GitHub using <code>remotes</code>:</p>
+<div class="section level3">
+<h3 id="prerequisites-system-requirements">Prerequisites &amp; System Requirements<a class="anchor" aria-label="anchor" href="#prerequisites-system-requirements"></a></h3>
+<p>Before installing <code>scSimEval</code>, please ensure your system meets the following requirements:</p>
+<ol style="list-style-type: decimal">
+<li><strong>R Version:</strong> R (&gt;= 4.0.0, recommended R &gt;= 4.3.0).</li>
+<li><strong>C++ Compilation Tools:</strong>
+<ul>
+<li><strong>Windows:</strong> Install <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">Rtools</a> matching your R version (required for compiling C++ extensions such as <code>Rcpp</code> and <code>RANN</code>).</li>
+<li><strong>macOS:</strong> Install Xcode Command Line Tools (<code>xcode-select --install</code>) and <code>gfortran</code>.</li>
+<li><strong>Linux:</strong> Ensure standard development packages (<code>build-essential</code>, <code>g++</code>, <code>libcurl4-openssl-dev</code>, <code>libxml2-dev</code>) are installed.</li>
+</ul>
+</li>
+<li><strong>Bioconductor Dependencies:</strong>
+<p><code>scSimEval</code> relies on core Bioconductor packages for single-cell data structures and pseudobulk differential testing. We recommend installing them first via <code>BiocManager</code>:</p>
+<div class="sourceCode" id="cb-bioc"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"BiocManager"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"BiocManager"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="fu">BiocManager</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/BiocManager/man/install.html" class="external-link">install</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="st">"SingleCellExperiment"</span>,</span>
+<span>  <span class="st">"SummarizedExperiment"</span>,</span>
+<span>  <span class="st">"edgeR"</span>,</span>
+<span>  <span class="st">"BiocNeighbors"</span>,</span>
+<span>  <span class="st">"BiocParallel"</span></span>
+<span><span class="op">)</span>, update <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+</li>
+</ol>
+</div>
+
+<div class="section level3">
+<h3 id="installing-scsimeval-from-github">Installing scSimEval from GitHub<a class="anchor" aria-label="anchor" href="#installing-scsimeval-from-github"></a></h3>
+<p>Install the development release of <strong><code>scSimEval</code></strong> from GitHub using <code>remotes</code>:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"remotes"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"kabilanbio/scSimEval"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"kabilanbio/scSimEval"</span>, dependencies <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+</div>
+
+<div class="section level3">
+<h3 id="verification">Verification<a class="anchor" aria-label="anchor" href="#verification"></a></h3>
+<p>Verify that <code>scSimEval</code> has installed successfully:</p>
+<div class="sourceCode" id="cb-ver"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval/">scSimEval</a></span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="st">"scSimEval"</span><span class="op">)</span></span></code></pre></div>
+</div>
 <hr>
 </div>
 <div class="section level2">
@@ -222,7 +248,6 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Kabilan Sakthivel, Dr. Dwijesh Chandra Mishra, Dr. Shashi Bhushan Lal, Dr. Ulavappa Angadi, Dr. Sudhir Srivastava, Dr. Neeraj Budhlakoti, Dr. Krishna Kumar Chaturvedi, Dr. Ranjeet Ranjan Kumar, Dr. Navin Chandra Gupta.</p>
 </div>
 
 <div class="pkgdown-footer-right">
