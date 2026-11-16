@@ -37,28 +37,33 @@
 #' \if{html}{\figure{workflow_diagram.png}{options: width="800" alt="scSimEval Unified Benchmarking Workflow Diagram"}}
 #'
 #' @details
-#' \strong{Metric Measurement Capacity by Data & Metadata Mode (56 Evaluation Measures Suite):}
+#' \strong{Metric Measurement Capacity across 4 Analysis Options (56 Evaluation Measures Suite):}
+#' Both \code{cell_type} and \code{batch} metadata annotations are strictly mandatory for benchmarking to enable complete evaluation across all biological and technical dimensions.
 #' \itemize{
-#'   \item \strong{Count Matrix Alone (No Metadata):} Evaluates Category I (Distributional
-#'     Properties: 10 univariate metrics---Wasserstein, KS, MAD, MAE, RMSE, Bhattacharyya,
-#'     KDE-ISE, Runs statistic, NN mismatch, Inter-dataset silhouette---and 4 bivariate metrics---
-#'     Fasano-Franceschini 2D KS, 2D EMD, 2D NN mismatch, 2D Inter-dataset silhouette),
-#'     Category II (Sparsity & Zero-Inflation Dynamics: logistic dropout curve midpoint/slope/R2
-#'     or accessibility-sparsity curve RMSE/R2, and excess zero-inflation weight discrepancy),
-#'     Category III manifold metrics (MMD, Generative Precision/Recall), and Category VII
-#'     (Trajectory & Lineage Topology via the HVG-filtered dynverse workflow, evaluated for
-#'     \code{scRNA-seq} only and skipped for \code{scATAC-seq}: HIM topology similarity,
-#'     edge flip similarity, geodesic distance correlation, branch assignment F1,
-#'     and Random Forest feature importance weighted correlation wcor_features).
-#'   \item \strong{+ Cell Types (Optional):} Unlocks Category III subpopulation metrics
-#'     (Silhouette ASW, CDI, Neighborhood Purity, ARI, NMI, and auxiliary Davies-Bouldin Index).
-#'   \item \strong{+ Batch / Biological Replicate Annotations (Optional):} Unlocks Category IV
-#'     (Technical Variation & Batch Mixing Dynamics: Batch Silhouette, PCR R2, CMS score,
-#'     LISI/ISI, Cross-Batch F1) and Category V (Biological Signal & Differential Fidelity:
-#'     Libra pseudobulk edgeR-QLF null P-value uniformity, accuracy, precision, recall,
-#'     F1-score, and ROC-AUC for scRNA-seq DE or scATAC-seq DA).
-#'   \item \strong{Full Metadata (+ Runtime & Memory):} Unlocks Category VIII scalability tracking
-#'     (\code{core_seconds}, \code{memory_per_core_mib}) for the complete 56-measure suite.
+#'   \item \strong{1. scRNA-seq (45 Metrics):} Evaluates 45 metrics across 7 categories:
+#'     Category I (Distributional Properties: 10 univariate + 4 bivariate metrics),
+#'     Category II (Sparsity & Zero-Inflation Dynamics: 5 metrics),
+#'     Category III (Cellular Manifold & Clustering Concordance: 8 metrics, including MMD, Precision/Recall, Silhouette, CDI, Purity, ARI, NMI),
+#'     Category IV (Technical Variation & Batch Mixing Dynamics: 5 metrics, including Batch Silhouette, PCR R2, CMS, ISI, Cross-Batch F1),
+#'     Category V (Biological Signal & Differential Expression Fidelity: 6 metrics via pseudobulk edgeR-QLF),
+#'     Category VII (Trajectory & Lineage Topology: 5 metrics via dynverse workflow), and
+#'     Category VIII (Computational Scalability & Efficiency: 2 metrics, core_seconds and memory_per_core_mib).
+#'   \item \strong{2. scATAC-seq (32 Metrics):} Evaluates 32 metrics across 6 categories:
+#'     Category I (Peak Accessibility Distribution Moments: 7 metrics),
+#'     Category II (Accessibility-Sparsity Dynamics: 4 metrics),
+#'     Category III (Epigenomic Manifold & Clustering Concordance: 8 metrics),
+#'     Category IV (Technical Variation & Batch Mixing Dynamics: 5 metrics),
+#'     Category V (Biological Signal & Differential Accessibility Fidelity: 6 metrics via pseudobulk edgeR-QLF), and
+#'     Category VIII (Computational Scalability & Efficiency: 2 metrics). Trajectory (Category VII) is skipped for ATAC.
+#'   \item \strong{3. Paired Multiomics (56 Metrics):} Evaluates all 56 metrics across all 8 canonical categories (I–VIII):
+#'     both unimodal layers (Cat I & II), dual clustering concordance (Cat III), dual batch mixing dynamics (Cat IV),
+#'     dual biological signal fidelity (Cat V: 6 for scRNA DE + 6 for scATAC DA), Multiomics Integration & Alignment (Cat VI:
+#'     Batch ASW, Cell-Type ASW, Graph Connectivity, Integration ARI/NMI, FOSCTTM, Match@1, Cross-modal Generation Fidelity,
+#'     Peak-to-Gene Coupling), scRNA Trajectory (Cat VII), and Scalability (Cat VIII).
+#'   \item \strong{4. Unpaired Multiomics (51 Metrics):} Evaluates 51 metrics across 7 categories:
+#'     evaluates both unimodal layers (Cat I & II), dual clustering (Cat III), dual batch mixing (Cat IV), dual differential signal (Cat V),
+#'     population-level multiomics integration & alignment (Cat VI), scRNA trajectory (Cat VII), and scalability (Cat VIII).
+#'     Omits 5 cell-level pairing measures (FOSCTTM, Match@1, cross-modal generation, and cell-matched coupling) due to separate cell identities (56 - 5 = 51).
 #' }
 #'
 #' @param ref_data Reference count matrix (features x cells).
@@ -117,8 +122,8 @@ evaluate_simulation_accuracy <- function(
   include_downstream = TRUE
 ) {
   # Strict standardization check (Seurat / SingleCellExperiment)
-  val_ref <- validate_sc_object(ref_data, "ref_data")
-  val_sim <- validate_sc_object(sim_data, "sim_data")
+  val_ref <- validate_sc_object(ref_data, "ref_data", modality = modality)
+  val_sim <- validate_sc_object(sim_data, "sim_data", modality = modality)
   
   ref_data <- val_ref$counts
   sim_data <- val_sim$counts
@@ -686,21 +691,19 @@ evaluate_simulation_accuracy <- function(
 #' \if{html}{\figure{workflow_diagram.png}{options: width="800" alt="scSimEval Unified Benchmarking Workflow Diagram"}}
 #'
 #' @details
-#' \strong{Multiomics Metric Measurement Capacity Across the 56 Evaluation Measures:}
+#' \strong{Multiomics Metric Measurement Capacity across 4 Analysis Options (56 Evaluation Measures Suite):}
+#' Both \code{cell_type} and \code{batch} metadata annotations are strictly mandatory for benchmarking to enable complete evaluation across all biological and technical dimensions.
 #' \itemize{
-#'   \item \strong{Paired or Unpaired Count Data Alone:} Evaluates unimodal Category I (10 univariate
-#'     + 4 bivariate metrics when \code{compute_bivariate = TRUE}), Category II (5 sparsity/zero-inflation
-#'     metrics across RNA & ATAC), Category III manifold metrics (MMD, Generative Precision/Recall),
-#'     and Category VII trajectory metrics inferred from scRNA-seq via the HVG-filtered dynverse workflow
-#'     (\code{him}, \code{edge_flip}, \code{geodesic_correlation}, \code{F1_branches}, \code{wcor_features}).
-#'   \item \strong{+ Cell Types:} Unlocks Category III supervised clustering concordance (Silhouette ASW,
-#'     CDI, Neighborhood Purity, ARI, NMI) and Category VI (Multiomics Integration & Alignment:
-#'     Batch ASW, Cell-Type ASW, Graph Connectivity, Integration ARI, Integration NMI).
-#'   \item \strong{+ Batch / Biological Replicate Annotations:} Unlocks Category IV batch mixing across
-#'     both layers and Category V (12 differential fidelity metrics: null P-value uniformity, accuracy,
-#'     precision, recall, F1-score, ROC-AUC across both scRNA-seq DE and scATAC-seq DA).
-#'   \item \strong{+ Runtime & Memory:} Logs Category VIII (\code{core_seconds}, \code{memory_per_core_mib})
-#'     to complete the full 56-measure evaluation suite across all 8 canonical categories.
+#'   \item \strong{1. scRNA-seq (45 Metrics):} Evaluates 45 metrics across 7 categories (I, II, III, IV, V, VII, VIII).
+#'   \item \strong{2. scATAC-seq (32 Metrics):} Evaluates 32 metrics across 6 categories (I, II, III, IV, V, VIII; trajectory skipped).
+#'   \item \strong{3. Paired Multiomics (56 Metrics):} Evaluates all 56 metrics across all 8 canonical categories (I–VIII):
+#'     simultaneous unimodal layers (Cat I & II), dual clustering concordance (Cat III), dual batch mixing dynamics (Cat IV),
+#'     dual biological signal fidelity (Cat V: 12 metrics), Multiomics Integration & Alignment (Cat VI: 7 metrics including FOSCTTM,
+#'     Match@1, cross-modal generation fidelity, peak-to-gene coupling), scRNA Trajectory (Cat VII), and Scalability (Cat VIII).
+#'   \item \strong{4. Unpaired Multiomics (51 Metrics):} Evaluates 51 metrics across 7 categories:
+#'     evaluates both unimodal layers (Cat I & II), dual clustering (Cat III), dual batch mixing (Cat IV), dual differential signal (Cat V),
+#'     population-level multiomics integration & alignment (Cat VI), scRNA trajectory (Cat VII), and scalability (Cat VIII).
+#'     Omits 5 cell-level pairing measures (FOSCTTM, Match@1, cross-modal generation, and cell-matched coupling) due to separate cell identities (56 - 5 = 51).
 #' }
 #'
 #' @param ref_multi Named list of reference matrices for Modality 1 and 2.

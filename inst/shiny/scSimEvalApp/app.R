@@ -2254,6 +2254,15 @@ ui <- page_navbar(
         color: #D1FAE5 !important;
       }
 
+      [data-bs-theme='dark'] [style*='background: #F5F3FF'],
+      [data-bs-theme='dark'] [style*='background:#F5F3FF'],
+      [data-bs-theme='dark'] [style*='background: #FAF5FF'],
+      [data-bs-theme='dark'] [style*='background:#FAF5FF'] {
+        background: #3B0764 !important;
+        border-color: #6B21A8 !important;
+        color: #F3E8FF !important;
+      }
+
       [data-bs-theme='dark'] [style*='background: #FFFBEB'],
       [data-bs-theme='dark'] [style*='background:#FFFBEB'] {
         background: #451A03 !important;
@@ -3585,8 +3594,8 @@ ui <- page_navbar(
         radioButtons(
           "rad_bubble_filter_mode", tags$b("Filter Mode:"),
           choices = c(
-            "All 56 Evaluation Measures" = "all",
-            "Custom Selection"           = "custom"
+            "All Evaluation Measures" = "all",
+            "Custom Selection"        = "custom"
           ),
           selected = "all"
         ),
@@ -4423,7 +4432,7 @@ ui <- page_navbar(
                   column(
                     4,
                     div(
-                      style = "background: #FEFCE8; border-radius: 6px; padding: 10px 12px; height: 100%; font-size: 0.85rem; color: #713F12;",
+                      style = "background: #F5F3FF; border: 1px solid #DDD6FE; border-radius: 6px; padding: 10px 12px; height: 100%; font-size: 0.85rem; color: #581C87;",
                       tags$b("Step 3 — View Charts & Export:"), br(),
                       "Explore the 8 plot panels in ", tags$b("Visualizations"), " or download your full results table in ", tags$b("Benchmark Results & Export"), "."
                     )
@@ -4559,7 +4568,7 @@ ui <- page_navbar(
                   tags$tr(
                     tags$td(style = "padding: 8px 12px; font-weight: 700; color: #1B4F72;", "III. Cellular Manifold & Clustering Concordance"),
                     tags$td(style = "text-align: center; font-weight: 700;", "8"),
-                    tags$td(style = "padding: 8px 12px;", "Counts + optional ", tags$code("cell_type")),
+                    tags$td(style = "padding: 8px 12px;", "Uses ", tags$code("cell_type")),
                     tags$td(style = "padding: 8px 12px;",
                       tags$b("Do simulated cells form the right cell-type clusters and neighborhood structures?"), br(),
                       tags$span(style = "color: #64748B; font-size: 0.79rem;", "Maximum Mean Discrepancy (MMD), Generative Precision & Recall, Average Silhouette Width (ASW), Clustering Deviation Index (CDI), Neighborhood Purity, Adjusted Rand Index (ARI), and Normalized Mutual Information (NMI)."))
@@ -4567,7 +4576,7 @@ ui <- page_navbar(
                   tags$tr(
                     tags$td(style = "padding: 8px 12px; font-weight: 700; color: #1B4F72;", "IV. Technical Variation & Batch Mixing Dynamics"),
                     tags$td(style = "text-align: center; font-weight: 700;", "5"),
-                    tags$td(style = "padding: 8px 12px;", "Needs ", tags$code("batch"), " column"),
+                    tags$td(style = "padding: 8px 12px;", "Uses ", tags$code("batch")),
                     tags$td(style = "padding: 8px 12px;",
                       tags$b("Are technical batch differences reproduced properly across batches?"), br(),
                       tags$span(style = "color: #64748B; font-size: 0.79rem;", "Batch Silhouette Width, Principal Component Regression (PCR R²), Cell-Specific Mixing Score (CMS), Inverse Simpson's Index (ISI), and Cross-Batch F1 Score."))
@@ -4575,7 +4584,7 @@ ui <- page_navbar(
                   tags$tr(
                     tags$td(style = "padding: 8px 12px; font-weight: 700; color: #1B4F72;", "V. Biological Signal & Differential Fidelity"),
                     tags$td(style = "text-align: center; font-weight: 700;", "12"),
-                    tags$td(style = "padding: 8px 12px;", "Needs ", tags$code("cell_type"), " column"),
+                    tags$td(style = "padding: 8px 12px;", "Uses ", tags$code("cell_type")),
                     tags$td(style = "padding: 8px 12px;",
                       tags$b("Can we still detect true marker genes (DEGs) and accessible chromatin peaks (DARs)?"), br(),
                       tags$span(style = "color: #64748B; font-size: 0.79rem;", "Pseudobulk edgeR-QLF differential testing for scRNA-seq DE (6 metrics) and scATAC-seq DA (6 metrics): p-value uniformity, accuracy, precision, recall, F1-score, and ROC-AUC."))
@@ -4583,7 +4592,7 @@ ui <- page_navbar(
                   tags$tr(
                     tags$td(style = "padding: 8px 12px; font-weight: 700; color: #1B4F72;", "VI. Multiomics Integration & Alignment"),
                     tags$td(style = "text-align: center; font-weight: 700;", "5"),
-                    tags$td(style = "padding: 8px 12px;", "Paired RNA + ATAC"),
+                    tags$td(style = "padding: 8px 12px;", "Paired / Unpaired Multiomics"),
                     tags$td(style = "padding: 8px 12px;",
                       tags$b("Do simulated RNA and ATAC modalities align and integrate well together?"), br(),
                       tags$span(style = "color: #64748B; font-size: 0.79rem;", "Joint-embedding integration quality: Batch ASW, Cell-Type ASW, k-NN Graph Connectivity, Integration ARI, and Integration NMI."))
@@ -4609,10 +4618,11 @@ ui <- page_navbar(
             ),
             div(
               style = "background: #F0F9FF; border-left: 4px solid #0284C7; border-radius: 6px; padding: 10px 14px; margin-bottom: 18px; font-size: 0.83rem; color: #0C4A6E;",
-              tags$b("Good to know — How many metrics will run on my data? "), br(),
-              "• ", tags$b("scRNA-seq only (up to 45 metrics):"), " 29/45 with counts only • 40/45 with ", tags$code("cell_type"), " • all ", tags$b("45/45"), " with ", tags$code("cell_type + batch"), ".", br(),
-              "• ", tags$b("scATAC-seq only (up to 32 metrics):"), " 16/32 with counts only • 27/32 with ", tags$code("cell_type"), " • all ", tags$b("32/32"), " with ", tags$code("cell_type + batch"), ".", br(),
-              "• ", tags$b("Paired Multiomics (up to 56 metrics):"), " 35/56 with counts only • 49/56 with ", tags$code("cell_type"), " • all ", tags$b("56/56"), " with ", tags$code("cell_type + batch"), " (or 30/56 to 51/56 in Unpaired Multiomics)."
+              tags$b("Curated Metric Measurement Capacity by Modality: "), br(),
+              "• ", tags$b("scRNA-seq: "), tags$span(class = "badge", style = "background-color: #16A34A; color: #FFFFFF;", "44 Metrics"), " across 7 categories (Cat I: 14, Cat II: 4, Cat III: 8, Cat IV: 5, Cat V: 6 DE, Cat VII: 5 Trajectory, Cat VIII: 2 Scalability).", br(),
+              "• ", tags$b("scATAC-seq: "), tags$span(class = "badge", style = "background-color: #0284C7; color: #FFFFFF;", "38 Metrics"), " across 6 categories (Cat I: 14, Cat II: 3, Cat III: 8, Cat IV: 5, Cat V: 6 DA, Cat VIII: 2 Scalability; Trajectory skipped for ATAC).", br(),
+              "• ", tags$b("Paired Multiomics: "), tags$span(class = "badge", style = "background-color: #15803D; color: #FFFFFF;", "56 Metrics"), " across all 8 canonical categories (I–VIII, with 50 unique columns in Comparative Bubble Matrix).", br(),
+              "• ", tags$b("Unpaired Multiomics: "), tags$span(class = "badge", style = "background-color: #4F46E5; color: #FFFFFF;", "56 Metrics"), " across all 8 canonical categories (same 56 metrics, with Cat VI integration evaluated on joint stacked embeddings)."
             ),
             hr(),
             
@@ -4775,7 +4785,7 @@ ui <- page_navbar(
                 4,
                 div(
                   style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 14px; height: 100%;",
-                  div(style = "font-weight: 700; color: #0E6655; font-size: 0.88rem; margin-bottom: 6px;", "2. Add Cell Types (Optional)"),
+                  div(style = "font-weight: 700; color: #0E6655; font-size: 0.88rem; margin-bottom: 6px;", "2. Add Cell Types (cell_type)"),
                   p(style = "font-size: 0.81rem; color: #475569; margin-bottom: 8px; line-height: 1.5;",
                     "To unlock clustering (ARI/NMI) and DEG/DAR metrics, store cell labels in a metadata column named ", tags$code("cell_type"), ":"),
                   tags$pre(
@@ -4788,7 +4798,7 @@ ui <- page_navbar(
                 4,
                 div(
                   style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 14px; height: 100%;",
-                  div(style = "font-weight: 700; color: #92400E; font-size: 0.88rem; margin-bottom: 6px;", "3. Add Batches (Optional)"),
+                  div(style = "font-weight: 700; color: #92400E; font-size: 0.88rem; margin-bottom: 6px;", "3. Add Batches (batch)"),
                   p(style = "font-size: 0.81rem; color: #475569; margin-bottom: 8px; line-height: 1.5;",
                     "To unlock Category IV Batch Effect metrics (Batch Silhouette, PCR R², CMS, ISI, Cross-Batch F1), store batch IDs in ", tags$code("batch"), ":"),
                   tags$pre(
@@ -4803,7 +4813,7 @@ ui <- page_navbar(
             # ==================================================================
             # SECTION 6: COPY-PASTE R COMMANDS & SYSTEM REQUIREMENTS
             # ==================================================================
-            h5(icon("terminal", style = "color: #2E86C1; margin-right: 8px;"), "6. Copy-Paste R Commands & Recommended Computer Specs", style = "font-weight: 700; color: #1B4F72; margin-top: 16px; margin-bottom: 12px;"),
+            h5(icon("terminal", style = "color: #2E86C1; margin-right: 8px;"), "6. Copy-Paste R Commands & Computational Demand Guidelines", style = "font-weight: 700; color: #1B4F72; margin-top: 16px; margin-bottom: 12px;"),
             fluidRow(
               class = "g-3",
               column(
@@ -4821,16 +4831,15 @@ ui <- page_navbar(
                 5,
                 div(
                   style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 14px; height: 100%;",
-                  div(style = "font-weight: 700; color: #1E293B; font-size: 0.88rem; margin-bottom: 8px;", "Recommended Computer Specs"),
-                  tags$ul(
-                    style = "font-size: 0.83rem; color: #334155; line-height: 1.65; margin-bottom: 10px; padding-left: 18px;",
-                    tags$li(tags$b("Small datasets (< 5,000 cells): "), "8 GB RAM, 4 CPU cores (~1–2 min per simulator)."),
-                    tags$li(tags$b("Medium datasets (5,000 – 25,000 cells): "), "16 GB RAM, 8 CPU cores (~3–6 min per simulator)."),
-                    tags$li(tags$b("Large / Multiomics (> 25,000 cells): "), "32+ GB RAM, 8–16 CPU cores.")
+                  div(style = "font-weight: 700; color: #1E293B; font-size: 0.88rem; margin-bottom: 8px;", "Computational Demand & Resource Guidelines"),
+                  p(style = "font-size: 0.83rem; color: #334155; line-height: 1.6; margin-bottom: 8px;",
+                    "scSimEval is built with high computational efficiency: core statistical distributions, clustering concordance, and differential testing run rapidly on standard multi-core laptops or workstations."
                   ),
-                  div(
-                    style = "padding: 8px 12px; background: #EFF6FF; border-left: 3px solid #2563EB; border-radius: 4px; font-size: 0.8rem; color: #1E3A8A;",
-                    tags$b("Tip: "), "For large multi-simulator benchmarks, use the ", tags$b("Download R Script"), " button in ", tags$b("Data Hub"), " to run the evaluation in R, then upload the saved ", tags$code(".rds"), " file in ", tags$b("Data Hub (Mode 4)"), " for instant plotting!"
+                  p(style = "font-size: 0.83rem; color: #334155; line-height: 1.6; margin-bottom: 8px;",
+                    "For datasets with cell counts > 1,000 or full trajectory inference, allocating 4 to 8 CPU cores and 16+ GB RAM ensures smooth and responsive execution."
+                  ),
+                  p(style = "font-size: 0.83rem; color: #334155; line-height: 1.6; margin-bottom: 0;",
+                    "We strongly advise using the ", tags$b("Download R Script"), " feature in Data Hub to download the pre-configured script from your laptop to run on an HPC cluster. This saves significant computational time on your local machine, avoids laptop bottlenecks, and ensures all required cell-type and batch annotations are properly tracked across all simulators."
                   )
                 )
               )
@@ -5461,17 +5470,17 @@ server <- function(input, output, session) {
   # Modal format guide for cell types and batches
   show_metadata_format_modal <- function() {
     showModal(modalDialog(
-      title = div(icon("table-list", class = "me-2 text-primary"), tags$strong("Metadata & Evaluation Capacity Guidelines (Seurat / SingleCellExperiment)")),
+      title = div(icon("table-list", class = "me-2 text-primary"), tags$strong("Modality-Specific Metrics & Object Guidelines (Seurat / SingleCellExperiment)")),
       size = "l",
       easyClose = TRUE,
       footer = modalButton("Close"),
       div(
-        p("In scSimEval, reference and simulated datasets are uploaded as Seurat or SingleCellExperiment S4 objects (.rds). Cell-type and batch annotations should be embedded directly within the object metadata (e.g. meta.data$cell_type, meta.data$batch in Seurat; colData(sce)$cell_type, colData(sce)$batch in SingleCellExperiment):"),
+        p("In scSimEval, reference and simulated datasets are uploaded as standard Seurat or SingleCellExperiment S4 objects (.rds). Providing ", tags$b("cell_type"), " and ", tags$b("batch"), " metadata annotations enables complete benchmarking across all biological clustering, batch mixing, and differential signal evaluation categories (embedded directly in ", tags$code("meta.data"), " in Seurat or ", tags$code("colData"), " in SingleCellExperiment):"),
         # Metric measurement capacity callout
         div(
           style = "background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 6px; padding: 14px 16px; margin-bottom: 16px;",
-          h6(tags$b(icon("chart-line", class = "me-1 text-success"), " Quantitative Metric Measurement Capacity by Object Configuration"), style = "color: #166534; font-size: 0.94rem; margin-bottom: 6px;"),
-          p("Depending on whether metadata annotations are embedded inside the uploaded objects, scSimEval scales the quantitative evaluation suite dynamically across categories:", style = "font-size: 0.82rem; color: #15803D; margin-bottom: 10px;"),
+          h6(tags$b(icon("chart-line", class = "me-1 text-success"), " Quantitative Metric Measurement Capacity by Modality"), style = "color: #166534; font-size: 0.94rem; margin-bottom: 6px;"),
+          p("When both cell_type and batch metadata are provided, scSimEval evaluates the full suite of curated metrics tailored for each analysis modality:", style = "font-size: 0.82rem; color: #15803D; margin-bottom: 10px;"),
           tags$div(
             class = "table-responsive",
             tags$table(
@@ -5480,78 +5489,49 @@ server <- function(input, output, session) {
               tags$thead(
                 class = "table-light",
                 tags$tr(
-                  tags$th(style = "width: 18%;", "Experiment Mode"),
-                  tags$th(style = "width: 25%;", "Object Metadata Configuration"),
-                  tags$th(style = "width: 17%; text-align: center;", "Metrics Measured"),
-                  tags$th(style = "width: 40%;", "Active Evaluation Categories & Scope")
+                  tags$th(style = "width: 24%;", "Modality / Analysis Option"),
+                  tags$th(style = "width: 24%; text-align: center;", "Exact Metrics Evaluated"),
+                  tags$th(style = "width: 52%;", "Active Evaluation Categories & Scope")
                 )
               ),
               tags$tbody(
                 tags$tr(
                   tags$td(tags$b("1. scRNA-seq")),
-                  tags$td("Object without metadata (counts alone)"),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #475569 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "29 / 45 Metrics")),
-                  tags$td("Cat I (Distributional Properties, 14), Cat II (Sparsity & Dropout, 5), Cat III (Unsupervised manifold, 3), Cat VII (dynverse trajectory topology, 5), and Cat VIII (Computational Scalability, 2)")
-                ),
-                tags$tr(
-                  tags$td(tags$b("1. scRNA-seq")),
-                  tags$td("Object with embedded cell_type"),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #0284C7 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "40 / 45 Metrics")),
-                  tags$td("Adds +11 metrics: Unlocks Cat III (Cellular Structure & Clustering Concordance: Silhouette, CDI, Purity, ARI, NMI, 5 metrics) and Cat V (Pseudobulk edgeR DE Signal Fidelity: uniformity, accuracy, precision, recall, F1, ROC-AUC, 6 metrics)")
-                ),
-                tags$tr(
-                  tags$td(tags$b("1. scRNA-seq")),
-                  tags$td(tags$b("Full Metadata (cell_type + batch)")),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #16A34A !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "All 45 / 45 Unimodal Metrics")),
-                  tags$td("Adds +5 metrics: Unlocks Cat IV (Technical Variation & Batch Mixing Dynamics: Batch Silhouette, PCR R², CMS, ISI, cross-batch F1). Maximum possible for unimodal RNA.")
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #16A34A !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.84rem; padding: 6px 12px; border-radius: 6px;", "44 Metrics")),
+                  tags$td(
+                    tags$b("7 Categories: "),
+                    "Distributional Properties (14), Sparsity & Dropout (4), Clustering Concordance (8), Batch Mixing Dynamics (5), edgeR-QLF DE Signal (6), dynverse Trajectory (5), and Computational Scalability (2)."
+                  )
                 ),
                 tags$tr(
                   tags$td(tags$b("2. scATAC-seq")),
-                  tags$td("Object without metadata (counts alone)"),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #475569 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "16 / 32 Metrics")),
-                  tags$td("Cat I (Peak accessibility distribution moments, 7 metrics), Cat II (Accessibility-sparsity dynamics, 4 metrics), Cat III (Unsupervised geometry, 3 metrics), Cat VIII (Computational Scalability, 2 metrics)")
-                ),
-                tags$tr(
-                  tags$td(tags$b("2. scATAC-seq")),
-                  tags$td("Object with embedded cell_type"),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #0284C7 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "27 / 32 Metrics")),
-                  tags$td("Adds +11 metrics: Unlocks Cat III (Epigenomic Cellular Clustering Concordance, 5 metrics) and Cat V (Pseudobulk edgeR DA signal fidelity, 6 metrics)")
-                ),
-                tags$tr(
-                  tags$td(tags$b("2. scATAC-seq")),
-                  tags$td(tags$b("Full Metadata (cell_type + batch)")),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #16A34A !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "All 32 / 32 Unimodal Metrics")),
-                  tags$td("Adds +5 metrics: Unlocks Cat IV (Epigenomic Technical Variation & Batch Mixing Dynamics: Batch Silhouette, PCR R², CMS, ISI, cross-batch F1). Maximum possible for unimodal ATAC.")
+                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #0284C7 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.84rem; padding: 6px 12px; border-radius: 6px;", "38 Metrics")),
+                  tags$td(
+                    tags$b("6 Categories: "),
+                    "Distributional Properties (14), Sparsity & Dropout (3), Clustering Concordance (8), Batch Mixing Dynamics (5), edgeR-QLF DA Signal (6), and Computational Scalability (2). Trajectory (Cat VII) is skipped for ATAC."
+                  )
                 ),
                 tags$tr(
                   tags$td(tags$b("3. Paired Multiomics")),
-                  tags$td("RNA + ATAC Objects without metadata (counts alone)"),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #4F46E5 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "35 / 56 Metrics")),
-                  tags$td("Measures both unimodal layers simultaneously + Cat VI Multiomics Integration (joint embedding Batch ASW, Graph Connectivity, ARI, NMI) + Cat VII (dynverse trajectory) + Cat VIII (Scalability)")
-                ),
-                tags$tr(
-                  tags$td(tags$b("3. Paired Multiomics")),
-                  tags$td("RNA + ATAC Objects with embedded cell_type"),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #0284C7 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "49 / 56 Metrics")),
-                  tags$td("Adds +14 metrics: Unlocks Cat III (Dual cellular clustering concordance), Cat V (Dual DEG/DA signal fidelity, 12 metrics), and Cat VI (Cell-Type ASW)")
-                ),
-                tags$tr(
-                  tags$td(tags$b("3. Paired Multiomics")),
-                  tags$td(tags$b("Full Metadata (RNA + ATAC + cell_type + batch)")),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #15803D !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "All 56 / 56 Metrics")),
-                  tags$td("Adds +7 metrics: Cat IV Technical Variation & Batch Mixing Dynamics. 100% complete coverage across all 8 biological and computational dimensions (Categories I–VIII)")
+                  tags$td(style = "text-align: center;",
+                    span(class = "badge", style = "background-color: #15803D !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.84rem; padding: 6px 12px; border-radius: 6px;", "56 Metrics"),
+                    tags$br(), tags$small(class = "text-muted fw-semibold", "(50 Plot Columns)")
+                  ),
+                  tags$td(
+                    tags$b("All 8 Categories: "),
+                    "Distributional Properties (14), Sparsity & Dropout (5), Clustering Concordance (8), Batch Mixing Dynamics (5), Differential Signal (12: 6 DE + 6 DA), Multiomics Integration (5), Trajectory (5), and Computational Scalability (2)."
+                  )
                 ),
                 tags$tr(
                   tags$td(tags$b("4. Unpaired Multiomics")),
-                  tags$td("RNA + ATAC Objects without metadata (independent cells)"),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #475569 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "30 / 56 Metrics")),
-                  tags$td("Unimodal distributions for both layers + joint-embedding manifold integration, trajectory (RNA), and computational scalability")
-                ),
-                tags$tr(
-                  tags$td(tags$b("4. Unpaired Multiomics")),
-                  tags$td(tags$b("RNA + ATAC Objects with cell_type (+ batch)")),
-                  tags$td(style = "text-align: center;", span(class = "badge", style = "background-color: #16A34A !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;", "51 / 56 Metrics")),
-                  tags$td("Unlocks cell-type clustering concordance, dual pseudobulk DEG/DA fidelity, and technical donor batch alignment")
+                  tags$td(style = "text-align: center;",
+                    span(class = "badge", style = "background-color: #4F46E5 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.84rem; padding: 6px 12px; border-radius: 6px;", "56 Metrics"),
+                    tags$br(), tags$small(class = "text-muted fw-semibold", "(50 Plot Columns)")
+                  ),
+                  tags$td(
+                    tags$b("All 8 Categories: "),
+                    "Evaluates the exact same 56 metrics across all 8 categories as paired multiomics. Category VI multiomics integration is evaluated on joint stacked embeddings."
+                  )
                 )
               )
             )
@@ -5563,14 +5543,14 @@ server <- function(input, output, session) {
             div(style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 14px; margin-bottom: 12px;",
               h6(tags$b(icon("cube", class = "me-1 text-primary"), " 1. Seurat Object Setup (.rds)"), style = "color: #1E3A8A; margin-bottom: 6px; font-size: 0.90rem;"),
               p("Embed annotations in ", tags$code("meta.data"), " or via standard column assignment. Save object as an ", tags$code(".rds"), " file:", style = "font-size: 0.80rem; color: #475569; margin-bottom: 8px;"),
-              tags$pre("# Seurat v4 / v5 object\nseurat_obj$cell_type <- cell_types_vector   # Cat III & V\nseurat_obj$batch     <- batch_vector        # Cat IV\n# Save for upload\nsaveRDS(seurat_obj, file = 'dataset.rds')", style = "font-size: 0.76rem; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 8px; border-radius: 4px; margin-bottom: 0;")
+              tags$pre("# Seurat v4 / v5 object\nseurat_obj$cell_type <- cell_types_vector   # Enables Cat III, V, VI\nseurat_obj$batch     <- batch_vector        # Enables Cat IV & V\n# Save for upload\nsaveRDS(seurat_obj, file = 'dataset.rds')", style = "font-size: 0.76rem; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 8px; border-radius: 4px; margin-bottom: 0;")
             )
           ),
           column(6,
             div(style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 14px; margin-bottom: 12px;",
               h6(tags$b(icon("cube", class = "me-1 text-teal"), " 2. SingleCellExperiment Setup (.rds)"), style = "color: #0D9488; margin-bottom: 6px; font-size: 0.90rem;"),
               p("Embed annotations in ", tags$code("colData"), ". Save object as an ", tags$code(".rds"), " file:", style = "font-size: 0.80rem; color: #475569; margin-bottom: 8px;"),
-              tags$pre("# SingleCellExperiment object\ncolData(sce)$cell_type <- cell_types_vector # Cat III & V\ncolData(sce)$batch     <- batch_vector      # Cat IV\n# Save for upload\nsaveRDS(sce, file = 'dataset.rds')", style = "font-size: 0.76rem; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 8px; border-radius: 4px; margin-bottom: 0;")
+              tags$pre("# SingleCellExperiment object\ncolData(sce)$cell_type <- cell_types_vector # Enables Cat III, V, VI\ncolData(sce)$batch     <- batch_vector      # Enables Cat IV & V\n# Save for upload\nsaveRDS(sce, file = 'dataset.rds')", style = "font-size: 0.76rem; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 8px; border-radius: 4px; margin-bottom: 0;")
             )
           )
         )
@@ -6835,7 +6815,7 @@ server <- function(input, output, session) {
           if (has_upload_ref) {
             incProgress(0.1 / n_dsets, detail = sprintf("Loading reference for %s...", d_label))
             ref_raw <- readRDS(ref_file$datapath)
-            ref_val <- validate_sc_object(ref_raw, d_label)
+            ref_val <- validate_sc_object(ref_raw, d_label, modality = mod_label)
             ref_mat_d <- ref_val$counts
             ref_obj_d <- ref_val$object
             ct_vec <- ref_val$cell_types
@@ -6858,11 +6838,11 @@ server <- function(input, output, session) {
           
           if (!is.null(ct_vec)) {
             rv$cell_types_map[[d_label]] <- ct_vec
-            rv$cell_types_map[[paste0(d_label, "_RNA")]] <- ct_vec
+            rv$cell_types_map[[paste0(d_label, "_", toupper(mod_key))]] <- ct_vec
           }
           if (!is.null(bt_vec)) {
             rv$batches_map[[d_label]] <- bt_vec
-            rv$batches_map[[paste0(d_label, "_RNA")]] <- bt_vec
+            rv$batches_map[[paste0(d_label, "_", toupper(mod_key))]] <- bt_vec
           }
           
           summary_rows[[length(summary_rows) + 1]] <- extract_dataset_summary(
@@ -6892,7 +6872,7 @@ server <- function(input, output, session) {
             if (has_upload_sim) {
               incProgress(0.7 / (n_sims * n_dsets), detail = sprintf("Evaluating %s on %s...", sim_name, d_label))
               sim_raw <- readRDS(sim_file$datapath)
-              sim_val <- validate_sc_object(sim_raw, sim_name)
+              sim_val <- validate_sc_object(sim_raw, sim_name, modality = mod_label)
               sim_mat_d <- sim_val$counts
               sim_obj_d <- sim_val$object
               if (is.null(ct_vec) && !is.null(sim_val$cell_types)) ct_vec <- sim_val$cell_types
@@ -6969,7 +6949,7 @@ server <- function(input, output, session) {
               time_unit = sim_t_unit,
               memory_unit = sim_m_unit,
               sim_cores = sim_cores_used,
-              include_trajectory = FALSE
+              include_trajectory = (!is_atac_mode)
             ), component = "Evaluation")
             tbl_sd <- if (!is.null(res_sd$metrics_summary_table)) {
               res_sd$metrics_summary_table
@@ -8778,12 +8758,12 @@ server <- function(input, output, session) {
         div(class = "d-flex align-items-center justify-content-between flex-wrap gap-2",
           div(
             style = "color: #0369A1; line-height: 1.55;",
-            tags$b(icon("circle-info", class = "me-1 text-info"), "Exact Single-Cell Metric Measurement Capacity: ", style = "color: #0C4A6E;"),
-            "Seurat / SingleCellExperiment objects without metadata evaluate ", tags$b("29 / 45 metrics (scRNA)", style = "color: #0C4A6E;"), " / ", tags$b("16 / 32 metrics (scATAC)", style = "color: #0C4A6E;"), " (distributional properties, sparsity, unsupervised manifold, trajectory, and scalability). ",
-            "Embedding ", tags$span(class = "badge bg-primary-subtle text-primary border border-primary-subtle", "cell_type"), 
-            " unlocks ", tags$b("40 / 45 metrics (scRNA)", style = "color: #0C4A6E;"), " / ", tags$b("27 / 32 metrics (scATAC)", style = "color: #0C4A6E;"), " (cellular clustering concordance, ARI, NMI, and pseudobulk DEG/DA signal fidelity). ",
-            "Embedding both ", tags$span(class = "badge bg-warning-subtle text-warning border border-warning-subtle", "cell_type + batch"), 
-            " unlocks ", tags$b("all 45 / 45 metrics (scRNA)", style = "color: #0C4A6E;"), " / ", tags$b("all 32 / 32 metrics (scATAC)", style = "color: #0C4A6E;"), " across all unimodal evaluation categories (batch silhouette, PCR R², CMS, ISI, and cross-batch F1)."
+            tags$b(icon("circle-info", class = "me-1 text-info"), "Single-Cell Metric Measurement Capacity: ", style = "color: #0C4A6E;"),
+            "Including both ", tags$span(class = "badge bg-primary text-white", "cell_type"), " and ",
+            tags$span(class = "badge text-white", style = "background-color: #0D9488;", "batch"),
+            " metadata annotations enables comprehensive evaluation: ",
+            tags$b("44 Metrics for scRNA-seq", style = "color: #0C4A6E;"), " across Categories I, II, III, IV, V, VII, and VIII, and ",
+            tags$b("38 Metrics for scATAC-seq", style = "color: #0C4A6E;"), " across Categories I, II, III, IV, V, and VIII (trajectory skipped for ATAC)."
           ),
           actionLink(
             "btn_show_metadata_format_hint",
@@ -8889,13 +8869,12 @@ server <- function(input, output, session) {
         div(class = "d-flex align-items-center justify-content-between flex-wrap gap-2",
           div(
             style = "color: #3730A3; line-height: 1.55;",
-            tags$b(icon("circle-info", class = "me-1 text-indigo"), "Exact Multiomics Metric Measurement Capacity: ", style = "color: #1E1B4B;"),
-            "Paired RNA + ATAC Seurat / SingleCellExperiment objects without metadata evaluate ", tags$b("35 / 56 metrics", style = "color: #1E1B4B;"), " (unimodal properties for both layers + Category VI Multiomics Integration, Category VII dynverse trajectory, and Category VIII Scalability). ",
-            "Embedding ", tags$span(class = "badge bg-primary-subtle text-primary border border-primary-subtle", "cell_type"), " unlocks ",
-            tags$b("49 / 56 metrics", style = "color: #1E1B4B;"), " (adding dual clustering concordance and dual DEG/DA signal fidelity). Embedding both ",
-            tags$span(class = "badge bg-warning-subtle text-warning border border-warning-subtle", "cell_type + batch"), 
-            " unlocks ", tags$b("all 56 / 56 metrics across all 8 categories", style = "color: #1E1B4B;"), ". ",
-            "In Unpaired mode: ", tags$b("30 / 56 metrics", style = "color: #1E1B4B;"), " (counts alone) and up to ", tags$b("51 / 56 metrics", style = "color: #1E1B4B;"), " (with cell_type and batch metadata)."
+            tags$b(icon("circle-info", class = "me-1 text-indigo"), "Multiomics Metric Measurement Capacity: ", style = "color: #1E1B4B;"),
+            "Including both ", tags$span(class = "badge text-white", style = "background: #4F46E5;", "cell_type"), " and ",
+            tags$span(class = "badge text-white", style = "background-color: #0D9488;", "batch"),
+            " metadata annotations enables comprehensive evaluation: ",
+            tags$b("56 Metrics for Paired Multiomics", style = "color: #1E1B4B;"), " covering all 8 canonical categories (I–VIII), and ",
+            tags$b("56 Metrics for Unpaired Multiomics", style = "color: #1E1B4B;"), " across all 8 canonical categories (with Cat VI integration computed on joint stacked embeddings)."
           ),
           actionLink(
             "btn_show_metadata_format_multi_hint",
@@ -9860,8 +9839,21 @@ server <- function(input, output, session) {
     
     # 2. Modality Filter
     mod_choice <- input$sel_bubble_modality %||% (input$sel_viz_modality %||% "all")
+    if (identical(mod_choice, "all")) {
+      if (identical(input$opt_data_mode, "scatac")) {
+        mod_choice <- "ATAC"
+      } else if (identical(input$opt_data_mode, "scrna")) {
+        mod_choice <- "RNA"
+      } else if ("Modality" %in% colnames(df)) {
+        avail_mods <- unique(as.character(df$Modality[!df$Modality %in% c("Computation", "Total", "scalability") & !is.na(df$Modality)]))
+        if (length(avail_mods) == 1L) {
+          if (grepl("atac", avail_mods, ignore.case = TRUE)) mod_choice <- "ATAC"
+          else if (grepl("rna", avail_mods, ignore.case = TRUE)) mod_choice <- "RNA"
+        }
+      }
+    }
     if (!identical(mod_choice, "all")) {
-      if (identical(mod_choice, "RNA")) {
+      if (identical(mod_choice, "RNA") || grepl("rna", mod_choice, ignore.case = TRUE)) {
         has_atac_da <- grepl("^atac_da_|^DA ", df$Metric, ignore.case = TRUE)
         is_atac_curve <- df$Metric %in% c("curve_rmse", "Accessibility Sparsity RMSE")
         is_cat6 <- grepl("^\\(VI\\)|Multiomics Integration", df$Category, ignore.case = TRUE)
@@ -9869,16 +9861,13 @@ server <- function(input, output, session) {
         if ("Modality" %in% colnames(df)) {
           df <- df[!grepl("ATAC", df$Modality, ignore.case = TRUE), , drop = FALSE]
         }
-      } else if (identical(mod_choice, "ATAC")) {
+      } else if (identical(mod_choice, "ATAC") || grepl("atac", mod_choice, ignore.case = TRUE)) {
         has_rna_de <- grepl("^rna_de_|^DE ", df$Metric, ignore.case = TRUE)
         is_cat7 <- grepl("^\\(VII\\)|Trajectory", df$Category, ignore.case = TRUE)
         is_cat6 <- grepl("^\\(VI\\)|Multiomics Integration", df$Category, ignore.case = TRUE)
         df <- df[!has_rna_de & !is_cat7 & !is_cat6, , drop = FALSE]
         if ("Modality" %in% colnames(df)) {
-          has_both_mods <- any(grepl("ATAC", df$Modality, ignore.case = TRUE) & grepl("^\\(I\\)", df$Category))
-          if (has_both_mods) {
-            df <- df[!grepl("RNA", df$Modality, ignore.case = TRUE), , drop = FALSE]
-          }
+          df <- df[!grepl("RNA", df$Modality, ignore.case = TRUE), , drop = FALSE]
         }
       } else if (identical(mod_choice, "Joint")) {
         df <- df[grepl("Joint|Cross|Multiomics", df$Modality, ignore.case = TRUE) | grepl("Comp|Scalability", df$Modality, ignore.case = TRUE) | grepl("^\\(VIII\\)", df$Category), , drop = FALSE]
@@ -9936,9 +9925,20 @@ server <- function(input, output, session) {
     withProgress(message = "Rendering Comparative Bubble Matrix", detail = "Normalizing evaluation metrics...", {
       df <- standardize_benchmark_categories(df)
       incProgress(0.5, detail = "Generating ggplot bubble matrix...")
+      eff_mod <- input$sel_bubble_modality %||% (input$sel_viz_modality %||% "all")
+      if (identical(eff_mod, "all")) {
+        if (identical(input$opt_data_mode, "scatac")) {
+          eff_mod <- "ATAC"
+        } else if (identical(input$opt_data_mode, "scrna")) {
+          eff_mod <- "RNA"
+        } else if ("Modality" %in% colnames(df)) {
+          avail_m <- unique(as.character(df$Modality[!df$Modality %in% c("Computation", "Total", "scalability") & !is.na(df$Modality)]))
+          if (length(avail_m) == 1L) eff_mod <- if (grepl("atac", avail_m, ignore.case = TRUE)) "ATAC" else if (grepl("rna", avail_m, ignore.case = TRUE)) "RNA" else "all"
+        }
+      }
       p <- plot_benchmark_bubble_matrix(
         data              = df,
-        assay_modality    = input$sel_bubble_modality %||% (input$sel_viz_modality %||% "all"),
+        assay_modality    = eff_mod,
         base_size         = 11,
         compact_strips    = TRUE,
         show_missing_dots = FALSE,

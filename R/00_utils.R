@@ -671,7 +671,7 @@ extract_dataset_summary <- function(mat, role = "Reference", method_name = "Data
 #'   \item{embedding}{Extracted dimensional reduction matrix (cells x dims), or NULL if absent.}
 #'
 #' @export
-validate_sc_object <- function(obj, arg_name = "data", reduction_name = NULL) {
+validate_sc_object <- function(obj, arg_name = "data", reduction_name = NULL, modality = NULL) {
   if (is.null(obj)) return(NULL)
   
   is_sce <- inherits(obj, "SingleCellExperiment")
@@ -693,10 +693,32 @@ validate_sc_object <- function(obj, arg_name = "data", reduction_name = NULL) {
     # 1. Counts
     if (requireNamespace("SingleCellExperiment", quietly = TRUE)) {
       assays_list <- SummarizedExperiment::assays(obj)
-      if ("counts" %in% names(assays_list)) {
-        counts_mat <- assays_list[["counts"]]
-      } else if (length(assays_list) > 0) {
-        counts_mat <- assays_list[[1]]
+      altexp_names <- tryCatch(SingleCellExperiment::altExpNames(obj), error = function(e) character(0))
+      target_exp <- NULL
+      if (!is.null(modality) && length(altexp_names) > 0) {
+        mod_check <- tolower(trimws(as.character(modality)[1L]))
+        if (grepl("atac|peak|chromatin", mod_check)) {
+          hit <- grep("atac|peak|chromatin|macs2|tile", altexp_names, ignore.case = TRUE, value = TRUE)
+          if (length(hit) > 0) target_exp <- SingleCellExperiment::altExp(obj, hit[1L])
+        } else if (grepl("rna|gene|transcr", mod_check)) {
+          hit <- grep("^rna$|gene|transcr", altexp_names, ignore.case = TRUE, value = TRUE)
+          if (length(hit) == 0) hit <- grep("rna", altexp_names, ignore.case = TRUE, value = TRUE)
+          if (length(hit) > 0) target_exp <- SingleCellExperiment::altExp(obj, hit[1L])
+        }
+      }
+      if (!is.null(target_exp)) {
+        exp_assays <- SummarizedExperiment::assays(target_exp)
+        if ("counts" %in% names(exp_assays)) {
+          counts_mat <- exp_assays[["counts"]]
+        } else if (length(exp_assays) > 0) {
+          counts_mat <- exp_assays[[1]]
+        }
+      } else {
+        if ("counts" %in% names(assays_list)) {
+          counts_mat <- assays_list[["counts"]]
+        } else if (length(assays_list) > 0) {
+          counts_mat <- assays_list[[1]]
+        }
       }
     }
     # 2. Metadata (cell_type and batch)
@@ -714,31 +736,63 @@ validate_sc_object <- function(obj, arg_name = "data", reduction_name = NULL) {
       target_rd <- if (!is.null(reduction_name) && reduction_name %in% rd_names) {
         reduction_name
       } else {
-        pref <- c("integrated", "joint", "harmony", "wnn", "PCA", "pca")
-        found <- intersect(pref, rd_names)
+        mod_pref <- if (!is.null(modality) && grepl("atac|peak|chromatin", tolower(modality))) {
+          c("atac_lsi", "lsi", "atac_pca", "atac_umap", "harmony_atac", "integrated", "joint", "pca", "PCA")
+        } else if (!is.null(modality) && grepl("rna|gene|transcr", tolower(modality))) {
+          c("rna_pca", "pca", "PCA", "rna_umap", "harmony_rna", "integrated", "joint")
+        } else {
+          c("integrated", "joint", "harmony", "wnn", "PCA", "pca", "lsi")
+        }
+        found <- intersect(mod_pref, rd_names)
         if (length(found) > 0) found[1] else rd_names[1]
       }
       embed_mat <- as.matrix(SingleCellExperiment::reducedDim(obj, target_rd))
     }
   } else if (is_seurat) {
-    # 1. Counts (respect DefaultAssay first so ATAC/secondary assays work cleanly;
-    #    Seurat v5 split 'counts.*' layers are joined automatically)
-    counts_mat <- tryCatch(
-      .seurat_assay_counts(obj, .seurat_default_assay(obj)),
-      error = function(e0) tryCatch(
-      Seurat::GetAssayData(obj, slot = "counts"),
-      error = function(e) {
-        tryCatch(
-          Seurat::GetAssayData(obj, layer = "counts"),
-          error = function(e2) {
-            tryCatch(
-              obj[["RNA"]]$counts,
-              error = function(e3) NULL
-            )
-          }
-        )
+    # 1. Counts: respect modality if specified, so if multiomics data with RNA and ATAC layers
+    # is provided, we extract the assay corresponding to the active dataset selection mode
+    target_assay <- NULL
+    if (!is.null(modality) && nzchar(trimws(as.character(modality)[1L]))) {
+      mod_check <- tolower(trimws(as.character(modality)[1L]))
+      all_assays <- names(obj@assays)
+      if (grepl("atac|peak|chromatin", mod_check)) {
+        m_hit <- grep("atac|peak|chromatin|macs2|tile", all_assays, ignore.case = TRUE, value = TRUE)
+        if (length(m_hit) > 0) target_assay <- m_hit[1L]
+      } else if (grepl("rna|gene|transcr", mod_check)) {
+        m_hit <- grep("^rna$|gene|transcr", all_assays, ignore.case = TRUE, value = TRUE)
+        if (length(m_hit) == 0) m_hit <- grep("rna", all_assays, ignore.case = TRUE, value = TRUE)
+        if (length(m_hit) > 0) target_assay <- m_hit[1L]
       }
-    ))
+    }
+    if (is.null(target_assay) || !nzchar(target_assay)) {
+      target_assay <- .seurat_default_assay(obj)
+    }
+
+    # Set DefaultAssay on object so downstream methods work in the active modality
+    if (requireNamespace("SeuratObject", quietly = TRUE) && !is.null(target_assay) && target_assay %in% names(obj@assays)) {
+      try(SeuratObject::DefaultAssay(obj) <- target_assay, silent = TRUE)
+    }
+
+    counts_mat <- tryCatch(
+      .seurat_assay_counts(obj, target_assay),
+      error = function(e0) tryCatch(
+        Seurat::GetAssayData(obj, assay = target_assay, slot = "counts"),
+        error = function(e) {
+          tryCatch(
+            Seurat::GetAssayData(obj, assay = target_assay, layer = "counts"),
+            error = function(e2) {
+              tryCatch(
+                obj[[target_assay]]$counts,
+                error = function(e3) NULL
+              )
+            }
+          )
+        }
+      )
+    )
+    if (is.null(counts_mat)) {
+      counts_mat <- tryCatch(.seurat_assay_counts(obj, .seurat_default_assay(obj)), error = function(e) NULL)
+    }
     # 2. Metadata
     md <- obj@meta.data
     md_cols <- tolower(colnames(md))
@@ -759,8 +813,14 @@ validate_sc_object <- function(obj, arg_name = "data", reduction_name = NULL) {
       target_red <- if (!is.null(reduction_name) && reduction_name %in% red_names) {
         reduction_name
       } else {
-        pref <- c("integrated", "joint", "harmony", "wnn", "pca", "PCA")
-        found <- intersect(pref, red_names)
+        mod_pref <- if (!is.null(modality) && grepl("atac|peak|chromatin", tolower(modality))) {
+          c("atac_lsi", "lsi", "atac_pca", "atac_umap", "harmony_atac", "integrated", "joint", "pca", "PCA")
+        } else if (!is.null(modality) && grepl("rna|gene|transcr", tolower(modality))) {
+          c("rna_pca", "pca", "PCA", "rna_umap", "harmony_rna", "integrated", "joint")
+        } else {
+          c("integrated", "joint", "harmony", "wnn", "pca", "PCA", "lsi")
+        }
+        found <- intersect(mod_pref, red_names)
         if (length(found) > 0) found[1] else red_names[1]
       }
       embed_mat <- as.matrix(Seurat::Embeddings(obj, reduction = target_red))

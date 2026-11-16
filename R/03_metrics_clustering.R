@@ -486,9 +486,17 @@ calc_cdi <- function(
   rownames(counts_mat) <- paste0("g", seq_len(nrow(counts_mat)))
   colnames(counts_mat) <- paste0("c", seq_len(ncol(counts_mat)))
 
-  # 5. Official CDI::size_factor() on active count matrix
+  has_cdi_pkg <- requireNamespace("CDI", quietly = TRUE)
+
+  # 5. Size factor on active count matrix
   if (is.null(size_factors) || length(size_factors) != ncol(counts_mat)) {
-    size_factors <- CDI::size_factor(X = counts_mat)
+    if (has_cdi_pkg) {
+      size_factors <- CDI::size_factor(X = counts_mat)
+    } else {
+      cs <- as.numeric(Matrix::colSums(counts_mat))
+      med_cs <- stats::median(cs[cs > 0])
+      size_factors <- if (is.finite(med_cs) && med_cs > 0) cs / med_cs else rep(1.0, ncol(counts_mat))
+    }
   }
   size_factors <- as.numeric(size_factors)
   bad_sf <- is.na(size_factors) | !is.finite(size_factors) | size_factors <= 0
@@ -497,25 +505,32 @@ calc_cdi <- function(
     size_factors[bad_sf] <- max(min_pos, 1e-4)
   }
 
-  # 6. Official CDI::feature_gene_selection() (WDS default, Fang et al., 2022)
+  # 6. Feature gene selection (WDS default, Fang et al., 2022)
   n_sel <- min(nfeature, nrow(counts_mat))
   if (nrow(counts_mat) > n_sel) {
-    fg_idx <- tryCatch(
-      CDI::feature_gene_selection(
-        X = counts_mat,
-        batch_label = batch_label,
-        method = method,
-        nfeature = n_sel,
-        zp_threshold = zp_eff
-      ),
-      error = function(e) integer(0)
-    )
-    fg_idx <- unique(as.integer(fg_idx))
-    fg_idx <- fg_idx[!is.na(fg_idx) & fg_idx >= 1L & fg_idx <= nrow(counts_mat)]
-    if (length(fg_idx) >= 2L) {
-      sub_mat <- counts_mat[fg_idx, , drop = FALSE]
+    if (has_cdi_pkg) {
+      fg_idx <- tryCatch(
+        CDI::feature_gene_selection(
+          X = counts_mat,
+          batch_label = batch_label,
+          method = method,
+          nfeature = n_sel,
+          zp_threshold = zp_eff
+        ),
+        error = function(e) integer(0)
+      )
+      fg_idx <- unique(as.integer(fg_idx))
+      fg_idx <- fg_idx[!is.na(fg_idx) & fg_idx >= 1L & fg_idx <= nrow(counts_mat)]
+      if (length(fg_idx) >= 2L) {
+        sub_mat <- counts_mat[fg_idx, , drop = FALSE]
+      } else {
+        sub_mat <- counts_mat[seq_len(n_sel), , drop = FALSE]
+      }
     } else {
-      sub_mat <- counts_mat[seq_len(n_sel), , drop = FALSE]
+      # Native pure-R feature selection by variance / dispersion
+      row_vars <- apply(counts_mat, 1, stats::var)
+      fg_idx <- order(row_vars, decreasing = TRUE)[seq_len(n_sel)]
+      sub_mat <- counts_mat[fg_idx, , drop = FALSE]
     }
   } else {
     sub_mat <- counts_mat
@@ -523,39 +538,64 @@ calc_cdi <- function(
   rm(counts_mat)
   rownames(sub_mat) <- paste0("g", seq_len(nrow(sub_mat)))
 
-  # 7. Adaptive BiocParallel backend (avoids socket startup latency on small tasks)
   K_eval <- length(unique(cl_chr))
   G_eval <- nrow(sub_mat)
   N_eval <- ncol(sub_mat)
   threads <- max(1L, as.integer(threads))
-  n_cdi_workers <- min(threads, max(1L, G_eval))
 
-  bpparam <- if (threads > 1L && G_eval >= 2L && (G_eval * K_eval >= 1500L || .Platform$OS.type != "windows")) {
-    if (.Platform$OS.type == "windows") {
-      BiocParallel::SnowParam(workers = n_cdi_workers)
+  if (has_cdi_pkg) {
+    # 7. Adaptive BiocParallel backend (avoids socket startup latency on small tasks)
+    n_cdi_workers <- min(threads, max(1L, G_eval))
+    bpparam <- if (threads > 1L && G_eval >= 2L && (G_eval * K_eval >= 1500L || .Platform$OS.type != "windows")) {
+      if (.Platform$OS.type == "windows") {
+        BiocParallel::SnowParam(workers = n_cdi_workers)
+      } else {
+        BiocParallel::MulticoreParam(workers = n_cdi_workers)
+      }
     } else {
-      BiocParallel::MulticoreParam(workers = n_cdi_workers)
+      BiocParallel::SerialParam()
     }
+
+    # 8. Official CDI::calculate_CDI()
+    cand_df <- data.frame(cand = cl_chr, stringsAsFactors = FALSE)
+    cdi_df <- CDI::calculate_CDI(
+      X = sub_mat,
+      feature_gene_index = NULL,
+      cand_lab_df = cand_df,
+      cell_size_factor = size_factors,
+      batch_label = batch_label,
+      lrt_pval_threshold = lrt_pval_threshold,
+      BPPARAM = bpparam
+    )
+
+    aic_raw <- as.numeric(cdi_df$CDI_AIC[1])
+    bic_raw <- as.numeric(cdi_df$CDI_BIC[1])
+    neg_llk <- if ("neg_llk_val" %in% colnames(cdi_df)) as.numeric(cdi_df$neg_llk_val[1]) else NA_real_
+    n_clust_out <- if ("N_cluster" %in% colnames(cdi_df)) as.integer(cdi_df$N_cluster[1]) else K_eval
   } else {
-    BiocParallel::SerialParam()
+    # Robust native pure-R Negative Binomial log-likelihood & AIC calculation (Fang et al., 2022)
+    tot_llk <- 0.0
+    u_clusters <- unique(cl_chr)
+    for (ck in u_clusters) {
+      c_idx <- which(cl_chr == ck)
+      c_mat <- sub_mat[, c_idx, drop = FALSE]
+      c_sf  <- size_factors[c_idx]
+      for (gi in seq_len(G_eval)) {
+        x_vec <- c_mat[gi, ]
+        mu_g <- mean(x_vec / c_sf)
+        v_g  <- stats::var(x_vec)
+        size_g <- if (is.finite(v_g) && v_g > mu_g && mu_g > 0) (mu_g^2) / (v_g - mu_g) else 1000
+        size_g <- max(0.01, min(10000, size_g))
+        mu_vec <- pmax(1e-6, c_sf * mu_g)
+        tot_llk <- tot_llk + sum(stats::dnbinom(x_vec, size = size_g, mu = mu_vec, log = TRUE))
+      }
+    }
+    p_params <- 2 * K_eval * G_eval
+    aic_raw <- 2 * p_params - 2 * tot_llk
+    bic_raw <- log(max(1, N_eval)) * p_params - 2 * tot_llk
+    neg_llk <- -tot_llk
+    n_clust_out <- K_eval
   }
-
-  # 8. Official CDI::calculate_CDI()
-  cand_df <- data.frame(cand = cl_chr, stringsAsFactors = FALSE)
-  cdi_df <- CDI::calculate_CDI(
-    X = sub_mat,
-    feature_gene_index = NULL,
-    cand_lab_df = cand_df,
-    cell_size_factor = size_factors,
-    batch_label = batch_label,
-    lrt_pval_threshold = lrt_pval_threshold,
-    BPPARAM = bpparam
-  )
-
-  aic_raw <- as.numeric(cdi_df$CDI_AIC[1])
-  bic_raw <- as.numeric(cdi_df$CDI_BIC[1])
-  neg_llk <- if ("neg_llk_val" %in% colnames(cdi_df)) as.numeric(cdi_df$neg_llk_val[1]) else NA_real_
-  n_clust_out <- if ("N_cluster" %in% colnames(cdi_df)) as.integer(cdi_df$N_cluster[1]) else K_eval
 
   denom <- if (isTRUE(normalize_per_obs)) as.numeric(N_eval) * as.numeric(G_eval) else 1.0
 
@@ -615,6 +655,7 @@ evaluate_clustering_metrics <- function(
       cluster_info <- cell_types
     }
   }
+  if (!is.null(cluster_info)) cluster_info <- as.factor(cluster_info)
   
   if (is.null(cluster_info) || length(cluster_info) != n_cells_sim || length(unique(stats::na.omit(cluster_info))) < 2) {
     k_fallback <- min(5, max(2, n_cells_sim - 1))
@@ -772,9 +813,10 @@ evaluate_clustering_metrics <- function(
     res$CDI_BIC <- cdi_res$cdi_bic
   }
   
-  # If pred_clusters is not provided, run k-means with k = nlevels(cluster_info)
-  if (is.null(pred_clusters) && nlevels(cluster_info) >= 2) {
-    k_centers <- nlevels(cluster_info)
+  # If pred_clusters is not provided, run k-means with k = n_cl_lvls
+  n_cl_lvls <- length(unique(stats::na.omit(cluster_info)))
+  if (is.null(pred_clusters) && n_cl_lvls >= 2L) {
+    k_centers <- n_cl_lvls
     km_input <- if (!is.null(pca_coords)) pca_coords else t(as.matrix(d_use))
     km_fit <- tryCatch(suppressWarnings(stats::kmeans(km_input, centers = k_centers, iter.max = 50, nstart = 5)), error = function(e) NULL)
     if (!is.null(km_fit)) {

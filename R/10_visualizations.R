@@ -3701,6 +3701,38 @@ plot_benchmark_bubble_matrix <- function(
   is_rna_view  <- grepl("rna", mod_str_view) && !grepl("atac|all|multi|joint", mod_str_view)
   is_atac_view <- grepl("atac", mod_str_view) && !grepl("rna|all|multi|joint", mod_str_view)
 
+  # Auto-detect unimodal dataset if assay_modality is "all" but data is strictly single-modality
+  if (!is_rna_view && !is_atac_view && "Modality" %in% colnames(df)) {
+    avail_mods <- unique(as.character(df$Modality[!df$Modality %in% c("Computation", "Total", "scalability") & !is.na(df$Modality)]))
+    if (length(avail_mods) == 1L) {
+      if (grepl("rna", avail_mods, ignore.case = TRUE)) is_rna_view <- TRUE
+      if (grepl("atac", avail_mods, ignore.case = TRUE)) is_atac_view <- TRUE
+    }
+  }
+  is_single_modality <- is_rna_view || is_atac_view
+
+  if (is_rna_view) {
+    cat5_prefix <- "DE "
+    # Strictly filter to scRNA-seq chosen metrics only:
+    is_atac_m <- (df$Metric %in% c("curve_rmse", "Accessibility Sparsity RMSE") |
+                  grepl("^atac_da_|^DA ", df$Metric, ignore.case = TRUE) |
+                  grepl("^\\(VI\\)|Multiomics Integration", df$Display_Category, ignore.case = TRUE))
+    df <- df[!is_atac_m, , drop = FALSE]
+    if ("Modality" %in% colnames(df)) {
+      df <- df[!grepl("ATAC", df$Modality, ignore.case = TRUE), , drop = FALSE]
+    }
+  } else if (is_atac_view) {
+    cat5_prefix <- "DA "
+    # Strictly filter to scATAC-seq chosen metrics only:
+    is_rna_m <- (grepl("^rna_de_|^DE ", df$Metric, ignore.case = TRUE) |
+                 grepl("^\\(VII\\)|Trajectory", df$Display_Category, ignore.case = TRUE) |
+                 grepl("^\\(VI\\)|Multiomics Integration", df$Display_Category, ignore.case = TRUE))
+    df <- df[!is_rna_m, , drop = FALSE]
+    if ("Modality" %in% colnames(df)) {
+      df <- df[!grepl("RNA", df$Modality, ignore.case = TRUE), , drop = FALSE]
+    }
+  }
+
   is_cat1 <- grepl("^\\(I\\)|Distributional", df$Display_Category, ignore.case = TRUE)
   is_cat2 <- grepl("^\\(II\\)|Sparsity", df$Display_Category, ignore.case = TRUE)
   is_cat3 <- grepl("^\\(III\\)|Cellular Manifold|Clustering", df$Display_Category, ignore.case = TRUE)
@@ -4040,34 +4072,50 @@ plot_benchmark_bubble_matrix <- function(
       key_label_colors[c(meta_ct$bar1_k, meta_ct$bar2_k)] <- "#0F172A"
     }
   }
-  present_scopes <- scope_lvls[scope_lvls %in% unique(as.character(df$Modality_Scope))]
-  leg_scopes <- if (length(present_scopes) >= 2L) present_scopes else scope_lvls
-
-  mod_leg_df <- data.frame(
-    Metric_Key       = df$Metric_Key[1L],
-    Method           = df$Method[1L],
-    Display_Category = df$Display_Category[1L],
-    Modality_Scope   = factor(leg_scopes, levels = scope_lvls)
-  )
-  if ("Method_Class" %in% colnames(df)) {
-    mod_leg_df$Method_Class <- df$Method_Class[1L]
-  }
-  p <- p +
-    ggplot2::geom_point(
-      data = mod_leg_df,
-      ggplot2::aes(x = .data$Metric_Key, y = .data$Method, color = .data$Modality_Scope),
-      shape = 15, size = 0, alpha = 0, inherit.aes = FALSE
-    ) +
-    ggplot2::scale_color_manual(
-      values = modality_scope_pal,
-      name   = "Evaluation Metric Modality Scope (Metric Name Color)",
-      drop   = FALSE,
-      guide  = ggplot2::guide_legend(
-        nrow = 1, title.position = "top", order = 1,
-        override.aes = list(shape = 15, size = 4.2, alpha = 1)
+  if (is_single_modality) {
+    # In single-modality mode (scRNA-seq or scATAC-seq), remove the 'Evaluation Metric Modality Scope' legend completely
+    # and provide clean, uniform axis text color (#1E293B)
+    key_label_colors[] <- "#1E293B"
+    if (isTRUE(show_category_bars) && length(cat_bar_meta) > 0) {
+      for (meta_ct in cat_bar_meta) {
+        key_label_colors[c(meta_ct$bar1_k, meta_ct$bar2_k)] <- "#0F172A"
+      }
+    }
+    p <- p +
+      ggplot2::guides(
+        color = "none",
+        x = .guide_axis_colored(label_colors = key_label_colors)
       )
-    ) +
-    ggplot2::guides(x = .guide_axis_colored(label_colors = key_label_colors))
+  } else {
+    present_scopes <- scope_lvls[scope_lvls %in% unique(as.character(df$Modality_Scope))]
+    leg_scopes <- if (length(present_scopes) >= 2L) present_scopes else scope_lvls
+
+    mod_leg_df <- data.frame(
+      Metric_Key       = df$Metric_Key[1L],
+      Method           = df$Method[1L],
+      Display_Category = df$Display_Category[1L],
+      Modality_Scope   = factor(leg_scopes, levels = scope_lvls)
+    )
+    if ("Method_Class" %in% colnames(df)) {
+      mod_leg_df$Method_Class <- df$Method_Class[1L]
+    }
+    p <- p +
+      ggplot2::geom_point(
+        data = mod_leg_df,
+        ggplot2::aes(x = .data$Metric_Key, y = .data$Method, color = .data$Modality_Scope),
+        shape = 15, size = 0, alpha = 0, inherit.aes = FALSE
+      ) +
+      ggplot2::scale_color_manual(
+        values = modality_scope_pal,
+        name   = "Evaluation Metric Modality Scope (Metric Name Color)",
+        drop   = FALSE,
+        guide  = ggplot2::guide_legend(
+          nrow = 1, title.position = "top", order = 1,
+          override.aes = list(shape = 15, size = 4.2, alpha = 1)
+        )
+      ) +
+      ggplot2::guides(x = .guide_axis_colored(label_colors = key_label_colors))
+  }
 
   x_label_map <- stats::setNames(as.character(df$Display_Metric), as.character(df$Metric_Key))
   if (isTRUE(show_category_bars) && length(cat_bar_meta) > 0) {
