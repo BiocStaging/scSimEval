@@ -16,7 +16,8 @@ evaluate_deg_fidelity(
   logfc_cutoff = 0,
   classifier = c("svm", "knn", "rf"),
   min_cells = 3,
-  min_reps = 2
+  min_reps = 2,
+  threads = 1
 )
 
 evaluate_rna_de_fidelity(
@@ -30,7 +31,8 @@ evaluate_rna_de_fidelity(
   logfc_cutoff = 0,
   classifier = c("svm", "knn", "rf"),
   min_cells = 3,
-  min_reps = 2
+  min_reps = 2,
+  threads = 1
 )
 }
 \arguments{
@@ -55,6 +57,8 @@ evaluate_rna_de_fidelity(
 \item{min_cells}{Minimum number of cells per cell type (default 3).}
 
 \item{min_reps}{Minimum number of replicates per group (default 2).}
+
+\item{threads}{Number of CPU threads for parallel pairwise contrast evaluation (default 1).}
 }
 \value{
 A list containing:

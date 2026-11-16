@@ -11,7 +11,9 @@ calc_cms(
   n_pcs = 30,
   coords = NULL,
   cell_min = 4,
-  unbalanced = FALSE
+  unbalanced = FALSE,
+  threads = 1,
+  knn_res = NULL
 )
 }
 \arguments{
@@ -28,6 +30,10 @@ calc_cms(
 \item{cell_min}{Minimum number of cells per batch in neighborhood to perform test. Default is 4.}
 
 \item{unbalanced}{Logical, whether to set pure neighborhoods to NA. Default is FALSE.}
+
+\item{threads}{Number of CPU threads (default 1).}
+
+\item{knn_res}{Optional precomputed k-NN list (`idx`, `dists`) from `.knn_coords`.}
 }
 \value{
 A named list:

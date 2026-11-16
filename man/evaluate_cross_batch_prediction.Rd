@@ -4,7 +4,13 @@
 \alias{evaluate_cross_batch_prediction}
 \title{Evaluate Cross-Batch Cell Classification Transfer F1}
 \usage{
-evaluate_cross_batch_prediction(coords, cell_types, batch_info, k = 5)
+evaluate_cross_batch_prediction(
+  coords,
+  cell_types,
+  batch_info,
+  k = 5,
+  threads = 1
+)
 }
 \arguments{
 \item{coords}{Embedding coordinates (cells x dimensions).}
@@ -14,6 +20,8 @@ evaluate_cross_batch_prediction(coords, cell_types, batch_info, k = 5)
 \item{batch_info}{Factor or character vector of batch assignments.}
 
 \item{k}{Integer number of nearest neighbors for the k-NN classifier (default 5).}
+
+\item{threads}{Number of CPU threads (default 1).}
 }
 \value{
 A list containing:

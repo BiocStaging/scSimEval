@@ -4817,7 +4817,7 @@ ui <- page_navbar(
             fluidRow(
               class = "g-3",
               column(
-                7,
+                5,
                 div(
                   style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 14px; height: 100%;",
                   div(style = "font-weight: 700; color: #1E293B; font-size: 0.88rem; margin-bottom: 8px;", "Launch the App or Run Offline in R"),
@@ -4828,18 +4828,74 @@ ui <- page_navbar(
                 )
               ),
               column(
-                5,
+                7,
                 div(
                   style = "background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 14px; height: 100%;",
                   div(style = "font-weight: 700; color: #1E293B; font-size: 0.88rem; margin-bottom: 8px;", "Computational Demand & Resource Guidelines"),
-                  p(style = "font-size: 0.83rem; color: #334155; line-height: 1.6; margin-bottom: 8px;",
-                    "scSimEval is built with high computational efficiency: core statistical distributions, clustering concordance, and differential testing run rapidly on standard multi-core laptops or workstations."
+                  p(style = "font-size: 0.82rem; color: #334155; line-height: 1.5; margin-bottom: 8px;",
+                    "scSimEval utilizes intelligent dynamic multi-core scheduling. Depending on the mathematical task, the engine automatically allocates your selected CPU cores (", tags$code("N"), ") to maximize throughput without memory overhead:"
                   ),
-                  p(style = "font-size: 0.83rem; color: #334155; line-height: 1.6; margin-bottom: 8px;",
-                    "For datasets with cell counts > 1,000 or full trajectory inference, allocating 4 to 8 CPU cores and 16+ GB RAM ensures smooth and responsive execution."
+                  tags$div(
+                    class = "table-responsive",
+                    style = "margin-bottom: 10px;",
+                    tags$table(
+                      class = "table table-sm table-bordered align-middle mb-1",
+                      style = "font-size: 0.76rem; background: #FFFFFF;",
+                      tags$thead(
+                        class = "table-light",
+                        style = "font-size: 0.75rem; color: #1E293B;",
+                        tags$tr(
+                          tags$th("Pipeline Step / Category"),
+                          tags$th("Active Cores", style = "width: 110px; text-align: center;"),
+                          tags$th("Computational Rationale")
+                        )
+                      ),
+                      tags$tbody(
+                        tags$tr(
+                          tags$td(tags$b("Property Extraction")),
+                          tags$td(class = "text-center", tags$span(class = "badge", style = "background: #F1F5F9; color: #334155; border: 1px solid #CBD5E1; font-weight: 700;", "min(N, 4)")),
+                          tags$td("Parallelizes across the 4 summary matrices (Ref/Sim Cells & Features).")
+                        ),
+                        tags$tr(
+                          tags$td(tags$b("(I) Distributional Metrics")),
+                          tags$td(class = "text-center", tags$span(class = "badge", style = "background: #EFF6FF; color: #1D4ED8; border: 1px solid #93C5FD; font-weight: 700;", "All N Cores")),
+                          tags$td("140+ property-metric combinations split evenly across all allocated cores.")
+                        ),
+                        tags$tr(
+                          tags$td(tags$b("(II & III) Dropout & Manifold")),
+                          tags$td(class = "text-center", tags$span(class = "badge", style = "background: #F1F5F9; color: #334155; border: 1px solid #CBD5E1; font-weight: 700;", "min(N, 5)")),
+                          tags$td("Exactly 5 independent mathematical models run concurrently.")
+                        ),
+                        tags$tr(
+                          tags$td(tags$b("(IV) Batch Integration & Mixing")),
+                          tags$td(class = "text-center", tags$span(class = "badge", style = "background: #E0F2FE; color: #075985; border: 1px solid #38BDF8; font-weight: 700;", "B(B-1) Cores")),
+                          tags$td("Cross-batch cell type transfer tasks scale with batches (e.g. 2 cores if B=2).")
+                        ),
+                        tags$tr(
+                          tags$td(tags$b("(V) DE / DA Signal Fidelity")),
+                          tags$td(class = "text-center", tags$span(class = "badge", style = "background: #EFF6FF; color: #1D4ED8; border: 1px solid #93C5FD; font-weight: 700;", "All N Cores")),
+                          tags$td("Thousands of genes/peaks tested in parallel via edgeR-QLF.")
+                        ),
+                        tags$tr(
+                          tags$td(tags$b("(VI) Multiomics Integration")),
+                          tags$td(class = "text-center", tags$span(class = "badge", style = "background: #F0FDF4; color: #166534; border: 1px solid #86EFAC; font-weight: 700;", "Up to N Cores")),
+                          tags$td("Joint low-dim space; silhouette scales to N, fast C++ k-NN via RANN.")
+                        ),
+                        tags$tr(
+                          tags$td(tags$b("(VII) Trajectory & Topology")),
+                          tags$td(class = "text-center", tags$span(class = "badge", style = "background: #EFF6FF; color: #1D4ED8; border: 1px solid #93C5FD; font-weight: 700;", "All N Cores")),
+                          tags$td("Random Forest trees (ranger) and geodesic distances scale across all cores.")
+                        ),
+                        tags$tr(
+                          tags$td(tags$b("(VIII) Scalability Benchmark")),
+                          tags$td(class = "text-center", tags$span(class = "badge", style = "background: #F8FAFC; color: #475569; border: 1px solid #CBD5E1; font-weight: 700;", "1 Core")),
+                          tags$td("Measures standardized wall-clock core-seconds and resident memory.")
+                        )
+                      )
+                    )
                   ),
-                  p(style = "font-size: 0.83rem; color: #334155; line-height: 1.6; margin-bottom: 0;",
-                    "We strongly advise using the ", tags$b("Download R Script"), " feature in Data Hub to download the pre-configured script from your laptop to run on an HPC cluster. This saves significant computational time on your local machine, avoids laptop bottlenecks, and ensures all required cell-type and batch annotations are properly tracked across all simulators."
+                  p(style = "font-size: 0.80rem; color: #64748B; line-height: 1.5; margin-bottom: 0;",
+                    tags$b("Tip: "), "For large datasets (>10,000 cells), use the ", tags$b("Download R Script"), " button in Data Hub to run on high-performance compute clusters or workstations with 16+ GB RAM."
                   )
                 )
               )

@@ -4,12 +4,14 @@
 \alias{calc_cell_type_asw}
 \title{Calculate Cell-Type Average Silhouette Width (Cell-Type ASW)}
 \usage{
-calc_cell_type_asw(embed, cell_type)
+calc_cell_type_asw(embed, cell_type, threads = 1)
 }
 \arguments{
 \item{embed}{Numeric matrix of cell coordinates (cells x dimensions).}
 
 \item{cell_type}{Vector or factor of cell-type labels for each cell.}
+
+\item{threads}{Number of CPU threads (default 1).}
 }
 \value{
 Numeric scalar between 0 and 1, where 1 indicates distinct, tight cell-type clusters.

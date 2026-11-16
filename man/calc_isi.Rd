@@ -4,7 +4,14 @@
 \alias{calc_isi}
 \title{Inverse Simpson Index (ISI) for Batch Mixing}
 \usage{
-calc_isi(coords, batch_info, k = 30, weighted = TRUE)
+calc_isi(
+  coords,
+  batch_info,
+  k = 30,
+  weighted = TRUE,
+  threads = 1,
+  knn_res = NULL
+)
 }
 \arguments{
 \item{coords}{Matrix of cell coordinates (cells x dimensions).}
@@ -14,6 +21,10 @@ calc_isi(coords, batch_info, k = 30, weighted = TRUE)
 \item{k}{Number of nearest neighbors. Default is 30.}
 
 \item{weighted}{Logical, whether to weight neighbor contributions by inverse distance. Default is TRUE.}
+
+\item{threads}{Number of CPU threads (default 1).}
+
+\item{knn_res}{Optional precomputed k-NN list (`idx`, `dists`) from `.knn_coords`.}
 }
 \value{
 A named list:

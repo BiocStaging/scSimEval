@@ -75,56 +75,37 @@
 </h1>
 </div>
 <p><a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a> <a href="https://kabilanbio.github.io/scSimEval/"><img src="https://img.shields.io/badge/docs-pkgdown-blue.svg" alt="Documentation"></a> <a href="https://github.com/BiocStaging/scSimEval" class="external-link"><img src="https://img.shields.io/badge/Bioconductor-submission%20v0.99.10-brightgreen.svg" alt="Bioconductor submission"></a></p>
-<p><strong><code>scSimEval</code></strong> is a unified evaluation and benchmarking toolkit designed to systematically quantify how faithfully single-cell simulation methods reproduce empirical biological experiments.</p>
-<p>The package supports: - <strong>scRNA-seq</strong> (Single-cell transcriptomic count matrices) - <strong>scATAC-seq</strong> (Single-cell chromatin accessibility peak matrices) - <strong>Paired Multiomics</strong> (Simultaneous co-assays across identical cells, e.g., 10x Multiome, SHARE-seq) - <strong>Unpaired Multiomics</strong> (Independent scRNA-seq and scATAC-seq profiled from separate cells of the same biological system)</p>
-<hr>
 <div class="section level2">
-<h2 id="workflow-overview">Workflow Overview<a class="anchor" aria-label="anchor" href="#workflow-overview"></a>
-</h2>
-<p align="center">
-<img src="articles/figures/workflow_diagram.png" width="95%" alt="scSimEval Workflow Architecture"></p>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="key-features">Key Features<a class="anchor" aria-label="anchor" href="#key-features"></a>
-</h2>
-<ul>
-<li>
-<strong>56 Curated Evaluation Measures Across 8 Canonical Categories</strong>:
+<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a></h2>
+<p><strong><code>scSimEval</code></strong> is a unified evaluation and benchmarking toolkit designed to systematically quantify how faithfully single-cell and multiomics simulation methods reproduce empirical biological experiments.</p>
+<p>The package provides a standardized, reference-based benchmarking framework computing <strong>56 curated evaluation measures organized into 8 foundational categories</strong>:</p>
 <ol style="list-style-type: decimal">
-<li>
-<em>Distributional Properties</em> (14 metrics: 10 univariate—Wasserstein, KS, MAD, MAE, RMSE, Bhattacharyya, KDE-ISE, Runs statistic, NN mismatch, Inter-dataset silhouette—and 4 bivariate—Fasano-Franceschini 2D KS, 2D EMD, 2D NN mismatch, 2D Inter-dataset silhouette—across 7 cell-level, 7 feature-level, and 4 bivariate property pairs)</li>
-<li>
-<em>Sparsity &amp; Zero-Inflation Dynamics</em> (5 metrics: logistic dropout midpoint/slope/R² for scRNA-seq, quadratic accessibility-sparsity curve RMSE/R² for scATAC-seq, and posterior excess zero weight discrepancy)</li>
-<li>
-<em>Cellular Manifold &amp; Clustering Concordance</em> (8 primary metrics: MMD, Generative Precision, Generative Recall, Silhouette ASW, Clustering Deviation Index [CDI], Neighborhood Purity, ARI, NMI, plus auxiliary Davies-Bouldin Index)</li>
-<li>
-<em>Technical Variation &amp; Batch Mixing Dynamics</em> (5 metrics: Batch Silhouette, PCR <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>, CMS, Inverse Simpson Index [ISI], Cross-Batch F1)</li>
-<li>
-<em>Biological Signal &amp; Differential Fidelity</em> (12 metrics: parallel scRNA-seq DE and scATAC-seq DA suites assessing null P-value uniformity, accuracy, precision, recall, F1-score, and ROC-AUC via pseudobulk edgeR-QLF)</li>
-<li>
-<em>Multiomics Integration &amp; Alignment</em> (5 metrics: joint-embedding Batch ASW, Cell-Type ASW, Graph Connectivity, Integration ARI, and Integration NMI)</li>
-<li>
-<em>Trajectory &amp; Lineage Topology</em> (5 metrics: HVG-filtered <em>dynverse</em> benchmark [Saelens et al., 2019] comprising HIM topology similarity [<code>him</code>], edge flip similarity [<code>edge_flip</code>], geodesic distance correlation [<code>geodesic_correlation</code>], branch assignment F1 [<code>F1_branches</code>], and Random Forest feature importance weighted correlation [<code>wcor_features</code>])</li>
-<li>
-<em>Computational Scalability &amp; Efficiency</em> (2 metrics: core-normalized execution time in core-seconds [<code>core_seconds</code>] and peak memory footprint per allocated core in MiB [<code>memory_per_core_mib</code>], with automated multi-core scaling and unified <code>memory_mb</code> resource benchmarking)</li>
+<li><strong>Category I: Distributional Properties (14 Metrics)</strong> — Univariate and bivariate distribution distances across cell- and feature-level statistical moments.</li>
+<li><strong>Category II: Sparsity &amp; Zero-Inflation Dynamics (4 Metrics)</strong> — Logistic dropout curves (scRNA-seq), accessibility-sparsity curves (scATAC-seq), and posterior excess zero weights.</li>
+<li><strong>Category III: Cellular Manifold &amp; Clustering Concordance (8 Metrics)</strong> — Global manifold fidelity (MMD), local topology coverage (Generative Precision &amp; Recall), Cluster Silhouette ASW, Clustering Deviation Index (CDI), Neighborhood Purity, Adjusted Rand Index (ARI), and Normalized Mutual Information (NMI).</li>
+<li><strong>Category IV: Technical Variation &amp; Batch Mixing Dynamics (5 Metrics)</strong> — Batch Silhouette ASW, PC Regression <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math> (PCR), Cell-Specific Mixing Score (CMS), Inverse Simpson Index (ISI / LISI), and Cross-Batch cell-type classification transfer F1.</li>
+<li><strong>Category V: Biological Signal &amp; Differential Fidelity (6 Metrics per modality)</strong> — Pseudobulk <code>edgeR-QLF</code> models across biological replicates evaluating DE and DA null <em>p</em>-value uniformity, accuracy, precision, recall, F1-score, and ROC-AUC.</li>
+<li><strong>Category VI: Multiomics Integration &amp; Alignment (5 Metrics)</strong> — Cross-modal alignment in shared latent space via joint Batch ASW, Cell-Type ASW, <em>k</em>-NN Graph Connectivity, Integration ARI, and Integration NMI (<em>active for Paired and Unpaired Multiomics</em>).</li>
+<li><strong>Category VII: Trajectory &amp; Lineage Topology (5 Metrics)</strong> — Dynverse lineage benchmark evaluating HIM topology similarity, edge-flip distance, geodesic correlation, branch assignment F1, and Random Forest feature importance-weighted correlation (<code>wcor_features</code>).</li>
+<li><strong>Category VIII: Computational Scalability &amp; Efficiency (2 Metrics)</strong> — Standardized core-normalized execution runtime (<code>core_seconds</code>) and resident memory footprint per core (<code>memory_per_core_mib</code>).</li>
 </ol>
-</li>
-<li>
-<strong>Robust Normalization Engine</strong>: Automated library-size scaling, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mn>2</mn></msub><mo stretchy="false" form="prefix">(</mo><mtext mathvariant="normal">CPM</mtext><mo>+</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\log_2(\text{CPM}+1)</annotation></semantics></math> transformation, and joint low-dimensional latent projections prevent technical sequencing-depth artifacts from confounding evaluations.</li>
-<li>
-<strong>Low-Dimensional Cell Embeddings</strong>: Multi-simulator UMAP, t-SNE, and PCA projections comparing reference and simulated cells in grid or 1-to-1 layouts, accompanied by quantitative clustering and manifold quality metrics.</li>
-<li>
-<strong>Publication-Ready Figures &amp; Reproducible R Scripts</strong>: Generates 600 DPI vector graphics and 100% procedural, self-contained R workflow scripts (free of hardcoded <code>dput</code> dumps) equipped with dedicated file path configuration blocks for local or HPC cluster execution.</li>
-<li>
-<strong>Interactive Shiny App Studio (<code>scSimEvalApp</code>)</strong>: Full-featured, no-code graphical user interface for interactive benchmark exploration, live dataset QC inspection, modality filtering, and multi-format report exports.</li>
+<div class="section level3">
+<h3 id="supported-operational-modalities">Supported Operational Modalities<a class="anchor" aria-label="anchor" href="#supported-operational-modalities"></a></h3>
+<ul>
+<li><strong><code>scRNA-seq</code></strong> (Unimodal Transcriptome: <strong>45 metrics</strong> across 7 categories)</li>
+<li><strong><code>scATAC-seq</code></strong> (Unimodal Epigenome / Chromatin Accessibility: <strong>32 metrics</strong> across 6 categories)</li>
+<li><strong><code>Paired Multiomics</code></strong> (Simultaneous Co-assay, e.g., 10x Chromium Multiome, SHARE-seq: <strong>all 56 metrics</strong> across all 8 canonical categories)</li>
+<li><strong><code>Unpaired Multiomics</code></strong> (Independent Biological Specimens: <strong>53 metrics</strong> across 7 categories)</li>
 </ul>
+<p align="center">
+<img src="articles/figures/workflow_diagram.png" width="95%" alt="scSimEval Workflow Architecture">
+</p>
+</div>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
-</h2>
-<p>Install the development version of <code>scSimEval</code> from GitHub:</p>
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a></h2>
+<p>Install the development version of <strong><code>scSimEval</code></strong> from GitHub using <code>remotes</code>:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"remotes"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
@@ -134,92 +115,49 @@
 <hr>
 </div>
 <div class="section level2">
-<h2 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
-</h2>
+<h2 id="execution-options">Execution Options: Interactive Shiny Studio &amp; Reproducible R Script<a class="anchor" aria-label="anchor" href="#execution-options"></a></h2>
+<p><code>scSimEval</code> supports two distinct, flexible execution workflows tailored for both interactive exploratory analysis and large-scale computational pipelines:</p>
 <div class="section level3">
-<h3 id="id_1-unimodal-evaluation-scrna-seq--scatac-seq">1. Unimodal Evaluation (scRNA-seq / scATAC-seq)<a class="anchor" aria-label="anchor" href="#id_1-unimodal-evaluation-scrna-seq--scatac-seq"></a>
-</h3>
+<h3 id="option-1-interactive-shiny-app-studio">Option 1: Interactive Shiny App Studio (<code>scSimEvalApp</code>)<a class="anchor" aria-label="anchor" href="#option-1-interactive-shiny-app-studio"></a></h3>
+<p>For interactive graphical exploration, <code>scSimEval</code> provides an all-in-one, no-code web studio directly within R:</p>
+<ul>
+<li><strong>Interactive Upload &amp; Validation:</strong> Automated file format checking, metadata alignment, and assay detection.</li>
+<li><strong>Comparative Visualizations:</strong> Live generation of 600 DPI publication-grade plots including Comparative Bubble Matrices, Category Radar Charts, Heatmaps, Boxplots, and Multi-Simulator UMAP/PCA Embeddings.</li>
+<li><strong>Filter &amp; Leaderboard Exploration:</strong> Real-time simulator rank ordering, metric selection, and Excel/CSV summary report exports.</li>
+</ul>
+<p>Launch the Shiny studio directly from your R console:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval/">scSimEval</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Load packaged scRNA-seq reference and simulation</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_scrna</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Evaluate simulation accuracy against empirical reference</span></span>
-<span><span class="va">res_uni</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy</a></span><span class="op">(</span></span>
-<span>  ref_data <span class="op">=</span> <span class="va">example_scrna</span><span class="op">$</span><span class="va">ref</span>,</span>
-<span>  sim_data <span class="op">=</span> <span class="va">example_scrna</span><span class="op">$</span><span class="va">sim</span>,</span>
-<span>  verbose  <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Inspect evaluated metrics summary</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">res_uni</span><span class="op">$</span><span class="va">metrics_summary_table</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="reference/launch_scSimEval_app.html">launch_scSimEval_app</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="id_2-multiomics-accuracy-evaluation-paired--unpaired">2. Multiomics Accuracy Evaluation (Paired / Unpaired)<a class="anchor" aria-label="anchor" href="#id_2-multiomics-accuracy-evaluation-paired--unpaired"></a>
-</h3>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Load packaged Option B Seurat v5 paired multiomics dataset (Rice Bud)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_rice_bud</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Benchmark scMultiSim against empirical reference (cell_type, batch, and reductions are auto-extracted)</span></span>
-<span><span class="va">res_multi</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/evaluate_multiomics_accuracy.html">evaluate_multiomics_accuracy</a></span><span class="op">(</span></span>
-<span>  ref_multi  <span class="op">=</span> <span class="va">example_rice_bud</span><span class="op">$</span><span class="va">reference</span><span class="op">$</span><span class="va">combined</span>,</span>
-<span>  sim_multi  <span class="op">=</span> <span class="va">example_rice_bud</span><span class="op">$</span><span class="va">simulated</span><span class="op">$</span><span class="va">scMultiSim</span><span class="op">$</span><span class="va">combined</span>,</span>
-<span>  pairing    <span class="op">=</span> <span class="st">"paired"</span>,</span>
-<span>  verbose    <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Review composite benchmark scores</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">res_multi</span><span class="op">$</span><span class="va">benchmark_summary_table</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="id_3-high-resolution-visualizations">3. High-Resolution Visualizations<a class="anchor" aria-label="anchor" href="#id_3-high-resolution-visualizations"></a>
-</h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Plot the flagship comparative bubble matrix across evaluation categories</span></span>
-<span><span class="fu"><a href="reference/plot_benchmark_bubble_matrix.html">plot_benchmark_bubble_matrix</a></span><span class="op">(</span><span class="va">res_multi</span><span class="op">$</span><span class="va">benchmark_summary_table</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Plot distribution QC curves (library size, expression density, dropout)</span></span>
-<span><span class="fu"><a href="reference/plot_distribution_qc.html">plot_distribution_qc</a></span><span class="op">(</span></span>
-<span>  ref_data <span class="op">=</span> <span class="va">example_rice_bud</span><span class="op">$</span><span class="va">reference</span><span class="op">$</span><span class="va">rna</span>,</span>
-<span>  sim_data <span class="op">=</span> <span class="va">example_rice_bud</span><span class="op">$</span><span class="va">simulated</span><span class="op">$</span><span class="va">scMultiSim</span><span class="op">$</span><span class="va">rna</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="id_4-interactive-graphical-user-interface-shiny-studio">4. Interactive Graphical User Interface (Shiny Studio)<a class="anchor" aria-label="anchor" href="#id_4-interactive-graphical-user-interface-shiny-studio"></a>
-</h3>
-<p>Launch the interactive web application directly from R:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/launch_scSimEval_app.html">launch_scSimEval_app</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<hr>
-</div>
-</div>
-<div class="section level2">
-<h2 id="built-in-real-biological-datasets-option-b-standardized-seurat-v5">Built-in Real Biological Datasets (Option B Standardized <code>Seurat</code> v5)<a class="anchor" aria-label="anchor" href="#built-in-real-biological-datasets-option-b-standardized-seurat-v5"></a>
-</h2>
-<p><code>scSimEval</code> includes standardized empirical benchmarks extracted from published studies, complete with raw integer <code>counts</code>, harmonized <code>cell_type</code> and <code>batch</code> metadata, and dimensional reductions (<code>integrated</code>, <code>pca</code>):</p>
+<h3 id="option-2-standalone-headless-r-script">Option 2: Standalone &amp; Headless R Script (Workstations &amp; HPC Clusters)<a class="anchor" aria-label="anchor" href="#option-2-standalone-headless-r-script"></a></h3>
+<p>For large-scale, automated, or compute-intensive benchmarking on multi-core workstations and High-Performance Computing (HPC) clusters:</p>
 <ul>
-<li>
-<strong><code>example_rice_bud</code></strong>: Real paired single-cell multiomics dataset from rice (<em>Oryza sativa</em>) bud tissue (100 paired cells, 200 genes, 200 peaks, 4 cell types, 2 batches) evaluated across 6 simulators (<code>scMultiSim</code>, <code>scDesign3</code>, <code>MOSim</code>, <code>scCross</code>, <code>scMoMtF</code>, <code>Matilda</code>). Includes <code>$combined</code>, <code>$rna</code>, and <code>$atac</code> <code>Seurat</code> objects.</li>
-<li>
-<strong><code>example_soybean_root</code></strong>: Real unpaired single-cell multiomics dataset from soybean (<em>Glycine max</em>) root tissue (100 RNA cells, 100 ATAC cells, 200 genes, 200 peaks, 4 cell types, 2 batches) evaluated across 3 simulators (<code>scMultiSim</code>, <code>scDesign3</code>, <code>scCross</code>). Includes <code>$combined</code>, <code>$rna</code>, and <code>$atac</code> <code>Seurat</code> objects.</li>
-<li>
-<strong><code>example_scrna</code></strong> &amp; <strong><code>example_scatac</code></strong>: Lightweight unimodal benchmarks for rapid exploratory prototyping.</li>
+<li><strong>Download Pre-Configured R Script:</strong> In the Shiny app <strong>Data Hub</strong>, clicking <strong>"Download R Script"</strong> automatically generates a complete, self-contained, and procedural R workflow script pre-populated with your exact dataset paths, metadata columns, and core settings.</li>
+<li><strong>Headless Command-Line Execution:</strong> Run directly in batch scripts or via R without launching a browser or consuming graphical display resources:
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval/">scSimEval</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Run full benchmark evaluation headlessly</span></span>
+<span><span class="va">benchmark_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy</a></span><span class="op">(</span></span>
+<span>  ref_data   <span class="op">=</span> <span class="va">reference_counts</span>,</span>
+<span>  sim_data   <span class="op">=</span> <span class="va">simulated_counts</span>,</span>
+<span>  cell_types <span class="op">=</span> <span class="va">cell_type_annotations</span>,</span>
+<span>  batch_info <span class="op">=</span> <span class="va">batch_annotations</span>,</span>
+<span>  threads    <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>  verbose    <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Save results object</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">benchmark_results</span>, <span class="st">"scSimEval_benchmark_results.rds"</span><span class="op">)</span></span></code></pre></div>
+</li>
 </ul>
+</div>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="comprehensive-documentation">Comprehensive Documentation<a class="anchor" aria-label="anchor" href="#comprehensive-documentation"></a>
-</h2>
-<p>For complete tutorials, metric mathematical formulations, hardware recommendations, and function reference manuals, please visit our documentation website:</p>
-<p>👉 <strong><a href="https://kabilanbio.github.io/scSimEval/">https://kabilanbio.github.io/scSimEval/</a></strong></p>
-<p>Detailed in-app guides and file templates are also available directly within the <strong>Help &amp; Getting Started</strong> tab of <code><a href="reference/launch_scSimEval_app.html">launch_scSimEval_app()</a></code>.</p>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="authors--maintainers">Authors &amp; Maintainers<a class="anchor" aria-label="anchor" href="#authors--maintainers"></a>
-</h2>
+<h2 id="authors">Authors<a class="anchor" aria-label="anchor" href="#authors"></a></h2>
 <p><code>scSimEval</code> is developed and maintained at the <strong>Division of Agricultural Bioinformatics, ICAR-Indian Agricultural Statistics Research Institute (ICAR-IASRI)</strong>, New Delhi, India:</p>
 <ul>
 <li><p><strong>Kabilan Sakthivel</strong> (Maintainer &amp; Ph.D Scholar) — <code>kabilan151414@gmail.com</code></p></li>

@@ -10,6 +10,7 @@ evaluate_batch_metrics(
   k = NULL,
   n_pcs = 30,
   cell_types = NULL,
+  threads = 1,
   verbose = FALSE
 )
 }
@@ -23,6 +24,8 @@ evaluate_batch_metrics(
 \item{n_pcs}{Number of principal components for embedding evaluation. Default is 30.}
 
 \item{cell_types}{Optional factor or character vector of cell types for cross-batch evaluation.}
+
+\item{threads}{Number of CPU threads (default 1).}
 
 \item{verbose}{Logical, whether to print progress.}
 }

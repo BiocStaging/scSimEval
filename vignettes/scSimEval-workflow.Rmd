@@ -27,23 +27,47 @@ knitr::opts_chunk$set(
 
 ## 1. Introduction
 
-Computer simulations of single-cell technologies—specifically single-cell RNA sequencing (**scRNA-seq**), single-cell ATAC sequencing (**scATAC-seq**), and **scRNA-seq + scATAC-seq multiomics**—are essential in bioinformatics for developing pipelines, optimizing analysis workflows, and evaluating statistical methods. A fundamental question for any benchmark is: *how realistically does the simulated data replicate genuine biological experiments?*
+Computer simulations of single-cell technologies—specifically single-cell RNA sequencing (**scRNA-seq**), single-cell ATAC sequencing (**scATAC-seq**), and **scRNA-seq + scATAC-seq multiomics**—are indispensable in modern bioinformatics for evaluating computational algorithms, developing analytical pipelines, and assessing experimental designs. A central question in computational biology is: *how realistically do simulated single-cell and multiomics datasets replicate genuine biological experiments?*
 
-**`scSimEval`** provides a standardized, reference-based benchmarking framework computing **56 curated evaluation measures across 8 foundational categories**:
+**`scSimEval`** provides a standardized, reference-based benchmarking framework computing **56 curated evaluation measures organized into 8 foundational categories**, supporting both single-modality and multiomics simulation pipelines.
 
-1. **Experimental reference data** (`ref_rna`, `ref_atac`)
-2. **Simulated synthetic data** (`sim_rna`, `sim_atac`)
-3. **Cell type annotations** (`cell_types`, optional)
-4. **Batch or donor identifiers** (`batch_info`, optional)
-5. **Computer resources** (Core-seconds and memory footprint per core in MiB)
-6. **Developmental trajectories** (automatically inferred directly from count matrices)
+### 1.1 Four Supported Modality Operational Modes
+
+`scSimEval` is engineered to handle four distinct experimental and simulation designs:
+
+1. **`scRNA-seq` (Unimodal Transcriptome):** Evaluates single-cell gene expression across **45 metrics** spanning 7 active categories (Distributional Properties, Sparsity Dynamics, Cellular Manifold & Clustering, Batch Integration, Biological Signal DE, Lineage Trajectory, and Computational Scalability).
+2. **`scATAC-seq` (Unimodal Epigenome / Chromatin Accessibility):** Evaluates single-cell peak accessibility across **32 metrics** spanning 6 active categories (Peak Distribution Moments, Accessibility-Sparsity Curves, Epigenomic Manifold & Clustering, Batch Integration, Biological Signal DA, and Computational Scalability).
+3. **`Paired Multiomics` (Simultaneous Co-assay):** Measures RNA and ATAC co-assayed from identical individual cells (e.g., 10x Chromium Multiome, SHARE-seq, SNARE-seq), unlocking all **56 metrics across all 8 canonical categories**, including cross-modal integration and alignment (Category VI).
+4. **`Unpaired Multiomics` (Independent Biological Specimens):** Measures scRNA-seq and scATAC-seq profiled independently from separate cells of the same tissue/organism, evaluating **53 metrics across 7 categories** (dual unimodal evaluations plus population-level joint integration).
+
+### 1.2 Mandatory Experimental Inputs & Annotations
+
+To ensure rigorous biological and technical fidelity, `scSimEval` operates on standard count matrices and essential experimental metadata:
+
+1. **Experimental Reference Data (`ref_data` or `ref_rna` + `ref_atac`):** Genuine biological ground-truth count matrices (sparse `dgCMatrix`, standard numeric matrix, `SingleCellExperiment`, or `Seurat`).
+2. **Simulated Synthetic Data (`sim_data` or `sim_rna` + `sim_atac`):** In silico generated count matrices from simulator tools (e.g., `scDesign3`, `Splatter`, `SCRIP`, `scMultiSim`, `scCross`, `simPIC`).
+3. **Cell-Type Annotations (`cell_types` — Mandatory):** Biological cluster/cell identity labels required for cellular manifold concordance (Category III: ARI, NMI, Silhouette), biological signal fidelity (Category V), and cross-batch cell type transfer F1.
+4. **Batch Identifiers (`batch_info` — Mandatory):** Experimental batch, donor, or technical replicate annotations required for batch integration dynamics (Category IV: CMS, ISI, PCR $R^2$, Batch Silhouette) and pseudobulk differential testing (Category V: biological replicates for `edgeR-QLF`).
+5. **Computational Resource Logs:** Recorded wall-clock runtime (`core_seconds`) and resident memory footprint (`memory_per_core_mib`) for scalability benchmarking (Category VIII).
 
 ```{r workflow-overview, echo=FALSE, fig.align='center', out.width='100%', fig.cap='**Figure 1: Unified benchmarking architecture of scSimEval.** The end-to-end framework ingests reference and simulated single-cell and multiomics count matrices with experimental metadata, evaluates 56 curated evaluation measures across eight biological and computational dimensions, standardizes scores via direction-aware normalization, and generates publication-grade comparative visualizations and leaderboards.'}
 knitr::include_graphics("figures/workflow_diagram.png")
 ```
 
-> **Supported Multiomics Modalities:** `scSimEval` natively supports two multiomics experimental designs:4
-> **Paired** (co-assays where RNA and ATAC are measured from identical cells, e.g. 10x Multiome, SHARE-seq) with full cross-modal coupling evaluation; and **Unpaired** (independent scRNA-seq and scATAC-seq from separate cells of the same tissue) with unimodal evaluation plus population-level cross-modal concordance metrics. See the dedicated [Multiomics vignette](demo-multiomics.html) for detailed multiomics workflows.
+### 1.3 The 8 Foundational Evaluation Categories (56 Metrics)
+
+The benchmarking framework comprehensively assesses simulation realism across 8 biological and computational dimensions:
+
+* **Category I: Distributional Properties (14 Metrics)** — Evaluates 10 univariate distribution distance metrics (Wasserstein-1D, KS test, MAD, MAE, RMSE, Bhattacharyya distance, KDE Integrated Squared Error, Runs statistic, $k$-NN mismatch, and Inter-dataset silhouette) and 4 bivariate metrics (2D Fasano-Franceschini test, 2D Earth Mover's Distance, 2D $k$-NN mismatch, 2D silhouette) across cell-level and feature-level properties.
+* **Category II: Sparsity & Zero-Inflation Dynamics (4 Metrics)** — Fits logistic dropout curves for scRNA-seq, quadratic accessibility-sparsity curves for scATAC-seq (midpoint, slope, RMSE, and $R^2$), and quantifies posterior excess zero weight discrepancies.
+* **Category III: Cellular Manifold & Clustering Concordance (8 Metrics)** — Measures global manifold fidelity (Maximum Mean Discrepancy [MMD]), local topology coverage (Generative Precision & Recall), Cluster Silhouette ASW, Clustering Deviation Index (CDI), Neighborhood Purity, Adjusted Rand Index (ARI), and Normalized Mutual Information (NMI).
+* **Category IV: Technical Variation & Batch Mixing Dynamics (5 Metrics)** — Quantifies batch mixing and confounder realism using Batch Silhouette ASW, Principal Component Regression $R^2$ (PCR), Cell-Specific Mixing Score (CMS), Inverse Simpson Index (ISI / LISI), and Cross-Batch cell-type classification transfer F1.
+* **Category V: Biological Signal & Differential Fidelity (6 Metrics per modality)** — Employs pseudobulk `edgeR-QLF` models across biological replicates to assess DE/DA null $p$-value uniformity, classification accuracy, precision, recall, F1-score, and ROC-AUC.
+* **Category VI: Multiomics Integration & Alignment (5 Metrics)** — Evaluates cross-modal alignment in shared latent embedding space via joint Batch ASW, Cell-Type ASW, $k$-NN Graph Connectivity, Integration ARI, and Integration NMI (*active for Paired and Unpaired Multiomics*).
+* **Category VII: Trajectory & Lineage Topology (5 Metrics)** — Benchmarks inferred developmental trajectories against reference lineages via dynverse metrics: HIM graph topology similarity, edge-flip distance, geodesic correlation, branch assignment F1, and Random Forest feature importance-weighted correlation (`wcor_features`).
+* **Category VIII: Computational Scalability & Efficiency (2 Metrics)** — Quantifies standardized core-normalized execution runtime (`core_seconds`) and peak memory footprint per core (`memory_per_core_mib`).
+
+> **Interactive Exploration & Cluster Execution:** `scSimEval` can be executed interactively via the built-in **Shiny Studio** (`launch_scSimEval_app()`) featuring 600 DPI publication plots (Comparative Bubble Matrix, Radar, Heatmaps, Boxplots, UMAP Embeddings) or headlessly via automated R scripts on High-Performance Computing (HPC) clusters with multi-core parallelization.
 
 ---
 

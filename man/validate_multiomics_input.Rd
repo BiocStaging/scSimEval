@@ -7,22 +7,23 @@
 validate_multiomics_input(obj, arg_name = "multi_data", reduction_name = NULL)
 }
 \arguments{
-\item{obj}{Multiomics dataset object to validate.}
+\item{obj}{Multiomics dataset object or file path to validate.}
 
-\item{arg_name}{Name of argument.}
+\item{arg_name}{Name of argument for diagnostic error messages.}
 
 \item{reduction_name}{Optional reduction name to extract.}
 }
 \value{
-A list with standardized components: \code{m1}, \code{m2}, \code{cell_types}, \code{batch_info}, \code{embedding}.
+A list with standardized components: \code{m1}, \code{m2}, \code{m1_obj}, \code{m2_obj}, \code{m1_name}, \code{m2_name}, \code{cell_types}, \code{batch_info}, \code{embedding}.
 }
 \description{
 Strictly enforces standard multiomics input compliance in \code{scSimEval}.
 Validates that multiomics inputs conform to \code{Seurat} or \code{SingleCellExperiment} structures.
-Accepts either:
+Accepts a single multi-modal object or a list of two modality objects:
 \itemize{
+  \item A single multi-modal \code{Seurat} object containing both RNA and ATAC assays (with metadata and reductions).
+  \item A single multi-modal \code{SingleCellExperiment} object with an \code{altExp} for the secondary modality.
   \item A named list of 2 \code{Seurat} or \code{SingleCellExperiment} objects (e.g. \code{list(rna = ..., atac = ...)}).
-  \item A multi-modal \code{Seurat} object containing both RNA and ATAC assays.
-  \item A multi-modal \code{SingleCellExperiment} object with an \code{altExp} (e.g. ATAC).
+  \item A file path to an \code{.rds} file containing any of the above.
 }
 }

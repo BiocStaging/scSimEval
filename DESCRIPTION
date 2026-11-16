@@ -90,7 +90,8 @@ Imports:
     SummarizedExperiment,
     matrixStats,
     BiocParallel,
-    CDI
+    CDI,
+    RANN
 Suggests:
     BiocStyle,
     testthat,
@@ -127,7 +128,6 @@ Suggests:
     CellMixS,
     kSamples,
     limma,
-    RANN,
     bluster,
     Seurat,
     SeuratObject,

@@ -4,7 +4,12 @@
 \alias{validate_sc_object}
 \title{Validate and Standardize Single-Cell Input Objects}
 \usage{
-validate_sc_object(obj, arg_name = "data", reduction_name = NULL)
+validate_sc_object(
+  obj,
+  arg_name = "data",
+  reduction_name = NULL,
+  modality = NULL
+)
 }
 \arguments{
 \item{obj}{An object to validate, strictly required to be a \code{SingleCellExperiment} or \code{Seurat} object.}

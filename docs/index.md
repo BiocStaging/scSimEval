@@ -1,230 +1,104 @@
 # scSimEval: Unified Benchmarking and Accuracy Evaluation for Single-Cell Multiomics Simulation Methods
 
-[![License:
-MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/docs-pkgdown-blue.svg)](https://kabilanbio.github.io/scSimEval/)
-[![Bioconductor
-submission](https://img.shields.io/badge/Bioconductor-submission%20v0.99.10-brightgreen.svg)](https://github.com/BiocStaging/scSimEval)
-
-**`scSimEval`** is a unified evaluation and benchmarking toolkit
-designed to systematically quantify how faithfully single-cell
-simulation methods reproduce empirical biological experiments.
-
-The package supports: - **scRNA-seq** (Single-cell transcriptomic count
-matrices) - **scATAC-seq** (Single-cell chromatin accessibility peak
-matrices) - **Paired Multiomics** (Simultaneous co-assays across
-identical cells, e.g., 10x Multiome, SHARE-seq) - **Unpaired
-Multiomics** (Independent scRNA-seq and scATAC-seq profiled from
-separate cells of the same biological system)
+[![Bioconductor submission](https://img.shields.io/badge/Bioconductor-submission%20v0.99.10-brightgreen.svg)](https://github.com/BiocStaging/scSimEval)
 
 ------------------------------------------------------------------------
 
-## Workflow Overview
+## Overview
 
-![scSimEval Workflow
-Architecture](articles/figures/workflow_diagram.png)
+**`scSimEval`** is a unified evaluation and benchmarking toolkit designed to systematically quantify how faithfully single-cell and multiomics simulation methods reproduce empirical biological experiments.
 
-------------------------------------------------------------------------
+The package provides a standardized, reference-based benchmarking framework computing **56 curated evaluation measures organized into 8 foundational categories**:
 
-## Key Features
+1. **Category I: Distributional Properties (14 Metrics)** — Univariate and bivariate distribution distances across cell- and feature-level statistical moments.
+2. **Category II: Sparsity & Zero-Inflation Dynamics (4 Metrics)** — Logistic dropout curves (scRNA-seq), accessibility-sparsity curves (scATAC-seq), and posterior excess zero weights.
+3. **Category III: Cellular Manifold & Clustering Concordance (8 Metrics)** — Global manifold fidelity (MMD), local topology coverage (Generative Precision & Recall), Cluster Silhouette ASW, Clustering Deviation Index (CDI), Neighborhood Purity, Adjusted Rand Index (ARI), and Normalized Mutual Information (NMI).
+4. **Category IV: Technical Variation & Batch Mixing Dynamics (5 Metrics)** — Batch Silhouette ASW, PC Regression $R^2$ (PCR), Cell-Specific Mixing Score (CMS), Inverse Simpson Index (ISI / LISI), and Cross-Batch cell-type classification transfer F1.
+5. **Category V: Biological Signal & Differential Fidelity (6 Metrics per modality)** — Pseudobulk `edgeR-QLF` models across biological replicates evaluating DE and DA null $p$-value uniformity, accuracy, precision, recall, F1-score, and ROC-AUC.
+6. **Category VI: Multiomics Integration & Alignment (5 Metrics)** — Cross-modal alignment in shared latent space via joint Batch ASW, Cell-Type ASW, $k$-NN Graph Connectivity, Integration ARI, and Integration NMI (*active for Paired and Unpaired Multiomics*).
+7. **Category VII: Trajectory & Lineage Topology (5 Metrics)** — Dynverse lineage benchmark evaluating HIM topology similarity, edge-flip distance, geodesic correlation, branch assignment F1, and Random Forest feature importance-weighted correlation (`wcor_features`).
+8. **Category VIII: Computational Scalability & Efficiency (2 Metrics)** — Standardized core-normalized execution runtime (`core_seconds`) and resident memory footprint per core (`memory_per_core_mib`).
 
-- **56 Curated Evaluation Measures Across 8 Canonical Categories**:
-  1.  *Distributional Properties* (14 metrics: 10
-      univariate—Wasserstein, KS, MAD, MAE, RMSE, Bhattacharyya,
-      KDE-ISE, Runs statistic, NN mismatch, Inter-dataset silhouette—and
-      4 bivariate—Fasano-Franceschini 2D KS, 2D EMD, 2D NN mismatch, 2D
-      Inter-dataset silhouette—across 7 cell-level, 7 feature-level, and
-      4 bivariate property pairs)
-  2.  *Sparsity & Zero-Inflation Dynamics* (5 metrics: logistic dropout
-      midpoint/slope/R² for scRNA-seq, quadratic accessibility-sparsity
-      curve RMSE/R² for scATAC-seq, and posterior excess zero weight
-      discrepancy)
-  3.  *Cellular Manifold & Clustering Concordance* (8 primary metrics:
-      MMD, Generative Precision, Generative Recall, Silhouette ASW,
-      Clustering Deviation Index \[CDI\], Neighborhood Purity, ARI, NMI,
-      plus auxiliary Davies-Bouldin Index)
-  4.  *Technical Variation & Batch Mixing Dynamics* (5 metrics: Batch
-      Silhouette, PCR $`R^2`$, CMS, Inverse Simpson Index \[ISI\],
-      Cross-Batch F1)
-  5.  *Biological Signal & Differential Fidelity* (12 metrics: parallel
-      scRNA-seq DE and scATAC-seq DA suites assessing null P-value
-      uniformity, accuracy, precision, recall, F1-score, and ROC-AUC via
-      pseudobulk edgeR-QLF)
-  6.  *Multiomics Integration & Alignment* (5 metrics: joint-embedding
-      Batch ASW, Cell-Type ASW, Graph Connectivity, Integration ARI, and
-      Integration NMI)
-  7.  *Trajectory & Lineage Topology* (5 metrics: HVG-filtered
-      *dynverse* benchmark \[Saelens et al., 2019\] comprising HIM
-      topology similarity \[`him`\], edge flip similarity
-      \[`edge_flip`\], geodesic distance correlation
-      \[`geodesic_correlation`\], branch assignment F1
-      \[`F1_branches`\], and Random Forest feature importance weighted
-      correlation \[`wcor_features`\])
-  8.  *Computational Scalability & Efficiency* (2 metrics:
-      core-normalized execution time in core-seconds \[`core_seconds`\]
-      and peak memory footprint per allocated core in MiB
-      \[`memory_per_core_mib`\], with automated multi-core scaling and
-      unified `memory_mb` resource benchmarking)
-- **Robust Normalization Engine**: Automated library-size scaling,
-  $`\log_2(\text{CPM}+1)`$ transformation, and joint low-dimensional
-  latent projections prevent technical sequencing-depth artifacts from
-  confounding evaluations.
-- **Low-Dimensional Cell Embeddings**: Multi-simulator UMAP, t-SNE, and
-  PCA projections comparing reference and simulated cells in grid or
-  1-to-1 layouts, accompanied by quantitative clustering and manifold
-  quality metrics.
-- **Publication-Ready Figures & Reproducible R Scripts**: Generates 600
-  DPI vector graphics and 100% procedural, self-contained R workflow
-  scripts (free of hardcoded `dput` dumps) equipped with dedicated file
-  path configuration blocks for local or HPC cluster execution.
-- **Interactive Shiny App Studio (`scSimEvalApp`)**: Full-featured,
-  no-code graphical user interface for interactive benchmark
-  exploration, live dataset QC inspection, modality filtering, and
-  multi-format report exports.
+### Supported Operational Modalities
+* **`scRNA-seq`** (Unimodal Transcriptome: **45 metrics** across 7 categories)
+* **`scATAC-seq`** (Unimodal Epigenome / Chromatin Accessibility: **32 metrics** across 6 categories)
+* **`Paired Multiomics`** (Simultaneous Co-assay, e.g., 10x Chromium Multiome, SHARE-seq: **all 56 metrics** across all 8 canonical categories)
+* **`Unpaired Multiomics`** (Independent Biological Specimens: **53 metrics** across 7 categories)
+
+<p align="center">
+  <img src="articles/figures/workflow_diagram.png" width="95%" alt="scSimEval Workflow Architecture">
+</p>
 
 ------------------------------------------------------------------------
 
 ## Installation
 
-Install the development version of `scSimEval` from GitHub:
+Install the development version of **`scSimEval`** from GitHub using `remotes`:
 
-\
-`if`` ``(``!`[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"remotes"``, quietly ``=`` ``TRUE``)``)`` ``{`\
-`  `[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(``"remotes"``)`\
-`}`\
-\
-`remotes``::`[`install_github`](https://remotes.r-lib.org/reference/install_github.html)`(``"kabilanbio/scSimEval"``)`
+```R
+if (!requireNamespace("remotes", quietly = TRUE)) {
+  install.packages("remotes")
+}
 
-------------------------------------------------------------------------
-
-## Quick Start
-
-### 1. Unimodal Evaluation (scRNA-seq / scATAC-seq)
-
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`scSimEval`](https://kabilanbio.github.io/scSimEval/)`)`\
-\
-`# Load packaged scRNA-seq reference and simulation`\
-[`data`](https://rdrr.io/r/utils/data.html)`(``example_scrna``)`\
-\
-`# Evaluate simulation accuracy against empirical reference`\
-`res_uni`` ``<-`` `[`evaluate_simulation_accuracy`](https://kabilanbio.github.io/scSimEval/reference/evaluate_simulation_accuracy.md)`(`\
-`  ref_data ``=`` ``example_scrna``$``ref``,`\
-`  sim_data ``=`` ``example_scrna``$``sim``,`\
-`  verbose  ``=`` ``FALSE`\
-`)`\
-\
-`# Inspect evaluated metrics summary`\
-[`head`](https://rdrr.io/r/utils/head.html)`(``res_uni``$``metrics_summary_table``)`
-
-### 2. Multiomics Accuracy Evaluation (Paired / Unpaired)
-
-\
-`# Load packaged Option B Seurat v5 paired multiomics dataset (Rice Bud)`\
-[`data`](https://rdrr.io/r/utils/data.html)`(``example_rice_bud``)`\
-\
-`# Benchmark scMultiSim against empirical reference (cell_type, batch, and reductions are auto-extracted)`\
-`res_multi`` ``<-`` `[`evaluate_multiomics_accuracy`](https://kabilanbio.github.io/scSimEval/reference/evaluate_multiomics_accuracy.md)`(`\
-`  ref_multi  ``=`` ``example_rice_bud``$``reference``$``combined``,`\
-`  sim_multi  ``=`` ``example_rice_bud``$``simulated``$``scMultiSim``$``combined``,`\
-`  pairing    ``=`` ``"paired"``,`\
-`  verbose    ``=`` ``FALSE`\
-`)`\
-\
-`# Review composite benchmark scores`\
-[`head`](https://rdrr.io/r/utils/head.html)`(``res_multi``$``benchmark_summary_table``)`
-
-### 3. High-Resolution Visualizations
-
-\
-`# Plot the flagship comparative bubble matrix across evaluation categories`\
-[`plot_benchmark_bubble_matrix`](https://kabilanbio.github.io/scSimEval/reference/plot_benchmark_bubble_matrix.md)`(``res_multi``$``benchmark_summary_table``)`\
-\
-`# Plot distribution QC curves (library size, expression density, dropout)`\
-[`plot_distribution_qc`](https://kabilanbio.github.io/scSimEval/reference/plot_distribution_qc.md)`(`\
-`  ref_data ``=`` ``example_rice_bud``$``reference``$``rna``,`\
-`  sim_data ``=`` ``example_rice_bud``$``simulated``$``scMultiSim``$``rna`\
-`)`
-
-### 4. Interactive Graphical User Interface (Shiny Studio)
-
-Launch the interactive web application directly from R:
-
-\
-[`launch_scSimEval_app`](https://kabilanbio.github.io/scSimEval/reference/launch_scSimEval_app.md)`(``)`
+remotes::install_github("kabilanbio/scSimEval")
+```
 
 ------------------------------------------------------------------------
 
-## Built-in Real Biological Datasets (Option B Standardized `Seurat` v5)
+## Execution Options: Interactive Shiny Studio & Reproducible R Script
 
-`scSimEval` includes standardized empirical benchmarks extracted from
-published studies, complete with raw integer `counts`, harmonized
-`cell_type` and `batch` metadata, and dimensional reductions
-(`integrated`, `pca`):
+`scSimEval` supports two distinct, flexible execution workflows tailored for both interactive exploratory analysis and large-scale computational pipelines:
 
-- **`example_rice_bud`**: Real paired single-cell multiomics dataset
-  from rice (*Oryza sativa*) bud tissue (100 paired cells, 200 genes,
-  200 peaks, 4 cell types, 2 batches) evaluated across 6 simulators
-  (`scMultiSim`, `scDesign3`, `MOSim`, `scCross`, `scMoMtF`, `Matilda`).
-  Includes `$combined`, `$rna`, and `$atac` `Seurat` objects.
-- **`example_soybean_root`**: Real unpaired single-cell multiomics
-  dataset from soybean (*Glycine max*) root tissue (100 RNA cells, 100
-  ATAC cells, 200 genes, 200 peaks, 4 cell types, 2 batches) evaluated
-  across 3 simulators (`scMultiSim`, `scDesign3`, `scCross`). Includes
-  `$combined`, `$rna`, and `$atac` `Seurat` objects.
-- **`example_scrna`** & **`example_scatac`**: Lightweight unimodal
-  benchmarks for rapid exploratory prototyping.
+### Option 1: Interactive Shiny App Studio (`scSimEvalApp`)
+For interactive graphical exploration, `scSimEval` provides an all-in-one, no-code web studio directly within R:
+* **Interactive Upload & Validation:** Automated file format checking, metadata alignment, and assay detection.
+* **Comparative Visualizations:** Live generation of 600 DPI publication-grade plots including Comparative Bubble Matrices, Category Radar Charts, Heatmaps, Boxplots, and Multi-Simulator UMAP/PCA Embeddings.
+* **Filter & Leaderboard Exploration:** Real-time simulator rank ordering, metric selection, and Excel/CSV summary report exports.
 
-------------------------------------------------------------------------
+Launch the Shiny studio directly from your R console:
+```R
+library(scSimEval)
+launch_scSimEval_app()
+```
 
-## Comprehensive Documentation
+### Option 2: Standalone & Headless R Script (Workstations & HPC Clusters)
+For large-scale, automated, or compute-intensive benchmarking on multi-core workstations and High-Performance Computing (HPC) clusters:
+* **Download Pre-Configured R Script:** In the Shiny app **Data Hub**, clicking **"Download R Script"** automatically generates a complete, self-contained, and procedural R workflow script pre-populated with your exact dataset paths, metadata columns, and core settings.
+* **Headless Command-Line Execution:** Run directly in batch scripts or via R without launching a browser or consuming graphical display resources:
+  ```R
+  library(scSimEval)
 
-For complete tutorials, metric mathematical formulations, hardware
-recommendations, and function reference manuals, please visit our
-documentation website:
+  # Run full benchmark evaluation headlessly
+  benchmark_results <- evaluate_simulation_accuracy(
+    ref_data   = reference_counts,
+    sim_data   = simulated_counts,
+    cell_types = cell_type_annotations,
+    batch_info = batch_annotations,
+    threads    = 4,
+    verbose    = TRUE
+  )
 
-👉 **<https://kabilanbio.github.io/scSimEval/>**
-
-Detailed in-app guides and file templates are also available directly
-within the **Help & Getting Started** tab of
-[`launch_scSimEval_app()`](https://kabilanbio.github.io/scSimEval/reference/launch_scSimEval_app.md).
-
-------------------------------------------------------------------------
-
-## Authors & Maintainers
-
-`scSimEval` is developed and maintained at the **Division of
-Agricultural Bioinformatics, ICAR-Indian Agricultural Statistics
-Research Institute (ICAR-IASRI)**, New Delhi, India:
-
-- **Kabilan Sakthivel** (Maintainer & Ph.D Scholar) —
-  `kabilan151414@gmail.com`
-
-- **Dr. Dwijesh Chandra Mishra** (Principal Scientist & Thesis Guide) —
-  `dwij.mishra@gmail.com`
-
-- **Dr. Shashi Bhushan Lal** (Principal Scientist) —
-  `sblall16@gmail.com`
-
-- **Dr. Ulavappa Angadi** (Principal Scientist) —
-  `ubaangadi.iasri@icar.org.in`
-
-- **Dr. Sudhir Srivastava** (Senior Scientist) —
-  `sudhir0401bm@gmail.com`
-
-- **Dr. Neeraj Budhlakoti** (Senior Scientist) — `neeraj35669@gmail.com`
-
-- **Dr. Krishna Kumar Chaturvedi** (Principal Scientist) —
-  `kkcchaturvedi@gmail.com`
-
-- **Dr. Ranjeet Ranjan Kumar** (Senior Scientist) —
-  `ranjeetranjaniari@gmail.com`
-
-- **Dr. Navin Chandra Gupta** (Senior Scientist) — `navinbtc@gmail.com`
-
-- **Dr. Sharanbasappa** (Scientist) — `smadival509@gmail.com`
-
-- **Bug Reports & Issues:**
-  <https://github.com/kabilanbio/scSimEval/issues>
+  # Save results object
+  saveRDS(benchmark_results, "scSimEval_benchmark_results.rds")
+  ```
 
 ------------------------------------------------------------------------
+
+## Authors
+
+`scSimEval` is developed and maintained at the **Division of Agricultural Bioinformatics, ICAR-Indian Agricultural Statistics Research Institute (ICAR-IASRI)**, New Delhi, India:
+
+- **Kabilan Sakthivel** (Maintainer & Ph.D Scholar) — `kabilan151414@gmail.com`
+- **Dr. Dwijesh Chandra Mishra** (Principal Scientist & Thesis Guide) — `dwij.mishra@gmail.com`
+- **Dr. Shashi Bhushan Lal** (Principal Scientist) — `sblall16@gmail.com`
+- **Dr. Ulavappa Angadi** (Principal Scientist) — `ubaangadi.iasri@icar.org.in`
+- **Dr. Sudhir Srivastava** (Senior Scientist) — `sudhir0401bm@gmail.com`
+- **Dr. Neeraj Budhlakoti** (Senior Scientist) — `neeraj35669@gmail.com`
+- **Dr. Krishna Kumar Chaturvedi** (Principal Scientist) — `kkcchaturvedi@gmail.com`
+- **Dr. Ranjeet Ranjan Kumar** (Senior Scientist) — `ranjeetranjaniari@gmail.com`
+- **Dr. Navin Chandra Gupta** (Senior Scientist) — `navinbtc@gmail.com`
+- **Dr. Sharanbasappa** (Scientist) — `smadival509@gmail.com`
+
+- **Bug Reports & Issues:** [https://github.com/kabilanbio/scSimEval/issues](https://github.com/kabilanbio/scSimEval/issues)

@@ -4,7 +4,7 @@
 \alias{calc_batch_asw}
 \title{Calculate Batch Average Silhouette Width (Batch ASW)}
 \usage{
-calc_batch_asw(embed, batch, cell_type = NULL)
+calc_batch_asw(embed, batch, cell_type = NULL, threads = 1)
 }
 \arguments{
 \item{embed}{Numeric matrix of cell coordinates (cells x dimensions, e.g. PCA or joint embedding).}
@@ -12,6 +12,8 @@ calc_batch_asw(embed, batch, cell_type = NULL)
 \item{batch}{Vector or factor of batch or modality labels for each cell.}
 
 \item{cell_type}{Optional vector or factor of cell-type labels for each cell.}
+
+\item{threads}{Number of CPU threads (default 1).}
 }
 \value{
 Numeric scalar between 0 and 1, where 1 indicates optimal batch mixing.

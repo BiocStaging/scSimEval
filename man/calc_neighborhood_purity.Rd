@@ -4,7 +4,13 @@
 \alias{calc_neighborhood_purity}
 \title{Calculate Neighborhood Purity}
 \usage{
-calc_neighborhood_purity(data, cluster_labels, k = NULL, is_distance = FALSE)
+calc_neighborhood_purity(
+  data,
+  cluster_labels,
+  k = NULL,
+  is_distance = FALSE,
+  threads = 1L
+)
 }
 \arguments{
 \item{data}{Matrix of coordinates (cells x dimensions) or expression matrix (features x cells) or dist matrix.}
@@ -14,6 +20,8 @@ calc_neighborhood_purity(data, cluster_labels, k = NULL, is_distance = FALSE)
 \item{k}{Number of nearest neighbors (default 5\% of cells).}
 
 \item{is_distance}{Logical, whether data is already a distance matrix. Default FALSE.}
+
+\item{threads}{Integer number of CPU threads (default 1L).}
 }
 \value{
 A numeric vector of neighborhood purity scores (values from 0 to 1),
