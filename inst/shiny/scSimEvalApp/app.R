@@ -111,15 +111,11 @@ n_physical_cores <- tryCatch({
   if (is.na(pc) || pc < 1) n_logical_threads else as.integer(pc)
 }, error = function(e) n_logical_threads)
 
-max_sys_cores <- n_logical_threads
-ui_max_cores <- max(128L, n_logical_threads)
+max_sys_cores <- n_physical_cores
+ui_max_cores <- max(128L, n_physical_cores)
 default_n_cores <- max(1L, min(4L, n_physical_cores - 1L))
 
-sys_hardware_summary <- if (n_logical_threads > n_physical_cores) {
-  sprintf("System detected: %d physical cores (%d logical threads)", n_physical_cores, n_logical_threads)
-} else {
-  sprintf("System detected: %d physical CPU cores", n_physical_cores)
-}
+sys_hardware_summary <- sprintf("System detected: %d CPU cores", n_physical_cores)
 
 
 # Register static resource directory for documentation figures
@@ -3471,7 +3467,7 @@ ui <- page_navbar(
           numericInput("num_uni_datasets", "Number of Datasets:", value = 1, min = 1, max = 50, step = 1),
           numericInput("num_uni_sims", "Number of Simulators:", value = 1, min = 1, max = 10, step = 1),
           tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 10px; margin-bottom: 4px;", "2. Compute & Acceleration"),
-          numericInput("num_uni_cores", "Evaluation CPU Cores (Parallel Workers):", value = default_n_cores, min = 1, max = ui_max_cores, step = 1),
+          numericInput("num_uni_cores", "Evaluation CPU Cores:", value = default_n_cores, min = 1, max = ui_max_cores, step = 1),
           span(class = "text-muted", style = "font-size: 0.72rem; display: block; margin-top: -6px; margin-bottom: 8px;", sys_hardware_summary),
           hr(style = "margin: 12px 0;"),
           checkboxInput("chk_append_uni", "Add to current benchmark results", value = FALSE),
@@ -3504,7 +3500,7 @@ ui <- page_navbar(
           numericInput("num_uni_datasets_atac", "Number of Datasets:", value = 1, min = 1, max = 50, step = 1),
           numericInput("num_uni_sims_atac", "Number of Simulators:", value = 1, min = 1, max = 10, step = 1),
           tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 10px; margin-bottom: 4px;", "2. Compute & Acceleration"),
-          numericInput("num_uni_cores_atac", "Evaluation CPU Cores (Parallel Workers):", value = default_n_cores, min = 1, max = ui_max_cores, step = 1),
+          numericInput("num_uni_cores_atac", "Evaluation CPU Cores:", value = default_n_cores, min = 1, max = ui_max_cores, step = 1),
           span(class = "text-muted", style = "font-size: 0.72rem; display: block; margin-top: -6px; margin-bottom: 8px;", sys_hardware_summary),
           hr(style = "margin: 12px 0;"),
           checkboxInput("chk_append_uni_atac", "Add to current benchmark results", value = FALSE),
@@ -3549,7 +3545,7 @@ ui <- page_navbar(
           numericInput("num_multi_datasets", "Number of Datasets:", value = 1, min = 1, max = 30, step = 1),
           numericInput("num_multi_sims", "Number of Simulators:", value = 1, min = 1, max = 8, step = 1),
           tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 10px; margin-bottom: 4px;", "2. Compute & Acceleration"),
-          numericInput("num_multi_cores", "Evaluation CPU Cores (Parallel Workers):", value = default_n_cores, min = 1, max = ui_max_cores, step = 1),
+          numericInput("num_multi_cores", "Evaluation CPU Cores:", value = default_n_cores, min = 1, max = ui_max_cores, step = 1),
           span(class = "text-muted", style = "font-size: 0.72rem; display: block; margin-top: -6px; margin-bottom: 8px;", sys_hardware_summary),
           hr(style = "margin: 12px 0;"),
           checkboxInput("chk_append_multi", "Add to current benchmark results", value = FALSE),
@@ -4047,8 +4043,7 @@ ui <- page_navbar(
                          "(IV) Technical Variation & Batch Mixing Dynamics" = "(IV) Technical Variation & Batch Mixing Dynamics",
                          "(V) Biological Signal & Differential Fidelity" = "(V) Biological Signal & Differential Fidelity",
                          "(VI) Multiomics Integration & Alignment" = "(VI) Multiomics Integration & Alignment",
-                         "(VII) Trajectory & Lineage Topology" = "(VII) Trajectory & Lineage Topology",
-                         "(VIII) Computational Scalability & Efficiency" = "(VIII) Computational Scalability & Efficiency"
+                         "(VII) Trajectory & Lineage Topology" = "(VII) Trajectory & Lineage Topology"
                        ),
                        selected = "all"
                      )
@@ -4122,8 +4117,7 @@ ui <- page_navbar(
                          "(IV) Technical Variation & Batch Mixing Dynamics" = "(IV) Technical Variation & Batch Mixing Dynamics",
                          "(V) Biological Signal & Differential Fidelity" = "(V) Biological Signal & Differential Fidelity",
                          "(VI) Multiomics Integration & Alignment" = "(VI) Multiomics Integration & Alignment",
-                         "(VII) Trajectory & Lineage Topology" = "(VII) Trajectory & Lineage Topology",
-                         "(VIII) Computational Scalability & Efficiency" = "(VIII) Computational Scalability & Efficiency"
+                         "(VII) Trajectory & Lineage Topology" = "(VII) Trajectory & Lineage Topology"
                        ),
                        selected = "all"
                      )
@@ -5369,7 +5363,7 @@ server <- function(input, output, session) {
   # Startup Diagnostic Log Sequence
   sc_log("INFO", "scSimEval Interactive Benchmarking Studio v0.99.10 initialized.", "Startup")
   sc_log("NOTE", paste0("Runtime Environment: R ", getRversion(), " | Platform: ", R.version$platform, " | OS: ", Sys.info()[["sysname"]], " ", Sys.info()[["release"]]), "Environment")
-  sc_log("INFO", paste0("System Concurrency: ", n_physical_cores, " physical cores (", n_logical_threads, " logical threads) detected. Sparse matrix arithmetic (dgCMatrix) enabled."), "Hardware")
+  sc_log("INFO", paste0("System Concurrency: ", n_physical_cores, " CPU cores detected. Sparse matrix arithmetic (dgCMatrix) enabled."), "Hardware")
   sc_log("NOTE", "Evaluation Suite: 56 evaluation measures registered across Categories 1 to 8.", "Metrics")
   
   # Check demo benchmark cache status
@@ -6163,7 +6157,7 @@ server <- function(input, output, session) {
       sprintf("# Generated on: %s", date_str),
       sprintf("# Benchmark Mode: %s", if (is_uni) "Single-Cell (scRNA or scATAC)" else sprintf("Multiomics (scRNA + scATAC) [%s]", if (is_paired) "Paired" else "Unpaired")),
       sprintf("# Total Datasets: %d | Total Simulators: %d", n_dsets, n_sims),
-      sprintf("# Parallel CPU Workers (Cores): %d", n_cores),
+      sprintf("# Parallel CPU Cores: %d", n_cores),
       "#",
       "# Instructions:",
       "#   1. Ensure required R packages are installed: install.packages(c('Matrix', 'ggplot2'))",
@@ -10955,7 +10949,7 @@ server <- function(input, output, session) {
         sprintf("  panel_type   <- '%s'", input$sel_pca_panel %||% "both"),
         sprintf("  top_loadings <- %d", input$num_pca_top_metrics %||% 8),
         "  cat('[scSimEval Workflow] Step 4: Generating PCA ordination and loadings plot...\n')",
-        "  p <- plot_metric_pca(benchmark_data = df, category = cat_filter, panel = panel_type, top_n_loadings = top_loadings, base_size = 12)",
+        "  p <- plot_metric_pca(benchmark_data = df, category = cat_filter, exclude_categories = '(VIII) Computational Scalability & Efficiency', panel = panel_type, top_n_loadings = top_loadings, base_size = 12)",
         "",
         sprintf("  w_in <- %.2f", (input$sld_pca_width %||% 950) / 90),
         sprintf("  h_in <- %.2f", (input$sld_pca_height %||% 1100) / 90),
@@ -11841,6 +11835,7 @@ server <- function(input, output, session) {
         plot_metric_pca(
           benchmark_data = df,
           category = cat_sel,
+          exclude_categories = "(VIII) Computational Scalability & Efficiency",
           panel = p_panel,
           top_n_loadings = n_top,
           base_size = 12
