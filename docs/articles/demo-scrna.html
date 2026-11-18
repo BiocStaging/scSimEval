@@ -87,70 +87,178 @@
     
     
 <div class="section level2">
-<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>Single-cell RNA sequencing (scRNA-seq) simulation algorithms generate
-synthetic expression counts to evaluate computational pipelines, cluster
-detection, and differential expression methods. Quantifying whether
-synthetic data accurately captures the complex statistical
-distributions, cell-type manifolds, batch variations, and biological
-trajectories of real experimental data is critical.</p>
-<p>This tutorial provides a step-by-step demonstration of evaluating
-synthetic scRNA-seq datasets using
-<strong><code>scSimEval</code></strong>. We benchmark <strong>6
-state-of-the-art single-cell simulators</strong> against an empirical
-biological reference from rice bud tissue (<em>Oryza sativa</em>).</p>
+<p>Single-cell RNA sequencing (scRNA-seq) simulation algorithms are
+essential for evaluating computational pipelines, developing clustering
+methods, and benchmarking differential expression detectors under
+controlled ground-truth conditions. However, to ensure findings
+translate reliably to real biological data, researchers must rigorously
+evaluate how faithfully synthetic datasets replicate empirical
+experiments.</p>
+<p><strong><code>scSimEval</code></strong> provides a standardized,
+reference-based benchmarking framework to systematically quantify
+single-cell simulation accuracy. For unimodal
+<strong><code>scRNA-seq</code></strong>, <code>scSimEval</code>
+evaluates synthetic data across <strong>7 active evaluation categories
+comprising 44 curated metrics</strong>:</p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Category I: Distributional Properties</strong> (14 metrics)
+— Univariate and bivariate statistical distances (Wasserstein,
+Kolmogorov–Smirnov, MAD, Bhattacharyya, nearest-neighbor divergence)
+across cell-level and gene-level properties.</li>
+<li>
+<strong>Category II: Sparsity &amp; Zero-Inflation Dynamics</strong>
+(4 metrics) — Logistic dropout curve parameters (midpoint error
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>0</mn></msub><annotation encoding="application/x-tex">x_0</annotation></semantics></math>,
+slope error
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>,
+fit discrepancy
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>)
+and excess zero proportions.</li>
+<li>
+<strong>Category III: Cellular Manifold &amp; Clustering
+Concordance</strong> (8 metrics) — High-dimensional geometry
+preservation, Maximum Mean Discrepancy (MMD), Generative Precision &amp;
+Recall, Average Silhouette Width (ASW), Clustering Deviation Index
+(CDI), Adjusted Rand Index (ARI), and Normalized Mutual Information
+(NMI).</li>
+<li>
+<strong>Category IV: Technical Variation &amp; Batch Mixing
+Dynamics</strong> (5 metrics) — Batch Silhouette Width, Principal
+Component Regression
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mi>C</mi><mi>R</mi><mspace width="0.222em"></mspace><msup><mi>R</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">PCR\ R^2</annotation></semantics></math>),
+Cell-Specific Mixing Score (CMS), Inverse Simpson’s Index (ISI), and
+cross-batch cell-type classification F1.</li>
+<li>
+<strong>Category V: Biological Signal &amp; Differential Expression
+(DEG) Fidelity</strong> (6 metrics) — Pseudobulk <code>edgeR-QLF</code>
+statistical testing assessing null
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>-value
+uniformity, marker gene detection accuracy, precision, recall, F1-score,
+and ROC-AUC.</li>
+<li>
+<strong>Category VII: Trajectory &amp; Lineage Topology</strong> (5
+metrics) — HVG-filtered dynverse lineage modeling measuring milestone
+graph topology similarity (HIM, edge-flip), geodesic distance
+correlation, branch assignment F1, and Random Forest driver feature
+importance correlation.</li>
+<li>
+<strong>Category VIII: Computational Scalability &amp;
+Efficiency</strong> (2 metrics) — Hardware-normalized execution runtime
+(<code>core_seconds</code>) and resident peak memory per allocated core
+(<code>memory_per_core_mib</code>).</li>
+</ol>
+<blockquote>
+<p><strong>Note on Category VI:</strong> Category VI (<em>Multiomics
+Integration &amp; Alignment</em>) evaluates cross-modality latent
+alignment between scRNA-seq and scATAC-seq co-assays, and is naturally
+inactive for unimodal scRNA-seq evaluations.</p>
+</blockquote>
+<div class="section level4">
+<h4 id="direction-aware-score-normalization">Direction-Aware Score Normalization<a class="anchor" aria-label="anchor" href="#direction-aware-score-normalization"></a>
+</h4>
+<p>Raw metrics span diverse physical units (Kolmogorov–Smirnov
+distances, runtimes in seconds, RAM in MiB, correlation coefficients).
+<code>scSimEval</code> transforms all raw metrics into
+<strong>standardized, direction-aware fidelity scores in
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="true" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0, 1]</annotation></semantics></math></strong>,
+where
+<strong><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>1.0</mn><annotation encoding="application/x-tex">1.0</annotation></semantics></math>
+represents ideal concordance with the biological reference</strong>: *
+For distance or error metrics where lower values represent superior
+accuracy (e.g., Wasserstein, MMD, dropout midpoint error), scores are
+inverted:
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Score</mtext><mo>=</mo><mo>exp</mo><mrow><mo stretchy="true" form="prefix">(</mo><mo>−</mo><mi>γ</mi><mo>⋅</mo><mtext mathvariant="normal">distance</mtext><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\text{Score} = \exp(-\gamma \cdot \text{distance})</annotation></semantics></math>.
+* For bounded correlation and concordance indices where higher values
+represent superior fidelity (e.g., ARI, NMI, Generative Precision,
+ROC-AUC), scores are scaled linearly to
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="true" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0, 1]</annotation></semantics></math>.
+* For mixing and balance metrics where values closer to zero indicate
+optimal batch mixing without clustering artifacts (e.g., Batch
+Silhouette), scores are centered symmetrically.</p>
 <hr>
 </div>
-<div class="section level2">
-<h2 id="dataset-preparation-experimental-design">1. Dataset Preparation &amp; Experimental Design<a class="anchor" aria-label="anchor" href="#dataset-preparation-experimental-design"></a>
-</h2>
-<div class="section level4">
-<h4 id="empirical-reference-simulation-suites">1.1 Empirical Reference &amp; Simulation Suites<a class="anchor" aria-label="anchor" href="#empirical-reference-simulation-suites"></a>
-</h4>
-<p>We evaluate an empirical biological reference and 6 simulated
-datasets derived from rice bud tissue:</p>
-<ul>
-<li>
-<strong>Reference Dataset</strong>: Rice bud tissue (<em>Oryza
-sativa</em>) containing <strong>1,558 genes</strong> across
-<strong>2,589 single cells</strong>, with <strong>8 annotated cell
-types</strong> and <strong>2 technical batches</strong>.</li>
-<li>
-<strong>Simulated Datasets</strong>: Six simulators configured for
-the same biological system:
-<ol style="list-style-type: decimal">
-<li><strong><code>scMultiSim</code></strong></li>
-<li><strong><code>scDesign3</code></strong></li>
-<li><strong><code>MOSim</code></strong></li>
-<li><strong><code>scCross</code></strong></li>
-<li><strong><code>scMoMtF</code></strong></li>
-<li><strong><code>Matilda</code></strong></li>
-</ol>
-</li>
-</ul>
-<p>While multiomics Seurat objects may contain multiple modalities
-(e.g., scRNA and scATAC), <code>scSimEval</code> cleanly isolates the
-<code>RNA</code> counts assay and preserves cell-level metadata (cell
-types and batch annotations).</p>
 </div>
+<div class="section level2">
+<h2 id="input-data-requirements-object-setup">1. Input Data Requirements &amp; Object Setup<a class="anchor" aria-label="anchor" href="#input-data-requirements-object-setup"></a>
+</h2>
+<p>To evaluate any scRNA-seq simulation, <code>scSimEval</code> requires
+two primary components alongside cell-level metadata:</p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Empirical Biological Reference
+(<code>ref_data</code>):</strong>
+<ul>
+<li>A single-cell RNA count matrix
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">genes</mtext><mo>×</mo><mtext mathvariant="normal">cells</mtext></mrow><annotation encoding="application/x-tex">\text{genes} \times \text{cells}</annotation></semantics></math>)
+or serialized <code>Seurat</code> / <code>SingleCellExperiment</code>
+object.</li>
+<li>
+<strong>Cell-Type Annotations (<code>cell_types</code> —
+Mandatory):</strong> Character vector or factor identifying biological
+cell identities. Required for manifold concordance (Category III) and
+pseudobulk differential testing (Category V).</li>
+<li>
+<strong>Batch Identifiers (<code>batch_info</code> —
+Mandatory):</strong> Character vector or factor identifying technical
+batches or donor replicates. Required for batch mixing dynamics
+(Category IV) and pseudobulk design matrices.</li>
+</ul>
+</li>
+<li>
+<strong>Simulated Datasets (<code>sim_data</code>):</strong>
+<ul>
+<li>One or more synthetic count matrices generated by candidate
+simulation algorithms, accompanied by corresponding cell-type and batch
+annotations.</li>
+</ul>
+</li>
+<li>
+<strong>Computational Resource Logs (Optional / Category
+VIII):</strong>
+<ul>
+<li>Simulation elapsed wall-clock time (<code>elapsed_time</code>), peak
+memory consumption (<code>memory_mb</code>), and the number of CPU cores
+allocated during simulation (<code>sim_cores</code>).</li>
+</ul>
+</li>
+</ol>
 <div class="section level4">
-<h4 id="computational-scalability-measures">1.2 Computational Scalability Measures<a class="anchor" aria-label="anchor" href="#computational-scalability-measures"></a>
+<h4 id="illustrative-case-study-6-state-of-the-art-simulators">Illustrative Case Study: 6 State-of-the-Art Simulators<a class="anchor" aria-label="anchor" href="#illustrative-case-study-6-state-of-the-art-simulators"></a>
 </h4>
-<p>Empirical simulation runtime (wall-clock seconds) and peak RAM
-consumption were tracked under a standardized 16-core allocation:</p>
+<p>In this demonstration, we benchmark <strong>6 representative
+single-cell simulators</strong> configured to simulate single-cell RNA
+data from an empirical biological reference (rice bud tissue: 1,558
+genes
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math>
+2,589 single cells across 8 annotated cell types and 2 technical
+batches): 1. <strong><code>scMultiSim</code></strong> (Multi-modal
+kinetic and spatial simulator) 2.
+<strong><code>scDesign3</code></strong> (Unified probabilistic model
+with copula framework) 3. <strong><code>MOSim</code></strong>
+(Multi-omics simulation with user-defined differential profiles) 4.
+<strong><code>scCross</code></strong> (Cross-modality generative
+adversarial network) 5. <strong><code>scMoMtF</code></strong> (Matrix
+factorization for single-cell multiomics) 6.
+<strong><code>Matilda</code></strong> (Deep generative neural network
+for single-cell data)</p>
+<p>Empirical execution wall-clock runtimes and peak RAM consumption
+tracked during data simulation under a 16-core allocation are summarized
+below:</p>
 <table class="table">
 <colgroup>
-<col width="23%">
-<col width="30%">
 <col width="16%">
-<col width="16%">
-<col width="13%">
+<col width="20%">
+<col width="20%">
+<col width="20%">
+<col width="20%">
 </colgroup>
 <thead><tr class="header">
-<th align="left">Simulation Method</th>
+<th align="left">Simulator</th>
 <th align="center">Wall-Clock Runtime (s)</th>
-<th align="center">Peak Memory</th>
+<th align="center">Peak Resident Memory</th>
 <th align="center">Memory Unit</th>
 <th align="center">CPU Cores</th>
 </tr></thead>
@@ -203,197 +311,118 @@ consumption were tracked under a standardized 16-core allocation:</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="loading-libraries-data-objects">2. Loading Libraries &amp; Data Objects<a class="anchor" aria-label="anchor" href="#loading-libraries-data-objects"></a>
+<h2 id="running-the-unified-benchmarking-pipeline">2. Running the Unified Benchmarking Pipeline<a class="anchor" aria-label="anchor" href="#running-the-unified-benchmarking-pipeline"></a>
 </h2>
-<p>First, we load <code>scSimEval</code>, <code>Seurat</code>, and
-<code>Matrix</code>:</p>
+<p>The master evaluation entrypoint in <code>scSimEval</code> is
+<code><a href="../reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy()</a></code>. It automatically identifies
+the analysis modality, validates input dimensions, extracts statistical
+distributions, performs pseudobulk differential testing, evaluates
+trajectory topologies, and standardizes all scores.</p>
+<div class="section level4">
+<h4 id="benchmarking-a-single-simulator">2.1 Benchmarking a Single Simulator<a class="anchor" aria-label="anchor" href="#benchmarking-a-single-simulator"></a>
+</h4>
+<p>For evaluating a single simulator against an empirical reference:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval/">scSimEval</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://codeberg.org/jaganmn/Matrix" class="external-link">Matrix</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></code></pre></div>
+<span></span>
+<span><span class="co"># Run full evaluation across all active scRNA-seq categories</span></span>
+<span><span class="va">eval_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy</a></span><span class="op">(</span></span>
+<span>  ref_data          <span class="op">=</span> <span class="va">ref_counts</span>,          <span class="co"># Reference gene-by-cell matrix or Seurat object</span></span>
+<span>  sim_data          <span class="op">=</span> <span class="va">sim_counts</span>,          <span class="co"># Simulated gene-by-cell matrix or Seurat object</span></span>
+<span>  cell_types_ref    <span class="op">=</span> <span class="va">ref_cell_types</span>,      <span class="co"># Reference cell types</span></span>
+<span>  cell_types_sim    <span class="op">=</span> <span class="va">sim_cell_types</span>,      <span class="co"># Simulated cell types</span></span>
+<span>  batch_ref         <span class="op">=</span> <span class="va">ref_batch_info</span>,      <span class="co"># Reference batch identifiers</span></span>
+<span>  batch_sim         <span class="op">=</span> <span class="va">sim_batch_info</span>,      <span class="co"># Simulated batch identifiers</span></span>
+<span>  modality          <span class="op">=</span> <span class="st">"scRNA-seq"</span>,         <span class="co"># Analysis modality</span></span>
+<span>  elapsed_time      <span class="op">=</span> <span class="fl">87.87</span>,               <span class="co"># Simulation runtime in seconds</span></span>
+<span>  time_unit         <span class="op">=</span> <span class="st">"seconds"</span>,</span>
+<span>  memory_mb         <span class="op">=</span> <span class="fl">5713.90</span>,             <span class="co"># Simulation peak RAM</span></span>
+<span>  memory_unit       <span class="op">=</span> <span class="st">"MiB"</span>,</span>
+<span>  sim_cores         <span class="op">=</span> <span class="fl">16L</span>,                 <span class="co"># Allocated simulation cores</span></span>
+<span>  compute_bivariate <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  threads           <span class="op">=</span> <span class="fl">16</span>,                  <span class="co"># Multiprocessing threads for evaluation</span></span>
+<span>  verbose           <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Inspect tidy metrics summary table</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">eval_result</span><span class="op">$</span><span class="va">metrics_summary_table</span><span class="op">)</span></span></code></pre></div>
+</div>
 <div class="section level4">
-<h4 id="safe-scrna-seq-data-loader">2.1 Safe scRNA-seq Data Loader<a class="anchor" aria-label="anchor" href="#safe-scrna-seq-data-loader"></a>
+<h4 id="benchmarking-multiple-simulators-in-batch-mode">2.2 Benchmarking Multiple Simulators in Batch Mode<a class="anchor" aria-label="anchor" href="#benchmarking-multiple-simulators-in-batch-mode"></a>
 </h4>
-<p>We define a data loader to extract the RNA count matrix and
-standardize metadata annotations:</p>
+<p>When comparing multiple simulation algorithms, users can iterate over
+a configured list of simulator outputs:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">load_scrna_seurat</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">path</span>, <span class="va">placeholder</span> <span class="op">=</span> <span class="st">"dataset"</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">raw_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Extract RNA counts layer safely</span></span>
-<span>  <span class="va">counts_rna</span> <span class="op">&lt;-</span> <span class="cn">NULL</span></span>
-<span>  <span class="kw">if</span> <span class="op">(</span><span class="st">"RNA"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">raw_obj</span><span class="op">@</span><span class="va">assays</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">counts_rna</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="va">raw_obj</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">counts</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="cn">NULL</span><span class="op">)</span></span>
-<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">counts_rna</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>      <span class="va">counts_rna</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span></span>
-<span>        <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">raw_obj</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span>,</span>
-<span>        error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">raw_obj</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span>, slot <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span></span>
-<span>      <span class="op">)</span></span>
-<span>    <span class="op">}</span></span>
-<span>  <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span>    <span class="va">def_a</span> <span class="op">&lt;-</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/DefaultAssay.html" class="external-link">DefaultAssay</a></span><span class="op">(</span><span class="va">raw_obj</span><span class="op">)</span></span>
-<span>    <span class="va">counts_rna</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span></span>
-<span>      <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">raw_obj</span><span class="op">[[</span><span class="va">def_a</span><span class="op">]</span><span class="op">]</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span>,</span>
-<span>      error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">raw_obj</span><span class="op">[[</span><span class="va">def_a</span><span class="op">]</span><span class="op">]</span>, slot <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span></span>
-<span>    <span class="op">)</span></span>
-<span>  <span class="op">}</span></span>
-<span>  </span>
-<span>  <span class="co"># Create a pure single-cell RNA Seurat object</span></span>
-<span>  <span class="va">clean_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="va">counts_rna</span>, meta.data <span class="op">=</span> <span class="va">raw_obj</span><span class="op">@</span><span class="va">meta.data</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Validate structure using scSimEval</span></span>
-<span>  <span class="va">val</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/validate_sc_object.html">validate_sc_object</a></span><span class="op">(</span><span class="va">clean_obj</span>, modality <span class="op">=</span> <span class="st">"scRNA-seq"</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Standardize cell type nomenclature</span></span>
-<span>  <span class="va">ct</span> <span class="op">&lt;-</span> <span class="va">val</span><span class="op">$</span><span class="va">cell_types</span></span>
-<span>  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">ct</span><span class="op">)</span><span class="op">)</span> <span class="va">ct</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"^Bud--"</span>, <span class="st">""</span>, <span class="va">ct</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    counts     <span class="op">=</span> <span class="va">val</span><span class="op">$</span><span class="va">counts</span>,</span>
-<span>    object     <span class="op">=</span> <span class="va">val</span><span class="op">$</span><span class="va">object</span>,</span>
-<span>    cell_types <span class="op">=</span> <span class="va">ct</span>,</span>
-<span>    batch_info <span class="op">=</span> <span class="va">val</span><span class="op">$</span><span class="va">batch_info</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-</div>
-<div class="section level4">
-<h4 id="loading-reference-extracting-summary">2.2 Loading Reference &amp; Extracting Summary<a class="anchor" aria-label="anchor" href="#loading-reference-extracting-summary"></a>
-</h4>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Load empirical reference</span></span>
-<span><span class="va">ref_file</span> <span class="op">&lt;-</span> <span class="st">"/root/seurat_files/reference_datasets/rice/rice_processed_Bud_final.rds"</span></span>
-<span><span class="va">ref_data</span> <span class="op">&lt;-</span> <span class="fu">load_scrna_seurat</span><span class="op">(</span><span class="va">ref_file</span>, placeholder <span class="op">=</span> <span class="st">"Reference (Rice_Bud)"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Define list of candidate simulators and their scalability parameters</span></span>
+<span><span class="va">simulator_suite</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  scMultiSim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>obj <span class="op">=</span> <span class="va">obj_scmultisim</span>, time <span class="op">=</span> <span class="fl">191.89</span>, mem <span class="op">=</span> <span class="fl">1139.00</span>, mem_u <span class="op">=</span> <span class="st">"MiB"</span><span class="op">)</span>,</span>
+<span>  scDesign3  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>obj <span class="op">=</span> <span class="va">obj_scdesign3</span>,  time <span class="op">=</span> <span class="fl">87.87</span>,  mem <span class="op">=</span> <span class="fl">5713.90</span>, mem_u <span class="op">=</span> <span class="st">"MiB"</span><span class="op">)</span>,</span>
+<span>  MOSim      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>obj <span class="op">=</span> <span class="va">obj_mosim</span>,      time <span class="op">=</span> <span class="fl">294.45</span>, mem <span class="op">=</span> <span class="fl">1399.50</span>, mem_u <span class="op">=</span> <span class="st">"MiB"</span><span class="op">)</span>,</span>
+<span>  scCross    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>obj <span class="op">=</span> <span class="va">obj_sccross</span>,    time <span class="op">=</span> <span class="fl">867.68</span>, mem <span class="op">=</span> <span class="fl">1322.84</span>, mem_u <span class="op">=</span> <span class="st">"MB"</span><span class="op">)</span>,</span>
+<span>  scMoMtF    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>obj <span class="op">=</span> <span class="va">obj_scmomtf</span>,    time <span class="op">=</span> <span class="fl">13.84</span>,  mem <span class="op">=</span> <span class="fl">339.69</span>,  mem_u <span class="op">=</span> <span class="st">"MB"</span><span class="op">)</span>,</span>
+<span>  Matilda    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>obj <span class="op">=</span> <span class="va">obj_matilda</span>,    time <span class="op">=</span> <span class="fl">57.32</span>,  mem <span class="op">=</span> <span class="fl">352.26</span>,  mem_u <span class="op">=</span> <span class="st">"MB"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">ref_mat</span> <span class="op">&lt;-</span> <span class="va">ref_data</span><span class="op">$</span><span class="va">counts</span></span>
-<span><span class="va">ref_obj</span> <span class="op">&lt;-</span> <span class="va">ref_data</span><span class="op">$</span><span class="va">object</span></span>
-<span><span class="va">ct_ref</span>  <span class="op">&lt;-</span> <span class="va">ref_data</span><span class="op">$</span><span class="va">cell_types</span></span>
-<span><span class="va">bt_ref</span>  <span class="op">&lt;-</span> <span class="va">ref_data</span><span class="op">$</span><span class="va">batch_info</span></span>
+<span><span class="va">all_benchmark_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"Reference: %d features x %d cells across %d cell types and %d batches.\n"</span>,</span>
-<span>            <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ref_mat</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">ref_mat</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">ct_ref</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">bt_ref</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Reference: 1558 features x 2589 cells across 8 cell types and 2 batches.</span></span></code></pre>
-<p>We extract baseline empirical summaries using
-<code><a href="../reference/extract_dataset_summary.html">extract_dataset_summary()</a></code>:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">all_dataset_summaries</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">all_dataset_summaries</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/extract_dataset_summary.html">extract_dataset_summary</a></span><span class="op">(</span></span>
-<span>  <span class="va">ref_mat</span>,</span>
-<span>  role        <span class="op">=</span> <span class="st">"Biological Reference"</span>,</span>
-<span>  method_name <span class="op">=</span> <span class="st">"Empirical Reference (Rice_Bud)"</span>,</span>
-<span>  modality    <span class="op">=</span> <span class="st">"scRNA-seq"</span>,</span>
-<span>  cell_types  <span class="op">=</span> <span class="va">ct_ref</span>,</span>
-<span>  batch_info  <span class="op">=</span> <span class="va">bt_ref</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<hr>
-</div>
-</div>
-<div class="section level2">
-<h2 id="live-simulation-accuracy-evaluation">3. Live Simulation Accuracy Evaluation<a class="anchor" aria-label="anchor" href="#live-simulation-accuracy-evaluation"></a>
-</h2>
-<p>We configure the six simulation methods with their scalability values
-and execute <code><a href="../reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy()</a></code> using <strong>16
-CPU cores</strong>:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sim_configs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  scMultiSim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    name <span class="op">=</span> <span class="st">"scMultiSim"</span>,</span>
-<span>    file <span class="op">=</span> <span class="st">"/root/seurat_files/simulated_datasets/rice/scMultiSim/scMultiSim_rice_Bud_seurat.rds"</span>,</span>
-<span>    time <span class="op">=</span> <span class="fl">191.89</span>, time_unit <span class="op">=</span> <span class="st">"seconds"</span>, mem <span class="op">=</span> <span class="fl">1139.00</span>, mem_unit <span class="op">=</span> <span class="st">"MiB"</span>, cores <span class="op">=</span> <span class="fl">16L</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  scDesign3 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    name <span class="op">=</span> <span class="st">"scDesign3"</span>,</span>
-<span>    file <span class="op">=</span> <span class="st">"/root/seurat_files/simulated_datasets/rice/scDesign3/scDesign3_rice_Bud_seurat.rds"</span>,</span>
-<span>    time <span class="op">=</span> <span class="fl">87.87</span>, time_unit <span class="op">=</span> <span class="st">"seconds"</span>, mem <span class="op">=</span> <span class="fl">5713.90</span>, mem_unit <span class="op">=</span> <span class="st">"MiB"</span>, cores <span class="op">=</span> <span class="fl">16L</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  MOSim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    name <span class="op">=</span> <span class="st">"MOSim"</span>,</span>
-<span>    file <span class="op">=</span> <span class="st">"/root/seurat_files/simulated_datasets/rice/MOSim/mosim_rice_Bud_seurat.rds"</span>,</span>
-<span>    time <span class="op">=</span> <span class="fl">294.45</span>, time_unit <span class="op">=</span> <span class="st">"seconds"</span>, mem <span class="op">=</span> <span class="fl">1399.50</span>, mem_unit <span class="op">=</span> <span class="st">"MiB"</span>, cores <span class="op">=</span> <span class="fl">16L</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  scCross <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    name <span class="op">=</span> <span class="st">"scCross"</span>,</span>
-<span>    file <span class="op">=</span> <span class="st">"/root/seurat_files/simulated_datasets/rice/scCross/scCross_rice_Bud_seurat.rds"</span>,</span>
-<span>    time <span class="op">=</span> <span class="fl">867.68</span>, time_unit <span class="op">=</span> <span class="st">"seconds"</span>, mem <span class="op">=</span> <span class="fl">1322.84</span>, mem_unit <span class="op">=</span> <span class="st">"MB"</span>, cores <span class="op">=</span> <span class="fl">16L</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  scMoMtF <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    name <span class="op">=</span> <span class="st">"scMoMtF"</span>,</span>
-<span>    file <span class="op">=</span> <span class="st">"/root/seurat_files/simulated_datasets/rice/scMoMtF/scMoMtF_rice_Bud_seurat.rds"</span>,</span>
-<span>    time <span class="op">=</span> <span class="fl">13.84</span>, time_unit <span class="op">=</span> <span class="st">"seconds"</span>, mem <span class="op">=</span> <span class="fl">339.69</span>, mem_unit <span class="op">=</span> <span class="st">"MB"</span>, cores <span class="op">=</span> <span class="fl">16L</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  Matilda <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    name <span class="op">=</span> <span class="st">"Matilda"</span>,</span>
-<span>    file <span class="op">=</span> <span class="st">"/root/seurat_files/simulated_datasets/rice/Matilda/matilda_rice_Bud_seurat.rds"</span>,</span>
-<span>    time <span class="op">=</span> <span class="fl">57.32</span>, time_unit <span class="op">=</span> <span class="st">"seconds"</span>, mem <span class="op">=</span> <span class="fl">352.26</span>, mem_unit <span class="op">=</span> <span class="st">"MB"</span>, cores <span class="op">=</span> <span class="fl">16L</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<div class="section level4">
-<h4 id="executing-the-benchmarking-loop">3.1 Executing the Benchmarking Loop<a class="anchor" aria-label="anchor" href="#executing-the-benchmarking-loop"></a>
-</h4>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">all_benchmark_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">all_sim_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="kw">for</span> <span class="op">(</span><span class="va">cfg</span> <span class="kw">in</span> <span class="va">sim_configs</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"[scSimEval] Evaluating:"</span>, <span class="va">cfg</span><span class="op">$</span><span class="va">name</span>, <span class="st">"...\n"</span><span class="op">)</span></span>
-<span>  <span class="va">sim_data</span> <span class="op">&lt;-</span> <span class="fu">load_scrna_seurat</span><span class="op">(</span><span class="va">cfg</span><span class="op">$</span><span class="va">file</span>, placeholder <span class="op">=</span> <span class="va">cfg</span><span class="op">$</span><span class="va">name</span><span class="op">)</span></span>
-<span>  <span class="va">all_sim_counts</span><span class="op">[[</span><span class="va">cfg</span><span class="op">$</span><span class="va">name</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">sim_data</span><span class="op">$</span><span class="va">counts</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">sim_name</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">simulator_suite</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">cfg</span> <span class="op">&lt;-</span> <span class="va">simulator_suite</span><span class="op">[[</span><span class="va">sim_name</span><span class="op">]</span><span class="op">]</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"[scSimEval] Benchmarking:"</span>, <span class="va">sim_name</span>, <span class="st">"...\n"</span><span class="op">)</span></span>
 <span>  </span>
-<span>  <span class="co"># Dataset summary</span></span>
-<span>  <span class="va">all_dataset_summaries</span><span class="op">[[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">all_dataset_summaries</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/extract_dataset_summary.html">extract_dataset_summary</a></span><span class="op">(</span></span>
-<span>    <span class="va">sim_data</span><span class="op">$</span><span class="va">counts</span>, role <span class="op">=</span> <span class="st">"Simulated"</span>,</span>
-<span>    method_name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">cfg</span><span class="op">$</span><span class="va">name</span>, <span class="st">" (Rice_Bud)"</span><span class="op">)</span>,</span>
-<span>    modality <span class="op">=</span> <span class="st">"scRNA-seq"</span>, cell_types <span class="op">=</span> <span class="va">sim_data</span><span class="op">$</span><span class="va">cell_types</span>, batch_info <span class="op">=</span> <span class="va">sim_data</span><span class="op">$</span><span class="va">batch_info</span></span>
-<span>  <span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Master evaluation pipeline across 7 relevant unimodal categories</span></span>
-<span>  <span class="va">eval_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy</a></span><span class="op">(</span></span>
-<span>    ref_data          <span class="op">=</span> <span class="va">ref_obj</span>,</span>
-<span>    sim_data          <span class="op">=</span> <span class="va">sim_data</span><span class="op">$</span><span class="va">object</span>,</span>
-<span>    cell_types_ref    <span class="op">=</span> <span class="va">ct_ref</span>,</span>
-<span>    cell_types_sim    <span class="op">=</span> <span class="va">sim_data</span><span class="op">$</span><span class="va">cell_types</span>,</span>
-<span>    batch_ref         <span class="op">=</span> <span class="va">bt_ref</span>,</span>
-<span>    batch_sim         <span class="op">=</span> <span class="va">sim_data</span><span class="op">$</span><span class="va">batch_info</span>,</span>
+<span>  <span class="va">eval_out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy</a></span><span class="op">(</span></span>
+<span>    ref_data          <span class="op">=</span> <span class="va">ref_seurat</span>,</span>
+<span>    sim_data          <span class="op">=</span> <span class="va">cfg</span><span class="op">$</span><span class="va">obj</span>,</span>
+<span>    cell_types_ref    <span class="op">=</span> <span class="va">ref_seurat</span><span class="op">$</span><span class="va">cell_type</span>,</span>
+<span>    cell_types_sim    <span class="op">=</span> <span class="va">cfg</span><span class="op">$</span><span class="va">obj</span><span class="op">$</span><span class="va">cell_type</span>,</span>
+<span>    batch_ref         <span class="op">=</span> <span class="va">ref_seurat</span><span class="op">$</span><span class="va">batch</span>,</span>
+<span>    batch_sim         <span class="op">=</span> <span class="va">cfg</span><span class="op">$</span><span class="va">obj</span><span class="op">$</span><span class="va">batch</span>,</span>
 <span>    modality          <span class="op">=</span> <span class="st">"scRNA-seq"</span>,</span>
-<span>    memory_mb         <span class="op">=</span> <span class="va">cfg</span><span class="op">$</span><span class="va">mem</span>,</span>
 <span>    elapsed_time      <span class="op">=</span> <span class="va">cfg</span><span class="op">$</span><span class="va">time</span>,</span>
-<span>    time_unit         <span class="op">=</span> <span class="va">cfg</span><span class="op">$</span><span class="va">time_unit</span>,</span>
-<span>    memory_unit       <span class="op">=</span> <span class="va">cfg</span><span class="op">$</span><span class="va">mem_unit</span>,</span>
-<span>    sim_cores         <span class="op">=</span> <span class="va">cfg</span><span class="op">$</span><span class="va">cores</span>,</span>
+<span>    time_unit         <span class="op">=</span> <span class="st">"seconds"</span>,</span>
+<span>    memory_mb         <span class="op">=</span> <span class="va">cfg</span><span class="op">$</span><span class="va">mem</span>,</span>
+<span>    memory_unit       <span class="op">=</span> <span class="va">cfg</span><span class="op">$</span><span class="va">mem_u</span>,</span>
+<span>    sim_cores         <span class="op">=</span> <span class="fl">16L</span>,</span>
 <span>    compute_bivariate <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    threads           <span class="op">=</span> <span class="fl">16</span>,</span>
 <span>    verbose           <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span>  <span class="op">)</span></span>
 <span>  </span>
-<span>  <span class="va">tbl</span> <span class="op">&lt;-</span> <span class="va">eval_res</span><span class="op">$</span><span class="va">metrics_summary_table</span></span>
-<span>  <span class="va">tbl</span><span class="op">$</span><span class="va">Method</span>  <span class="op">&lt;-</span> <span class="va">cfg</span><span class="op">$</span><span class="va">name</span></span>
-<span>  <span class="va">tbl</span><span class="op">$</span><span class="va">Dataset</span> <span class="op">&lt;-</span> <span class="st">"Rice_Bud"</span></span>
-<span>  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="st">"Score"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">tbl</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="st">"Value"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">tbl</span><span class="op">)</span><span class="op">)</span> <span class="va">tbl</span><span class="op">$</span><span class="va">Score</span> <span class="op">&lt;-</span> <span class="va">tbl</span><span class="op">$</span><span class="va">Value</span></span>
-<span>  </span>
-<span>  <span class="va">all_benchmark_results</span><span class="op">[[</span><span class="va">cfg</span><span class="op">$</span><span class="va">name</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/standardize_benchmark_categories.html">standardize_benchmark_categories</a></span><span class="op">(</span><span class="va">tbl</span><span class="op">)</span></span>
+<span>  <span class="va">tbl</span> <span class="op">&lt;-</span> <span class="va">eval_out</span><span class="op">$</span><span class="va">metrics_summary_table</span></span>
+<span>  <span class="va">tbl</span><span class="op">$</span><span class="va">Method</span>  <span class="op">&lt;-</span> <span class="va">sim_name</span></span>
+<span>  <span class="va">tbl</span><span class="op">$</span><span class="va">Dataset</span> <span class="op">&lt;-</span> <span class="st">"scRNA-seq Benchmark"</span></span>
+<span>  <span class="va">all_benchmark_results</span><span class="op">[[</span><span class="va">sim_name</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/standardize_benchmark_categories.html">standardize_benchmark_categories</a></span><span class="op">(</span><span class="va">tbl</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="co"># Consolidate results across all 6 methods</span></span>
+<span><span class="co"># Consolidate into unified benchmark data frame</span></span>
 <span><span class="va">final_benchmark_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">all_benchmark_results</span><span class="op">)</span></span>
 <span><span class="va">final_benchmark_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/standardize_benchmark_categories.html">standardize_benchmark_categories</a></span><span class="op">(</span><span class="va">final_benchmark_df</span><span class="op">)</span></span>
-<span><span class="va">final_summary_df</span>   <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">all_dataset_summaries</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [scSimEval] Consolidating results across methods...</span></span>
-<span><span class="co">#&gt; Total evaluated metric entries: 1020 across 6 simulation methods.</span></span></code></pre>
+<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">final_benchmark_df</span>, <span class="st">"scSimEval_benchmark_results.rds"</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
 </div>
 <div class="section level2">
-<h2 id="exploring-benchmark-results-across-categories">4. Exploring Benchmark Results Across Categories<a class="anchor" aria-label="anchor" href="#exploring-benchmark-results-across-categories"></a>
+<h2 id="inspecting-benchmark-results-across-evaluation-categories">3. Inspecting Benchmark Results Across Evaluation Categories<a class="anchor" aria-label="anchor" href="#inspecting-benchmark-results-across-evaluation-categories"></a>
 </h2>
-<p>The resulting <code>metrics_summary_table</code> aggregates
-quantitative scores across all evaluation categories. Below we inspect
-the top entries of each category:</p>
+<p>The resulting evaluation table contains standardized columns: *
+<strong><code>Dataset</code></strong>: Evaluated biological reference
+dataset. * <strong><code>Method</code></strong>: Candidate simulator
+evaluated. * <strong><code>Category</code></strong>: One of the 7 active
+evaluation categories. * <strong><code>Metric</code></strong>:
+Standardized metric identifier. *
+<strong><code>Score_Raw</code></strong>: Unnormalized raw empirical
+value (physical unit: seconds, MiB, KS statistic, correlation). *
+<strong><code>Score</code></strong>: Standardized direction-aware
+fidelity score normalized to
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="true" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0, 1]</annotation></semantics></math>
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1.0</mn><mo>=</mo><mtext mathvariant="normal">best</mtext></mrow><annotation encoding="application/x-tex">1.0 = \text{best}</annotation></semantics></math>).</p>
+<p>Below we inspect representative metric scores across each evaluated
+category:</p>
 <div class="section level4">
-<h4 id="category-i-global-marginal-distributions">4.1 Category I: Global &amp; Marginal Distributions<a class="anchor" aria-label="anchor" href="#category-i-global-marginal-distributions"></a>
+<h4 id="category-i-global-marginal-distributional-properties">3.1 Category I: Global &amp; Marginal Distributional Properties<a class="anchor" aria-label="anchor" href="#category-i-global-marginal-distributional-properties"></a>
 </h4>
-<p>Assesses univariate goodness-of-fit across library size, feature
-means, and feature variances:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<p>Assesses univariate goodness-of-fit across cell library sizes,
+feature detection frequencies, expression means, and variances:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">final_benchmark_df</span>, <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Distributional"</span>, <span class="va">Category</span><span class="op">)</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Method"</span>, <span class="st">"Property"</span>, <span class="st">"Metric"</span>, <span class="st">"Value"</span>, <span class="st">"Score"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                           Method     Property         Metric        Value</span></span>
 <span><span class="co">#&gt; scMultiSim_Rice_Bud.1 scMultiSim library_size    Wasserstein 568.22325222</span></span>
@@ -409,11 +438,11 @@ means, and feature variances:</p>
 <span><span class="co">#&gt; scMultiSim_Rice_Bud.5 -64.23783074</span></span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="category-ii-sparsity-zero-inflation-dynamics">4.2 Category II: Sparsity &amp; Zero-Inflation Dynamics<a class="anchor" aria-label="anchor" href="#category-ii-sparsity-zero-inflation-dynamics"></a>
+<h4 id="category-ii-sparsity-zero-inflation-dynamics">3.2 Category II: Sparsity &amp; Zero-Inflation Dynamics<a class="anchor" aria-label="anchor" href="#category-ii-sparsity-zero-inflation-dynamics"></a>
 </h4>
-<p>Quantifies dropout curve concordance, slope discrepancies, and
-logistic zero-probability dynamics:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<p>Quantifies dropout curve fidelity, midpoint shifts, transition
+slopes, and logistic zero-probability dynamics:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">final_benchmark_df</span>, <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Sparsity"</span>, <span class="va">Category</span><span class="op">)</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Method"</span>, <span class="st">"Property"</span>, <span class="st">"Metric"</span>, <span class="st">"Value"</span>, <span class="st">"Score"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                             Method            Property</span></span>
 <span><span class="co">#&gt; scMultiSim_Rice_Bud.141 scMultiSim       dropout_curve</span></span>
@@ -429,12 +458,13 @@ logistic zero-probability dynamics:</p>
 <span><span class="co">#&gt; scDesign3_Rice_Bud.141                     slope_error 0.07187202 0.07187202</span></span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="category-iii-cellular-manifold-clustering-concordance">4.3 Category III: Cellular Manifold &amp; Clustering
+<h4 id="category-iii-cellular-manifold-clustering-concordance">3.3 Category III: Cellular Manifold &amp; Clustering
 Concordance<a class="anchor" aria-label="anchor" href="#category-iii-cellular-manifold-clustering-concordance"></a>
 </h4>
 <p>Measures Maximum Mean Discrepancy (MMD), generative precision and
-recall, and cluster boundary preservation:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+recall (sample fidelity vs. diversity), cluster separation (ASW), ARI,
+and NMI:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">final_benchmark_df</span>, <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Manifold"</span>, <span class="va">Category</span><span class="op">)</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Method"</span>, <span class="st">"Property"</span>, <span class="st">"Metric"</span>, <span class="st">"Value"</span>, <span class="st">"Score"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                             Method   Property               Metric     Value</span></span>
 <span><span class="co">#&gt; scMultiSim_Rice_Bud.145 scMultiSim   manifold                  MMD 0.3868724</span></span>
@@ -450,13 +480,14 @@ recall, and cluster boundary preservation:</p>
 <span><span class="co">#&gt; scMultiSim_Rice_Bud.149 1.5904445</span></span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="category-iv-technical-variation-batch-mixing-dynamics">4.4 Category IV: Technical Variation &amp; Batch Mixing
+<h4 id="category-iv-technical-variation-batch-mixing-dynamics">3.4 Category IV: Technical Variation &amp; Batch Mixing
 Dynamics<a class="anchor" aria-label="anchor" href="#category-iv-technical-variation-batch-mixing-dynamics"></a>
 </h4>
 <p>Evaluates batch silhouette widths, Principal Component Regression
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>),
-and Cell-specific Mixing Scores (CMS):</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mi>C</mi><mi>R</mi><mspace width="0.222em"></mspace><msup><mi>R</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">PCR\ R^2</annotation></semantics></math>),
+Cell-Specific Mixing Scores (CMS), and cross-batch cell-type
+classification transfer F1:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">final_benchmark_df</span>, <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Batch"</span>, <span class="va">Category</span><span class="op">)</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Method"</span>, <span class="st">"Property"</span>, <span class="st">"Metric"</span>, <span class="st">"Value"</span>, <span class="st">"Score"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                             Method     Property           Metric      Value</span></span>
 <span><span class="co">#&gt; scMultiSim_Rice_Bud.153 scMultiSim batch_mixing batch_silhouette 0.15233124</span></span>
@@ -472,12 +503,13 @@ and Cell-specific Mixing Scores (CMS):</p>
 <span><span class="co">#&gt; scMultiSim_Rice_Bud.157 0.93336925</span></span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="category-v-biological-signal-differential-expression-deg-fidelity">4.5 Category V: Biological Signal &amp; Differential Expression
+<h4 id="category-v-biological-signal-differential-expression-deg-fidelity">3.5 Category V: Biological Signal &amp; Differential Expression
 (DEG) Fidelity<a class="anchor" aria-label="anchor" href="#category-v-biological-signal-differential-expression-deg-fidelity"></a>
 </h4>
-<p>Assesses marker gene identification accuracy, p-value distribution
-divergence, and effect size conservation:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<p>Evaluates pseudobulk <code>edgeR-QLF</code> differential testing,
+assessing whether synthetic data preserves genuine marker genes without
+inflating false discoveries:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">final_benchmark_df</span>, <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Differential"</span>, <span class="va">Category</span><span class="op">)</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Method"</span>, <span class="st">"Property"</span>, <span class="st">"Metric"</span>, <span class="st">"Value"</span>, <span class="st">"Score"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                             Method                      Property</span></span>
 <span><span class="co">#&gt; scMultiSim_Rice_Bud.158 scMultiSim scRNA_differential_expression</span></span>
@@ -493,12 +525,12 @@ divergence, and effect size conservation:</p>
 <span><span class="co">#&gt; scMultiSim_Rice_Bud.162        f1_score 0.0000000 0.0000000</span></span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="category-vii-trajectory-lineage-topology">4.6 Category VII: Trajectory &amp; Lineage Topology<a class="anchor" aria-label="anchor" href="#category-vii-trajectory-lineage-topology"></a>
+<h4 id="category-vii-trajectory-lineage-topology">3.6 Category VII: Trajectory &amp; Lineage Topology<a class="anchor" aria-label="anchor" href="#category-vii-trajectory-lineage-topology"></a>
 </h4>
 <p>Benchmarks milestone graph topology similarity (HIM, edge flip),
 geodesic distances, branch assignment F1, and Random Forest feature
 importance correlation:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">final_benchmark_df</span>, <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Trajectory"</span>, <span class="va">Category</span><span class="op">)</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Method"</span>, <span class="st">"Property"</span>, <span class="st">"Metric"</span>, <span class="st">"Value"</span>, <span class="st">"Score"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                             Method            Property               Metric</span></span>
 <span><span class="co">#&gt; scMultiSim_Rice_Bud.164 scMultiSim trajectory_topology                  him</span></span>
@@ -514,11 +546,11 @@ importance correlation:</p>
 <span><span class="co">#&gt; scMultiSim_Rice_Bud.168 0.5305022 0.5305022</span></span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="category-viii-computational-scalability-efficiency">4.7 Category VIII: Computational Scalability &amp; Efficiency<a class="anchor" aria-label="anchor" href="#category-viii-computational-scalability-efficiency"></a>
+<h4 id="category-viii-computational-scalability-efficiency">3.7 Category VIII: Computational Scalability &amp; Efficiency<a class="anchor" aria-label="anchor" href="#category-viii-computational-scalability-efficiency"></a>
 </h4>
 <p>Quantifies hardware-normalized resource expenditure in cumulative
 core-seconds and resident peak memory per allocated core:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">final_benchmark_df</span>, <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Scalability"</span>, <span class="va">Category</span><span class="op">)</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Method"</span>, <span class="st">"Property"</span>, <span class="st">"Metric"</span>, <span class="st">"Value"</span>, <span class="st">"Score"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">6</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                             Method       Property              Metric</span></span>
 <span><span class="co">#&gt; scMultiSim_Rice_Bud.169 scMultiSim resource_usage        core_seconds</span></span>
@@ -538,178 +570,229 @@ core-seconds and resident peak memory per allocated core:</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="diagnostic-visualizations">5. Diagnostic Visualizations<a class="anchor" aria-label="anchor" href="#diagnostic-visualizations"></a>
+<h2 id="publication-grade-comparative-visualizations">4. Publication-Grade Comparative Visualizations<a class="anchor" aria-label="anchor" href="#publication-grade-comparative-visualizations"></a>
 </h2>
-<p><code>scSimEval</code> includes publication-grade visualization
-functions designed for multi-simulator comparative analysis. All figures
-below are rendered directly with normalized scores.</p>
+<p><code>scSimEval</code> provides an integrated suite of
+publication-grade visualization functions designed to compare multiple
+simulators across biological and computational dimensions. All figures
+below are rendered directly with <strong>direction-aware normalized
+scores</strong>.</p>
 <div class="section level4">
-<h4 id="comparative-bubble-matrix">5.1 Comparative Bubble Matrix<a class="anchor" aria-label="anchor" href="#comparative-bubble-matrix"></a>
+<h4 id="comparative-bubble-matrix">4.1 Comparative Bubble Matrix<a class="anchor" aria-label="anchor" href="#comparative-bubble-matrix"></a>
 </h4>
-<p>The comparative bubble matrix visualizes metric scores across all
-evaluation categories, with circle size and color gradient encoding
-normalized simulator fidelity:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<p>The comparative bubble matrix provides a high-level overview of the
+entire benchmarking study. Each column represents an individual
+evaluation metric, grouped by category, while each row represents a
+simulator. Bubble size and color gradient encode the normalized fidelity
+score
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="true" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0, 1]</annotation></semantics></math>:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p_bubble</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_benchmark_bubble_matrix.html">plot_benchmark_bubble_matrix</a></span><span class="op">(</span><span class="va">final_benchmark_df</span>, base_size <span class="op">=</span> <span class="fl">12</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave</a></span><span class="op">(</span><span class="st">"figures/scSimEval_benchmark_bubble_matrix.png"</span>, plot <span class="op">=</span> <span class="va">p_bubble</span>, width <span class="op">=</span> <span class="fl">18</span>, height <span class="op">=</span> <span class="fl">9</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="st">"figures/scSimEval_benchmark_bubble_matrix.png"</span>, plot <span class="op">=</span> <span class="va">p_bubble</span>, width <span class="op">=</span> <span class="fl">18</span>, height <span class="op">=</span> <span class="fl">9</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="figures/scSimEval_benchmark_bubble_matrix.png" class="r-plt" alt="**Figure 1**: Comparative Bubble Matrix Benchmarking 6 Simulators Across All Evaluation Measures on Rice Bud scRNA-seq." width="100%"><p class="caption">
-<strong>Figure 1</strong>: Comparative Bubble Matrix Benchmarking 6
-Simulators Across All Evaluation Measures on Rice Bud scRNA-seq.
+<img src="figures/scSimEval_benchmark_bubble_matrix.png" class="r-plt" alt="**Figure 1: Comparative Bubble Matrix across 44 scRNA-seq evaluation metrics.** Visualizes normalized fidelity scores across all 7 active categories for the 6 evaluated single-cell simulation algorithms." width="100%"><p class="caption">
+<strong>Figure 1: Comparative Bubble Matrix across 44 scRNA-seq
+evaluation metrics.</strong> Visualizes normalized fidelity scores
+across all 7 active categories for the 6 evaluated single-cell
+simulation algorithms.
 </p>
 </div>
 <hr>
 </div>
 <div class="section level4">
-<h4 id="evaluation-summary-visualization">5.2 Evaluation Summary Visualization<a class="anchor" aria-label="anchor" href="#evaluation-summary-visualization"></a>
+<h4 id="evaluation-summary-visualization">4.2 Evaluation Summary Visualization<a class="anchor" aria-label="anchor" href="#evaluation-summary-visualization"></a>
 </h4>
-<p>A synthesized radar/polar bar overview summarizing average normalized
-scores across all categories:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<p>A synthesized radar/polar overview summarizing mean normalized
+fidelity scores across all active categories, highlighting the global
+strengths and trade-offs of each simulator:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_evaluation_summary.html">plot_evaluation_summary</a></span><span class="op">(</span><span class="va">final_benchmark_df</span>, normalize_scores <span class="op">=</span> <span class="cn">TRUE</span>, base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave</a></span><span class="op">(</span><span class="st">"figures/scSimEval_evaluation_summary.png"</span>, plot <span class="op">=</span> <span class="va">p_summary</span>, width <span class="op">=</span> <span class="fl">14</span>, height <span class="op">=</span> <span class="fl">7</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="st">"figures/scSimEval_evaluation_summary.png"</span>, plot <span class="op">=</span> <span class="va">p_summary</span>, width <span class="op">=</span> <span class="fl">14</span>, height <span class="op">=</span> <span class="fl">7</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="figures/scSimEval_evaluation_summary.png" class="r-plt" alt="**Figure 2**: Overall Simulator Evaluation Summary Across Categories." width="100%"><p class="caption">
-<strong>Figure 2</strong>: Overall Simulator Evaluation Summary Across
-Categories.
+<img src="figures/scSimEval_evaluation_summary.png" class="r-plt" alt="**Figure 2: Overall Simulator Evaluation Summary.** Polar chart displaying category-level composite scores across the 7 evaluated dimensions." width="100%"><p class="caption">
+<strong>Figure 2: Overall Simulator Evaluation Summary.</strong> Polar
+chart displaying category-level composite scores across the 7 evaluated
+dimensions.
 </p>
 </div>
 <hr>
 </div>
 <div class="section level4">
-<h4 id="distribution-qc-q-q-plots-and-empirical-joint-density">5.3 Distribution QC: Q-Q Plots and Empirical &amp; Joint
-Density<a class="anchor" aria-label="anchor" href="#distribution-qc-q-q-plots-and-empirical-joint-density"></a>
+<h4 id="distribution-qc-diagnostics-q-q-plots-and-empirical-density">4.3 Distribution QC Diagnostics: Q-Q Plots and Empirical
+Density<a class="anchor" aria-label="anchor" href="#distribution-qc-diagnostics-q-q-plots-and-empirical-density"></a>
 </h4>
-<p>Detailed quantile-quantile (Q-Q) and density plots comparing
-empirical reference distributions against a selected simulator
-(<code>Matilda</code>):</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Q-Q Plots for Library Size, Mean, Variance, and Zero Fractions</span></span>
+<p><code><a href="../reference/plot_distribution_qc.html">plot_distribution_qc()</a></code> provides in-depth distributional
+diagnostics comparing empirical reference distributions directly against
+synthetic data generated by a simulator:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Quantile-Quantile (Q-Q) plots for marginal properties</span></span>
 <span><span class="va">p_qc_qq</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_distribution_qc.html">plot_distribution_qc</a></span><span class="op">(</span></span>
-<span>  ref_data <span class="op">=</span> <span class="va">ref_mat</span>,</span>
-<span>  sim_data <span class="op">=</span> <span class="va">all_sim_counts</span><span class="op">[[</span><span class="st">"Matilda"</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>  ref_data <span class="op">=</span> <span class="va">ref_matrix</span>,</span>
+<span>  sim_data <span class="op">=</span> <span class="va">sim_matrix</span>,</span>
 <span>  layout   <span class="op">=</span> <span class="st">"qq"</span>,</span>
-<span>  title    <span class="op">=</span> <span class="st">"Distribution QC Q-Q: Reference vs. Matilda"</span></span>
+<span>  title    <span class="op">=</span> <span class="st">"Distribution QC Q-Q: Reference vs. Simulator"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave</a></span><span class="op">(</span><span class="st">"figures/scSimEval_distribution_qc_qq.png"</span>, plot <span class="op">=</span> <span class="va">p_qc_qq</span>, width <span class="op">=</span> <span class="fl">13</span>, height <span class="op">=</span> <span class="fl">9</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="st">"figures/scSimEval_distribution_qc_qq.png"</span>, plot <span class="op">=</span> <span class="va">p_qc_qq</span>, width <span class="op">=</span> <span class="fl">13</span>, height <span class="op">=</span> <span class="fl">9</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Density Plots for Marginal Distributions</span></span>
+<span><span class="co"># Continuous probability density overlays</span></span>
 <span><span class="va">p_qc_density</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_distribution_qc.html">plot_distribution_qc</a></span><span class="op">(</span></span>
-<span>  ref_data <span class="op">=</span> <span class="va">ref_mat</span>,</span>
-<span>  sim_data <span class="op">=</span> <span class="va">all_sim_counts</span><span class="op">[[</span><span class="st">"Matilda"</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>  ref_data <span class="op">=</span> <span class="va">ref_matrix</span>,</span>
+<span>  sim_data <span class="op">=</span> <span class="va">sim_matrix</span>,</span>
 <span>  layout   <span class="op">=</span> <span class="st">"density"</span>,</span>
-<span>  title    <span class="op">=</span> <span class="st">"Distribution QC Density: Reference vs. Matilda"</span></span>
+<span>  title    <span class="op">=</span> <span class="st">"Distribution QC Density: Reference vs. Simulator"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave</a></span><span class="op">(</span><span class="st">"figures/scSimEval_distribution_qc_density.png"</span>, plot <span class="op">=</span> <span class="va">p_qc_density</span>, width <span class="op">=</span> <span class="fl">13</span>, height <span class="op">=</span> <span class="fl">9</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="st">"figures/scSimEval_distribution_qc_density.png"</span>, plot <span class="op">=</span> <span class="va">p_qc_density</span>, width <span class="op">=</span> <span class="fl">13</span>, height <span class="op">=</span> <span class="fl">9</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="figures/scSimEval_distribution_qc_qq.png" class="r-plt" alt="**Figure 3A**: Distribution QC Quantile-Quantile (Q-Q) Diagnostics (Matilda vs. Reference)." width="100%"><p class="caption">
-<strong>Figure 3A</strong>: Distribution QC Quantile-Quantile (Q-Q)
-Diagnostics (Matilda vs. Reference).
+<img src="figures/scSimEval_distribution_qc_qq.png" class="r-plt" alt="**Figure 3A: Distribution QC Quantile-Quantile (Q-Q) Diagnostics.** Aligns quantiles of simulated library size, gene detection frequency, feature means, and feature variances against the reference dataset." width="100%"><p class="caption">
+<strong>Figure 3A: Distribution QC Quantile-Quantile (Q-Q)
+Diagnostics.</strong> Aligns quantiles of simulated library size, gene
+detection frequency, feature means, and feature variances against the
+reference dataset.
 </p>
 </div>
 <div class="figure">
-<img src="figures/scSimEval_distribution_qc_density.png" class="r-plt" alt="**Figure 3B**: Distribution QC Empirical and Joint Density Distributions (Matilda vs. Reference)." width="100%"><p class="caption">
-<strong>Figure 3B</strong>: Distribution QC Empirical and Joint Density
-Distributions (Matilda vs. Reference).
+<img src="figures/scSimEval_distribution_qc_density.png" class="r-plt" alt="**Figure 3B: Distribution QC Empirical Density Overlays.** Compares empirical probability density curves between empirical reference and synthetic counts across marginal properties." width="100%"><p class="caption">
+<strong>Figure 3B: Distribution QC Empirical Density Overlays.</strong>
+Compares empirical probability density curves between empirical
+reference and synthetic counts across marginal properties.
 </p>
 </div>
 <hr>
 </div>
 <div class="section level4">
-<h4 id="metric-heatmap">5.4 Metric Heatmap<a class="anchor" aria-label="anchor" href="#metric-heatmap"></a>
+<h4 id="metric-heatmap">4.4 Metric Heatmap<a class="anchor" aria-label="anchor" href="#metric-heatmap"></a>
 </h4>
-<p>Heatmap showing relative performance scores across simulators:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<p>A hierarchically clustered heatmap displaying relative simulator
+performance across all evaluated metrics:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p_heatmap</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_metric_heatmap.html">plot_metric_heatmap</a></span><span class="op">(</span><span class="va">final_benchmark_df</span>, scale_fill <span class="op">=</span> <span class="st">"relative"</span>, base_size <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave</a></span><span class="op">(</span><span class="st">"figures/scSimEval_metric_heatmap.png"</span>, plot <span class="op">=</span> <span class="va">p_heatmap</span>, width <span class="op">=</span> <span class="fl">15</span>, height <span class="op">=</span> <span class="fl">10</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="st">"figures/scSimEval_metric_heatmap.png"</span>, plot <span class="op">=</span> <span class="va">p_heatmap</span>, width <span class="op">=</span> <span class="fl">15</span>, height <span class="op">=</span> <span class="fl">10</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="figures/scSimEval_metric_heatmap.png" class="r-plt" alt="**Figure 4**: Relative Metric Heatmap Across Simulation Methods." width="100%"><p class="caption">
-<strong>Figure 4</strong>: Relative Metric Heatmap Across Simulation
-Methods.
+<img src="figures/scSimEval_metric_heatmap.png" class="r-plt" alt="**Figure 4: Relative Metric Heatmap.** Hierarchically clustered evaluation scores across all 44 metrics, identifying simulator clusters and characteristic performance profiles." width="100%"><p class="caption">
+<strong>Figure 4: Relative Metric Heatmap.</strong> Hierarchically
+clustered evaluation scores across all 44 metrics, identifying simulator
+clusters and characteristic performance profiles.
 </p>
 </div>
 <hr>
 </div>
 <div class="section level4">
-<h4 id="metric-plots-by-category-group">5.5 Metric Plots by Category Group<a class="anchor" aria-label="anchor" href="#metric-plots-by-category-group"></a>
+<h4 id="category-metric-bar-plots">4.5 Category Metric Bar Plots<a class="anchor" aria-label="anchor" href="#category-metric-bar-plots"></a>
 </h4>
-<p>Detailed score breakdowns for each individual evaluation
-category:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cats</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">final_benchmark_df</span><span class="op">$</span><span class="va">Category</span><span class="op">)</span></span>
-<span><span class="kw">for</span> <span class="op">(</span><span class="va">cat_name</span> <span class="kw">in</span> <span class="va">cats</span><span class="op">)</span> <span class="op">{</span></span>
+<p><code><a href="../reference/plot_category_metric_bars.html">plot_category_metric_bars()</a></code> provides detailed score
+breakdowns within each individual evaluation category, enabling focused
+inspection of specific biological dimensions:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">categories</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">final_benchmark_df</span><span class="op">$</span><span class="va">Category</span><span class="op">)</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">cat_name</span> <span class="kw">in</span> <span class="va">categories</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">p_cat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_category_metric_bars.html">plot_category_metric_bars</a></span><span class="op">(</span><span class="va">final_benchmark_df</span>, category <span class="op">=</span> <span class="va">cat_name</span>, score_type <span class="op">=</span> <span class="st">"normalized"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"figures/scSimEval_metric_bars_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">"[^A-Za-z0-9]"</span>, <span class="st">"_"</span>, <span class="va">cat_name</span><span class="op">)</span>, <span class="st">".png"</span><span class="op">)</span>,</span>
-<span>         plot <span class="op">=</span> <span class="va">p_cat</span>, width <span class="op">=</span> <span class="fl">12</span>, height <span class="op">=</span> <span class="fl">8</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span>
+<span>  <span class="va">slug</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">"[^A-Za-z0-9]"</span>, <span class="st">"_"</span>, <span class="va">cat_name</span><span class="op">)</span></span>
+<span>  <span class="fu">ggsave</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"figures/scSimEval_metric_bars_"</span>, <span class="va">slug</span>, <span class="st">".png"</span><span class="op">)</span>, plot <span class="op">=</span> <span class="va">p_cat</span>, width <span class="op">=</span> <span class="fl">12</span>, height <span class="op">=</span> <span class="fl">8</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <div class="figure">
-<img src="figures/scSimEval_metric_bars__I__Distributional_Properties.png" class="r-plt" alt="**Figure 5A**: Category I Distributional Properties Score Breakdown." width="100%"><p class="caption">
-<strong>Figure 5A</strong>: Category I Distributional Properties Score
-Breakdown.
+<img src="figures/scSimEval_metric_bars__I__Distributional_Properties.png" class="r-plt" alt="**Figure 5A: Category I (Distributional Properties) Score Breakdown.** Normalized fidelity across univariate and bivariate distributional similarity tests." width="100%"><p class="caption">
+<strong>Figure 5A: Category I (Distributional Properties) Score
+Breakdown.</strong> Normalized fidelity across univariate and bivariate
+distributional similarity tests.
 </p>
 </div>
 <div class="figure">
-<img src="figures/scSimEval_metric_bars__III__Cellular_Manifold___Clustering_Concordance.png" class="r-plt" alt="**Figure 5B**: Category III Cellular Manifold &amp; Clustering Concordance Breakdown." width="100%"><p class="caption">
-<strong>Figure 5B</strong>: Category III Cellular Manifold &amp;
-Clustering Concordance Breakdown.
+<img src="figures/scSimEval_metric_bars__II__Sparsity___Zero_Inflation_Dynamics.png" class="r-plt" alt="**Figure 5B: Category II (Sparsity &amp; Zero-Inflation Dynamics) Score Breakdown.** Dropout curve midpoint concordance, slope fidelity, and excess zero discrepancy." width="100%"><p class="caption">
+<strong>Figure 5B: Category II (Sparsity &amp; Zero-Inflation Dynamics)
+Score Breakdown.</strong> Dropout curve midpoint concordance, slope
+fidelity, and excess zero discrepancy.
 </p>
 </div>
 <div class="figure">
-<img src="figures/scSimEval_metric_bars__V__Biological_Signal___Differential_Fidelity.png" class="r-plt" alt="**Figure 5C**: Category V Biological Signal &amp; Differential Expression Fidelity Breakdown." width="100%"><p class="caption">
-<strong>Figure 5C</strong>: Category V Biological Signal &amp;
-Differential Expression Fidelity Breakdown.
+<img src="figures/scSimEval_metric_bars__III__Cellular_Manifold___Clustering_Concordance.png" class="r-plt" alt="**Figure 5C: Category III (Cellular Manifold &amp; Clustering Concordance) Score Breakdown.** Cluster boundary preservation, ASW, MMD, and generative precision/recall." width="100%"><p class="caption">
+<strong>Figure 5C: Category III (Cellular Manifold &amp; Clustering
+Concordance) Score Breakdown.</strong> Cluster boundary preservation,
+ASW, MMD, and generative precision/recall.
+</p>
+</div>
+<div class="figure">
+<img src="figures/scSimEval_metric_bars__IV__Technical_Variation___Batch_Mixing_Dynamics.png" class="r-plt" alt="**Figure 5D: Category IV (Technical Variation &amp; Batch Mixing Dynamics) Score Breakdown.** Batch silhouette, PC regression R2, cell-specific mixing scores, and cross-batch F1." width="100%"><p class="caption">
+<strong>Figure 5D: Category IV (Technical Variation &amp; Batch Mixing
+Dynamics) Score Breakdown.</strong> Batch silhouette, PC regression R2,
+cell-specific mixing scores, and cross-batch F1.
+</p>
+</div>
+<div class="figure">
+<img src="figures/scSimEval_metric_bars__V__Biological_Signal___Differential_Fidelity.png" class="r-plt" alt="**Figure 5E: Category V (Biological Signal &amp; Differential Expression Fidelity) Score Breakdown.** Pseudobulk edgeR-QLF marker detection accuracy, precision, recall, F1, and ROC-AUC." width="100%"><p class="caption">
+<strong>Figure 5E: Category V (Biological Signal &amp; Differential
+Expression Fidelity) Score Breakdown.</strong> Pseudobulk edgeR-QLF
+marker detection accuracy, precision, recall, F1, and ROC-AUC.
+</p>
+</div>
+<div class="figure">
+<img src="figures/scSimEval_metric_bars__VII__Trajectory___Lineage_Topology.png" class="r-plt" alt="**Figure 5F: Category VII (Trajectory &amp; Lineage Topology) Score Breakdown.** Milestone graph topology similarity (HIM, edge flip), geodesic correlation, branch F1, and driver feature correlation." width="100%"><p class="caption">
+<strong>Figure 5F: Category VII (Trajectory &amp; Lineage Topology)
+Score Breakdown.</strong> Milestone graph topology similarity (HIM, edge
+flip), geodesic correlation, branch F1, and driver feature correlation.
+</p>
+</div>
+<div class="figure">
+<img src="figures/scSimEval_metric_bars__VIII__Computational_Scalability___Efficiency.png" class="r-plt" alt="**Figure 5G: Category VIII (Computational Scalability &amp; Efficiency) Score Breakdown.** Core-normalized execution runtime and resident memory footprint per allocated core." width="100%"><p class="caption">
+<strong>Figure 5G: Category VIII (Computational Scalability &amp;
+Efficiency) Score Breakdown.</strong> Core-normalized execution runtime
+and resident memory footprint per allocated core.
 </p>
 </div>
 <hr>
 </div>
 <div class="section level4">
-<h4 id="pca-ordination-plot">5.6 PCA Ordination Plot<a class="anchor" aria-label="anchor" href="#pca-ordination-plot"></a>
+<h4 id="principal-component-analysis-pca-ordination">4.6 Principal Component Analysis (PCA) Ordination<a class="anchor" aria-label="anchor" href="#principal-component-analysis-pca-ordination"></a>
 </h4>
-<p>Joint principal component analysis projecting simulators and metric
-loadings, labeling the top 8 influential metrics:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<p><code><a href="../reference/plot_metric_pca.html">plot_metric_pca()</a></code> projects simulators and evaluation
+metrics onto orthogonal axes of variation, highlighting which metrics
+drive divergence among simulation algorithms:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p_pca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_metric_pca.html">plot_metric_pca</a></span><span class="op">(</span><span class="va">final_benchmark_df</span>, panel <span class="op">=</span> <span class="st">"both"</span>, top_n_loadings <span class="op">=</span> <span class="fl">8</span>, base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave</a></span><span class="op">(</span><span class="st">"figures/scSimEval_pca_ordination.png"</span>, plot <span class="op">=</span> <span class="va">p_pca</span>, width <span class="op">=</span> <span class="fl">13</span>, height <span class="op">=</span> <span class="fl">6.5</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="st">"figures/scSimEval_pca_ordination.png"</span>, plot <span class="op">=</span> <span class="va">p_pca</span>, width <span class="op">=</span> <span class="fl">13</span>, height <span class="op">=</span> <span class="fl">6.5</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="figures/scSimEval_pca_ordination.png" class="r-plt" alt="**Figure 6**: Principal Component Analysis (PCA) Ordination of Simulators and Metric Loadings." width="100%"><p class="caption">
-<strong>Figure 6</strong>: Principal Component Analysis (PCA) Ordination
-of Simulators and Metric Loadings.
+<img src="figures/scSimEval_pca_ordination.png" class="r-plt" alt="**Figure 6: PCA Ordination Biplot.** Joint projection of simulators (sample space) and top 8 influential metric loadings (feature space)." width="100%"><p class="caption">
+<strong>Figure 6: PCA Ordination Biplot.</strong> Joint projection of
+simulators (sample space) and top 8 influential metric loadings (feature
+space).
 </p>
 </div>
 <hr>
 </div>
 <div class="section level4">
-<h4 id="multidimensional-scaling-mds-metric-space">5.7 Multidimensional Scaling (MDS) Metric Space<a class="anchor" aria-label="anchor" href="#multidimensional-scaling-mds-metric-space"></a>
+<h4 id="multidimensional-scaling-mds-metric-space">4.7 Multidimensional Scaling (MDS) Metric Space<a class="anchor" aria-label="anchor" href="#multidimensional-scaling-mds-metric-space"></a>
 </h4>
-<p>Multidimensional scaling displaying simulator clustering across
-metric summaries:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<p><code><a href="../reference/plot_metric_mds.html">plot_metric_mds()</a></code> computes pairwise distances among
+simulators across summary metrics to visualize simulator proximity and
+family clustering:</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p_mds</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_metric_mds.html">plot_metric_mds</a></span><span class="op">(</span><span class="va">final_benchmark_df</span>, ordination_by <span class="op">=</span> <span class="st">"summaries"</span>, normalize_scores <span class="op">=</span> <span class="cn">TRUE</span>, base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave</a></span><span class="op">(</span><span class="st">"figures/scSimEval_mds_metric_space.png"</span>, plot <span class="op">=</span> <span class="va">p_mds</span>, width <span class="op">=</span> <span class="fl">12</span>, height <span class="op">=</span> <span class="fl">7</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="st">"figures/scSimEval_mds_metric_space.png"</span>, plot <span class="op">=</span> <span class="va">p_mds</span>, width <span class="op">=</span> <span class="fl">12</span>, height <span class="op">=</span> <span class="fl">7</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="figures/scSimEval_mds_metric_space.png" class="r-plt" alt="**Figure 7**: Multidimensional Scaling (MDS) Ordination across Metric Summaries." width="100%"><p class="caption">
-<strong>Figure 7</strong>: Multidimensional Scaling (MDS) Ordination
-across Metric Summaries.
+<img src="figures/scSimEval_mds_metric_space.png" class="r-plt" alt="**Figure 7: Multidimensional Scaling (MDS) Metric Space.** Ordination visualizing global similarity among simulation methods based on summary metric profiles." width="100%"><p class="caption">
+<strong>Figure 7: Multidimensional Scaling (MDS) Metric Space.</strong>
+Ordination visualizing global similarity among simulation methods based
+on summary metric profiles.
 </p>
 </div>
 <hr>
 </div>
 <div class="section level4">
-<h4 id="umap-embeddings-grid-across-simulators">5.8 UMAP Embeddings Grid Across Simulators<a class="anchor" aria-label="anchor" href="#umap-embeddings-grid-across-simulators"></a>
+<h4 id="umap-embeddings-grid-across-simulators">4.8 UMAP Embeddings Grid Across Simulators<a class="anchor" aria-label="anchor" href="#umap-embeddings-grid-across-simulators"></a>
 </h4>
-<p>Unified UMAP projection comparing empirical reference cells with
-synthetic cells from each simulator, colored by cell type:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Compute 2D UMAP coordinates</span></span>
+<p><code><a href="../reference/plot_dataset_embeddings.html">plot_dataset_embeddings()</a></code> embeds empirical reference
+cells and synthetic cells from all candidate simulators into a shared 2D
+latent space, colored by cell type:</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Compute unified 2D UMAP coordinates</span></span>
 <span><span class="va">embedding_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_dataset_embeddings.html">compute_dataset_embeddings</a></span><span class="op">(</span></span>
-<span>  reference  <span class="op">=</span> <span class="va">ref_mat</span>,</span>
-<span>  simulated  <span class="op">=</span> <span class="va">all_sim_counts</span>,</span>
+<span>  reference  <span class="op">=</span> <span class="va">ref_matrix</span>,</span>
+<span>  simulated  <span class="op">=</span> <span class="va">list_of_sim_counts</span>,</span>
 <span>  reduction  <span class="op">=</span> <span class="st">"umap"</span>,</span>
-<span>  cell_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Reference <span class="op">=</span> <span class="va">ct_ref</span><span class="op">)</span>, <span class="va">all_sim_celltypes</span><span class="op">)</span>,</span>
+<span>  cell_types <span class="op">=</span> <span class="va">list_of_cell_types</span>,</span>
 <span>  seed       <span class="op">=</span> <span class="fl">42</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Plot faceted UMAP grid</span></span>
+<span><span class="co"># Plot faceted comparison grid</span></span>
 <span><span class="va">p_umap</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_dataset_embeddings.html">plot_dataset_embeddings</a></span><span class="op">(</span></span>
 <span>  embedding_data <span class="op">=</span> <span class="va">embedding_df</span>,</span>
 <span>  reduction      <span class="op">=</span> <span class="st">"umap"</span>,</span>
@@ -717,22 +800,24 @@ synthetic cells from each simulator, colored by cell type:</p>
 <span>  color_by       <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
 <span>  base_size      <span class="op">=</span> <span class="fl">11</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave</a></span><span class="op">(</span><span class="st">"figures/scSimEval_umap_grid.png"</span>, plot <span class="op">=</span> <span class="va">p_umap</span>, width <span class="op">=</span> <span class="fl">15</span>, height <span class="op">=</span> <span class="fl">10</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="st">"figures/scSimEval_umap_grid.png"</span>, plot <span class="op">=</span> <span class="va">p_umap</span>, width <span class="op">=</span> <span class="fl">15</span>, height <span class="op">=</span> <span class="fl">10</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="figures/scSimEval_umap_grid.png" class="r-plt" alt="**Figure 8**: Faceted UMAP Embeddings Grid Colored by Annotated Cell Types (Reference vs. 6 Simulators)." width="100%"><p class="caption">
-<strong>Figure 8</strong>: Faceted UMAP Embeddings Grid Colored by
-Annotated Cell Types (Reference vs. 6 Simulators).
+<img src="figures/scSimEval_umap_grid.png" class="r-plt" alt="**Figure 8: Faceted UMAP Embeddings Grid.** Compares 2D cellular manifold geometry and cluster separation across the empirical reference and all 6 candidate simulators, colored by cell type." width="100%"><p class="caption">
+<strong>Figure 8: Faceted UMAP Embeddings Grid.</strong> Compares 2D
+cellular manifold geometry and cluster separation across the empirical
+reference and all 6 candidate simulators, colored by cell type.
 </p>
 </div>
 <hr>
 </div>
 <div class="section level4">
-<h4 id="computational-scalability-benchmark-combined-4-panel">5.9 Computational Scalability Benchmark (Combined 4-Panel)<a class="anchor" aria-label="anchor" href="#computational-scalability-benchmark-combined-4-panel"></a>
+<h4 id="computational-scalability-benchmark-combined-4-panel">4.9 Computational Scalability Benchmark (Combined 4-Panel)<a class="anchor" aria-label="anchor" href="#computational-scalability-benchmark-combined-4-panel"></a>
 </h4>
-<p>Composite 4-panel evaluation displaying execution runtime
-(core-seconds), resident memory (MiB/core), throughput, and efficiency
+<p><code><a href="../reference/plot_scalability_benchmark.html">plot_scalability_benchmark()</a></code> generates a standardized
+4-panel evaluation assessing core-seconds runtime, peak RAM per
+allocated core, cell throughput, and computational efficiency
 trade-offs:</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p_scalability</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_scalability_benchmark.html">plot_scalability_benchmark</a></span><span class="op">(</span></span>
 <span>  benchmark_data <span class="op">=</span> <span class="va">final_benchmark_df</span>,</span>
 <span>  type           <span class="op">=</span> <span class="st">"composite"</span>,</span>
@@ -742,31 +827,87 @@ trade-offs:</p>
 <span>  memory_unit    <span class="op">=</span> <span class="st">"MiB/core"</span>,</span>
 <span>  base_size      <span class="op">=</span> <span class="fl">11</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave</a></span><span class="op">(</span><span class="st">"figures/scSimEval_scalability_benchmark.png"</span>, plot <span class="op">=</span> <span class="va">p_scalability</span>, width <span class="op">=</span> <span class="fl">13</span>, height <span class="op">=</span> <span class="fl">8.5</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="st">"figures/scSimEval_scalability_benchmark.png"</span>, plot <span class="op">=</span> <span class="va">p_scalability</span>, width <span class="op">=</span> <span class="fl">13</span>, height <span class="op">=</span> <span class="fl">8.5</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="figures/scSimEval_scalability_benchmark.png" class="r-plt" alt="**Figure 9**: Composite 4-Panel Computational Scalability Benchmark." width="100%"><p class="caption">
-<strong>Figure 9</strong>: Composite 4-Panel Computational Scalability
-Benchmark.
+<img src="figures/scSimEval_scalability_benchmark.png" class="r-plt" alt="**Figure 9: Composite 4-Panel Computational Scalability Benchmark.** Evaluates execution runtime (core-seconds), peak resident memory (MiB/core), cell throughput, and speed-memory trade-offs across simulators." width="100%"><p class="caption">
+<strong>Figure 9: Composite 4-Panel Computational Scalability
+Benchmark.</strong> Evaluates execution runtime (core-seconds), peak
+resident memory (MiB/core), cell throughput, and speed-memory trade-offs
+across simulators.
 </p>
 </div>
 <hr>
 </div>
 </div>
 <div class="section level2">
-<h2 id="conclusion">6. Conclusion<a class="anchor" aria-label="anchor" href="#conclusion"></a>
+<h2 id="guidelines-for-selecting-simulators-by-application">5. Guidelines for Selecting Simulators by Application<a class="anchor" aria-label="anchor" href="#guidelines-for-selecting-simulators-by-application"></a>
 </h2>
-<p>This tutorial demonstrated the end-to-end benchmarking of 6
-single-cell RNA simulation methods on rice bud tissue. Through
-<code>scSimEval</code>, researchers can rigorously evaluate statistical
-distributional fidelity, zero patterns, clustering integrity, batch
-effects, differential expression conservation, trajectory topology, and
-hardware scalability.</p>
+<p>Benchmarking results generated by <code>scSimEval</code> help
+computational biologists select the most appropriate simulation
+algorithm for their specific downstream research requirements:</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Downstream Application</th>
+<th align="left">Key Evaluation Categories to Prioritize</th>
+<th align="left">Recommended Metric Focus</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left"><strong>Differential Expression (DEG)
+Benchmarking</strong></td>
+<td align="left"><strong>Category V &amp; Category I</strong></td>
+<td align="left">High Null
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>-value
+Uniformity (<code>pval_dist_score</code>), ROC-AUC (<code>auc</code>),
+DEG F1-Score (<code>f1_score</code>), and low Wasserstein distance.</td>
+</tr>
+<tr class="even">
+<td align="left"><strong>Cell Clustering &amp; Annotation
+Benchmarking</strong></td>
+<td align="left"><strong>Category III &amp; Category II</strong></td>
+<td align="left">High Adjusted Rand Index (<code>ari</code>), Normalized
+Mutual Info (<code>nmi</code>), Generative Precision, and accurate
+dropout slope
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>).</td>
+</tr>
+<tr class="odd">
+<td align="left"><strong>Batch Correction &amp; Integration
+Evaluation</strong></td>
+<td align="left"><strong>Category IV &amp; Category III</strong></td>
+<td align="left">Balanced Batch Silhouette
+(<code>batch_silhouette</code>), high Cell-Specific Mixing Score
+(<code>cms</code>), and robust cross-batch classification F1
+(<code>cross_batch_F1</code>).</td>
+</tr>
+<tr class="even">
+<td align="left"><strong>Trajectory &amp; Pseudotime
+Inference</strong></td>
+<td align="left"><strong>Category VII &amp; Category III</strong></td>
+<td align="left">High HIM topology similarity (<code>him</code>), branch
+assignment F1 (<code>F1_branches</code>), and dynamic driver feature
+importance correlation (<code>wcor_features</code>).</td>
+</tr>
+<tr class="odd">
+<td align="left"><strong>High-Throughput / Large-Cohort In Silico
+Studies</strong></td>
+<td align="left"><strong>Category VIII</strong></td>
+<td align="left">Minimal core-seconds runtime
+(<code>core_seconds</code>) and low peak resident memory per allocated
+core (<code>memory_per_core_mib</code>).</td>
+</tr>
+</tbody>
+</table>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="session-information">7. Session Information<a class="anchor" aria-label="anchor" href="#session-information"></a>
+<h2 id="session-information">6. Session Information<a class="anchor" aria-label="anchor" href="#session-information"></a>
 </h2>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; R version 4.6.2 (2026-10-29)</span></span>
 <span><span class="co">#&gt; Platform: x86_64-pc-linux-gnu</span></span>
@@ -879,16 +1020,29 @@ document.addEventListener("DOMContentLoaded", function() {
       }
 
       function setTocState(visible) {
+        const container = mainEl.closest(".container") || mainEl.closest(".container-fluid") || document.querySelector(".container.template-article") || document.querySelector(".container");
         if (visible) {
+          document.body.classList.remove("toc-collapsed");
+          if (container) container.classList.remove("container-fullwidth");
           tocAside.classList.remove("d-none");
-          mainEl.classList.remove("col-md-12");
+          tocAside.style.display = "";
+          mainEl.classList.remove("col-md-12", "main-expanded");
           mainEl.classList.add("col-md-9");
+          mainEl.style.width = "";
+          mainEl.style.maxWidth = "";
+          mainEl.style.flex = "";
           if (showBtn) showBtn.classList.add("d-none");
           localStorage.setItem("scSimEval_toc_hidden", "false");
         } else {
+          document.body.classList.add("toc-collapsed");
+          if (container) container.classList.add("container-fullwidth");
           tocAside.classList.add("d-none");
+          tocAside.style.display = "none";
           mainEl.classList.remove("col-md-9");
-          mainEl.classList.add("col-md-12");
+          mainEl.classList.add("col-md-12", "main-expanded");
+          mainEl.style.width = "100%";
+          mainEl.style.maxWidth = "100%";
+          mainEl.style.flex = "0 0 100%";
           if (showBtn) showBtn.classList.remove("d-none");
           localStorage.setItem("scSimEval_toc_hidden", "true");
         }

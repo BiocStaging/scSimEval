@@ -1022,3 +1022,31 @@ small.dont-index {
   color: #ffffff !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
 }
+
+/* Immediate horizontal expansion of main panel and container when TOC is collapsed */
+body.toc-collapsed .container,
+body.toc-collapsed .container.template-article,
+body.toc-collapsed .container-xl,
+body.toc-collapsed .container-xxl,
+.container.container-fullwidth {
+  max-width: 96% !important;
+  width: 96% !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+body.toc-collapsed main#main,
+main#main.col-md-12,
+main#main.main-expanded {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: 0 0 100% !important;
+  padding-right: 1.5rem !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+body.toc-collapsed aside,
+aside.toc-hidden,
+aside.d-none {
+  display: none !important;
+}
+

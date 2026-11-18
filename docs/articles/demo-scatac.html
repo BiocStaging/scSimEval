@@ -447,16 +447,29 @@ document.addEventListener("DOMContentLoaded", function() {
       }
 
       function setTocState(visible) {
+        const container = mainEl.closest(".container") || mainEl.closest(".container-fluid") || document.querySelector(".container.template-article") || document.querySelector(".container");
         if (visible) {
+          document.body.classList.remove("toc-collapsed");
+          if (container) container.classList.remove("container-fullwidth");
           tocAside.classList.remove("d-none");
-          mainEl.classList.remove("col-md-12");
+          tocAside.style.display = "";
+          mainEl.classList.remove("col-md-12", "main-expanded");
           mainEl.classList.add("col-md-9");
+          mainEl.style.width = "";
+          mainEl.style.maxWidth = "";
+          mainEl.style.flex = "";
           if (showBtn) showBtn.classList.add("d-none");
           localStorage.setItem("scSimEval_toc_hidden", "false");
         } else {
+          document.body.classList.add("toc-collapsed");
+          if (container) container.classList.add("container-fullwidth");
           tocAside.classList.add("d-none");
+          tocAside.style.display = "none";
           mainEl.classList.remove("col-md-9");
-          mainEl.classList.add("col-md-12");
+          mainEl.classList.add("col-md-12", "main-expanded");
+          mainEl.style.width = "100%";
+          mainEl.style.maxWidth = "100%";
+          mainEl.style.flex = "0 0 100%";
           if (showBtn) showBtn.classList.remove("d-none");
           localStorage.setItem("scSimEval_toc_hidden", "true");
         }

@@ -521,6 +521,85 @@ document.addEventListener("DOMContentLoaded", function() {
   if (searchInput) {
     searchInput.placeholder = "Search docs... (Press /)";
   }
+
+  // On this page (TOC) Hide / Show Toggle Feature
+  const tocNav = document.getElementById("toc");
+  if (tocNav) {
+    const tocAside = tocNav.closest("aside") || tocNav.closest(".col-md-3");
+    const mainEl = document.getElementById("main");
+    const tocH2 = tocNav.querySelector("h2");
+
+    if (tocAside && mainEl && tocH2) {
+      // Add hide button to TOC header
+      if (!document.getElementById("btn-hide-toc")) {
+        const hideBtn = document.createElement("button");
+        hideBtn.id = "btn-hide-toc";
+        hideBtn.type = "button";
+        hideBtn.className = "btn btn-sm btn-outline-secondary float-end toc-toggle-btn";
+        hideBtn.title = "Hide 'On this page' sidebar";
+        hideBtn.setAttribute("aria-label", "Hide Table of Contents");
+        hideBtn.innerHTML = '<span class="fa fa-angle-right me-1"></span>Hide';
+        tocH2.appendChild(hideBtn);
+
+        hideBtn.addEventListener("click", function(e) {
+          e.preventDefault();
+          setTocState(false);
+        });
+      }
+
+      // Create floating show button
+      let showBtn = document.getElementById("btn-show-toc");
+      if (!showBtn) {
+        showBtn = document.createElement("button");
+        showBtn.id = "btn-show-toc";
+        showBtn.type = "button";
+        showBtn.className = "btn btn-sm btn-primary toc-floating-show-btn shadow-sm d-none";
+        showBtn.title = "Show 'On this page' sidebar";
+        showBtn.setAttribute("aria-label", "Show Table of Contents");
+        showBtn.innerHTML = '<span class="fa fa-list-ul me-1"></span> On this page';
+        document.body.appendChild(showBtn);
+
+        showBtn.addEventListener("click", function(e) {
+          e.preventDefault();
+          setTocState(true);
+        });
+      }
+
+      function setTocState(visible) {
+        const container = mainEl.closest(".container") || mainEl.closest(".container-fluid") || document.querySelector(".container.template-article") || document.querySelector(".container");
+        if (visible) {
+          document.body.classList.remove("toc-collapsed");
+          if (container) container.classList.remove("container-fullwidth");
+          tocAside.classList.remove("d-none");
+          tocAside.style.display = "";
+          mainEl.classList.remove("col-md-12", "main-expanded");
+          mainEl.classList.add("col-md-9");
+          mainEl.style.width = "";
+          mainEl.style.maxWidth = "";
+          mainEl.style.flex = "";
+          if (showBtn) showBtn.classList.add("d-none");
+          localStorage.setItem("scSimEval_toc_hidden", "false");
+        } else {
+          document.body.classList.add("toc-collapsed");
+          if (container) container.classList.add("container-fullwidth");
+          tocAside.classList.add("d-none");
+          tocAside.style.display = "none";
+          mainEl.classList.remove("col-md-9");
+          mainEl.classList.add("col-md-12", "main-expanded");
+          mainEl.style.width = "100%";
+          mainEl.style.maxWidth = "100%";
+          mainEl.style.flex = "0 0 100%";
+          if (showBtn) showBtn.classList.remove("d-none");
+          localStorage.setItem("scSimEval_toc_hidden", "true");
+        }
+      }
+
+      // Restore user preference
+      if (localStorage.getItem("scSimEval_toc_hidden") === "true") {
+        setTocState(false);
+      }
+    }
+  }
 });
 </script>
 </body>

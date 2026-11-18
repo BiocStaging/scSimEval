@@ -126,7 +126,7 @@ Methods</em> 2023), SymSim2+ATAC, MultiSim</p>
 <li>✅ Full unimodal evaluation for each modality (Categories 1–5, 7,
 and 8)</li>
 <li>✅ <strong>All</strong> Category 6 multiomics integration &amp;
-alignment metrics (<code>evaluate_multiomics_integration()</code>):
+alignment metrics (<code><a href="../reference/evaluate_multiomics_integration.html">evaluate_multiomics_integration()</a></code>):
 <ul>
 <li>
 <code>batch_asw</code> (Batch Average Silhouette Width in joint
@@ -218,7 +218,7 @@ only)</em>
 <td align="center">✅</td>
 </tr>
 <tr class="even">
-<td><code>evaluate_multiomics_integration()</code></td>
+<td><code><a href="../reference/evaluate_multiomics_integration.html">evaluate_multiomics_integration()</a></code></td>
 <td align="center">✅</td>
 <td align="center">✅ (via joint embedding)</td>
 </tr>
@@ -286,7 +286,7 @@ preservation using gold-standard metrics from <code>scib</code>,
 <code>scMultiSim</code>, <code>scCross</code>, <code>Matilda</code>, and
 <code>scMoMtF</code>:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">int_res</span> <span class="op">&lt;-</span> <span class="fu">evaluate_multiomics_integration</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">int_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/evaluate_multiomics_integration.html">evaluate_multiomics_integration</a></span><span class="op">(</span></span>
 <span>  ref_multi  <span class="op">=</span> <span class="va">example_multiomics</span><span class="op">$</span><span class="va">ref_multi</span>,</span>
 <span>  sim_multi  <span class="op">=</span> <span class="va">example_multiomics</span><span class="op">$</span><span class="va">sim_multi</span>,</span>
 <span>  cell_types <span class="op">=</span> <span class="va">example_multiomics</span><span class="op">$</span><span class="va">cell_types</span>,</span>
@@ -717,16 +717,29 @@ document.addEventListener("DOMContentLoaded", function() {
       }
 
       function setTocState(visible) {
+        const container = mainEl.closest(".container") || mainEl.closest(".container-fluid") || document.querySelector(".container.template-article") || document.querySelector(".container");
         if (visible) {
+          document.body.classList.remove("toc-collapsed");
+          if (container) container.classList.remove("container-fullwidth");
           tocAside.classList.remove("d-none");
-          mainEl.classList.remove("col-md-12");
+          tocAside.style.display = "";
+          mainEl.classList.remove("col-md-12", "main-expanded");
           mainEl.classList.add("col-md-9");
+          mainEl.style.width = "";
+          mainEl.style.maxWidth = "";
+          mainEl.style.flex = "";
           if (showBtn) showBtn.classList.add("d-none");
           localStorage.setItem("scSimEval_toc_hidden", "false");
         } else {
+          document.body.classList.add("toc-collapsed");
+          if (container) container.classList.add("container-fullwidth");
           tocAside.classList.add("d-none");
+          tocAside.style.display = "none";
           mainEl.classList.remove("col-md-9");
-          mainEl.classList.add("col-md-12");
+          mainEl.classList.add("col-md-12", "main-expanded");
+          mainEl.style.width = "100%";
+          mainEl.style.maxWidth = "100%";
+          mainEl.style.flex = "0 0 100%";
           if (showBtn) showBtn.classList.remove("d-none");
           localStorage.setItem("scSimEval_toc_hidden", "true");
         }
