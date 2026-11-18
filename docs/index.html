@@ -77,115 +77,91 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header">
-<img src="logo.png" class="logo" alt=""><h1 id="scsimeval-unified-benchmarking-and-accuracy-evaluation-for-single-cell-multiomics-simulation-methods-">scSimEval: Unified Benchmarking and Accuracy Evaluation for Single-Cell Multiomics Simulation Methods 
-<a class="anchor" aria-label="anchor" href="#scsimeval-unified-benchmarking-and-accuracy-evaluation-for-single-cell-multiomics-simulation-methods-"></a>
+<img src="logo.png" class="logo" alt=""><h1 id="scsimeval-unified-benchmarking-for-single-cell-multiomics-simulations-">scSimEval: Unified Benchmarking for Single-Cell Multiomics Simulations 
+<a class="anchor" aria-label="anchor" href="#scsimeval-unified-benchmarking-for-single-cell-multiomics-simulations-"></a>
 </h1>
 </div>
-<p><a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a> <a href="https://kabilanbio.github.io/scSimEval/"><img src="https://img.shields.io/badge/docs-pkgdown-blue.svg" alt="Documentation"></a> <a href="https://github.com/BiocStaging/scSimEval" class="external-link"><img src="https://img.shields.io/badge/Bioconductor-submission%20v0.99.10-brightgreen.svg" alt="Bioconductor submission"></a></p>
+<p><a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a> <a href="https://kabilanbio.github.io/scSimEval/"><img src="https://img.shields.io/badge/docs-pkgdown-blue.svg" alt="Documentation"></a></p>
 <hr>
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p><strong><code>scSimEval</code></strong> is a unified evaluation and benchmarking toolkit designed to systematically quantify how faithfully single-cell and multiomics simulation methods reproduce empirical biological experiments.</p>
-<p>The package provides a standardized, reference-based benchmarking framework supporting four primary operational modalities: * <strong><code>scRNA-seq</code></strong> (Single-cell transcriptomic count matrices) * <strong><code>scATAC-seq</code></strong> (Single-cell chromatin accessibility peak matrices) * <strong><code>Paired Multiomics</code></strong> (Simultaneous co-assays across identical cells, e.g., 10x Chromium Multiome, SHARE-seq) * <strong><code>Unpaired Multiomics</code></strong> (Independent scRNA-seq and scATAC-seq profiled from separate cells of the same biological system)</p>
+<p><strong><code>scSimEval</code></strong> is a unified evaluation and benchmarking toolkit designed to systematically quantify how faithfully single-cell and multiomics simulation methods reproduce empirical biological data across <strong>56 curated evaluation measures</strong> spanning <strong>8 foundational categories</strong>.</p>
+<div class="section level3">
+<h3 id="supported-modalities">Supported Modalities<a class="anchor" aria-label="anchor" href="#supported-modalities"></a>
+</h3>
+<ul>
+<li>
+<strong><code>scRNA-seq</code></strong> (Single-cell transcriptomics)</li>
+<li>
+<strong><code>scATAC-seq</code></strong> (Single-cell chromatin accessibility)</li>
+<li>
+<strong><code>Paired Multiomics</code></strong> (Joint scRNA-seq + scATAC-seq across identical cells)</li>
+<li>
+<strong><code>Unpaired Multiomics</code></strong> (Independent scRNA-seq and scATAC-seq from the same biological system)</li>
+</ul>
 <hr>
+</div>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<div class="section level3">
-<h3 id="prerequisites--system-requirements">Prerequisites &amp; System Requirements<a class="anchor" aria-label="anchor" href="#prerequisites--system-requirements"></a>
-</h3>
-<p>Before installing <code>scSimEval</code>, please ensure your system meets the following requirements:</p>
-<ol style="list-style-type: decimal">
-<li><p><strong>R Version:</strong> R (&gt;= 4.3.0).</p></li>
-<li>
-<p><strong>C++ Compilation Tools:</strong></p>
-<ul>
-<li>
-<strong>Windows:</strong> Install <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">Rtools</a> matching your R version (required for compiling C++ extensions such as <code>Rcpp</code> and <code>RANN</code>).</li>
-<li>
-<strong>macOS:</strong> Install Xcode Command Line Tools (<code>xcode-select --install</code>) and <code>gfortran</code>.</li>
-<li>
-<strong>Linux:</strong> Ensure standard development packages (<code>build-essential</code>, <code>g++</code>, <code>libcurl4-openssl-dev</code>, <code>libxml2-dev</code>) are installed.</li>
-</ul>
-</li>
-<li>
-<p><strong>Bioconductor Dependencies:</strong> <code>scSimEval</code> relies on core Bioconductor packages for single-cell data structures and pseudobulk differential testing. We recommend installing them first via <code>BiocManager</code>:</p>
+<p>Install the development version of <strong><code>scSimEval</code></strong> directly from GitHub:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"BiocManager"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"BiocManager"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="fu">BiocManager</span><span class="fu">::</span><span class="fu"><a href="https://bioconductor.github.io/BiocManager/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>  <span class="st">"SingleCellExperiment"</span>,</span>
-<span>  <span class="st">"SummarizedExperiment"</span>,</span>
-<span>  <span class="st">"edgeR"</span>,</span>
-<span>  <span class="st">"BiocNeighbors"</span>,</span>
-<span>  <span class="st">"BiocParallel"</span></span>
-<span><span class="op">)</span>, update <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-</li>
-</ol>
-</div>
-<div class="section level3">
-<h3 id="installing-scsimeval-from-github">Installing <code>scSimEval</code> from GitHub<a class="anchor" aria-label="anchor" href="#installing-scsimeval-from-github"></a>
-</h3>
-<p>Install the development release of <strong><code>scSimEval</code></strong> from GitHub using <code>remotes</code>:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"remotes"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"kabilanbio/scSimEval"</span>, dependencies <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="verification">Verification<a class="anchor" aria-label="anchor" href="#verification"></a>
-</h3>
-<p>Verify that <code>scSimEval</code> has installed successfully:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval/">scSimEval</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="st">"scSimEval"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"remotes"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"kabilanbio/scSimEval"</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
-</div>
 <div class="section level2">
-<h2 id="execution-options-interactive-shiny-studio--reproducible-r-script">Execution Options: Interactive Shiny Studio &amp; Reproducible R Script<a class="anchor" aria-label="anchor" href="#execution-options-interactive-shiny-studio--reproducible-r-script"></a>
+<h2 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
-<p><code>scSimEval</code> supports two distinct, flexible execution workflows tailored for both interactive exploratory analysis and large-scale computational pipelines:</p>
 <div class="section level3">
-<h3 id="option-1-interactive-shiny-app-studio-scsimevalapp">Option 1: Interactive Shiny App Studio (<code>scSimEvalApp</code>)<a class="anchor" aria-label="anchor" href="#option-1-interactive-shiny-app-studio-scsimevalapp"></a>
+<h3 id="id_1-interactive-shiny-studio">1. Interactive Shiny Studio<a class="anchor" aria-label="anchor" href="#id_1-interactive-shiny-studio"></a>
 </h3>
-<p>For interactive graphical exploration, <code>scSimEval</code> provides an all-in-one, no-code web studio directly within R: * <strong>Interactive Upload &amp; Validation:</strong> Automated file format checking, metadata alignment, and assay detection. * <strong>Comparative Visualizations:</strong> Live generation of 600 DPI publication-grade plots including Comparative Bubble Matrices, Category Radar Charts, Heatmaps, Boxplots, and Multi-Simulator UMAP/PCA Embeddings. * <strong>Filter &amp; Leaderboard Exploration:</strong> Real-time simulator rank ordering, metric selection, and Excel/CSV summary report exports.</p>
-<p>Launch the Shiny studio directly from your R console:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<p>Launch the built-in, interactive graphical studio directly from R:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval/">scSimEval</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/launch_scSimEval_app.html">launch_scSimEval_app</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>The Shiny app provides automated dataset validation, real-time metric calculation, interactive diagnostic plots with zoom/scroll, and summary report exports.</p>
 </div>
 <div class="section level3">
-<h3 id="option-2-standalone--headless-r-script-workstations--hpc-clusters">Option 2: Standalone &amp; Headless R Script (Workstations &amp; HPC Clusters)<a class="anchor" aria-label="anchor" href="#option-2-standalone--headless-r-script-workstations--hpc-clusters"></a>
+<h3 id="id_2-command-line-r-workflow">2. Command-Line R Workflow<a class="anchor" aria-label="anchor" href="#id_2-command-line-r-workflow"></a>
 </h3>
-<p>For large-scale, automated, or compute-intensive benchmarking on multi-core workstations and High-Performance Computing (HPC) clusters: * <strong>Download Pre-Configured R Script:</strong> In the Shiny app <strong>Data Hub</strong>, clicking <strong>“Download R Script”</strong> automatically generates a complete, self-contained, and procedural R workflow script pre-populated with your exact dataset paths, metadata columns, and core settings. * <strong>Headless Command-Line Execution:</strong> Run directly in batch scripts or via R without launching a browser or consuming graphical display resources: ```R library(scSimEval)</p>
-<p># Run full benchmark evaluation headlessly benchmark_results &lt;- evaluate_simulation_accuracy( ref_data = reference_counts, sim_data = simulated_counts, cell_types = cell_type_annotations, batch_info = batch_annotations, threads = 4, verbose = TRUE )</p>
-<p># Save results object saveRDS(benchmark_results, “scSimEval_benchmark_results.rds”) ```</p>
+<p>Run benchmarking directly in reproducible R scripts or HPC pipelines:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval/">scSimEval</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Run benchmark evaluation</span></span>
+<span><span class="va">benchmark_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy</a></span><span class="op">(</span></span>
+<span>  ref_data   <span class="op">=</span> <span class="va">reference_counts</span>,</span>
+<span>  sim_data   <span class="op">=</span> <span class="va">simulated_counts</span>,</span>
+<span>  cell_types <span class="op">=</span> <span class="va">cell_type_annotations</span>,</span>
+<span>  batch_info <span class="op">=</span> <span class="va">batch_annotations</span>,</span>
+<span>  threads    <span class="op">=</span> <span class="fl">4</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Visualize summary</span></span>
+<span><span class="fu"><a href="reference/plot_evaluation_summary.html">plot_evaluation_summary</a></span><span class="op">(</span><span class="va">benchmark_results</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
 </div>
 <div class="section level2">
-<h2 id="authors">Authors<a class="anchor" aria-label="anchor" href="#authors"></a>
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
-<p><code>scSimEval</code> is developed and maintained at the <strong>Division of Agricultural Bioinformatics, ICAR-Indian Agricultural Statistics Research Institute (ICAR-IASRI)</strong>, New Delhi, India:</p>
+<p>Full documentation, tutorials, and demonstration workflows are available at:<br>
+👉 <strong><a href="https://kabilanbio.github.io/scSimEval/">https://kabilanbio.github.io/scSimEval/</a></strong></p>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="development--support">Development &amp; Support<a class="anchor" aria-label="anchor" href="#development--support"></a>
+</h2>
+<p><code>scSimEval</code> is developed and maintained at the <strong>Division of Agricultural Bioinformatics, ICAR-IASRI, New Delhi</strong>.</p>
 <ul>
-<li><p><strong>Kabilan Sakthivel</strong> (Maintainer &amp; Ph.D Scholar) — <code>kabilan151414@gmail.com</code></p></li>
-<li><p><strong>Dr. Dwijesh Chandra Mishra</strong> (Principal Scientist &amp; Thesis Guide) — <code>dwij.mishra@gmail.com</code></p></li>
-<li><p><strong>Dr. Shashi Bhushan Lal</strong> (Principal Scientist) — <code>sblall16@gmail.com</code></p></li>
-<li><p><strong>Dr. Ulavappa Angadi</strong> (Principal Scientist) — <code>ubaangadi.iasri@icar.org.in</code></p></li>
-<li><p><strong>Dr. Sudhir Srivastava</strong> (Senior Scientist) — <code>sudhir0401bm@gmail.com</code></p></li>
-<li><p><strong>Dr. Neeraj Budhlakoti</strong> (Senior Scientist) — <code>neeraj35669@gmail.com</code></p></li>
-<li><p><strong>Dr. Krishna Kumar Chaturvedi</strong> (Principal Scientist) — <code>kkcchaturvedi@gmail.com</code></p></li>
-<li><p><strong>Dr. Ranjeet Ranjan Kumar</strong> (Senior Scientist) — <code>ranjeetranjaniari@gmail.com</code></p></li>
-<li><p><strong>Dr. Navin Chandra Gupta</strong> (Senior Scientist) — <code>navinbtc@gmail.com</code></p></li>
-<li><p><strong>Dr. Sharanbasappa</strong> (Scientist) — <code>smadival509@gmail.com</code></p></li>
-<li><p><strong>Bug Reports &amp; Issues:</strong> <a href="https://github.com/kabilanbio/scSimEval/issues" class="external-link">https://github.com/kabilanbio/scSimEval/issues</a></p></li>
+<li>
+<strong>Maintainer:</strong> Kabilan Sakthivel (<code>kabilan151414@gmail.com</code>)</li>
+<li>
+<strong>Bug Reports &amp; Issues:</strong> <a href="https://github.com/kabilanbio/scSimEval/issues" class="external-link">https://github.com/kabilanbio/scSimEval/issues</a>
+</li>
 </ul>
 </div>
 </div>

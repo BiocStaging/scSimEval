@@ -2345,13 +2345,16 @@ plot_scalability_benchmark <- function(
     ggplot2::scale_fill_manual(values = active_pal, guide = "none") +
     ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.22))) +
     ggplot2::labs(
-      title    = "D. Composite Resource Cost: (Core-Seconds \u00d7 Peak RAM/Core) / 1000",
-      subtitle = NULL,
+      title    = "D. Composite Resource Cost",
+      subtitle = "(Core-Seconds \u00d7 Peak RAM/Core) / 1000",
       x        = "Resource Cost Score",
       y        = NULL
     ) +
     .pub_theme(base_size = base_size) +
-    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0, face = "bold"))
+    ggplot2::theme(
+      plot.title    = ggplot2::element_text(hjust = 0, face = "bold"),
+      plot.subtitle = ggplot2::element_text(hjust = 0, size = base_size * 0.82, color = "#566573")
+    )
 
   if (type == "cost") return(p_cost)
 
