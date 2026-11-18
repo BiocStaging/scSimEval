@@ -7,6 +7,7 @@
 plot_metric_pca(
   benchmark_data,
   panel = c("both", "methods", "loadings"),
+  assay_modality = c("auto", "scRNA-seq", "scATAC-seq", "multiomics"),
   by_category = FALSE,
   as_list = FALSE,
   category = NULL,
@@ -22,6 +23,13 @@ plot_metric_pca(
 
 \item{panel}{Character. Which panel(s) to render: \code{"both"} (default; 2-panel stacked layout),
 \code{"methods"} (panel a only), or \code{"loadings"} (panel b only).}
+
+\item{assay_modality}{Character string specifying the molecular modality:
+\code{"auto"} (default; automatically detects from data attributes or metrics),
+\code{"scRNA-seq"}, \code{"scATAC-seq"}, or \code{"multiomics"}.
+When \code{"scATAC-seq"}, feature-level metrics are labeled \code{"peak"}.
+When \code{"scRNA-seq"}, feature-level metrics are labeled \code{"gene"}.
+When \code{"multiomics"}, feature-level metrics are labeled \code{"features"}.}
 
 \item{by_category}{Logical. If \code{TRUE}, perform separate PCA ordinations per evaluation category. Default \code{FALSE}.}
 

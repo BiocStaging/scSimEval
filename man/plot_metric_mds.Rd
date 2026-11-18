@@ -7,6 +7,7 @@
 plot_metric_mds(
   benchmark_data,
   ordination_by = c("simulators", "summaries"),
+  assay_modality = c("auto", "scRNA-seq", "scATAC-seq", "multiomics"),
   by_category = FALSE,
   as_list = FALSE,
   category = NULL,
@@ -23,9 +24,16 @@ plot_metric_mds(
 \arguments{
 \item{benchmark_data}{Benchmark summary data.frame, matrix, or list.}
 
-\item{ordination_by}{Character. Either \code{"summaries"} (default; ordinated points represent
-biological and computational summaries) or \code{"simulators"} (ordinated points represent
-candidate simulators).}
+\item{ordination_by}{Character. Either \code{"simulators"} (ordinated points represent
+candidate simulators) or \code{"summaries"} (default; ordinated points represent
+biological and computational summaries).}
+
+\item{assay_modality}{Character string specifying the molecular modality:
+\code{"auto"} (default; automatically detects from data attributes or metrics),
+\code{"scRNA-seq"}, \code{"scATAC-seq"}, or \code{"multiomics"}.
+When \code{"scATAC-seq"}, feature-level metrics are labeled \code{"peak"}.
+When \code{"scRNA-seq"}, feature-level metrics are labeled \code{"gene"}.
+When \code{"multiomics"}, feature-level metrics are labeled \code{"features"}.}
 
 \item{by_category}{Logical. If \code{TRUE} and \code{ordination_by = "summaries"}, generates
 a multi-panel grid displaying an MDS ordination for each evaluation category separately
@@ -45,7 +53,7 @@ because these two categories contain only a few measures each, leaving the 6 can
 so that metrics on disparate scales (e.g. MB vs distance) do not artificially distort Euclidean distance.}
 
 \item{palette}{Optional named character vector of colors. For \code{ordination_by = "summaries"},
-maps \code{"gene"}, \code{"cell"}, and \code{"global"}.}
+maps feature-level (\code{"peak"}, \code{"gene"}, or \code{"features"}), \code{"cell"}, and \code{"global"}.}
 
 \item{title}{Optional plot title.}
 
@@ -62,7 +70,8 @@ for benchmarking single-cell simulation methods.
 }
 \details{
 When \code{ordination_by = "summaries"}, each point represents an evaluated property/metric,
-colored by its biological level: \code{"gene"} (red), \code{"cell"} (blue), or \code{"global"} (green).
+colored by its biological level: \code{"gene"} (red), \code{"peak"} (red, for scATAC-seq),
+\code{"features"} (red, for multiomics), \code{"cell"} (blue), or \code{"global"} (green).
 If \code{by_category = TRUE}, a multi-panel dashboard is produced showing one MDS ordination per
 category (by default across the 6 canonical categories with >= 3 measures, excluding Trajectory and
 Scalability which each contain only 2 measures).

@@ -471,153 +471,288 @@ filter_gold_standard_metrics <- function(df) {
 
 #' @keywords internal
 .SUMMARY_TYPE_MAP <- c(
-  # Gene / Feature level (red)
-  "feature_pearson_cor"         = "gene",
-  "gene_cor"                    = "gene",
-  "gene_detection_frequency"    = "gene",
-  "zero_fraction_feature"       = "gene",
-  "mean_expression"             = "gene",
-  "average_logcpm"              = "gene",
-  "variance"                    = "gene",
-  "variance_logcpm"             = "gene",
-  "cv"                          = "gene",
-  "coefficient_of_variation"    = "gene",
-  "dispersion"                  = "gene",
-  "bcv_discrepancy"             = "gene",
-  "mean_variance_r2"            = "gene",
-  "dropout_curve_midpoint_x0"   = "gene",
-  "dropout_curve_slope_k"       = "gene",
-  "Log2FC_Pearson_Corr"         = "gene",
-  "Log2FC_Spearman_Corr"        = "gene",
-  "Top_DEG_Jaccard_Overlap"     = "gene",
-  "DEG_Ratio"                   = "gene",
-  "SimBench_DE_Fidelity_Score"  = "gene",
-  "SimBench_SMAPE"              = "gene",
-  "Distribution_Score"          = "gene",
+  # Feature / Gene / Peak level (mapped dynamically to peak, gene, or features)
+  "feature_pearson_cor"            = "gene",
+  "gene_cor"                       = "gene",
+  "gene_detection_frequency"       = "gene",
+  "zero_fraction_feature"          = "gene",
+  "feature_detection_freq"         = "gene",
+  "mean_expression"                = "gene",
+  "average_logcpm"                 = "gene",
+  "variance"                       = "gene",
+  "variance_logcpm"                = "gene",
+  "scaled_variance"                = "gene",
+  "cv"                             = "gene",
+  "coefficient_of_variation"       = "gene",
+  "dispersion"                     = "gene",
+  "bcv_discrepancy"                = "gene",
+  "mean_variance_r2"               = "gene",
+  "dropout_curve_midpoint_x0"      = "gene",
+  "dropout_curve_slope_k"          = "gene",
+  "curve_rmse"                     = "gene",
+  "r2_discrepancy"                 = "gene",
+  "excess_zero_weight_discrepancy" = "gene",
+  "midpoint_error"                 = "gene",
+  "slope_error"                    = "gene",
+  "wcor_features"                  = "gene",
+  "Log2FC_Pearson_Corr"            = "gene",
+  "Log2FC_Spearman_Corr"           = "gene",
+  "Top_DEG_Jaccard_Overlap"        = "gene",
+  "DEG_Ratio"                      = "gene",
+  "SimBench_DE_Fidelity_Score"     = "gene",
+  "SimBench_SMAPE"                 = "gene",
+  "Distribution_Score"             = "gene",
+  "accuracy"                       = "gene",
+  "precision"                      = "gene",
+  "recall"                         = "gene",
+  "f1_score"                       = "gene",
+  "auc"                            = "gene",
+  "pval_dist_score"                = "gene",
+  "rna_de_accuracy"                = "gene",
+  "rna_de_precision"               = "gene",
+  "rna_de_recall"                  = "gene",
+  "rna_de_f1"                      = "gene",
+  "rna_de_auc"                     = "gene",
+  "rna_de_pval_dist_score"         = "gene",
+  "atac_da_accuracy"               = "gene",
+  "atac_da_precision"              = "gene",
+  "atac_da_recall"                 = "gene",
+  "atac_da_f1"                     = "gene",
+  "atac_da_auc"                    = "gene",
+  "atac_da_pval_dist_score"        = "gene",
 
   # Cell level (blue)
-  "cell_pearson_cor"            = "cell",
-  "cell_cor"                    = "cell",
-  "cell_detection_frequency"    = "cell",
-  "zero_fraction_cell"          = "cell",
-  "library_size"                = "cell",
-  "log_library_size"            = "cell",
-  "pca_dist"                    = "cell",
-  "cell_to_cell_distance"       = "cell",
-  "local_density_factor"        = "cell",
-  "ldf"                         = "cell",
-  "ldf_diff"                    = "cell",
-  "knn_hubness"                 = "cell",
-  "neighborhood_purity"         = "cell",
-  "KNN_occurences"              = "cell",
-  "tmm_factor"                  = "cell",
-  "effective_library_size"      = "cell",
+  "cell_pearson_cor"               = "cell",
+  "cell_cor"                       = "cell",
+  "cell_detection_frequency"       = "cell",
+  "zero_fraction_cell"             = "cell",
+  "detection_freq_cell"            = "cell",
+  "library_size"                   = "cell",
+  "log_library_size"               = "cell",
+  "pca_dist"                       = "cell",
+  "cell_to_cell_distance"          = "cell",
+  "local_density_factor"           = "cell",
+  "ldf"                            = "cell",
+  "ldf_diff"                       = "cell",
+  "knn_hubness"                    = "cell",
+  "neighborhood_purity"            = "cell",
+  "KNN_occurences"                 = "cell",
+  "tmm_factor"                     = "cell",
+  "effective_library_size"         = "cell",
 
-  # Global / Structure / Batch / Trajectory / Multiomics (green)
-  "silhouette_sim"              = "global",
-  "Silhouette_Sim"              = "global",
-  "silhouette_width"            = "global",
-  "cms"                         = "global",
-  "cell_specific_mixing_score"  = "global",
-  "pcr_r2"                      = "global",
-  "percent_variance_explained"  = "global",
-  "batch_silhouette"            = "global",
-  "shannon_entropy"             = "global",
-  "isi"                         = "global",
-  "seurat_mixing_metric"        = "global",
-  "ari"                         = "global",
-  "nmi"                         = "global",
-  "ami"                         = "global",
-  "v_measure"                   = "global",
-  "dunn_sim"                    = "global",
-  "calinski_harabasz_sim"       = "global",
-  "him"                         = "global",
-  "edge_flip"                   = "global",
-  "geodesic_correlation"        = "global",
-  "F1_branches"                 = "global",
-  "wcor_features"               = "global",
-  "pseudotime_correlation"      = "global",
-  "tree_height_rmse"            = "global",
-  "graph_alignment"             = "global",
-  "lineage_expression_fidelity" = "global",
-  "FOSCTTM"                     = "global",
-  "cross_modal_accuracy"        = "global",
-  "cross_modal_F1"              = "global",
-  "rv_coefficient"              = "global",
-  "module_correlation_r"        = "global",
-  "PVE_Group_Sim"               = "global",
-  "PVE_Discrepancy"             = "global",
-  "Classifier_Accuracy"         = "global",
-  "core_seconds"                = "global",
-  "memory_per_core_mib"         = "global",
-  "memory_per_core_gib"         = "global",
-  "elapsed_time_seconds"        = "global",
-  "peak_memory_mb"              = "global"
+  # Global / Structure / Batch / Trajectory / Scalability (green)
+  "silhouette_sim"                 = "global",
+  "Silhouette_Sim"                 = "global",
+  "silhouette_width"               = "global",
+  "cdi"                            = "global",
+  "MMD"                            = "global",
+  "Generative_Precision"           = "global",
+  "Generative_Recall"              = "global",
+  "cms"                            = "global",
+  "cell_specific_mixing_score"     = "global",
+  "pcr_r2"                         = "global",
+  "percent_variance_explained"     = "global",
+  "batch_silhouette"               = "global",
+  "shannon_entropy"                = "global",
+  "isi"                            = "global",
+  "seurat_mixing_metric"           = "global",
+  "cross_batch_F1"                 = "global",
+  "ari"                            = "global",
+  "nmi"                            = "global",
+  "ami"                            = "global",
+  "v_measure"                      = "global",
+  "dunn_sim"                       = "global",
+  "calinski_harabasz_sim"          = "global",
+  "him"                            = "global",
+  "edge_flip"                      = "global",
+  "geodesic_correlation"           = "global",
+  "F1_branches"                    = "global",
+  "pseudotime_correlation"         = "global",
+  "tree_height_rmse"               = "global",
+  "graph_alignment"                = "global",
+  "lineage_expression_fidelity"    = "global",
+  "FOSCTTM"                        = "global",
+  "cross_modal_accuracy"           = "global",
+  "cross_modal_F1"                 = "global",
+  "rv_coefficient"                 = "global",
+  "module_correlation_r"           = "global",
+  "PVE_Group_Sim"                  = "global",
+  "PVE_Discrepancy"                = "global",
+  "Classifier_Accuracy"            = "global",
+  "Wasserstein"                    = "global",
+  "KS"                             = "global",
+  "MAD"                            = "global",
+  "MAE"                            = "global",
+  "RMSE"                           = "global",
+  "KDE_ISE"                        = "global",
+  "Bhattacharyya"                  = "global",
+  "Runs_Statistic"                 = "global",
+  "NN_Mismatch"                    = "global",
+  "Between_Dataset_Silh_Global"    = "global",
+  "core_seconds"                   = "global",
+  "memory_per_core_mib"            = "global",
+  "memory_per_core_gib"            = "global",
+  "elapsed_time_seconds"           = "global",
+  "peak_memory_mb"                 = "global"
 )
 
 #' @keywords internal
 .SUMMARY_DISPLAY_NAME_MAP <- c(
-  "feature_pearson_cor"         = "gene-to-gene correlation",
-  "gene_cor"                    = "gene-to-gene correlation",
-  "gene_detection_frequency"    = "gene detection frequency",
-  "zero_fraction_feature"       = "gene detection frequency",
-  "mean_expression"             = "average of logCPM",
-  "average_logcpm"              = "average of logCPM",
-  "variance"                    = "variance of logCPM",
-  "variance_logcpm"             = "variance of logCPM",
-  "cv"                          = "coefficient of variation",
-  "coefficient_of_variation"    = "coefficient of variation",
-  "dispersion"                  = "dispersion",
-  "bcv_discrepancy"             = "BCV discrepancy",
-  "mean_variance_r2"            = "mean-variance fit",
-  "dropout_curve_midpoint_x0"   = "dropout midpoint",
-  "dropout_curve_slope_k"       = "dropout rate",
-  "Log2FC_Pearson_Corr"         = "log2FC Pearson cor",
-  "Top_DEG_Jaccard_Overlap"     = "DEG Jaccard overlap",
-  "Distribution_Score"          = "distribution score",
+  "feature_pearson_cor"            = "gene-to-gene correlation",
+  "gene_cor"                       = "gene-to-gene correlation",
+  "gene_detection_frequency"       = "gene detection frequency",
+  "zero_fraction_feature"          = "gene detection frequency",
+  "mean_expression"                = "average of logCPM",
+  "average_logcpm"                 = "average of logCPM",
+  "variance"                       = "variance of logCPM",
+  "variance_logcpm"                = "variance of logCPM",
+  "cv"                             = "coefficient of variation",
+  "coefficient_of_variation"       = "coefficient of variation",
+  "dispersion"                     = "dispersion",
+  "bcv_discrepancy"                = "BCV discrepancy",
+  "mean_variance_r2"               = "mean-variance fit",
+  "dropout_curve_midpoint_x0"      = "dropout midpoint",
+  "dropout_curve_slope_k"          = "dropout rate",
+  "curve_rmse"                     = "sparsity curve RMSE",
+  "r2_discrepancy"                 = "mean-var/disp R2 discr.",
+  "excess_zero_weight_discrepancy" = "excess zero discrepancy",
+  "midpoint_error"                 = "dropout midpoint error",
+  "slope_error"                    = "dropout slope error",
+  "Log2FC_Pearson_Corr"            = "log2FC Pearson cor",
+  "Top_DEG_Jaccard_Overlap"        = "DEG Jaccard overlap",
+  "Distribution_Score"             = "distribution score",
+  "accuracy"                       = "DA/DE accuracy",
+  "precision"                      = "DA/DE precision",
+  "recall"                         = "DA/DE recall",
+  "f1_score"                       = "DA/DE F1 score",
+  "auc"                            = "DA/DE ROC-AUC",
+  "pval_dist_score"                = "DA/DE p-val dist score",
 
-  "cell_pearson_cor"            = "cell-to-cell correlation",
-  "cell_cor"                    = "cell-to-cell correlation",
-  "cell_detection_frequency"    = "cell detection frequency",
-  "zero_fraction_cell"          = "cell detection frequency",
-  "library_size"                = "library size",
-  "log_library_size"            = "log-library size",
-  "pca_dist"                    = "cell-to-cell distance",
-  "cell_to_cell_distance"       = "cell-to-cell distance",
-  "local_density_factor"        = "local density factor",
-  "ldf"                         = "local density factor",
-  "ldf_diff"                    = "local density factor",
-  "knn_hubness"                 = "KNN occurences",
-  "neighborhood_purity"         = "KNN occurences",
-  "KNN_occurences"              = "KNN occurences",
+  "cell_pearson_cor"               = "cell-to-cell correlation",
+  "cell_cor"                       = "cell-to-cell correlation",
+  "cell_detection_frequency"       = "cell detection frequency",
+  "zero_fraction_cell"             = "cell detection frequency",
+  "library_size"                   = "library size",
+  "log_library_size"               = "log-library size",
+  "pca_dist"                       = "cell-to-cell distance",
+  "cell_to_cell_distance"          = "cell-to-cell distance",
+  "local_density_factor"           = "local density factor",
+  "ldf"                            = "local density factor",
+  "ldf_diff"                       = "local density factor",
+  "knn_hubness"                    = "KNN occurences",
+  "neighborhood_purity"            = "KNN occurences",
+  "KNN_occurences"                 = "KNN occurences",
 
-  "silhouette_sim"              = "silhouette width",
-  "Silhouette_Sim"              = "silhouette width",
-  "silhouette_width"            = "silhouette width",
-  "cms"                         = "cell-specific mixing score",
-  "cell_specific_mixing_score"  = "cell-specific mixing score",
-  "pcr_r2"                      = "percent variance explained",
-  "percent_variance_explained"  = "percent variance explained",
-  "batch_silhouette"            = "batch silhouette",
-  "shannon_entropy"             = "batch entropy",
-  "seurat_mixing_metric"        = "mixing metric",
-  "him"                         = "HIM topology similarity",
-  "edge_flip"                   = "edge flip similarity",
-  "geodesic_correlation"        = "geodesic distance correlation",
-  "F1_branches"                 = "branch assignment F1",
-  "wcor_features"               = "feature importance wCor",
-  "pseudotime_correlation"      = "pseudotime correlation",
-  "tree_height_rmse"            = "tree height RMSE",
-  "graph_alignment"             = "trajectory graph alignment",
-  "lineage_expression_fidelity" = "lineage expression patterns",
-  "FOSCTTM"                     = "FOSCTTM cross-modality",
-  "rv_coefficient"              = "RV coefficient",
-  "core_seconds"                = "core-seconds (core\u00b7s)",
-  "memory_per_core_mib"         = "peak RAM / core (MiB/core)",
-  "memory_per_core_gib"         = "peak RAM / core (GiB/core)",
-  "elapsed_time_seconds"        = "elapsed time (s)",
-  "peak_memory_mb"              = "peak RAM (MiB)"
+  "silhouette_sim"                 = "silhouette width",
+  "Silhouette_Sim"                 = "silhouette width",
+  "silhouette_width"               = "silhouette width",
+  "cdi"                            = "cluster incongruence (CDI)",
+  "MMD"                            = "manifold MMD",
+  "Generative_Precision"           = "generative precision",
+  "Generative_Recall"              = "generative recall",
+  "cms"                            = "cell-specific mixing score",
+  "cell_specific_mixing_score"     = "cell-specific mixing score",
+  "pcr_r2"                         = "percent variance explained",
+  "percent_variance_explained"     = "percent variance explained",
+  "batch_silhouette"               = "batch silhouette",
+  "shannon_entropy"                = "batch entropy",
+  "isi"                            = "integration LISI",
+  "seurat_mixing_metric"           = "mixing metric",
+  "cross_batch_F1"                 = "cross-batch F1",
+  "ari"                            = "adjusted Rand index (ARI)",
+  "nmi"                            = "norm. mutual info (NMI)",
+  "him"                            = "HIM topology similarity",
+  "edge_flip"                      = "edge flip similarity",
+  "geodesic_correlation"           = "geodesic distance correlation",
+  "F1_branches"                    = "branch assignment F1",
+  "wcor_features"                  = "feature importance wCor",
+  "pseudotime_correlation"         = "pseudotime correlation",
+  "tree_height_rmse"               = "tree height RMSE",
+  "graph_alignment"                = "trajectory graph alignment",
+  "lineage_expression_fidelity"    = "lineage expression patterns",
+  "FOSCTTM"                        = "FOSCTTM cross-modality",
+  "rv_coefficient"                 = "RV coefficient",
+  "Wasserstein"                    = "Wasserstein distance",
+  "KS"                             = "Kolmogorov-Smirnov (KS)",
+  "MAD"                            = "median abs. deviation (MAD)",
+  "MAE"                            = "mean absolute error (MAE)",
+  "RMSE"                           = "root mean squared error (RMSE)",
+  "KDE_ISE"                        = "KDE integrated sq. error",
+  "Bhattacharyya"                  = "Bhattacharyya distance",
+  "Runs_Statistic"                 = "Wald-Wolfowitz runs test",
+  "NN_Mismatch"                    = "NN mismatch fraction",
+  "Between_Dataset_Silh_Global"    = "cross-dataset silhouette",
+  "core_seconds"                   = "core-seconds (core\u00b7s)",
+  "memory_per_core_mib"            = "peak RAM / core (MiB/core)",
+  "memory_per_core_gib"            = "peak RAM / core (GiB/core)",
+  "elapsed_time_seconds"           = "elapsed time (s)",
+  "peak_memory_mb"                 = "peak RAM (MiB)"
 )
+
+#' Resolve Summary Feature Label Based on Assay Modality
+#'
+#' @param df Benchmark data frame
+#' @param assay_modality Optional modality string ("auto", "scRNA-seq", "scATAC-seq", "multiomics")
+#' @return A character scalar: \code{"peak"}, \code{"gene"}, or \code{"features"}
+#' @keywords internal
+.resolve_modality_summary_type <- function(df, assay_modality = c("auto", "scRNA-seq", "scATAC-seq", "multiomics")) {
+  mod_arg <- if (!is.null(assay_modality) && length(assay_modality) > 0 && !is.na(assay_modality[1L])) {
+    tolower(trimws(as.character(assay_modality[1L])))
+  } else {
+    "auto"
+  }
+
+  is_atac  <- FALSE
+  is_multi <- FALSE
+  is_rna   <- FALSE
+
+  if (mod_arg %in% c("atac", "scatac", "scatac-seq", "peak", "peaks")) {
+    is_atac <- TRUE
+  } else if (mod_arg %in% c("multi", "multiomics", "cross", "cross-modal", "both", "joint")) {
+    is_multi <- TRUE
+  } else if (mod_arg %in% c("rna", "scrna", "scrna-seq", "gene", "genes")) {
+    is_rna <- TRUE
+  } else {
+    # Auto-detection from dataframe attributes
+    if ("Modality" %in% colnames(df)) {
+      mods <- unique(as.character(df$Modality[!is.na(df$Modality) & !df$Modality %in% c("Computation", "Total", "scalability")]))
+      has_atac_mod  <- any(grepl("atac", mods, ignore.case = TRUE))
+      has_rna_mod   <- any(grepl("rna", mods, ignore.case = TRUE))
+      has_multi_mod <- any(grepl("multi|cross|joint", mods, ignore.case = TRUE))
+
+      if (has_multi_mod || (has_atac_mod && has_rna_mod)) {
+        is_multi <- TRUE
+      } else if (has_atac_mod) {
+        is_atac <- TRUE
+      } else if (has_rna_mod) {
+        is_rna <- TRUE
+      }
+    }
+
+    if (!is_atac && !is_multi && !is_rna) {
+      all_text <- c(
+        if ("Category" %in% colnames(df)) as.character(df$Category) else character(0),
+        if ("Property" %in% colnames(df)) as.character(df$Property) else character(0),
+        if ("Metric" %in% colnames(df)) as.character(df$Metric) else character(0)
+      )
+      has_multi_txt <- any(grepl("multiomics|cross_modal|foscttm|joint|coupling", all_text, ignore.case = TRUE))
+      has_atac_txt  <- any(grepl("scatac|\\batac\\b|differential_accessibility|accessibility_sparsity|curve_rmse", all_text, ignore.case = TRUE))
+      has_rna_txt   <- any(grepl("scrna|\\brna\\b|differential_expression|trajectory|dynverse", all_text, ignore.case = TRUE))
+
+      if (has_multi_txt || (has_atac_txt && has_rna_txt)) {
+        is_multi <- TRUE
+      } else if (has_atac_txt) {
+        is_atac <- TRUE
+      } else if (has_rna_txt) {
+        is_rna <- TRUE
+      } else {
+        is_rna <- TRUE
+      }
+    }
+  }
+
+  if (is_atac) "peak" else if (is_multi) "features" else "gene"
+}
 
 
 #' @keywords internal
@@ -2748,15 +2883,22 @@ plot_metric_heatmap <- function(
 #' for benchmarking single-cell simulation methods.
 #'
 #' When \code{ordination_by = "summaries"}, each point represents an evaluated property/metric,
-#' colored by its biological level: \code{"gene"} (red), \code{"cell"} (blue), or \code{"global"} (green).
+#' colored by its biological level: \code{"gene"} (red), \code{"peak"} (red, for scATAC-seq),
+#' \code{"features"} (red, for multiomics), \code{"cell"} (blue), or \code{"global"} (green).
 #' If \code{by_category = TRUE}, a multi-panel dashboard is produced showing one MDS ordination per
 #' category (by default across the 6 canonical categories with >= 3 measures, excluding Trajectory and
 #' Scalability which each contain only 2 measures).
 #'
 #' @param benchmark_data Benchmark summary data.frame, matrix, or list.
-#' @param ordination_by Character. Either \code{"summaries"} (default; ordinated points represent
-#'   biological and computational summaries) or \code{"simulators"} (ordinated points represent
-#'   candidate simulators).
+#' @param ordination_by Character. Either \code{"simulators"} (ordinated points represent
+#'   candidate simulators) or \code{"summaries"} (default; ordinated points represent
+#'   biological and computational summaries).
+#' @param assay_modality Character string specifying the molecular modality:
+#'   \code{"auto"} (default; automatically detects from data attributes or metrics),
+#'   \code{"scRNA-seq"}, \code{"scATAC-seq"}, or \code{"multiomics"}.
+#'   When \code{"scATAC-seq"}, feature-level metrics are labeled \code{"peak"}.
+#'   When \code{"scRNA-seq"}, feature-level metrics are labeled \code{"gene"}.
+#'   When \code{"multiomics"}, feature-level metrics are labeled \code{"features"}.
 #' @param by_category Logical. If \code{TRUE} and \code{ordination_by = "summaries"}, generates
 #'   a multi-panel grid displaying an MDS ordination for each evaluation category separately
 #'   (skipping categories with fewer than 3 measures). Default is \code{FALSE}.
@@ -2769,7 +2911,7 @@ plot_metric_heatmap <- function(
 #' @param normalize_scores Logical. If \code{TRUE} (default), scores are direction-aware normalized to [0, 1]
 #'   so that metrics on disparate scales (e.g. MB vs distance) do not artificially distort Euclidean distance.
 #' @param palette Optional named character vector of colors. For \code{ordination_by = "summaries"},
-#'   maps \code{"gene"}, \code{"cell"}, and \code{"global"}.
+#'   maps feature-level (\code{"peak"}, \code{"gene"}, or \code{"features"}), \code{"cell"}, and \code{"global"}.
 #' @param title Optional plot title.
 #' @param base_size Numeric. Base font size. Default \code{11}.
 #' @param ncol Integer. Number of columns when \code{by_category = TRUE}. Default \code{2}.
@@ -2782,6 +2924,7 @@ plot_metric_heatmap <- function(
 plot_metric_mds <- function(
   benchmark_data,
   ordination_by      = c("simulators", "summaries"),
+  assay_modality     = c("auto", "scRNA-seq", "scATAC-seq", "multiomics"),
   by_category        = FALSE,
   as_list            = FALSE,
   category           = NULL,
@@ -2806,6 +2949,8 @@ plot_metric_mds <- function(
     }
   }
   df <- .ingest_bubble_data(benchmark_data)
+
+  feature_label <- .resolve_modality_summary_type(df, assay_modality)
 
   if (anyDuplicated(df[, c("Method", "Metric")])) {
     val_c <- if ("Score_Raw" %in% colnames(df)) "Score_Raw" else if ("Score" %in% colnames(df)) "Score" else "Value"
@@ -2841,14 +2986,17 @@ plot_metric_mds <- function(
     score_col <- if ("Score_Raw" %in% colnames(df)) "Score_Raw" else "Score"
   }
 
-  type_colors <- c(
-    "gene"   = "#E04038",  # red (gene-level)
-    "cell"   = "#3876E0",  # blue (cell-level)
-    "global" = "#28A745"   # green (global structure / mixing)
+  type_colors <- stats::setNames(
+    c("#E04038", "#3876E0", "#28A745"),
+    c(feature_label, "cell", "global")
   )
   if (!is.null(palette) && ordination_by == "summaries") {
     for (nm in names(palette)) {
-      if (nm %in% names(type_colors)) type_colors[nm] <- palette[nm]
+      if (nm %in% names(type_colors)) {
+        type_colors[nm] <- palette[nm]
+      } else if (nm %in% c("gene", "peak", "features", "feature")) {
+        type_colors[feature_label] <- palette[nm]
+      }
     }
   }
 
@@ -2883,21 +3031,25 @@ plot_metric_mds <- function(
         stringsAsFactors = FALSE
       )
 
-      # Classify into gene, cell, global
-      mds_df$Type <- .SUMMARY_TYPE_MAP[mds_df$Metric]
+      # Classify into feature_label (peak, gene, or features), cell, global
+      raw_types <- .SUMMARY_TYPE_MAP[mds_df$Metric]
+      mds_df$Type <- ifelse(raw_types %in% c("feature", "gene"), feature_label, raw_types)
       for (i in seq_len(nrow(mds_df))) {
         if (is.na(mds_df$Type[i])) {
           m <- tolower(mds_df$Metric[i])
-          if (grepl("gene|feat|deg|cpm|var|disp|fc", m)) {
-            mds_df$Type[i] <- "gene"
-          } else if (grepl("cell|lib|ldf|knn", m)) {
+          if (grepl("generative", m)) {
+            mds_df$Type[i] <- "global"
+          } else if (grepl("cell|lib|ldf|knn|neighborhood", m)) {
             mds_df$Type[i] <- "cell"
+          } else if (grepl("gene|peak|feat|deg|da_|da |cpm|var|disp|fc|dropout|sparsity", m)) {
+            mds_df$Type[i] <- feature_label
           } else {
             mds_df$Type[i] <- "global"
           }
         }
       }
-      present_types <- intersect(c("gene", "cell", "global"), unique(as.character(mds_df$Type)))
+      all_possible_types <- c(feature_label, "cell", "global")
+      present_types <- all_possible_types[all_possible_types %in% unique(as.character(mds_df$Type))]
       mds_df$Type   <- factor(mds_df$Type, levels = present_types)
 
       # Display labels
@@ -2905,6 +3057,22 @@ plot_metric_mds <- function(
       idx_na <- is.na(mds_df$Display_Label)
       if (any(idx_na)) {
         mds_df$Display_Label[idx_na] <- gsub("_", " ", mds_df$Metric[idx_na])
+      }
+
+      if (feature_label == "peak") {
+        mds_df$Display_Label <- gsub("gene-to-gene", "peak-to-peak", mds_df$Display_Label, ignore.case = TRUE)
+        mds_df$Display_Label <- gsub("gene detection", "peak detection", mds_df$Display_Label, ignore.case = TRUE)
+        mds_df$Display_Label <- gsub("DEG ", "DA ", mds_df$Display_Label, ignore.case = TRUE)
+        mds_df$Display_Label <- gsub("DE/DA ", "DA ", mds_df$Display_Label, ignore.case = TRUE)
+        mds_df$Display_Label <- gsub("DA/DE ", "DA ", mds_df$Display_Label, ignore.case = TRUE)
+        mds_df$Display_Label <- gsub("average of logCPM", "mean accessibility", mds_df$Display_Label, ignore.case = TRUE)
+        mds_df$Display_Label <- gsub("variance of logCPM", "variance of accessibility", mds_df$Display_Label, ignore.case = TRUE)
+      } else if (feature_label == "features") {
+        mds_df$Display_Label <- gsub("gene-to-gene", "feature", mds_df$Display_Label, ignore.case = TRUE)
+        mds_df$Display_Label <- gsub("gene detection", "feature detection", mds_df$Display_Label, ignore.case = TRUE)
+      } else if (feature_label == "gene") {
+        mds_df$Display_Label <- gsub("DE/DA ", "DE ", mds_df$Display_Label, ignore.case = TRUE)
+        mds_df$Display_Label <- gsub("DA/DE ", "DE ", mds_df$Display_Label, ignore.case = TRUE)
       }
 
       p_panel <- ggplot2::ggplot(mds_df, ggplot2::aes(x = .data$MDS1, y = .data$MDS2)) +
@@ -3139,6 +3307,12 @@ plot_metric_mds <- function(
 #' @param benchmark_data Benchmark summary data.frame, matrix, or list.
 #' @param panel Character. Which panel(s) to render: \code{"both"} (default; 2-panel stacked layout),
 #'   \code{"methods"} (panel a only), or \code{"loadings"} (panel b only).
+#' @param assay_modality Character string specifying the molecular modality:
+#'   \code{"auto"} (default; automatically detects from data attributes or metrics),
+#'   \code{"scRNA-seq"}, \code{"scATAC-seq"}, or \code{"multiomics"}.
+#'   When \code{"scATAC-seq"}, feature-level metrics are labeled \code{"peak"}.
+#'   When \code{"scRNA-seq"}, feature-level metrics are labeled \code{"gene"}.
+#'   When \code{"multiomics"}, feature-level metrics are labeled \code{"features"}.
 #' @param by_category Logical. If \code{TRUE}, perform separate PCA ordinations per evaluation category. Default \code{FALSE}.
 #' @param as_list Logical. If \code{TRUE} and \code{by_category = TRUE}, returns a named list of ggplot objects. Default \code{FALSE}.
 #' @param category Optional character vector to filter by evaluation category.
@@ -3158,6 +3332,7 @@ plot_metric_mds <- function(
 plot_metric_pca <- function(
   benchmark_data,
   panel              = c("both", "methods", "loadings"),
+  assay_modality     = c("auto", "scRNA-seq", "scATAC-seq", "multiomics"),
   by_category        = FALSE,
   as_list            = FALSE,
   category           = NULL,
@@ -3182,6 +3357,8 @@ plot_metric_pca <- function(
     }
   }
   df <- .ingest_bubble_data(benchmark_data)
+
+  feature_label <- .resolve_modality_summary_type(df, assay_modality)
 
   # Robust score column detection: prioritize normalized fidelity scores [0, 1] for PCA ordination
   val_c <- if ("Score_Norm" %in% colnames(df)) "Score_Norm" else
@@ -3362,10 +3539,9 @@ plot_metric_pca <- function(
     method_cols <- stats::setNames(grDevices::hcl.colors(n_m, "Dark 3"), method_names)
   }
 
-  type_colors <- c(
-    "gene"   = "#E04038",  # red
-    "cell"   = "#3876E0",  # blue
-    "global" = "#28A745"   # green
+  type_colors <- stats::setNames(
+    c("#E04038", "#3876E0", "#28A745"),
+    c(feature_label, "cell", "global")
   )
 
   # ---------------------------------------------------------------------------
@@ -3435,27 +3611,47 @@ plot_metric_pca <- function(
     loadings_df <- head(loadings_df[order(loadings_df$mag, decreasing = TRUE), ], top_n_loadings)
   }
 
-  # Assign type: gene, cell, global
-  loadings_df$Type <- .SUMMARY_TYPE_MAP[loadings_df$Metric]
+  # Assign type: feature_label (peak, gene, or features), cell, global
+  raw_types <- .SUMMARY_TYPE_MAP[loadings_df$Metric]
+  loadings_df$Type <- ifelse(raw_types %in% c("feature", "gene"), feature_label, raw_types)
   for (i in seq_len(nrow(loadings_df))) {
     if (is.na(loadings_df$Type[i])) {
       m <- tolower(loadings_df$Metric[i])
-      if (grepl("gene|feat|deg|cpm|var|disp|fc", m)) {
-        loadings_df$Type[i] <- "gene"
-      } else if (grepl("cell|lib|ldf|knn", m)) {
+      if (grepl("generative", m)) {
+        loadings_df$Type[i] <- "global"
+      } else if (grepl("cell|lib|ldf|knn|neighborhood", m)) {
         loadings_df$Type[i] <- "cell"
+      } else if (grepl("gene|peak|feat|deg|da_|da |cpm|var|disp|fc|dropout|sparsity", m)) {
+        loadings_df$Type[i] <- feature_label
       } else {
         loadings_df$Type[i] <- "global"
       }
     }
   }
-  present_types <- intersect(c("gene", "cell", "global"), unique(as.character(loadings_df$Type)))
+  all_possible_types <- c(feature_label, "cell", "global")
+  present_types <- all_possible_types[all_possible_types %in% unique(as.character(loadings_df$Type))]
   loadings_df$Type <- factor(loadings_df$Type, levels = present_types)
 
   loadings_df$Display_Label <- .SUMMARY_DISPLAY_NAME_MAP[loadings_df$Metric]
   idx_na <- is.na(loadings_df$Display_Label)
   if (any(idx_na)) {
     loadings_df$Display_Label[idx_na] <- gsub("_", " ", loadings_df$Metric[idx_na])
+  }
+
+  if (feature_label == "peak") {
+    loadings_df$Display_Label <- gsub("gene-to-gene", "peak-to-peak", loadings_df$Display_Label, ignore.case = TRUE)
+    loadings_df$Display_Label <- gsub("gene detection", "peak detection", loadings_df$Display_Label, ignore.case = TRUE)
+    loadings_df$Display_Label <- gsub("DEG ", "DA ", loadings_df$Display_Label, ignore.case = TRUE)
+    loadings_df$Display_Label <- gsub("DE/DA ", "DA ", loadings_df$Display_Label, ignore.case = TRUE)
+    loadings_df$Display_Label <- gsub("DA/DE ", "DA ", loadings_df$Display_Label, ignore.case = TRUE)
+    loadings_df$Display_Label <- gsub("average of logCPM", "mean accessibility", loadings_df$Display_Label, ignore.case = TRUE)
+    loadings_df$Display_Label <- gsub("variance of logCPM", "variance of accessibility", loadings_df$Display_Label, ignore.case = TRUE)
+  } else if (feature_label == "features") {
+    loadings_df$Display_Label <- gsub("gene-to-gene", "feature", loadings_df$Display_Label, ignore.case = TRUE)
+    loadings_df$Display_Label <- gsub("gene detection", "feature detection", loadings_df$Display_Label, ignore.case = TRUE)
+  } else if (feature_label == "gene") {
+    loadings_df$Display_Label <- gsub("DE/DA ", "DE ", loadings_df$Display_Label, ignore.case = TRUE)
+    loadings_df$Display_Label <- gsub("DA/DE ", "DE ", loadings_df$Display_Label, ignore.case = TRUE)
   }
 
   p_b <- ggplot2::ggplot(loadings_df) +

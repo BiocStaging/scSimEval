@@ -59,6 +59,7 @@ for benchmarking single-cell simulation methods.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">plot_metric_mds</span><span class="op">(</span></span>
 <span>  <span class="va">benchmark_data</span>,</span>
 <span>  ordination_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"simulators"</span>, <span class="st">"summaries"</span><span class="op">)</span>,</span>
+<span>  assay_modality <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"scRNA-seq"</span>, <span class="st">"scATAC-seq"</span>, <span class="st">"multiomics"</span><span class="op">)</span>,</span>
 <span>  by_category <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  as_list <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  category <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -82,9 +83,18 @@ for benchmarking single-cell simulation methods.</p>
 
 
 <dt id="arg-ordination-by">ordination_by<a class="anchor" aria-label="anchor" href="#arg-ordination-by"></a></dt>
-<dd><p>Character. Either <code>"summaries"</code> (default; ordinated points represent
-biological and computational summaries) or <code>"simulators"</code> (ordinated points represent
-candidate simulators).</p></dd>
+<dd><p>Character. Either <code>"simulators"</code> (ordinated points represent
+candidate simulators) or <code>"summaries"</code> (default; ordinated points represent
+biological and computational summaries).</p></dd>
+
+
+<dt id="arg-assay-modality">assay_modality<a class="anchor" aria-label="anchor" href="#arg-assay-modality"></a></dt>
+<dd><p>Character string specifying the molecular modality:
+<code>"auto"</code> (default; automatically detects from data attributes or metrics),
+<code>"scRNA-seq"</code>, <code>"scATAC-seq"</code>, or <code>"multiomics"</code>.
+When <code>"scATAC-seq"</code>, feature-level metrics are labeled <code>"peak"</code>.
+When <code>"scRNA-seq"</code>, feature-level metrics are labeled <code>"gene"</code>.
+When <code>"multiomics"</code>, feature-level metrics are labeled <code>"features"</code>.</p></dd>
 
 
 <dt id="arg-by-category">by_category<a class="anchor" aria-label="anchor" href="#arg-by-category"></a></dt>
@@ -118,7 +128,7 @@ so that metrics on disparate scales (e.g. MB vs distance) do not artificially di
 
 <dt id="arg-palette">palette<a class="anchor" aria-label="anchor" href="#arg-palette"></a></dt>
 <dd><p>Optional named character vector of colors. For <code>ordination_by = "summaries"</code>,
-maps <code>"gene"</code>, <code>"cell"</code>, and <code>"global"</code>.</p></dd>
+maps feature-level (<code>"peak"</code>, <code>"gene"</code>, or <code>"features"</code>), <code>"cell"</code>, and <code>"global"</code>.</p></dd>
 
 
 <dt id="arg-title">title<a class="anchor" aria-label="anchor" href="#arg-title"></a></dt>
@@ -140,7 +150,8 @@ maps <code>"gene"</code>, <code>"cell"</code>, and <code>"global"</code>.</p></d
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>When <code>ordination_by = "summaries"</code>, each point represents an evaluated property/metric,
-colored by its biological level: <code>"gene"</code> (red), <code>"cell"</code> (blue), or <code>"global"</code> (green).
+colored by its biological level: <code>"gene"</code> (red), <code>"peak"</code> (red, for scATAC-seq),
+<code>"features"</code> (red, for multiomics), <code>"cell"</code> (blue), or <code>"global"</code> (green).
 If <code>by_category = TRUE</code>, a multi-panel dashboard is produced showing one MDS ordination per
 category (by default across the 6 canonical categories with &gt;= 3 measures, excluding Trajectory and
 Scalability which each contain only 2 measures).</p>
@@ -238,16 +249,29 @@ document.addEventListener("DOMContentLoaded", function() {
       }
 
       function setTocState(visible) {
+        const container = mainEl.closest(".container") || mainEl.closest(".container-fluid") || document.querySelector(".container.template-article") || document.querySelector(".container");
         if (visible) {
+          document.body.classList.remove("toc-collapsed");
+          if (container) container.classList.remove("container-fullwidth");
           tocAside.classList.remove("d-none");
-          mainEl.classList.remove("col-md-12");
+          tocAside.style.display = "";
+          mainEl.classList.remove("col-md-12", "main-expanded");
           mainEl.classList.add("col-md-9");
+          mainEl.style.width = "";
+          mainEl.style.maxWidth = "";
+          mainEl.style.flex = "";
           if (showBtn) showBtn.classList.add("d-none");
           localStorage.setItem("scSimEval_toc_hidden", "false");
         } else {
+          document.body.classList.add("toc-collapsed");
+          if (container) container.classList.add("container-fullwidth");
           tocAside.classList.add("d-none");
+          tocAside.style.display = "none";
           mainEl.classList.remove("col-md-9");
-          mainEl.classList.add("col-md-12");
+          mainEl.classList.add("col-md-12", "main-expanded");
+          mainEl.style.width = "100%";
+          mainEl.style.maxWidth = "100%";
+          mainEl.style.flex = "0 0 100%";
           if (showBtn) showBtn.classList.remove("d-none");
           localStorage.setItem("scSimEval_toc_hidden", "true");
         }
@@ -259,6 +283,339 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     }
   }
+
+  /* ===== FULLSCREEN IMAGE VIEWER LIGHTBOX (MICROSOFT PHOTOS STYLE) ===== */
+  window.scOpenLightbox = function(imgSrc) {
+    if (!imgSrc) return;
+    var existing = document.getElementById("sc_lightbox_overlay");
+    if (existing) existing.remove();
+
+    var overlay = document.createElement("div");
+    overlay.id = "sc_lightbox_overlay";
+    overlay.className = "sc-lightbox-overlay";
+
+    var closeBtn = document.createElement("button");
+    closeBtn.className = "sc-lightbox-close";
+    closeBtn.type = "button";
+    closeBtn.title = "Close Viewer (Esc)";
+    closeBtn.setAttribute("aria-label", "Close Fullscreen Viewer");
+    closeBtn.innerHTML = "&times;";
+
+    var canvas = document.createElement("div");
+    canvas.className = "sc-lightbox-canvas";
+
+    var img = document.createElement("img");
+    img.className = "sc-lightbox-img";
+    img.src = imgSrc;
+    canvas.appendChild(img);
+
+    var bar = document.createElement("div");
+    bar.className = "sc-lightbox-bar";
+    bar.innerHTML =
+      '<button type="button" id="sc_lb_out" title="Zoom Out (-)"><i class="fa fa-search-minus"></i></button>' +
+      '<input type="range" id="sc_lb_slider" min="10" max="600" step="5" value="100">' +
+      '<button type="button" id="sc_lb_in" title="Zoom In (+)"><i class="fa fa-search-plus"></i></button>' +
+      '<span id="sc_lb_pct" style="font-family:monospace;min-width:48px;text-align:center;font-weight:700;">100%</span>' +
+      '<button type="button" id="sc_lb_fit" title="Fit to Window (0)">Fit</button>' +
+      '<button type="button" id="sc_lb_100" title="Actual Size (1)">100%</button>' +
+      '<span class="d-none d-md-inline" style="font-size:0.74rem;opacity:0.75;margin-left:4px;">Wheel: Zoom • Drag: Pan • Esc: Close</span>';
+
+    overlay.appendChild(closeBtn);
+    overlay.appendChild(canvas);
+    overlay.appendChild(bar);
+    document.body.appendChild(overlay);
+
+    var state = { scale: 1, tx: 0, ty: 0, dragging: false, sx: 0, sy: 0, stx: 0, sty: 0 };
+    var lbSlider = document.getElementById("sc_lb_slider");
+    var lbPct = document.getElementById("sc_lb_pct");
+
+    function applyTransform() {
+      img.style.transform = "translate3d(" + state.tx + "px," + state.ty + "px,0) scale(" + state.scale + ")";
+      var p = Math.round(state.scale * 100);
+      lbPct.innerText = p + "%";
+      lbSlider.value = Math.max(10, Math.min(600, p));
+    }
+
+    function fitImage() {
+      var nw = img.naturalWidth || img.width || 900;
+      var nh = img.naturalHeight || img.height || 600;
+      var vw = window.innerWidth * 0.90;
+      var vh = (window.innerHeight - 90) * 0.92;
+      state.scale = Math.max(0.1, Math.min(4, Math.min(vw / nw, vh / nh)));
+      state.tx = 0;
+      state.ty = 0;
+      applyTransform();
+    }
+
+    function zoomAt(newScale, clientX, clientY) {
+      newScale = Math.max(0.10, Math.min(6.0, newScale));
+      var cx = window.innerWidth / 2;
+      var cy = window.innerHeight / 2;
+      var dx = (typeof clientX === "number") ? (clientX - cx) : 0;
+      var dy = (typeof clientY === "number") ? (clientY - cy) : 0;
+      var ratio = newScale / state.scale;
+      state.tx = dx - (dx - state.tx) * ratio;
+      state.ty = dy - (dy - state.ty) * ratio;
+      state.scale = newScale;
+      applyTransform();
+    }
+
+    if (img.complete) fitImage(); else img.onload = fitImage;
+
+    canvas.addEventListener("wheel", function(e) {
+      e.preventDefault();
+      var mult = e.deltaY < 0 ? 1.12 : (1 / 1.12);
+      zoomAt(state.scale * mult, e.clientX, e.clientY);
+    }, { passive: false });
+
+    canvas.addEventListener("mousedown", function(e) {
+      if (e.button !== 0) return;
+      state.dragging = true;
+      state.sx = e.clientX; state.sy = e.clientY;
+      state.stx = state.tx; state.sty = state.ty;
+      canvas.classList.add("sc-panning");
+    });
+
+    function onLbMove(e) {
+      if (!state.dragging) return;
+      state.tx = state.stx + (e.clientX - state.sx);
+      state.ty = state.sty + (e.clientY - state.sy);
+      applyTransform();
+    }
+
+    function onLbUp() {
+      if (!state.dragging) return;
+      state.dragging = false;
+      canvas.classList.remove("sc-panning");
+    }
+
+    window.addEventListener("mousemove", onLbMove);
+    window.addEventListener("mouseup", onLbUp);
+
+    canvas.addEventListener("dblclick", function(e) {
+      if (Math.abs(state.scale - 2.0) < 0.15) {
+        fitImage();
+      } else {
+        zoomAt(2.0, e.clientX, e.clientY);
+      }
+    });
+
+    document.getElementById("sc_lb_out").onclick = function() { zoomAt(state.scale / 1.15); };
+    document.getElementById("sc_lb_in").onclick = function() { zoomAt(state.scale * 1.15); };
+    document.getElementById("sc_lb_fit").onclick = fitImage;
+    document.getElementById("sc_lb_100").onclick = function() { state.scale = 1; state.tx = 0; state.ty = 0; applyTransform(); };
+    lbSlider.oninput = function() { zoomAt(Number(this.value) / 100); };
+
+    function closeLightbox() {
+      window.removeEventListener("mousemove", onLbMove);
+      window.removeEventListener("mouseup", onLbUp);
+      window.removeEventListener("keydown", onLbKey);
+      if (overlay && overlay.parentNode) overlay.remove();
+    }
+
+    function onLbKey(e) {
+      if (e.key === "Escape") closeLightbox();
+      else if (e.key === "+" || e.key === "=") zoomAt(state.scale * 1.15);
+      else if (e.key === "-") zoomAt(state.scale / 1.15);
+      else if (e.key === "0") fitImage();
+      else if (e.key === "1") { state.scale = 1; state.tx = 0; state.ty = 0; applyTransform(); }
+    }
+    window.addEventListener("keydown", onLbKey);
+    closeBtn.onclick = closeLightbox;
+    overlay.addEventListener("click", function(e) {
+      if (e.target === overlay || e.target === canvas) closeLightbox();
+    });
+  };
+
+  /* ===== IN-ARTICLE FIGURE ZOOM & PAN COMPONENT ===== */
+  function initDocPlotZoom() {
+    var images = document.querySelectorAll(
+      "#main .figure img, #main figure img, #main img.r-plt, .template-article .figure img, .template-article figure img"
+    );
+    images.forEach(function(img, idx) {
+      if (img.closest(".sc-doc-zoom-wrapper")) return;
+      if (img.classList.contains("logo") || (img.src && (img.src.indexOf("shields.io") !== -1 || img.src.indexOf("badge") !== -1))) return;
+      if (img.naturalWidth > 0 && img.naturalWidth < 120) return;
+
+      var id = "doc_zoom_" + idx;
+      var wrapper = document.createElement("div");
+      wrapper.className = "sc-doc-zoom-wrapper";
+      wrapper.id = "wrap_" + id;
+
+      var toolbar = document.createElement("div");
+      toolbar.className = "sc-doc-zoom-toolbar";
+      toolbar.innerHTML =
+        '<span class="d-none d-md-inline-flex align-items-center gap-1 sc-doc-zoom-hint">' +
+          '<i class="fa fa-hand text-secondary"></i>' +
+          '<span>Drag to pan • Ctrl+Wheel or Slider to zoom</span>' +
+        '</span>' +
+        '<div class="d-flex align-items-center flex-wrap gap-1 ms-auto">' +
+          '<button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 sc-btn-out" title="Zoom Out (-10%)"><i class="fa fa-search-minus"></i></button>' +
+          '<input type="range" class="sc-zoom-slider" min="25" max="400" step="5" value="100" title="Slide to Zoom (25% - 400%)">' +
+          '<button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 sc-btn-in" title="Zoom In (+10%)"><i class="fa fa-search-plus"></i></button>' +
+          '<span class="badge bg-white text-dark border px-2 py-1 ms-1 sc-doc-zoom-badge">100%</span>' +
+          '<button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 ms-1 sc-btn-fit" title="Fit Plot to Viewport"><i class="fa fa-compress"></i> Fit</button>' +
+          '<button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 sc-btn-reset" title="Reset to 100% Actual View">100%</button>' +
+          '<button type="button" class="btn btn-primary btn-sm py-0 px-2 ms-1 sc-btn-full" title="Open Fullscreen Image Viewer (Mouse Wheel Zoom + Drag Pan)"><i class="fa fa-expand"></i> Full View</button>' +
+        '</div>';
+
+      var container = document.createElement("div");
+      container.className = "sc-doc-zoom-container";
+      container.id = "container_" + id;
+
+      var stage = document.createElement("div");
+      stage.className = "sc-doc-zoom-stage";
+      stage.id = "stage_" + id;
+
+      var target = document.createElement("div");
+      target.className = "sc-doc-zoom-target";
+      target.id = "target_" + id;
+
+      img.parentNode.insertBefore(wrapper, img);
+      target.appendChild(img);
+      stage.appendChild(target);
+      container.appendChild(stage);
+      wrapper.appendChild(toolbar);
+      wrapper.appendChild(container);
+
+      var curZoom = 100;
+      var slider = toolbar.querySelector(".sc-zoom-slider");
+      var badge = toolbar.querySelector(".sc-doc-zoom-badge");
+      var btnOut = toolbar.querySelector(".sc-btn-out");
+      var btnIn = toolbar.querySelector(".sc-btn-in");
+      var btnFit = toolbar.querySelector(".sc-btn-fit");
+      var btnReset = toolbar.querySelector(".sc-btn-reset");
+      var btnFull = toolbar.querySelector(".sc-btn-full");
+
+      function setZoom(next, anchorX, anchorY) {
+        next = Math.max(25, Math.min(400, Math.round(next)));
+        var prev = curZoom;
+        curZoom = next;
+        slider.value = next;
+        badge.innerText = next + "%";
+
+        if (next === 100) {
+          target.style.transform = "";
+          target.style.position = "relative";
+          target.style.top = "";
+          target.style.left = "";
+          target.style.width = "100%";
+          target.style.height = "";
+          stage.style.width = "100%";
+          stage.style.height = "";
+          stage.style.overflow = "visible";
+          container.classList.remove("sc-pannable");
+          return;
+        }
+
+        if (!target.dataset.baseW) {
+          var bw = img.offsetWidth || 800;
+          var bh = img.offsetHeight || 500;
+          if (bw > 40 && bh > 40) {
+            target.dataset.baseW = String(bw);
+            target.dataset.baseH = String(bh);
+          }
+        }
+
+        var baseW = Number(target.dataset.baseW) || 800;
+        var baseH = Number(target.dataset.baseH) || 500;
+        var prevFactor = prev / 100;
+        var factor = next / 100;
+
+        var rect = container.getBoundingClientRect();
+        var relX = (typeof anchorX === "number") ? (anchorX - rect.left) : (container.clientWidth / 2);
+        var relY = (typeof anchorY === "number") ? (anchorY - rect.top) : (container.clientHeight / 2);
+        var contentX = (container.scrollLeft + relX) / (prevFactor || 1);
+        var contentY = (container.scrollTop + relY) / (prevFactor || 1);
+
+        stage.style.width = Math.round(baseW * factor) + "px";
+        stage.style.height = Math.round(baseH * factor) + "px";
+        stage.style.overflow = "hidden";
+
+        target.style.position = "absolute";
+        target.style.top = "0px";
+        target.style.left = "0px";
+        target.style.width = baseW + "px";
+        target.style.height = baseH + "px";
+        target.style.transformOrigin = "0 0";
+        target.style.transform = "scale(" + factor + ")";
+
+        container.scrollLeft = Math.max(0, Math.round(contentX * factor - relX));
+        container.scrollTop = Math.max(0, Math.round(contentY * factor - relY));
+
+        if (container.scrollWidth > container.clientWidth + 2 || container.scrollHeight > container.clientHeight + 2 || next > 100) {
+          container.classList.add("sc-pannable");
+        } else {
+          container.classList.remove("sc-pannable");
+        }
+      }
+
+      slider.addEventListener("input", function() { setZoom(Number(this.value)); });
+      btnOut.addEventListener("click", function() { setZoom(curZoom - 10); });
+      btnIn.addEventListener("click", function() { setZoom(curZoom + 10); });
+      btnReset.addEventListener("click", function() {
+        setZoom(100);
+        container.scrollLeft = 0;
+        container.scrollTop = 0;
+      });
+      btnFit.addEventListener("click", function() {
+        setZoom(100);
+        var bw = Number(target.dataset.baseW) || img.offsetWidth || 800;
+        var bh = Number(target.dataset.baseH) || img.offsetHeight || 500;
+        var availW = Math.max(120, container.clientWidth - 20);
+        var availH = Math.max(120, container.clientHeight - 20);
+        var fitScale = Math.min(availW / bw, availH / bh);
+        var fitPct = Math.max(25, Math.min(100, Math.floor(fitScale * 100)));
+        setZoom(fitPct);
+      });
+      btnFull.addEventListener("click", function() {
+        window.scOpenLightbox(img.src);
+      });
+
+      img.addEventListener("dblclick", function(e) {
+        if (curZoom > 100) {
+          setZoom(100);
+        } else {
+          setZoom(175, e.clientX, e.clientY);
+        }
+      });
+
+      container.addEventListener("wheel", function(e) {
+        if (!e.ctrlKey) return;
+        e.preventDefault();
+        var delta = e.deltaY < 0 ? 15 : -15;
+        setZoom(curZoom + delta, e.clientX, e.clientY);
+      }, { passive: false });
+
+      var isDragging = false;
+      var startX = 0, startY = 0, startSL = 0, startST = 0;
+      container.addEventListener("mousedown", function(e) {
+        if (e.button !== 0) return;
+        if (container.scrollWidth <= container.clientWidth && container.scrollHeight <= container.clientHeight && curZoom <= 100) return;
+        isDragging = true;
+        container.classList.add("sc-panning");
+        startX = e.clientX;
+        startY = e.clientY;
+        startSL = container.scrollLeft;
+        startST = container.scrollTop;
+      });
+
+      window.addEventListener("mousemove", function(e) {
+        if (!isDragging) return;
+        e.preventDefault();
+        container.scrollLeft = startSL - (e.clientX - startX);
+        container.scrollTop = startST - (e.clientY - startY);
+      });
+
+      window.addEventListener("mouseup", function() {
+        if (isDragging) {
+          isDragging = false;
+          container.classList.remove("sc-panning");
+        }
+      });
+    });
+  }
+  initDocPlotZoom();
 });
 </script></body></html>
 
