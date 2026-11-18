@@ -2352,8 +2352,8 @@ plot_scalability_benchmark <- function(
     ) +
     .pub_theme(base_size = base_size) +
     ggplot2::theme(
-      plot.title    = ggplot2::element_text(hjust = 0, face = "bold"),
-      plot.subtitle = ggplot2::element_text(hjust = 0, size = base_size * 0.82, color = "#566573")
+      plot.title    = ggplot2::element_text(hjust = 0, face = "bold", size = base_size * 1.15),
+      plot.subtitle = ggplot2::element_text(hjust = 0, size = base_size * 0.70, color = "#475569", margin = ggplot2::margin(t = 2, b = 6))
     )
 
   if (type == "cost") return(p_cost)
