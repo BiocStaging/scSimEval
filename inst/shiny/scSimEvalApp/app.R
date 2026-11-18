@@ -100,13 +100,26 @@ if (!exists(".convert_memory_to_mib", mode = "function")) {
 # Set max upload size to 10 GB for large single-cell datasets
 options(shiny.maxRequestSize = 10 * 1024^3)
 
-# Detect available CPU hardware cores for parallel benchmarking
-max_sys_cores <- tryCatch({
+# Detect available CPU hardware (distinguishing physical cores vs. logical threads)
+n_logical_threads <- tryCatch({
   mc <- parallel::detectCores(logical = TRUE)
   if (is.na(mc) || mc < 1) 1L else as.integer(mc)
 }, error = function(e) 1L)
-ui_max_cores <- max(128L, max_sys_cores)
-default_n_cores <- max(1L, min(4L, max_sys_cores - 1L))
+
+n_physical_cores <- tryCatch({
+  pc <- parallel::detectCores(logical = FALSE)
+  if (is.na(pc) || pc < 1) n_logical_threads else as.integer(pc)
+}, error = function(e) n_logical_threads)
+
+max_sys_cores <- n_logical_threads
+ui_max_cores <- max(128L, n_logical_threads)
+default_n_cores <- max(1L, min(4L, n_physical_cores - 1L))
+
+sys_hardware_summary <- if (n_logical_threads > n_physical_cores) {
+  sprintf("System detected: %d physical cores (%d logical threads)", n_physical_cores, n_logical_threads)
+} else {
+  sprintf("System detected: %d physical CPU cores", n_physical_cores)
+}
 
 
 # Register static resource directory for documentation figures
@@ -3458,8 +3471,8 @@ ui <- page_navbar(
           numericInput("num_uni_datasets", "Number of Datasets:", value = 1, min = 1, max = 50, step = 1),
           numericInput("num_uni_sims", "Number of Simulators:", value = 1, min = 1, max = 10, step = 1),
           tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 10px; margin-bottom: 4px;", "2. Compute & Acceleration"),
-          numericInput("num_uni_cores", "Evaluation CPU Cores / Threads:", value = default_n_cores, min = 1, max = ui_max_cores, step = 1),
-          span(class = "text-muted", style = "font-size: 0.74rem; display: block; margin-top: -6px; margin-bottom: 8px;", sprintf("System detected: %d CPU cores", max_sys_cores)),
+          numericInput("num_uni_cores", "Evaluation CPU Cores (Parallel Workers):", value = default_n_cores, min = 1, max = ui_max_cores, step = 1),
+          span(class = "text-muted", style = "font-size: 0.72rem; display: block; margin-top: -6px; margin-bottom: 8px;", sys_hardware_summary),
           hr(style = "margin: 12px 0;"),
           checkboxInput("chk_append_uni", "Add to current benchmark results", value = FALSE),
           actionButton("btn_run_uni_eval", "Calculate scRNA-seq Metrics", class = "btn btn-primary w-100 mt-2", icon = icon("play")),
@@ -3491,8 +3504,8 @@ ui <- page_navbar(
           numericInput("num_uni_datasets_atac", "Number of Datasets:", value = 1, min = 1, max = 50, step = 1),
           numericInput("num_uni_sims_atac", "Number of Simulators:", value = 1, min = 1, max = 10, step = 1),
           tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 10px; margin-bottom: 4px;", "2. Compute & Acceleration"),
-          numericInput("num_uni_cores_atac", "Evaluation CPU Cores / Threads:", value = default_n_cores, min = 1, max = ui_max_cores, step = 1),
-          span(class = "text-muted", style = "font-size: 0.74rem; display: block; margin-top: -6px; margin-bottom: 8px;", sprintf("System detected: %d CPU cores", max_sys_cores)),
+          numericInput("num_uni_cores_atac", "Evaluation CPU Cores (Parallel Workers):", value = default_n_cores, min = 1, max = ui_max_cores, step = 1),
+          span(class = "text-muted", style = "font-size: 0.72rem; display: block; margin-top: -6px; margin-bottom: 8px;", sys_hardware_summary),
           hr(style = "margin: 12px 0;"),
           checkboxInput("chk_append_uni_atac", "Add to current benchmark results", value = FALSE),
           actionButton("btn_run_uni_eval_atac", "Calculate scATAC-seq Metrics", class = "btn btn-info text-white w-100 mt-2", icon = icon("play")),
@@ -3536,8 +3549,8 @@ ui <- page_navbar(
           numericInput("num_multi_datasets", "Number of Datasets:", value = 1, min = 1, max = 30, step = 1),
           numericInput("num_multi_sims", "Number of Simulators:", value = 1, min = 1, max = 8, step = 1),
           tags$div(style = "font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #475569; margin-top: 10px; margin-bottom: 4px;", "2. Compute & Acceleration"),
-          numericInput("num_multi_cores", "Evaluation CPU Cores / Threads:", value = default_n_cores, min = 1, max = ui_max_cores, step = 1),
-          span(class = "text-muted", style = "font-size: 0.74rem; display: block; margin-top: -6px; margin-bottom: 8px;", sprintf("System detected: %d CPU cores", max_sys_cores)),
+          numericInput("num_multi_cores", "Evaluation CPU Cores (Parallel Workers):", value = default_n_cores, min = 1, max = ui_max_cores, step = 1),
+          span(class = "text-muted", style = "font-size: 0.72rem; display: block; margin-top: -6px; margin-bottom: 8px;", sys_hardware_summary),
           hr(style = "margin: 12px 0;"),
           checkboxInput("chk_append_multi", "Add to current benchmark results", value = FALSE),
           actionButton("btn_run_multi_eval", "Calculate Multiomics Metrics", class = "btn btn-primary w-100 mt-2", icon = icon("dna")),
@@ -5356,7 +5369,7 @@ server <- function(input, output, session) {
   # Startup Diagnostic Log Sequence
   sc_log("INFO", "scSimEval Interactive Benchmarking Studio v0.99.10 initialized.", "Startup")
   sc_log("NOTE", paste0("Runtime Environment: R ", getRversion(), " | Platform: ", R.version$platform, " | OS: ", Sys.info()[["sysname"]], " ", Sys.info()[["release"]]), "Environment")
-  sc_log("INFO", paste0("System Concurrency: ", parallel::detectCores(), " logical CPU cores detected. Sparse matrix arithmetic (dgCMatrix) enabled."), "Hardware")
+  sc_log("INFO", paste0("System Concurrency: ", n_physical_cores, " physical cores (", n_logical_threads, " logical threads) detected. Sparse matrix arithmetic (dgCMatrix) enabled."), "Hardware")
   sc_log("NOTE", "Evaluation Suite: 56 evaluation measures registered across Categories 1 to 8.", "Metrics")
   
   # Check demo benchmark cache status
@@ -6150,7 +6163,7 @@ server <- function(input, output, session) {
       sprintf("# Generated on: %s", date_str),
       sprintf("# Benchmark Mode: %s", if (is_uni) "Single-Cell (scRNA or scATAC)" else sprintf("Multiomics (scRNA + scATAC) [%s]", if (is_paired) "Paired" else "Unpaired")),
       sprintf("# Total Datasets: %d | Total Simulators: %d", n_dsets, n_sims),
-      sprintf("# Parallel Worker Cores / Threads: %d", n_cores),
+      sprintf("# Parallel CPU Workers (Cores): %d", n_cores),
       "#",
       "# Instructions:",
       "#   1. Ensure required R packages are installed: install.packages(c('Matrix', 'ggplot2'))",

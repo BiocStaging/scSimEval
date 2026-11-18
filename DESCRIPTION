@@ -76,7 +76,7 @@ biocViews: SingleCell, Transcriptomics, ATACSeq, QualityControl, DimensionReduct
 Encoding: UTF-8
 LazyData: false
 Depends:
-    R (>= 4.6.0)
+    R (>= 4.3.0)
 VignetteBuilder: knitr
 Imports:
     methods,

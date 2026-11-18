@@ -24,7 +24,7 @@ The package provides a standardized, reference-based benchmarking framework supp
 
 Before installing `scSimEval`, please ensure your system meets the following requirements:
 
-1. **R Version:** R (>= 4.0.0, recommended R >= 4.3.0).
+1. **R Version:** R (>= 4.3.0).
 2. **C++ Compilation Tools:**
    - **Windows:** Install [Rtools](https://cran.r-project.org/bin/windows/Rtools/) matching your R version (required for compiling C++ extensions such as `Rcpp` and `RANN`).
    - **macOS:** Install Xcode Command Line Tools (`xcode-select --install`) and `gfortran`.
