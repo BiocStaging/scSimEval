@@ -2345,7 +2345,7 @@ plot_scalability_benchmark <- function(
     ggplot2::scale_fill_manual(values = active_pal, guide = "none") +
     ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.22))) +
     ggplot2::labs(
-      title    = "D. Composite Resource Cost",
+      title    = "D. Composite Resource Cost: (Core-Seconds \u00d7 Peak RAM/Core) / 1000",
       subtitle = NULL,
       x        = "Resource Cost Score",
       y        = NULL
@@ -2410,20 +2410,16 @@ plot_scalability_benchmark <- function(
     composite <- (p_runtime | p_memory) / (p_tradeoff | p_cost) / (p_thru | patchwork::plot_spacer()) +
       patchwork::plot_annotation(
         title    = "Computational Scalability Benchmark",
-        caption  = "Division of Agricultural Bioinformatics, ICAR-IASRI, New Delhi",
         theme    = ggplot2::theme(
-          plot.title   = ggplot2::element_text(face = "bold", size = base_size * 1.30, hjust = 0.5, color = "#0F172A"),
-          plot.caption = ggplot2::element_text(face = "plain", size = base_size * 0.85, hjust = 0.5, color = "#64748B", margin = ggplot2::margin(t = 12))
+          plot.title = ggplot2::element_text(face = "bold", size = base_size * 1.30, hjust = 0.5, color = "#0F172A")
         )
       )
   } else {
     composite <- (p_runtime | p_memory) / (p_tradeoff | p_cost) +
       patchwork::plot_annotation(
         title    = "Computational Scalability Benchmark",
-        caption  = "Division of Agricultural Bioinformatics, ICAR-IASRI, New Delhi",
         theme    = ggplot2::theme(
-          plot.title   = ggplot2::element_text(face = "bold", size = base_size * 1.30, hjust = 0.5, color = "#0F172A"),
-          plot.caption = ggplot2::element_text(face = "plain", size = base_size * 0.85, hjust = 0.5, color = "#64748B", margin = ggplot2::margin(t = 12))
+          plot.title = ggplot2::element_text(face = "bold", size = base_size * 1.30, hjust = 0.5, color = "#0F172A")
         )
       )
   }

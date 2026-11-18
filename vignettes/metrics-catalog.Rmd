@@ -1,7 +1,5 @@
 ---
 title: "Comprehensive Catalog of the 56 Evaluation Measures"
-author: "Kabilan Sakthivel, Dr. Dwijesh Chandra Mishra, Dr. Shashi Bhushan Lal, Dr. Ulavappa Angadi, Dr. Sudhir Srivastava, Dr. Neeraj Budhlakoti, Dr. Krishna Kumar Chaturvedi, Dr. Ranjeet Ranjan Kumar, Dr. Navin Chandra Gupta, Dr. Sharanbasappa"
-date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
     toc: true

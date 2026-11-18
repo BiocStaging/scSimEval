@@ -450,10 +450,10 @@ home:
 
 footer:
   structure:
-    left: developed_by
+    left: custom_inst
     right: built_with
-  text:
-    left: "Division of Agricultural Bioinformatics, ICAR-IASRI, New Delhi"
+  components:
+    custom_inst: "Division of Agricultural Bioinformatics, ICAR-IASRI, New Delhi"
 
 navbar:
   title: "scSimEval"
