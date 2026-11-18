@@ -470,6 +470,30 @@ filter_gold_standard_metrics <- function(df) {
 )
 
 #' @keywords internal
+.SHORT_CATEGORY_LEGEND_MAP <- c(
+  "(I) Distributional Properties"                    = "(I) Distribution",
+  "(II) Sparsity & Zero-Inflation Dynamics"         = "(II) Sparsity",
+  "(III) Cellular Manifold & Clustering Concordance"= "(III) Cell Manifold",
+  "(IV) Technical Variation & Batch Mixing Dynamics"= "(IV) Batch Mixing",
+  "(V) Biological Signal & Differential Fidelity"   = "(V) Bio-Signal",
+  "(VI) Multiomics Integration & Alignment"         = "(VI) Multiomics",
+  "(VII) Trajectory & Lineage Topology"             = "(VII) Trajectory",
+  "(VIII) Computational Scalability & Efficiency"   = "(VIII) Scalability"
+)
+
+#' @keywords internal
+.SHORT_CATEGORY_COLORS <- c(
+  "(I) Distribution"  = "#2E86AB",
+  "(II) Sparsity"     = "#17A589",
+  "(III) Cell Manifold"= "#C0392B",
+  "(IV) Batch Mixing" = "#D4AC0D",
+  "(V) Bio-Signal"    = "#CA6F1E",
+  "(VI) Multiomics"   = "#6D28D9",
+  "(VII) Trajectory"  = "#696969",
+  "(VIII) Scalability"= "#1E8449"
+)
+
+#' @keywords internal
 .SUMMARY_TYPE_MAP <- c(
   # Feature / Gene / Peak level (mapped dynamically to peak, gene, or features)
   "feature_pearson_cor"            = "gene",
@@ -598,95 +622,135 @@ filter_gold_standard_metrics <- function(df) {
 
 #' @keywords internal
 .SUMMARY_DISPLAY_NAME_MAP <- c(
-  "feature_pearson_cor"            = "gene-to-gene correlation",
-  "gene_cor"                       = "gene-to-gene correlation",
-  "gene_detection_frequency"       = "gene detection frequency",
-  "zero_fraction_feature"          = "gene detection frequency",
-  "mean_expression"                = "average of logCPM",
-  "average_logcpm"                 = "average of logCPM",
-  "variance"                       = "variance of logCPM",
-  "variance_logcpm"                = "variance of logCPM",
-  "cv"                             = "coefficient of variation",
-  "coefficient_of_variation"       = "coefficient of variation",
-  "dispersion"                     = "dispersion",
-  "bcv_discrepancy"                = "BCV discrepancy",
-  "mean_variance_r2"               = "mean-variance fit",
-  "dropout_curve_midpoint_x0"      = "dropout midpoint",
-  "dropout_curve_slope_k"          = "dropout rate",
-  "curve_rmse"                     = "sparsity curve RMSE",
-  "r2_discrepancy"                 = "mean-var/disp R2 discr.",
-  "excess_zero_weight_discrepancy" = "excess zero discrepancy",
-  "midpoint_error"                 = "dropout midpoint error",
-  "slope_error"                    = "dropout slope error",
-  "Log2FC_Pearson_Corr"            = "log2FC Pearson cor",
-  "Top_DEG_Jaccard_Overlap"        = "DEG Jaccard overlap",
-  "Distribution_Score"             = "distribution score",
-  "accuracy"                       = "DA/DE accuracy",
-  "precision"                      = "DA/DE precision",
-  "recall"                         = "DA/DE recall",
-  "f1_score"                       = "DA/DE F1 score",
-  "auc"                            = "DA/DE ROC-AUC",
-  "pval_dist_score"                = "DA/DE p-val dist score",
+  # (I) Distributional Properties
+  "Wasserstein"                    = "Wasserstein",
+  "KS"                             = "KS",
+  "MAD"                            = "MAD",
+  "MAE"                            = "MAE",
+  "RMSE"                           = "RMSE",
+  "KDE_ISE"                        = "KDE ISE",
+  "Bhattacharyya"                  = "Bhattacharyya",
+  "Runs_Statistic"                 = "Runs Test",
+  "NN_Mismatch"                    = "NN Mismatch",
+  "Between_Dataset_Silh_Global"    = "Dataset Silh",
+  "Fasano_Franceschini_2D_KS"      = "2D KS",
+  "EMD_2D"                         = "2D EMD",
+  "NN_Mismatch_2D"                 = "2D NN Mismatch",
+  "Between_Dataset_Silh_2D_Global" = "2D Dataset Silh",
 
-  "cell_pearson_cor"               = "cell-to-cell correlation",
-  "cell_cor"                       = "cell-to-cell correlation",
-  "cell_detection_frequency"       = "cell detection frequency",
-  "zero_fraction_cell"             = "cell detection frequency",
-  "library_size"                   = "library size",
-  "log_library_size"               = "log-library size",
-  "pca_dist"                       = "cell-to-cell distance",
-  "cell_to_cell_distance"          = "cell-to-cell distance",
-  "local_density_factor"           = "local density factor",
-  "ldf"                            = "local density factor",
-  "ldf_diff"                       = "local density factor",
-  "knn_hubness"                    = "KNN occurences",
-  "neighborhood_purity"            = "KNN occurences",
-  "KNN_occurences"                 = "KNN occurences",
+  # (II) Sparsity & Zero-Inflation Dynamics
+  "curve_rmse"                     = "Curve RMSE",
+  "r2_discrepancy"                 = "R2 Discr.",
+  "excess_zero_weight_discrepancy" = "Excess Zero",
+  "midpoint_error"                 = "Midpoint Err",
+  "slope_error"                    = "Slope Err",
+  "bcv_discrepancy"                = "BCV Discr.",
+  "mean_variance_r2"               = "Mean-Var R2",
+  "dropout_curve_midpoint_x0"      = "Dropout x0",
+  "dropout_curve_slope_k"          = "Dropout k",
 
-  "silhouette_sim"                 = "silhouette width",
-  "Silhouette_Sim"                 = "silhouette width",
-  "silhouette_width"               = "silhouette width",
-  "cdi"                            = "cluster incongruence (CDI)",
-  "MMD"                            = "manifold MMD",
-  "Generative_Precision"           = "generative precision",
-  "Generative_Recall"              = "generative recall",
-  "cms"                            = "cell-specific mixing score",
-  "cell_specific_mixing_score"     = "cell-specific mixing score",
-  "pcr_r2"                         = "percent variance explained",
-  "percent_variance_explained"     = "percent variance explained",
-  "batch_silhouette"               = "batch silhouette",
-  "shannon_entropy"                = "batch entropy",
-  "isi"                            = "integration LISI",
-  "seurat_mixing_metric"           = "mixing metric",
-  "cross_batch_F1"                 = "cross-batch F1",
-  "ari"                            = "adjusted Rand index (ARI)",
-  "nmi"                            = "norm. mutual info (NMI)",
-  "him"                            = "HIM topology similarity",
-  "edge_flip"                      = "edge flip similarity",
-  "geodesic_correlation"           = "geodesic distance correlation",
-  "F1_branches"                    = "branch assignment F1",
-  "wcor_features"                  = "feature importance wCor",
-  "pseudotime_correlation"         = "pseudotime correlation",
-  "tree_height_rmse"               = "tree height RMSE",
-  "graph_alignment"                = "trajectory graph alignment",
-  "lineage_expression_fidelity"    = "lineage expression patterns",
-  "FOSCTTM"                        = "FOSCTTM cross-modality",
-  "rv_coefficient"                 = "RV coefficient",
-  "Wasserstein"                    = "Wasserstein distance",
-  "KS"                             = "Kolmogorov-Smirnov (KS)",
-  "MAD"                            = "median abs. deviation (MAD)",
-  "MAE"                            = "mean absolute error (MAE)",
-  "RMSE"                           = "root mean squared error (RMSE)",
-  "KDE_ISE"                        = "KDE integrated sq. error",
-  "Bhattacharyya"                  = "Bhattacharyya distance",
-  "Runs_Statistic"                 = "Wald-Wolfowitz runs test",
-  "NN_Mismatch"                    = "NN mismatch fraction",
-  "Between_Dataset_Silh_Global"    = "cross-dataset silhouette",
-  "core_seconds"                   = "core-seconds (core\u00b7s)",
-  "memory_per_core_mib"            = "peak RAM / core (MiB/core)",
-  "memory_per_core_gib"            = "peak RAM / core (GiB/core)",
-  "elapsed_time_seconds"           = "elapsed time (s)",
-  "peak_memory_mb"                 = "peak RAM (MiB)"
+  # (III) Cellular Manifold & Clustering Concordance
+  "MMD"                            = "MMD",
+  "Generative_Precision"           = "Gen. Precision",
+  "Generative_Recall"              = "Gen. Recall",
+  "silhouette_sim"                 = "Silhouette",
+  "Silhouette_Sim"                 = "Silhouette",
+  "silhouette_width"               = "Silhouette",
+  "cdi"                            = "CDI",
+  "neighborhood_purity"            = "KNN Purity",
+  "KNN_occurences"                 = "KNN Purity",
+  "knn_hubness"                    = "KNN Purity",
+  "ari"                            = "ARI",
+  "nmi"                            = "NMI",
+
+  # (IV) Technical Variation & Batch Mixing Dynamics
+  "batch_silhouette"               = "Batch Silh",
+  "pcr_r2"                         = "PCR R2",
+  "percent_variance_explained"     = "PCR R2",
+  "cms"                            = "CMS",
+  "cell_specific_mixing_score"     = "CMS",
+  "isi"                            = "ISI",
+  "seurat_mixing_metric"           = "Mixing Metric",
+  "cross_batch_F1"                 = "Batch F1",
+  "shannon_entropy"                = "Batch Entropy",
+
+  # (V) Biological Signal & Differential Fidelity
+  "accuracy"                       = "DA/DE Accuracy",
+  "precision"                      = "DA/DE Precision",
+  "recall"                         = "DA/DE Recall",
+  "f1_score"                       = "DA/DE F1",
+  "auc"                            = "DA/DE AUC",
+  "pval_dist_score"                = "DA/DE p-val",
+  "rna_de_accuracy"                = "DE Accuracy",
+  "rna_de_precision"               = "DE Precision",
+  "rna_de_recall"                  = "DE Recall",
+  "rna_de_f1"                      = "DE F1",
+  "rna_de_auc"                     = "DE AUC",
+  "rna_de_pval_dist_score"         = "DE p-val",
+  "atac_da_accuracy"               = "DA Accuracy",
+  "atac_da_precision"              = "DA Precision",
+  "atac_da_recall"                 = "DA Recall",
+  "atac_da_f1"                     = "DA F1",
+  "atac_da_auc"                    = "DA AUC",
+  "atac_da_pval_dist_score"        = "DA p-val",
+  "Log2FC_Pearson_Corr"            = "log2FC Cor",
+  "Top_DEG_Jaccard_Overlap"        = "DEG Jaccard",
+  "Distribution_Score"             = "Dist. Score",
+
+  # (VI) Multiomics Integration & Alignment
+  "batch_asw"                      = "Batch ASW",
+  "cell_type_asw"                  = "CellType ASW",
+  "graph_connectivity"             = "Graph Conn",
+  "integration_ari"                = "Integ. ARI",
+  "integration_nmi"                = "Integ. NMI",
+  "FOSCTTM"                        = "FOSCTTM",
+  "match_at_1"                     = "Match@1",
+  "cross_modal_F1"                 = "Cross-Modal F1",
+  "rv_coefficient"                 = "RV Coef",
+  "cell_pearson_cor"               = "Cell Cor",
+  "mean_coupling_cor"              = "Coupling Cor",
+  "module_correlation_r"           = "Module Cor",
+
+  # (VII) Trajectory & Lineage Topology
+  "him"                            = "HIM",
+  "edge_flip"                      = "Edge Flip",
+  "geodesic_correlation"           = "Geodesic Cor",
+  "F1_branches"                    = "Branch F1",
+  "wcor_features"                  = "Feature wCor",
+  "pseudotime_correlation"         = "Pseudotime Cor",
+  "tree_height_rmse"               = "Tree RMSE",
+  "graph_alignment"                = "Graph Align",
+  "lineage_expression_fidelity"    = "Lineage Expr",
+
+  # (VIII) Computational Scalability & Efficiency
+  "core_seconds"                   = "Core-Sec",
+  "memory_per_core_mib"            = "RAM/Core",
+  "memory_per_core_gib"            = "RAM/Core",
+  "elapsed_time_seconds"           = "Time (s)",
+  "peak_memory_mb"                 = "Peak RAM",
+
+  # Legacy property keys
+  "feature_pearson_cor"            = "Gene Cor",
+  "gene_cor"                       = "Gene Cor",
+  "gene_detection_frequency"       = "Gene Det. Freq",
+  "zero_fraction_feature"          = "Gene Det. Freq",
+  "mean_expression"                = "Mean logCPM",
+  "average_logcpm"                 = "Mean logCPM",
+  "variance"                       = "Var logCPM",
+  "variance_logcpm"                = "Var logCPM",
+  "cv"                             = "CV",
+  "coefficient_of_variation"       = "CV",
+  "dispersion"                     = "Dispersion",
+  "cell_cor"                       = "Cell Cor",
+  "cell_detection_frequency"       = "Cell Det. Freq",
+  "zero_fraction_cell"             = "Cell Det. Freq",
+  "library_size"                   = "Library Size",
+  "log_library_size"               = "log-Lib Size",
+  "pca_dist"                       = "Cell Dist",
+  "cell_to_cell_distance"          = "Cell Dist",
+  "local_density_factor"           = "LDF",
+  "ldf"                            = "LDF",
+  "ldf_diff"                       = "LDF"
 )
 
 #' Resolve Summary Feature Label Based on Assay Modality
@@ -3043,14 +3107,18 @@ plot_metric_mds <- function(
         if (any(missing_cats)) {
           mds_df$Category[missing_cats] <- .METRIC_CATEGORY_MAP[mds_df$Metric[missing_cats]]
         }
-        cat_levels <- .CANONICAL_CATEGORY_ORDER[.CANONICAL_CATEGORY_ORDER %in% unique(mds_df$Category)]
-        if (length(cat_levels) == 0) cat_levels <- unique(mds_df$Category)
-        mds_df$Group   <- factor(mds_df$Category, levels = cat_levels)
+        short_cats <- ifelse(mds_df$Category %in% names(.SHORT_CATEGORY_LEGEND_MAP),
+                             .SHORT_CATEGORY_LEGEND_MAP[mds_df$Category],
+                             mds_df$Category)
+        short_order <- unname(.SHORT_CATEGORY_LEGEND_MAP)
+        cat_levels <- short_order[short_order %in% unique(short_cats)]
+        if (length(cat_levels) == 0) cat_levels <- unique(short_cats)
+        mds_df$Group   <- factor(short_cats, levels = cat_levels)
         present_groups <- levels(mds_df$Group)
         group_colors   <- if (!is.null(palette) && all(present_groups %in% names(palette))) {
           palette[present_groups]
         } else {
-          .CANONICAL_CATEGORY_COLORS[present_groups]
+          .SHORT_CATEGORY_COLORS[present_groups]
         }
         legend_title   <- "Category"
       } else {
@@ -3653,14 +3721,18 @@ plot_metric_pca <- function(
     if (any(missing_cats)) {
       loadings_df$Category[missing_cats] <- .METRIC_CATEGORY_MAP[loadings_df$Metric[missing_cats]]
     }
-    cat_levels <- .CANONICAL_CATEGORY_ORDER[.CANONICAL_CATEGORY_ORDER %in% unique(loadings_df$Category)]
-    if (length(cat_levels) == 0) cat_levels <- unique(loadings_df$Category)
-    loadings_df$Group <- factor(loadings_df$Category, levels = cat_levels)
+    short_cats <- ifelse(loadings_df$Category %in% names(.SHORT_CATEGORY_LEGEND_MAP),
+                         .SHORT_CATEGORY_LEGEND_MAP[loadings_df$Category],
+                         loadings_df$Category)
+    short_order <- unname(.SHORT_CATEGORY_LEGEND_MAP)
+    cat_levels <- short_order[short_order %in% unique(short_cats)]
+    if (length(cat_levels) == 0) cat_levels <- unique(short_cats)
+    loadings_df$Group <- factor(short_cats, levels = cat_levels)
     present_groups <- levels(loadings_df$Group)
     group_colors <- if (!is.null(palette) && all(present_groups %in% names(palette))) {
       palette[present_groups]
     } else {
-      .CANONICAL_CATEGORY_COLORS[present_groups]
+      .SHORT_CATEGORY_COLORS[present_groups]
     }
     legend_title <- "Category"
   } else {
