@@ -673,6 +673,7 @@ extract_dataset_summary <- function(mat, role = "Reference", method_name = "Data
 #' @export
 validate_sc_object <- function(obj, arg_name = "data", reduction_name = NULL, modality = NULL) {
   if (is.null(obj)) return(NULL)
+  obj <- .sanitize_signac_assays(obj)
   
   is_sce <- inherits(obj, "SingleCellExperiment")
   is_seurat <- inherits(obj, "Seurat")
@@ -862,6 +863,7 @@ validate_multiomics_input <- function(obj, arg_name = "multi_data", reduction_na
   if (is.character(obj) && length(obj) == 1 && file.exists(obj)) {
     obj <- readRDS(obj)
   }
+  obj <- .sanitize_signac_assays(obj)
  
   # Case A: Named list of 2 objects
   if (is.list(obj) && !inherits(obj, "Seurat") && !inherits(obj, "SingleCellExperiment")) {
