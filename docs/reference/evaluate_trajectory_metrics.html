@@ -50,6 +50,12 @@ Five complementary trajectory metrics: him (Hamming-Ipsen-Mikhailov similarity),
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch"><li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/kabilanbio/scSimEval" aria-label="GitHub repository"><span class="fa fa-github fa-lg"></span></a></li>
       </ul></div>
 
@@ -207,19 +213,16 @@ benchmarking framework (<em>Saelens et al., Nature Biotechnology, 2019</em>):</p
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $wcor_features</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1940255</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1998086</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $cor_features</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.2071724</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.2126052</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $n_hvgs</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 60</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $ref_trajectory</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $id</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "20261113_053717__data_wrapper__REtn2nUj4j"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $cell_ids</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $ref_trajectory$cell_ids</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] "Cell_01" "Cell_02" "Cell_03" "Cell_04" "Cell_05" "Cell_06" "Cell_07"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [8] "Cell_08" "Cell_09" "Cell_10" "Cell_11" "Cell_12" "Cell_13" "Cell_14"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [15] "Cell_15" "Cell_16" "Cell_17" "Cell_18" "Cell_19" "Cell_20" "Cell_21"</span>
@@ -233,203 +236,14 @@ benchmarking framework (<em>Saelens et al., Nature Biotechnology, 2019</em>):</p
 <span class="r-out co"><span class="r-pr">#&gt;</span> [71] "Cell_71" "Cell_72" "Cell_73" "Cell_74" "Cell_75" "Cell_76" "Cell_77"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [78] "Cell_78" "Cell_79" "Cell_80"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $cell_info</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 80 × 1</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    cell_id</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> Cell_01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span> Cell_02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> Cell_03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span> Cell_04</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> Cell_05</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span> Cell_06</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span> Cell_07</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span> Cell_08</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> Cell_09</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> Cell_10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 70 more rows</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $feature_ids</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $feature_info</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $milestone_ids</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $ref_trajectory$milestone_ids</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "TypeA" "TypeB"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $milestone_network</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $ref_trajectory$milestone_network</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    from    to   length directed</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 TypeA TypeB 1.543713    FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $divergence_regions</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 0 × 3</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 3 variables: divergence_id &lt;chr&gt;, milestone_id &lt;chr&gt;, is_start &lt;lgl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $milestone_percentages</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     cell_id milestone_id percentage</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1   Cell_01        TypeA 0.86808122</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2   Cell_02        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3   Cell_03        TypeA 0.32642222</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4   Cell_04        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5   Cell_05        TypeA 0.56074964</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6   Cell_06        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7   Cell_07        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8   Cell_08        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9   Cell_09        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10  Cell_10        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11  Cell_11        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12  Cell_12        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13  Cell_13        TypeA 0.98272020</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14  Cell_14        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15  Cell_15        TypeA 0.60710083</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16  Cell_16        TypeA 0.49702075</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17  Cell_17        TypeA 0.51749571</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18  Cell_18        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19  Cell_19        TypeA 0.63126146</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20  Cell_20        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21  Cell_21        TypeA 0.61462635</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22  Cell_22        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23  Cell_23        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24  Cell_24        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25  Cell_25        TypeA 0.45533598</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26  Cell_26        TypeA 0.50025326</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27  Cell_27        TypeA 0.49310324</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 28  Cell_28        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 29  Cell_29        TypeA 0.22345545</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 30  Cell_30        TypeA 0.44135267</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 31  Cell_31        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 32  Cell_32        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 33  Cell_33        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 34  Cell_34        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 35  Cell_35        TypeA 0.76460593</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 36  Cell_36        TypeA 0.94914199</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 37  Cell_37        TypeA 0.51675572</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 38  Cell_38        TypeA 0.49801588</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 39  Cell_39        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 40  Cell_40        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 41  Cell_41        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 42  Cell_42        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 43  Cell_43        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 44  Cell_44        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 45  Cell_45        TypeA 0.34513730</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 46  Cell_46        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 47  Cell_47        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 48  Cell_48        TypeA 0.13974858</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 49  Cell_49        TypeA 0.30843782</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 50  Cell_50        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 51  Cell_51        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 52  Cell_52        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 53  Cell_53        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 54  Cell_54        TypeA 0.25235120</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 55  Cell_55        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 56  Cell_56        TypeA 0.57646785</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 57  Cell_57        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 58  Cell_58        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 59  Cell_59        TypeA 0.77137947</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 60  Cell_60        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 61  Cell_61        TypeA 0.37379461</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 62  Cell_62        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 63  Cell_63        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 64  Cell_64        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 65  Cell_65        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 66  Cell_66        TypeA 0.90733529</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 67  Cell_67        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 68  Cell_68        TypeA 0.20823078</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 69  Cell_69        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 70  Cell_70        TypeA 0.03375102</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 71  Cell_71        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 72  Cell_72        TypeA 0.29721141</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 73  Cell_73        TypeA 0.04925066</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 74  Cell_74        TypeA 0.94301457</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 75  Cell_75        TypeA 0.64495507</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 76  Cell_76        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 77  Cell_77        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 78  Cell_78        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 79  Cell_79        TypeA 0.18322522</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 80  Cell_80        TypeA 0.27768589</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 81  Cell_01        TypeB 0.13191878</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 82  Cell_02        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 83  Cell_03        TypeB 0.67357778</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 84  Cell_04        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 85  Cell_05        TypeB 0.43925036</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 86  Cell_06        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 87  Cell_07        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 88  Cell_08        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 89  Cell_09        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 90  Cell_10        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 91  Cell_11        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 92  Cell_12        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 93  Cell_13        TypeB 0.01727980</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 94  Cell_14        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 95  Cell_15        TypeB 0.39289917</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 96  Cell_16        TypeB 0.50297925</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 97  Cell_17        TypeB 0.48250429</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 98  Cell_18        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 99  Cell_19        TypeB 0.36873854</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 100 Cell_20        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 101 Cell_21        TypeB 0.38537365</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 102 Cell_22        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 103 Cell_23        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 104 Cell_24        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 105 Cell_25        TypeB 0.54466402</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 106 Cell_26        TypeB 0.49974674</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 107 Cell_27        TypeB 0.50689676</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 108 Cell_28        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 109 Cell_29        TypeB 0.77654455</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 110 Cell_30        TypeB 0.55864733</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 111 Cell_31        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 112 Cell_32        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 113 Cell_33        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 114 Cell_34        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 115 Cell_35        TypeB 0.23539407</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 116 Cell_36        TypeB 0.05085801</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 117 Cell_37        TypeB 0.48324428</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 118 Cell_38        TypeB 0.50198412</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 119 Cell_39        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 120 Cell_40        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 121 Cell_41        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 122 Cell_42        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 123 Cell_43        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 124 Cell_44        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 125 Cell_45        TypeB 0.65486270</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 126 Cell_46        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 127 Cell_47        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 128 Cell_48        TypeB 0.86025142</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 129 Cell_49        TypeB 0.69156218</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 130 Cell_50        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 131 Cell_51        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 132 Cell_52        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 133 Cell_53        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 134 Cell_54        TypeB 0.74764880</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 135 Cell_55        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 136 Cell_56        TypeB 0.42353215</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 137 Cell_57        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 138 Cell_58        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 139 Cell_59        TypeB 0.22862053</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 140 Cell_60        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 141 Cell_61        TypeB 0.62620539</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 142 Cell_62        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 143 Cell_63        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 144 Cell_64        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 145 Cell_65        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 146 Cell_66        TypeB 0.09266471</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 147 Cell_67        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 148 Cell_68        TypeB 0.79176922</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 149 Cell_69        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 150 Cell_70        TypeB 0.96624898</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 151 Cell_71        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 152 Cell_72        TypeB 0.70278859</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 153 Cell_73        TypeB 0.95074934</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 154 Cell_74        TypeB 0.05698543</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 155 Cell_75        TypeB 0.35504493</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 156 Cell_76        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 157 Cell_77        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 158 Cell_78        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 159 Cell_79        TypeB 0.81677478</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 160 Cell_80        TypeB 0.72231411</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $progressions</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $ref_trajectory$progressions</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    cell_id  from    to percentage</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1  Cell_01 TypeA TypeB 0.13191878</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2  Cell_02 TypeA TypeB 0.00000000</span>
@@ -512,13 +326,7 @@ benchmarking framework (<em>Saelens et al., Nature Biotechnology, 2019</em>):</p
 <span class="r-out co"><span class="r-pr">#&gt;</span> 79 Cell_79 TypeA TypeB 0.81677478</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 80 Cell_80 TypeA TypeB 0.72231411</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $trajectory_type</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "linear"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $directed</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $pca_coords</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $ref_trajectory$pca_coords</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                 PC1         PC2         PC3          PC4          PC5</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cell_01  1.26333798  2.55737125  0.49844133 -0.612744604 -2.131707651</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cell_02  2.07548594 -0.67754117 -0.37388152 -0.007869354  0.401937625</span>
@@ -763,7 +571,7 @@ benchmarking framework (<em>Saelens et al., Nature Biotechnology, 2019</em>):</p
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cell_79  0.3164408595 -0.61948406 -1.31722184 -2.21334014 -1.21090077</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cell_80  0.0418884384 -0.77273621  1.46684746 -1.07184367  0.64328728</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $centroids</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $ref_trajectory$centroids</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>              PC1        PC2        PC3        PC4        PC5        PC6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> TypeA  0.1039286  0.0693536 -0.3019424  0.3850317 -0.3587689  0.0854608</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> TypeB -0.1039286 -0.0693536  0.3019424 -0.3850317  0.3587689 -0.0854608</span>
@@ -774,7 +582,7 @@ benchmarking framework (<em>Saelens et al., Nature Biotechnology, 2019</em>):</p
 <span class="r-out co"><span class="r-pr">#&gt;</span> TypeA  0.3227328 -0.1712661  0.1222941</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> TypeB -0.3227328  0.1712661 -0.1222941</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $cell_milestone_geodesic</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $ref_trajectory$cell_milestone_geodesic</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>              TypeA      TypeB</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cell_01 0.20364474 1.34006830</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cell_02 0.00000000 1.54371305</span>
@@ -857,7 +665,7 @@ benchmarking framework (<em>Saelens et al., Nature Biotechnology, 2019</em>):</p
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cell_79 1.26086589 0.28284716</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cell_80 1.11504572 0.42866733</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $branch_assignment</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $ref_trajectory$branch_assignment</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [6] "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [11] "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB"</span>
@@ -875,15 +683,9 @@ benchmarking framework (<em>Saelens et al., Nature Biotechnology, 2019</em>):</p
 <span class="r-out co"><span class="r-pr">#&gt;</span> [71] "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [76] "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "dynwrap::with_trajectory" "dynwrap::data_wrapper"   </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [3] "list"                    </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $sim_trajectory</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $id</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "20261113_053717__data_wrapper__mpRaM01SfP"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $cell_ids</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $sim_trajectory$cell_ids</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] "Cell_01" "Cell_02" "Cell_03" "Cell_04" "Cell_05" "Cell_06" "Cell_07"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [8] "Cell_08" "Cell_09" "Cell_10" "Cell_11" "Cell_12" "Cell_13" "Cell_14"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [15] "Cell_16" "Cell_17" "Cell_18" "Cell_19" "Cell_20" "Cell_21" "Cell_22"</span>
@@ -897,199 +699,14 @@ benchmarking framework (<em>Saelens et al., Nature Biotechnology, 2019</em>):</p
 <span class="r-out co"><span class="r-pr">#&gt;</span> [71] "Cell_73" "Cell_74" "Cell_75" "Cell_76" "Cell_77" "Cell_78" "Cell_79"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [78] "Cell_80"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $cell_info</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 78 × 1</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    cell_id</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> Cell_01</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span> Cell_02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> Cell_03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span> Cell_04</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> Cell_05</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span> Cell_06</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span> Cell_07</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span> Cell_08</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> Cell_09</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> Cell_10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 68 more rows</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $feature_ids</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $feature_info</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $milestone_ids</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $sim_trajectory$milestone_ids</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "TypeA" "TypeB"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $milestone_network</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $sim_trajectory$milestone_network</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    from    to    length directed</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 TypeA TypeB 0.7686201    FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $divergence_regions</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 0 × 3</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 3 variables: divergence_id &lt;chr&gt;, milestone_id &lt;chr&gt;, is_start &lt;lgl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $milestone_percentages</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     cell_id milestone_id percentage</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1   Cell_01        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2   Cell_02        TypeA 0.08138571</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3   Cell_03        TypeA 0.53717799</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4   Cell_04        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5   Cell_05        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6   Cell_06        TypeA 0.64823395</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7   Cell_07        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8   Cell_08        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9   Cell_09        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10  Cell_10        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11  Cell_11        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12  Cell_12        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13  Cell_13        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14  Cell_14        TypeA 0.18854886</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15  Cell_16        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16  Cell_17        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17  Cell_18        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18  Cell_19        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19  Cell_20        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20  Cell_21        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21  Cell_22        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22  Cell_23        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23  Cell_24        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24  Cell_25        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25  Cell_26        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26  Cell_28        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27  Cell_29        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 28  Cell_30        TypeA 0.98469417</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 29  Cell_31        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 30  Cell_32        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 31  Cell_33        TypeA 0.11171760</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 32  Cell_34        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 33  Cell_35        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 34  Cell_36        TypeA 0.01245950</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 35  Cell_37        TypeA 0.73523955</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 36  Cell_38        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 37  Cell_39        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 38  Cell_40        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 39  Cell_41        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 40  Cell_42        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 41  Cell_43        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 42  Cell_44        TypeA 0.37951751</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 43  Cell_45        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 44  Cell_46        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 45  Cell_47        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 46  Cell_48        TypeA 0.68366976</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 47  Cell_49        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 48  Cell_50        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 49  Cell_51        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 50  Cell_52        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 51  Cell_53        TypeA 0.55601318</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 52  Cell_54        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 53  Cell_55        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 54  Cell_56        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 55  Cell_57        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 56  Cell_58        TypeA 0.96840390</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 57  Cell_59        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 58  Cell_60        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 59  Cell_61        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 60  Cell_62        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 61  Cell_63        TypeA 0.03673746</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 62  Cell_64        TypeA 0.08964335</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 63  Cell_65        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 64  Cell_66        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 65  Cell_67        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 66  Cell_68        TypeA 0.28163256</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 67  Cell_69        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 68  Cell_70        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 69  Cell_71        TypeA 0.45798690</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 70  Cell_72        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 71  Cell_73        TypeA 0.04366513</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 72  Cell_74        TypeA 0.68120379</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 73  Cell_75        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 74  Cell_76        TypeA 0.93135170</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 75  Cell_77        TypeA 0.45938046</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 76  Cell_78        TypeA 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 77  Cell_79        TypeA 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 78  Cell_80        TypeA 0.65596735</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 79  Cell_01        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 80  Cell_02        TypeB 0.91861429</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 81  Cell_03        TypeB 0.46282201</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 82  Cell_04        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 83  Cell_05        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 84  Cell_06        TypeB 0.35176605</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 85  Cell_07        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 86  Cell_08        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 87  Cell_09        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 88  Cell_10        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 89  Cell_11        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 90  Cell_12        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 91  Cell_13        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 92  Cell_14        TypeB 0.81145114</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 93  Cell_16        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 94  Cell_17        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 95  Cell_18        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 96  Cell_19        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 97  Cell_20        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 98  Cell_21        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 99  Cell_22        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 100 Cell_23        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 101 Cell_24        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 102 Cell_25        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 103 Cell_26        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 104 Cell_28        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 105 Cell_29        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 106 Cell_30        TypeB 0.01530583</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 107 Cell_31        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 108 Cell_32        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 109 Cell_33        TypeB 0.88828240</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 110 Cell_34        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 111 Cell_35        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 112 Cell_36        TypeB 0.98754050</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 113 Cell_37        TypeB 0.26476045</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 114 Cell_38        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 115 Cell_39        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 116 Cell_40        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 117 Cell_41        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 118 Cell_42        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 119 Cell_43        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 120 Cell_44        TypeB 0.62048249</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 121 Cell_45        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 122 Cell_46        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 123 Cell_47        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 124 Cell_48        TypeB 0.31633024</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 125 Cell_49        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 126 Cell_50        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 127 Cell_51        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 128 Cell_52        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 129 Cell_53        TypeB 0.44398682</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 130 Cell_54        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 131 Cell_55        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 132 Cell_56        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 133 Cell_57        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 134 Cell_58        TypeB 0.03159610</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 135 Cell_59        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 136 Cell_60        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 137 Cell_61        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 138 Cell_62        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 139 Cell_63        TypeB 0.96326254</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 140 Cell_64        TypeB 0.91035665</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 141 Cell_65        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 142 Cell_66        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 143 Cell_67        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 144 Cell_68        TypeB 0.71836744</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 145 Cell_69        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 146 Cell_70        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 147 Cell_71        TypeB 0.54201310</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 148 Cell_72        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 149 Cell_73        TypeB 0.95633487</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 150 Cell_74        TypeB 0.31879621</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 151 Cell_75        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 152 Cell_76        TypeB 0.06864830</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 153 Cell_77        TypeB 0.54061954</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 154 Cell_78        TypeB 0.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 155 Cell_79        TypeB 1.00000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 156 Cell_80        TypeB 0.34403265</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $progressions</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $sim_trajectory$progressions</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    cell_id  from    to percentage</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1  Cell_01 TypeA TypeB 0.00000000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2  Cell_02 TypeA TypeB 0.91861429</span>
@@ -1170,13 +787,7 @@ benchmarking framework (<em>Saelens et al., Nature Biotechnology, 2019</em>):</p
 <span class="r-out co"><span class="r-pr">#&gt;</span> 77 Cell_79 TypeA TypeB 1.00000000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 78 Cell_80 TypeA TypeB 0.34403265</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $trajectory_type</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "linear"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $directed</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $pca_coords</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $sim_trajectory$pca_coords</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                   PC1         PC2          PC3         PC4          PC5</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cell_01  0.2172365628  0.12246973 -0.400246147  2.56407681  1.847211623</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cell_02  0.9326033245 -0.46316506 -0.148794921 -0.74014695  1.484271267</span>
@@ -1415,7 +1026,7 @@ benchmarking framework (<em>Saelens et al., Nature Biotechnology, 2019</em>):</p
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cell_79 -1.39881182 -0.65195737 -1.30642433  0.64224987  0.220100928</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cell_80 -0.64978182 -0.39811707 -0.08598820 -0.22970563 -0.177035635</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $centroids</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $sim_trajectory$centroids</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                PC1          PC2       PC3       PC4        PC5         PC6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> TypeA -0.013650308 -0.038936381 0.1167637 0.4894623 0.04299117 0.008281261</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> TypeB -0.004123877  0.005444855 0.3684942 0.1318596 0.29600973 0.006484870</span>
@@ -1426,7 +1037,7 @@ benchmarking framework (<em>Saelens et al., Nature Biotechnology, 2019</em>):</p
 <span class="r-out co"><span class="r-pr">#&gt;</span> TypeA 0.29055749 -0.0946136  0.1043664</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> TypeB 0.01645159  0.2249051 -0.1664359</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $cell_milestone_geodesic</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $sim_trajectory$cell_milestone_geodesic</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>              TypeA       TypeB</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cell_01 0.00000000 0.768620055</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cell_02 0.70606537 0.062554687</span>
@@ -1507,7 +1118,7 @@ benchmarking framework (<em>Saelens et al., Nature Biotechnology, 2019</em>):</p
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cell_79 0.76862005 0.000000000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Cell_80 0.26443040 0.504189657</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $branch_assignment</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $sim_trajectory$branch_assignment</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [6] "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [11] "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB"</span>
@@ -1525,9 +1136,6 @@ benchmarking framework (<em>Saelens et al., Nature Biotechnology, 2019</em>):</p
 <span class="r-out co"><span class="r-pr">#&gt;</span> [71] "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [76] "TypeA-&gt;TypeB" "TypeA-&gt;TypeB" "TypeA-&gt;TypeB"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"class")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "dynwrap::with_trajectory" "dynwrap::data_wrapper"   </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [3] "list"                    </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $preprocessing_summary</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $preprocessing_summary$n_hvgs</span>
@@ -1553,6 +1161,7 @@ benchmarking framework (<em>Saelens et al., Nature Biotechnology, 2019</em>):</p
 
 
     <footer><div class="pkgdown-footer-left">
+  <p>NULL</p>
 </div>
 
 <div class="pkgdown-footer-right">
@@ -1578,6 +1187,72 @@ document.addEventListener("DOMContentLoaded", function() {
   const searchInput = document.getElementById("search-input");
   if (searchInput) {
     searchInput.placeholder = "Search docs... (Press /)";
+  }
+
+  // On this page (TOC) Hide / Show Toggle Feature
+  const tocNav = document.getElementById("toc");
+  if (tocNav) {
+    const tocAside = tocNav.closest("aside") || tocNav.closest(".col-md-3");
+    const mainEl = document.getElementById("main");
+    const tocH2 = tocNav.querySelector("h2");
+
+    if (tocAside && mainEl && tocH2) {
+      // Add hide button to TOC header
+      if (!document.getElementById("btn-hide-toc")) {
+        const hideBtn = document.createElement("button");
+        hideBtn.id = "btn-hide-toc";
+        hideBtn.type = "button";
+        hideBtn.className = "btn btn-sm btn-outline-secondary float-end toc-toggle-btn";
+        hideBtn.title = "Hide 'On this page' sidebar";
+        hideBtn.setAttribute("aria-label", "Hide Table of Contents");
+        hideBtn.innerHTML = '<span class="fa fa-angle-right me-1"></span>Hide';
+        tocH2.appendChild(hideBtn);
+
+        hideBtn.addEventListener("click", function(e) {
+          e.preventDefault();
+          setTocState(false);
+        });
+      }
+
+      // Create floating show button
+      let showBtn = document.getElementById("btn-show-toc");
+      if (!showBtn) {
+        showBtn = document.createElement("button");
+        showBtn.id = "btn-show-toc";
+        showBtn.type = "button";
+        showBtn.className = "btn btn-sm btn-primary toc-floating-show-btn shadow-sm d-none";
+        showBtn.title = "Show 'On this page' sidebar";
+        showBtn.setAttribute("aria-label", "Show Table of Contents");
+        showBtn.innerHTML = '<span class="fa fa-list-ul me-1"></span> On this page';
+        document.body.appendChild(showBtn);
+
+        showBtn.addEventListener("click", function(e) {
+          e.preventDefault();
+          setTocState(true);
+        });
+      }
+
+      function setTocState(visible) {
+        if (visible) {
+          tocAside.classList.remove("d-none");
+          mainEl.classList.remove("col-md-12");
+          mainEl.classList.add("col-md-9");
+          if (showBtn) showBtn.classList.add("d-none");
+          localStorage.setItem("scSimEval_toc_hidden", "false");
+        } else {
+          tocAside.classList.add("d-none");
+          mainEl.classList.remove("col-md-9");
+          mainEl.classList.add("col-md-12");
+          if (showBtn) showBtn.classList.remove("d-none");
+          localStorage.setItem("scSimEval_toc_hidden", "true");
+        }
+      }
+
+      // Restore user preference
+      if (localStorage.getItem("scSimEval_toc_hidden") === "true") {
+        setTocState(false);
+      }
+    }
   }
 });
 </script></body></html>

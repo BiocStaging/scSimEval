@@ -393,6 +393,20 @@ calc_integration_nmi <- function(embed, cell_type, n_clusters = NULL) {
 }
 
 
+.fast_mod_pca <- function(m, n_pcs = 15) {
+  m_norm <- normalize_counts(m)
+  if (nrow(m_norm) > 2000L) {
+    gv <- fast_row_vars(m_norm)
+    hvg_idx <- order(gv, decreasing = TRUE)[seq_len(2000L)]
+    m_hvg <- as.matrix(m_norm[hvg_idx, , drop = FALSE])
+  } else if (inherits(m_norm, "Matrix")) {
+    m_hvg <- as.matrix(m_norm)
+  } else {
+    m_hvg <- m_norm
+  }
+  fast_pca(t(m_hvg), n_pcs = min(n_pcs, ncol(m_hvg) - 1L, nrow(m_hvg) - 1L))
+}
+
 #' Evaluate Multiomics Integration & Cross-Modal Alignment Fidelity (Category VI)
 #'
 #' Evaluates the multiomics integration and cross-modal alignment fidelity of simulated
@@ -427,20 +441,6 @@ calc_integration_nmi <- function(embed, cell_type, n_clusters = NULL) {
 #' ct <- rep(c("A", "B"), each = 50)
 #' res <- evaluate_multiomics_integration(sim_multi = example_multiomics$sim_multi, cell_types = ct)
 #' @export
-.fast_mod_pca <- function(m, n_pcs = 15) {
-  m_norm <- normalize_counts(m)
-  if (nrow(m_norm) > 2000L) {
-    gv <- fast_row_vars(m_norm)
-    hvg_idx <- order(gv, decreasing = TRUE)[seq_len(2000L)]
-    m_hvg <- as.matrix(m_norm[hvg_idx, , drop = FALSE])
-  } else if (inherits(m_norm, "Matrix")) {
-    m_hvg <- as.matrix(m_norm)
-  } else {
-    m_hvg <- m_norm
-  }
-  fast_pca(t(m_hvg), n_pcs = min(n_pcs, ncol(m_hvg) - 1L, nrow(m_hvg) - 1L))
-}
-
 evaluate_multiomics_integration <- function(
   ref_multi = NULL,
   sim_multi,

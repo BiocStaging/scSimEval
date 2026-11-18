@@ -10,7 +10,7 @@ plot_metric_pca(
   by_category = FALSE,
   as_list = FALSE,
   category = NULL,
-  exclude_categories = NULL,
+  exclude_categories = "(VIII) Computational Scalability & Efficiency",
   metrics = NULL,
   palette = NULL,
   top_n_loadings = 14,

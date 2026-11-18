@@ -56,591 +56,767 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/kabilanbio/scSimEval" aria-label="GitHub repository"><span class="fa fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
 
   </div>
-</nav><div class="container-fluid px-lg-5 template-article" style="max-width: 98%;">
+</nav><div class="container template-article">
 
 
 
 
 <div class="row">
-  <main id="main" class="col-12"><div class="page-header">
+  <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Comprehensive Catalog of the 56 Evaluation Measures</h1>
+                        <h4 data-toc-skip class="author">Kabilan
+Sakthivel, Dr. Dwijesh Chandra Mishra, Dr. Shashi Bhushan Lal,
+Dr. Ulavappa Angadi, Dr. Sudhir Srivastava, Dr. Neeraj Budhlakoti,
+Dr. Krishna Kumar Chaturvedi, Dr. Ranjeet Ranjan Kumar, Dr. Navin
+Chandra Gupta, Dr. Sharanbasappa</h4>
             
+            <h4 data-toc-skip class="date">2026-11-18</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/kabilanbio/scSimEval/blob/HEAD/vignettes/metrics-catalog.Rmd" class="external-link"><code>vignettes/metrics-catalog.Rmd</code></a></small>
       <div class="d-none name"><code>metrics-catalog.Rmd</code></div>
+    </div>
 
+    
+    
 <div class="section level2">
-<h2 id="overview-of-the-scsimeval-evaluation-suite">Overview of the scSimEval Evaluation Suite<a class="anchor" aria-label="anchor" href="#overview-of-the-scsimeval-evaluation-suite"></a></h2>
-<p>Single-cell and multiomics simulation algorithms are central to computational biology. They let researchers benchmark new bioinformatic methods, optimize experimental designs, and test analytical workflows without the expense of wet-lab sequencing. However, for a simulator to be truly useful, the synthetic data it generates must faithfully mirror real biology across multiple dimensions—from basic gene expression distributions to complex cell-cell interactions, batch variations, and developmental trajectories.</p>
-<p><strong><code>scSimEval</code></strong> provides a rigorous, standardized, reference-based benchmarking framework to evaluate simulation quality. Rather than relying on a single overall score or a handful of summary statistics, it assesses synthetic datasets across <strong>56 curated evaluation measures organized into 8 foundational categories</strong>.</p>
-<p>Every measure is calculated by directly comparing an in silico simulated dataset against an empirical biological reference dataset across single-cell RNA sequencing (<strong>scRNA-seq</strong>), single-cell ATAC sequencing (<strong>scATAC-seq</strong>), or joint <strong>multiomics</strong> (paired and unpaired RNA + ATAC) modalities.</p>
+<h2 id="overview-of-the-scsimeval-evaluation-suite">Overview of the scSimEval Evaluation Suite<a class="anchor" aria-label="anchor" href="#overview-of-the-scsimeval-evaluation-suite"></a>
+</h2>
+<p>Single-cell and multiomics simulation algorithms are central to
+computational biology. They let researchers benchmark new bioinformatic
+methods, optimize experimental designs, and test analytical workflows
+without the expense of wet-lab sequencing. However, for a simulator to
+be truly useful, the synthetic data it generates must faithfully mirror
+real biology across multiple dimensions—from basic gene expression
+distributions to complex cell-cell interactions, batch variations, and
+developmental trajectories.</p>
+<p><strong><code>scSimEval</code></strong> provides a rigorous,
+standardized, reference-based benchmarking framework to evaluate
+simulation quality. Rather than relying on a single overall score or a
+handful of summary statistics, it assesses synthetic datasets across
+<strong>56 curated evaluation measures organized into 8 foundational
+categories</strong>.</p>
+<p>Every measure is calculated by directly comparing an in silico
+simulated dataset against an empirical biological reference dataset
+across single-cell RNA sequencing (<strong>scRNA-seq</strong>),
+single-cell ATAC sequencing (<strong>scATAC-seq</strong>), or joint
+<strong>multiomics</strong> (paired and unpaired RNA + ATAC)
+modalities.</p>
 <hr>
+</div>
 <div class="section level2">
-<h2 id="summary-of-the-8-canonical-categories">Summary of the 8 Canonical Categories<a class="anchor" aria-label="anchor" href="#summary-of-the-8-canonical-categories"></a></h2>
-<div class="table-responsive">
-<table class="table table-sm table-bordered align-middle" style="width: 100%; font-size: 0.90rem;">
-<thead>
-<tr>
-<th>Category</th>
-<th>Domain</th>
-<th>Measures</th>
-<th>Supported Modalities</th>
-<th>Primary Evaluation Focus</th>
-</tr>
-</thead>
+<h2 id="summary-of-the-8-canonical-categories">Summary of the 8 Canonical Categories<a class="anchor" aria-label="anchor" href="#summary-of-the-8-canonical-categories"></a>
+</h2>
+<table class="table">
+<colgroup>
+<col width="22%">
+<col width="18%">
+<col width="22%">
+<col width="18%">
+<col width="18%">
+</colgroup>
+<thead><tr class="header">
+<th align="center">Category</th>
+<th align="left">Domain</th>
+<th align="center">Measures</th>
+<th align="left">Supported Modalities</th>
+<th align="left">Primary Evaluation Focus</th>
+</tr></thead>
 <tbody>
-<tr>
-<td><strong>I</strong></td>
-<td><strong>Distributional Properties</strong></td>
-<td><strong>14</strong></td>
-<td>scRNA-seq, scATAC-seq, Multiomics</td>
-<td>10 univariate (1D) and 4 bivariate (2D) statistical distances comparing fundamental cell-level, feature-level, and joint property distributions.</td>
+<tr class="odd">
+<td align="center"><strong>I</strong></td>
+<td align="left"><strong>Distributional Properties</strong></td>
+<td align="center"><strong>14</strong></td>
+<td align="left">scRNA-seq, scATAC-seq, Multiomics</td>
+<td align="left">10 univariate (1D) and 4 bivariate (2D) statistical
+distances comparing fundamental cell-level, feature-level, and joint
+property distributions.</td>
 </tr>
-<tr>
-<td><strong>II</strong></td>
-<td><strong>Sparsity & Zero-Inflation Dynamics</strong></td>
-<td><strong>5</strong></td>
-<td>scRNA-seq, scATAC-seq, Multiomics</td>
-<td>Evaluates whether dropout rates, zero fractions, and non-linear sparsity curves match real experimental technologies.</td>
+<tr class="even">
+<td align="center"><strong>II</strong></td>
+<td align="left"><strong>Sparsity &amp; Zero-Inflation
+Dynamics</strong></td>
+<td align="center"><strong>5</strong></td>
+<td align="left">scRNA-seq, scATAC-seq, Multiomics</td>
+<td align="left">Evaluates whether dropout rates, zero fractions, and
+non-linear sparsity curves match real experimental technologies.</td>
 </tr>
-<tr>
-<td><strong>III</strong></td>
-<td><strong>Cellular Manifold & Clustering Concordance</strong></td>
-<td><strong>8</strong></td>
-<td>scRNA-seq, scATAC-seq, Multiomics</td>
-<td>Checks whether simulated cells preserve high-dimensional geometry, cell-type clustering boundaries, and avoid artificial cell states.</td>
+<tr class="odd">
+<td align="center"><strong>III</strong></td>
+<td align="left"><strong>Cellular Manifold &amp; Clustering
+Concordance</strong></td>
+<td align="center"><strong>8</strong></td>
+<td align="left">scRNA-seq, scATAC-seq, Multiomics</td>
+<td align="left">Checks whether simulated cells preserve
+high-dimensional geometry, cell-type clustering boundaries, and avoid
+artificial cell states.</td>
 </tr>
-<tr>
-<td><strong>IV</strong></td>
-<td><strong>Technical Variation & Batch Mixing Dynamics</strong></td>
-<td><strong>5</strong></td>
-<td>scRNA-seq, scATAC-seq, Multiomics</td>
-<td>Quantifies how realistically technical batch effects and donor-to-donor variations intermix across local neighborhoods without obscuring biological signal.</td>
+<tr class="even">
+<td align="center"><strong>IV</strong></td>
+<td align="left"><strong>Technical Variation &amp; Batch Mixing
+Dynamics</strong></td>
+<td align="center"><strong>5</strong></td>
+<td align="left">scRNA-seq, scATAC-seq, Multiomics</td>
+<td align="left">Quantifies how realistically technical batch effects
+and donor-to-donor variations intermix across local neighborhoods
+without obscuring biological signal.</td>
 </tr>
-<tr>
-<td><strong>V</strong></td>
-<td><strong>Biological Signal & Differential Fidelity</strong></td>
-<td><strong>12</strong></td>
-<td>scRNA-seq (6 DE) & scATAC-seq (6 DA)</td>
-<td>Tests whether real marker genes (DEGs) and accessible peaks (DARs) can be reliably recovered via pseudobulk testing without false-positive inflation.</td>
+<tr class="odd">
+<td align="center"><strong>V</strong></td>
+<td align="left"><strong>Biological Signal &amp; Differential
+Fidelity</strong></td>
+<td align="center"><strong>12</strong></td>
+<td align="left">scRNA-seq (6 DE) &amp; scATAC-seq (6 DA)</td>
+<td align="left">Tests whether real marker genes (DEGs) and accessible
+peaks (DARs) can be reliably recovered via pseudobulk testing without
+false-positive inflation.</td>
 </tr>
-<tr>
-<td><strong>VI</strong></td>
-<td><strong>Multiomics Integration & Alignment</strong></td>
-<td><strong>5</strong></td>
-<td>Paired & Unpaired Multiomics</td>
-<td>Evaluates cross-modal alignment in shared latent space, assessing whether RNA and ATAC layers coherently integrate while preserving cell identities.</td>
+<tr class="even">
+<td align="center"><strong>VI</strong></td>
+<td align="left"><strong>Multiomics Integration &amp;
+Alignment</strong></td>
+<td align="center"><strong>5</strong></td>
+<td align="left">Paired &amp; Unpaired Multiomics</td>
+<td align="left">Evaluates cross-modal alignment in shared latent space,
+assessing whether RNA and ATAC layers coherently integrate while
+preserving cell identities.</td>
 </tr>
-<tr>
-<td><strong>VII</strong></td>
-<td><strong>Trajectory & Lineage Topology</strong></td>
-<td><strong>5</strong></td>
-<td>scRNA-seq</td>
-<td>Evaluates continuous developmental paths, branching tree topologies, cell pseudotime progression, and dynamic driver genes using the dynverse framework.</td>
+<tr class="odd">
+<td align="center"><strong>VII</strong></td>
+<td align="left"><strong>Trajectory &amp; Lineage Topology</strong></td>
+<td align="center"><strong>5</strong></td>
+<td align="left">scRNA-seq</td>
+<td align="left">Evaluates continuous developmental paths, branching
+tree topologies, cell pseudotime progression, and dynamic driver genes
+using the dynverse framework.</td>
 </tr>
-<tr>
-<td><strong>VIII</strong></td>
-<td><strong>Computational Scalability & Efficiency</strong></td>
-<td><strong>2</strong></td>
-<td>All Modalities</td>
-<td>Hardware-normalized assessment of compute runtime (Core-Seconds) and resident memory usage (Peak RAM per Allocated Core).</td>
+<tr class="even">
+<td align="center"><strong>VIII</strong></td>
+<td align="left"><strong>Computational Scalability &amp;
+Efficiency</strong></td>
+<td align="center"><strong>2</strong></td>
+<td align="left">All Modalities</td>
+<td align="left">Hardware-normalized assessment of compute runtime
+(Core-Seconds) and resident memory usage (Peak RAM per Allocated
+Core).</td>
 </tr>
-<tr>
-<td><strong>Total</strong></td>
-<td></td>
-<td><strong>56</strong></td>
-<td><strong>Full Benchmark Suite</strong></td>
-<td><strong>Comprehensive, multi-faceted validation of single-cell and multiomics simulators.</strong></td>
+<tr class="odd">
+<td align="center"><strong>Total</strong></td>
+<td align="left"></td>
+<td align="center"><strong>56</strong></td>
+<td align="left"><strong>Full Benchmark Suite</strong></td>
+<td align="left"><strong>Comprehensive, multi-faceted validation of
+single-cell and multiomics simulators.</strong></td>
 </tr>
 </tbody>
 </table>
-</div>
 <hr>
+</div>
 <div class="section level2">
-<h2 id="complete-master-reference-table-all-56-measures">Complete Master Reference Table (All 56 Measures)<a class="anchor" aria-label="anchor" href="#complete-master-reference-table-all-56-measures"></a></h2>
-<p>The table below lists all 56 evaluation measures implemented in <code>scSimEval</code>. For each metric, it highlights the internal metric identifier, category, the ideal scoring direction, and what the metric captures.</p>
-<div class="table-responsive">
-<table class="table table-sm table-bordered align-middle master-metric-table" style="width: 100%; font-size: 0.90rem;">
-<thead>
-<tr>
-<th style="width: 4%; text-align: center;">#</th>
-<th style="width: 15%;">Metric ID</th>
-<th style="width: 18%;">Display Name</th>
-<th style="width: 15%;">Category</th>
-<th style="width: 12%; text-align: center;">Best Direction</th>
-<th style="width: 36%;">Plain-English Evaluation Focus</th>
-</tr>
-</thead>
+<h2 id="complete-master-reference-table-all-56-measures">Complete Master Reference Table (All 56 Measures)<a class="anchor" aria-label="anchor" href="#complete-master-reference-table-all-56-measures"></a>
+</h2>
+<p>The table below lists all 56 evaluation measures implemented in
+<code>scSimEval</code>. For each metric, it highlights the internal
+metric identifier, category, the ideal scoring direction, and what the
+metric captures.</p>
+<table class="table">
+<colgroup>
+<col width="16%">
+<col width="16%">
+<col width="16%">
+<col width="16%">
+<col width="20%">
+<col width="16%">
+</colgroup>
+<thead><tr class="header">
+<th align="center">#</th>
+<th align="left">Metric ID</th>
+<th align="left">Display Name</th>
+<th align="left">Category</th>
+<th align="center">Best Direction</th>
+<th align="left">Plain-English Evaluation Focus</th>
+</tr></thead>
 <tbody>
-<tr>
-<td style="text-align: center;">1</td>
-<td><code>Wasserstein</code></td>
-<td>1D Wasserstein Distance</td>
-<td>I. Distributional</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Physical transport work needed to transform simulated distributions into reference distributions across 14 univariate properties.</td>
+<tr class="odd">
+<td align="center">1</td>
+<td align="left"><code>Wasserstein</code></td>
+<td align="left">1D Wasserstein Distance</td>
+<td align="left">I. Distributional</td>
+<td align="center">Lower is better</td>
+<td align="left">Physical transport work needed to transform simulated
+distributions into reference distributions across 14 univariate
+properties.</td>
 </tr>
-<tr>
-<td style="text-align: center;">2</td>
-<td><code>KS</code></td>
-<td>Kolmogorov–Smirnov Distance</td>
-<td>I. Distributional</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Maximum vertical divergence between the cumulative distribution curves of real and simulated properties.</td>
+<tr class="even">
+<td align="center">2</td>
+<td align="left"><code>KS</code></td>
+<td align="left">Kolmogorov–Smirnov Distance</td>
+<td align="left">I. Distributional</td>
+<td align="center">Lower is better</td>
+<td align="left">Maximum vertical divergence between the cumulative
+distribution curves of real and simulated properties.</td>
 </tr>
-<tr>
-<td style="text-align: center;">3</td>
-<td><code>MAD</code></td>
-<td>Median Absolute Deviation</td>
-<td>I. Distributional</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Median absolute discrepancy across aligned quantile points; highly resistant to extreme outliers.</td>
+<tr class="odd">
+<td align="center">3</td>
+<td align="left"><code>MAD</code></td>
+<td align="left">Median Absolute Deviation</td>
+<td align="left">I. Distributional</td>
+<td align="center">Lower is better</td>
+<td align="left">Median absolute discrepancy across aligned quantile
+points; highly resistant to extreme outliers.</td>
 </tr>
-<tr>
-<td style="text-align: center;">4</td>
-<td><code>MAE</code></td>
-<td>Mean Absolute Error</td>
-<td>I. Distributional</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Average absolute discrepancy across the entire range of cell and feature properties.</td>
+<tr class="even">
+<td align="center">4</td>
+<td align="left"><code>MAE</code></td>
+<td align="left">Mean Absolute Error</td>
+<td align="left">I. Distributional</td>
+<td align="center">Lower is better</td>
+<td align="left">Average absolute discrepancy across the entire range of
+cell and feature properties.</td>
 </tr>
-<tr>
-<td style="text-align: center;">5</td>
-<td><code>RMSE</code></td>
-<td>Root Mean Squared Error</td>
-<td>I. Distributional</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Average squared discrepancy across quantiles, placing greater penalty on severe distribution tail mismatches.</td>
+<tr class="odd">
+<td align="center">5</td>
+<td align="left"><code>RMSE</code></td>
+<td align="left">Root Mean Squared Error</td>
+<td align="left">I. Distributional</td>
+<td align="center">Lower is better</td>
+<td align="left">Average squared discrepancy across quantiles, placing
+greater penalty on severe distribution tail mismatches.</td>
 </tr>
-<tr>
-<td style="text-align: center;">6</td>
-<td><code>Bhattacharyya</code></td>
-<td>Bhattacharyya Distance</td>
-<td>I. Distributional</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Measures the geometric overlap and statistical divergence between reference and simulated probability histograms.</td>
+<tr class="even">
+<td align="center">6</td>
+<td align="left"><code>Bhattacharyya</code></td>
+<td align="left">Bhattacharyya Distance</td>
+<td align="left">I. Distributional</td>
+<td align="center">Lower is better</td>
+<td align="left">Measures the geometric overlap and statistical
+divergence between reference and simulated probability histograms.</td>
 </tr>
-<tr>
-<td style="text-align: center;">7</td>
-<td><code>KDE_ISE</code></td>
-<td>Kernel Density Error</td>
-<td>I. Distributional</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Integrated squared difference between smoothed continuous probability density curves.</td>
+<tr class="odd">
+<td align="center">7</td>
+<td align="left"><code>KDE_ISE</code></td>
+<td align="left">Kernel Density Error</td>
+<td align="left">I. Distributional</td>
+<td align="center">Lower is better</td>
+<td align="left">Integrated squared difference between smoothed
+continuous probability density curves.</td>
 </tr>
-<tr>
-<td style="text-align: center;">8</td>
-<td><code>Runs_Statistic</code></td>
-<td>Wald–Wolfowitz Runs</td>
-<td>I. Distributional</td>
-<td style="text-align: center;">Closer to 0 is better</td>
-<td>Tests whether real and simulated values interleave randomly without clustering by dataset source.</td>
+<tr class="even">
+<td align="center">8</td>
+<td align="left"><code>Runs_Statistic</code></td>
+<td align="left">Wald–Wolfowitz Runs</td>
+<td align="left">I. Distributional</td>
+<td align="center">Closer to 0 is better</td>
+<td align="left">Tests whether real and simulated values interleave
+randomly without clustering by dataset source.</td>
 </tr>
-<tr>
-<td style="text-align: center;">9</td>
-<td><code>NN_Mismatch</code></td>
-<td>1D Nearest-Neighbor Mismatch</td>
-<td>I. Distributional</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Fraction of pooled data points whose nearest neighbor comes from the wrong dataset.</td>
+<tr class="odd">
+<td align="center">9</td>
+<td align="left"><code>NN_Mismatch</code></td>
+<td align="left">1D Nearest-Neighbor Mismatch</td>
+<td align="left">I. Distributional</td>
+<td align="center">Lower is better</td>
+<td align="left">Fraction of pooled data points whose nearest neighbor
+comes from the wrong dataset.</td>
 </tr>
-<tr>
-<td style="text-align: center;">10</td>
-<td><code>Between_Dataset_Silh_Global</code></td>
-<td>1D Inter-Dataset Silhouette</td>
-<td>I. Distributional</td>
-<td style="text-align: center;">Closer to 0 is better</td>
-<td>Verifies that reference and simulated data do not artificially form separate clusters along a single property axis.</td>
+<tr class="even">
+<td align="center">10</td>
+<td align="left"><code>Between_Dataset_Silh_Global</code></td>
+<td align="left">1D Inter-Dataset Silhouette</td>
+<td align="left">I. Distributional</td>
+<td align="center">Closer to 0 is better</td>
+<td align="left">Verifies that reference and simulated data do not
+artificially form separate clusters along a single property axis.</td>
 </tr>
-<tr>
-<td style="text-align: center;">11</td>
-<td><code>Fasano_Franceschini_2D_KS</code></td>
-<td>2D Kolmogorov–Smirnov</td>
-<td>I. Distributional</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Two-dimensional extension of the KS test measuring divergence across joint bivariate quadrant distributions.</td>
+<tr class="odd">
+<td align="center">11</td>
+<td align="left"><code>Fasano_Franceschini_2D_KS</code></td>
+<td align="left">2D Kolmogorov–Smirnov</td>
+<td align="left">I. Distributional</td>
+<td align="center">Lower is better</td>
+<td align="left">Two-dimensional extension of the KS test measuring
+divergence across joint bivariate quadrant distributions.</td>
 </tr>
-<tr>
-<td style="text-align: center;">12</td>
-<td><code>EMD_2D</code></td>
-<td>2D Earth Mover's Distance</td>
-<td>I. Distributional</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Optimal transport work required to morph 2D bivariate property density surfaces into one another.</td>
+<tr class="even">
+<td align="center">12</td>
+<td align="left"><code>EMD_2D</code></td>
+<td align="left">2D Earth Mover’s Distance</td>
+<td align="left">I. Distributional</td>
+<td align="center">Lower is better</td>
+<td align="left">Optimal transport work required to morph 2D bivariate
+property density surfaces into one another.</td>
 </tr>
-<tr>
-<td style="text-align: center;">13</td>
-<td><code>NN_Mismatch_2D</code></td>
-<td>2D Nearest-Neighbor Mismatch</td>
-<td>I. Distributional</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Evaluates local joint neighborhood mixing across bivariate property pairs.</td>
+<tr class="odd">
+<td align="center">13</td>
+<td align="left"><code>NN_Mismatch_2D</code></td>
+<td align="left">2D Nearest-Neighbor Mismatch</td>
+<td align="left">I. Distributional</td>
+<td align="center">Lower is better</td>
+<td align="left">Evaluates local joint neighborhood mixing across
+bivariate property pairs.</td>
 </tr>
-<tr>
-<td style="text-align: center;">14</td>
-<td><code>Between_Dataset_Silh_2D_Global</code></td>
-<td>2D Inter-Dataset Silhouette</td>
-<td>I. Distributional</td>
-<td style="text-align: center;">Closer to 0 is better</td>
-<td>Ensures real and simulated cells do not artificially segregate into distinct clusters in 2D property space.</td>
+<tr class="even">
+<td align="center">14</td>
+<td align="left"><code>Between_Dataset_Silh_2D_Global</code></td>
+<td align="left">2D Inter-Dataset Silhouette</td>
+<td align="left">I. Distributional</td>
+<td align="center">Closer to 0 is better</td>
+<td align="left">Ensures real and simulated cells do not artificially
+segregate into distinct clusters in 2D property space.</td>
 </tr>
-<tr>
-<td style="text-align: center;">15</td>
-<td><code>midpoint_error</code></td>
-<td>Dropout Midpoint Error</td>
-<td>II. Sparsity Dynamics</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Absolute shift in the expression level at which genes have a 50% probability of dropout (scRNA-seq).</td>
+<tr class="odd">
+<td align="center">15</td>
+<td align="left"><code>midpoint_error</code></td>
+<td align="left">Dropout Midpoint Error</td>
+<td align="left">II. Sparsity Dynamics</td>
+<td align="center">Lower is better</td>
+<td align="left">Absolute shift in the expression level at which genes
+have a 50% probability of dropout (scRNA-seq).</td>
 </tr>
-<tr>
-<td style="text-align: center;">16</td>
-<td><code>slope_error</code></td>
-<td>Dropout Slope Error</td>
-<td>II. Sparsity Dynamics</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Discrepancy in the rate of transition from silent to detected as expression increases (scRNA-seq).</td>
+<tr class="even">
+<td align="center">16</td>
+<td align="left"><code>slope_error</code></td>
+<td align="left">Dropout Slope Error</td>
+<td align="left">II. Sparsity Dynamics</td>
+<td align="center">Lower is better</td>
+<td align="left">Discrepancy in the rate of transition from silent to
+detected as expression increases (scRNA-seq).</td>
 </tr>
-<tr>
-<td style="text-align: center;">17</td>
-<td><code>r2_discrepancy</code></td>
-<td>Sparsity Fit Discrepancy</td>
-<td>II. Sparsity Dynamics</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Difference in how tightly feature sparsity follows empirical trend lines compared to real biological data.</td>
+<tr class="odd">
+<td align="center">17</td>
+<td align="left"><code>r2_discrepancy</code></td>
+<td align="left">Sparsity Fit Discrepancy</td>
+<td align="left">II. Sparsity Dynamics</td>
+<td align="center">Lower is better</td>
+<td align="left">Difference in how tightly feature sparsity follows
+empirical trend lines compared to real biological data.</td>
 </tr>
-<tr>
-<td style="text-align: center;">18</td>
-<td><code>curve_rmse</code></td>
-<td>Accessibility Sparsity RMSE</td>
-<td>II. Sparsity Dynamics</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Root mean squared error between peak accessibility and non-zero proportion curves (scATAC-seq).</td>
+<tr class="even">
+<td align="center">18</td>
+<td align="left"><code>curve_rmse</code></td>
+<td align="left">Accessibility Sparsity RMSE</td>
+<td align="left">II. Sparsity Dynamics</td>
+<td align="center">Lower is better</td>
+<td align="left">Root mean squared error between peak accessibility and
+non-zero proportion curves (scATAC-seq).</td>
 </tr>
-<tr>
-<td style="text-align: center;">19</td>
-<td><code>excess_zero_weight_discrepancy</code></td>
-<td>Excess Zero Discrepancy</td>
-<td>II. Sparsity Dynamics</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Quantifies differences in the proportion of zeroes attributable to technical dropout beyond biological expectation.</td>
+<tr class="odd">
+<td align="center">19</td>
+<td align="left"><code>excess_zero_weight_discrepancy</code></td>
+<td align="left">Excess Zero Discrepancy</td>
+<td align="left">II. Sparsity Dynamics</td>
+<td align="center">Lower is better</td>
+<td align="left">Quantifies differences in the proportion of zeroes
+attributable to technical dropout beyond biological expectation.</td>
 </tr>
-<tr>
-<td style="text-align: center;">20</td>
-<td><code>MMD</code></td>
-<td>Maximum Mean Discrepancy</td>
-<td>III. Cellular Manifold</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Multi-scale kernel distance in high-dimensional PCA space, evaluating overall multivariate point-cloud alignment.</td>
+<tr class="even">
+<td align="center">20</td>
+<td align="left"><code>MMD</code></td>
+<td align="left">Maximum Mean Discrepancy</td>
+<td align="left">III. Cellular Manifold</td>
+<td align="center">Lower is better</td>
+<td align="left">Multi-scale kernel distance in high-dimensional PCA
+space, evaluating overall multivariate point-cloud alignment.</td>
 </tr>
-<tr>
-<td style="text-align: center;">21</td>
-<td><code>Generative_Precision</code></td>
-<td>Generative Precision</td>
-<td>III. Cellular Manifold</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Proportion of simulated cells that fall within the valid support of real cell states (penalizes hallucinated cells).</td>
+<tr class="odd">
+<td align="center">21</td>
+<td align="left"><code>Generative_Precision</code></td>
+<td align="left">Generative Precision</td>
+<td align="left">III. Cellular Manifold</td>
+<td align="center">Higher is better</td>
+<td align="left">Proportion of simulated cells that fall within the
+valid support of real cell states (penalizes hallucinated cells).</td>
 </tr>
-<tr>
-<td style="text-align: center;">22</td>
-<td><code>Generative_Recall</code></td>
-<td>Generative Recall</td>
-<td>III. Cellular Manifold</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Proportion of real biological cell diversity successfully captured by the simulator (penalizes mode collapse).</td>
+<tr class="even">
+<td align="center">22</td>
+<td align="left"><code>Generative_Recall</code></td>
+<td align="left">Generative Recall</td>
+<td align="left">III. Cellular Manifold</td>
+<td align="center">Higher is better</td>
+<td align="left">Proportion of real biological cell diversity
+successfully captured by the simulator (penalizes mode collapse).</td>
 </tr>
-<tr>
-<td style="text-align: center;">23</td>
-<td><code>silhouette_sim</code></td>
-<td>Cluster Silhouette (ASW)</td>
-<td>III. Cellular Manifold</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Measures how tightly cells of the same cell type cluster together compared to neighboring cell types.</td>
+<tr class="odd">
+<td align="center">23</td>
+<td align="left"><code>silhouette_sim</code></td>
+<td align="left">Cluster Silhouette (ASW)</td>
+<td align="left">III. Cellular Manifold</td>
+<td align="center">Higher is better</td>
+<td align="left">Measures how tightly cells of the same cell type
+cluster together compared to neighboring cell types.</td>
 </tr>
-<tr>
-<td style="text-align: center;">24</td>
-<td><code>cdi</code></td>
-<td>Clustering Deviation Index</td>
-<td>III. Cellular Manifold</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Penalized statistical likelihood measuring whether simulated cell populations are over-clustered or under-clustered.</td>
+<tr class="even">
+<td align="center">24</td>
+<td align="left"><code>cdi</code></td>
+<td align="left">Clustering Deviation Index</td>
+<td align="left">III. Cellular Manifold</td>
+<td align="center">Lower is better</td>
+<td align="left">Penalized statistical likelihood measuring whether
+simulated cell populations are over-clustered or under-clustered.</td>
 </tr>
-<tr>
-<td style="text-align: center;">25</td>
-<td><code>neighborhood_purity</code></td>
-<td>Neighborhood Purity</td>
-<td>III. Cellular Manifold</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Average percentage of a cell's nearest neighbors that belong to the exact same biological cell type.</td>
+<tr class="odd">
+<td align="center">25</td>
+<td align="left"><code>neighborhood_purity</code></td>
+<td align="left">Neighborhood Purity</td>
+<td align="left">III. Cellular Manifold</td>
+<td align="center">Higher is better</td>
+<td align="left">Average percentage of a cell’s nearest neighbors that
+belong to the exact same biological cell type.</td>
 </tr>
-<tr>
-<td style="text-align: center;">26</td>
-<td><code>ari</code></td>
-<td>Adjusted Rand Index</td>
-<td>III. Cellular Manifold</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Agreement between unsupervised cell clusters and true biological cell types, corrected for chance.</td>
+<tr class="even">
+<td align="center">26</td>
+<td align="left"><code>ari</code></td>
+<td align="left">Adjusted Rand Index</td>
+<td align="left">III. Cellular Manifold</td>
+<td align="center">Higher is better</td>
+<td align="left">Agreement between unsupervised cell clusters and true
+biological cell types, corrected for chance.</td>
 </tr>
-<tr>
-<td style="text-align: center;">27</td>
-<td><code>nmi</code></td>
-<td>Normalized Mutual Info</td>
-<td>III. Cellular Manifold</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Information-theoretic measure of shared information between unsupervised clusters and known cell types.</td>
+<tr class="odd">
+<td align="center">27</td>
+<td align="left"><code>nmi</code></td>
+<td align="left">Normalized Mutual Info</td>
+<td align="left">III. Cellular Manifold</td>
+<td align="center">Higher is better</td>
+<td align="left">Information-theoretic measure of shared information
+between unsupervised clusters and known cell types.</td>
 </tr>
-<tr>
-<td style="text-align: center;">28</td>
-<td><code>batch_silhouette</code></td>
-<td>Batch Silhouette</td>
-<td>IV. Technical Batch</td>
-<td style="text-align: center;">Closer to 0 is better</td>
-<td>Measures whether cells from different technical batches intermix naturally rather than separating into artificial groups.</td>
+<tr class="even">
+<td align="center">28</td>
+<td align="left"><code>batch_silhouette</code></td>
+<td align="left">Batch Silhouette</td>
+<td align="left">IV. Technical Batch</td>
+<td align="center">Closer to 0 is better</td>
+<td align="left">Measures whether cells from different technical batches
+intermix naturally rather than separating into artificial groups.</td>
 </tr>
-<tr>
-<td style="text-align: center;">29</td>
-<td><code>pcr_r2</code></td>
-<td>PC Regression R2</td>
-<td>IV. Technical Batch</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Percentage of total expression variance in top principal components driven purely by technical batch artifacts.</td>
+<tr class="odd">
+<td align="center">29</td>
+<td align="left"><code>pcr_r2</code></td>
+<td align="left">PC Regression R2</td>
+<td align="left">IV. Technical Batch</td>
+<td align="center">Lower is better</td>
+<td align="left">Percentage of total expression variance in top
+principal components driven purely by technical batch artifacts.</td>
 </tr>
-<tr>
-<td style="text-align: center;">30</td>
-<td><code>cms</code></td>
-<td>Cell-Specific Mixing Score</td>
-<td>IV. Technical Batch</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Statistical test evaluating whether local cell neighborhoods reflect the overall batch proportions of the experiment.</td>
+<tr class="even">
+<td align="center">30</td>
+<td align="left"><code>cms</code></td>
+<td align="left">Cell-Specific Mixing Score</td>
+<td align="left">IV. Technical Batch</td>
+<td align="center">Higher is better</td>
+<td align="left">Statistical test evaluating whether local cell
+neighborhoods reflect the overall batch proportions of the
+experiment.</td>
 </tr>
-<tr>
-<td style="text-align: center;">31</td>
-<td><code>isi</code></td>
-<td>Inverse Simpson Index (LISI)</td>
-<td>IV. Technical Batch</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Effective number of technical batches represented in each cell's immediate neighborhood.</td>
+<tr class="odd">
+<td align="center">31</td>
+<td align="left"><code>isi</code></td>
+<td align="left">Inverse Simpson Index (LISI)</td>
+<td align="left">IV. Technical Batch</td>
+<td align="center">Higher is better</td>
+<td align="left">Effective number of technical batches represented in
+each cell’s immediate neighborhood.</td>
 </tr>
-<tr>
-<td style="text-align: center;">32</td>
-<td><code>cross_batch_F1</code></td>
-<td>Cross-Batch Classification F1</td>
-<td>IV. Technical Batch</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Tests whether cell-type classifiers trained on one batch can accurately identify cell types in another batch.</td>
+<tr class="even">
+<td align="center">32</td>
+<td align="left"><code>cross_batch_F1</code></td>
+<td align="left">Cross-Batch Classification F1</td>
+<td align="left">IV. Technical Batch</td>
+<td align="center">Higher is better</td>
+<td align="left">Tests whether cell-type classifiers trained on one
+batch can accurately identify cell types in another batch.</td>
 </tr>
-<tr>
-<td style="text-align: center;">33</td>
-<td><code>pval_dist_score</code> (scRNA)</td>
-<td>DE Null P-Value Uniformity</td>
-<td>V. Biological Signal</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Checks whether non-differential genes produce flat, uniform p-values under the null hypothesis (prevents false positives).</td>
+<tr class="odd">
+<td align="center">33</td>
+<td align="left">
+<code>pval_dist_score</code> (scRNA)</td>
+<td align="left">DE Null P-Value Uniformity</td>
+<td align="left">V. Biological Signal</td>
+<td align="center">Higher is better</td>
+<td align="left">Checks whether non-differential genes produce flat,
+uniform p-values under the null hypothesis (prevents false
+positives).</td>
 </tr>
-<tr>
-<td style="text-align: center;">34</td>
-<td><code>pval_dist_score</code> (scATAC)</td>
-<td>DA Null P-Value Uniformity</td>
-<td>V. Biological Signal</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Checks whether non-differential chromatin peaks produce properly calibrated, uniform null p-values.</td>
+<tr class="even">
+<td align="center">34</td>
+<td align="left">
+<code>pval_dist_score</code> (scATAC)</td>
+<td align="left">DA Null P-Value Uniformity</td>
+<td align="left">V. Biological Signal</td>
+<td align="center">Higher is better</td>
+<td align="left">Checks whether non-differential chromatin peaks produce
+properly calibrated, uniform null p-values.</td>
 </tr>
-<tr>
-<td style="text-align: center;">35</td>
-<td><code>accuracy</code> (scRNA)</td>
-<td>DE Detection Accuracy</td>
-<td>V. Biological Signal</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Overall binary accuracy in distinguishing differential genes from non-differential genes.</td>
+<tr class="odd">
+<td align="center">35</td>
+<td align="left">
+<code>accuracy</code> (scRNA)</td>
+<td align="left">DE Detection Accuracy</td>
+<td align="left">V. Biological Signal</td>
+<td align="center">Higher is better</td>
+<td align="left">Overall binary accuracy in distinguishing differential
+genes from non-differential genes.</td>
 </tr>
-<tr>
-<td style="text-align: center;">36</td>
-<td><code>accuracy</code> (scATAC)</td>
-<td>DA Detection Accuracy</td>
-<td>V. Biological Signal</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Overall binary accuracy in distinguishing differential chromatin peaks from background regions.</td>
+<tr class="even">
+<td align="center">36</td>
+<td align="left">
+<code>accuracy</code> (scATAC)</td>
+<td align="left">DA Detection Accuracy</td>
+<td align="left">V. Biological Signal</td>
+<td align="center">Higher is better</td>
+<td align="left">Overall binary accuracy in distinguishing differential
+chromatin peaks from background regions.</td>
 </tr>
-<tr>
-<td style="text-align: center;">37</td>
-<td><code>precision</code> (scRNA)</td>
-<td>DE Detection Precision</td>
-<td>V. Biological Signal</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Proportion of declared marker genes that correspond to genuine biological markers in the reference data.</td>
+<tr class="odd">
+<td align="center">37</td>
+<td align="left">
+<code>precision</code> (scRNA)</td>
+<td align="left">DE Detection Precision</td>
+<td align="left">V. Biological Signal</td>
+<td align="center">Higher is better</td>
+<td align="left">Proportion of declared marker genes that correspond to
+genuine biological markers in the reference data.</td>
 </tr>
-<tr>
-<td style="text-align: center;">38</td>
-<td><code>precision</code> (scATAC)</td>
-<td>DA Detection Precision</td>
-<td>V. Biological Signal</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Proportion of declared accessible peaks that represent genuine regulatory differences in reference data.</td>
+<tr class="even">
+<td align="center">38</td>
+<td align="left">
+<code>precision</code> (scATAC)</td>
+<td align="left">DA Detection Precision</td>
+<td align="left">V. Biological Signal</td>
+<td align="center">Higher is better</td>
+<td align="left">Proportion of declared accessible peaks that represent
+genuine regulatory differences in reference data.</td>
 </tr>
-<tr>
-<td style="text-align: center;">39</td>
-<td><code>recall</code> (scRNA)</td>
-<td>DE Detection Recall</td>
-<td>V. Biological Signal</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Sensitivity: what percentage of true biological marker genes are successfully detected in the simulated data.</td>
+<tr class="odd">
+<td align="center">39</td>
+<td align="left">
+<code>recall</code> (scRNA)</td>
+<td align="left">DE Detection Recall</td>
+<td align="left">V. Biological Signal</td>
+<td align="center">Higher is better</td>
+<td align="left">Sensitivity: what percentage of true biological marker
+genes are successfully detected in the simulated data.</td>
 </tr>
-<tr>
-<td style="text-align: center;">40</td>
-<td><code>recall</code> (scATAC)</td>
-<td>DA Detection Recall</td>
-<td>V. Biological Signal</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Sensitivity: what percentage of true regulatory chromatin peaks are successfully identified.</td>
+<tr class="even">
+<td align="center">40</td>
+<td align="left">
+<code>recall</code> (scATAC)</td>
+<td align="left">DA Detection Recall</td>
+<td align="left">V. Biological Signal</td>
+<td align="center">Higher is better</td>
+<td align="left">Sensitivity: what percentage of true regulatory
+chromatin peaks are successfully identified.</td>
 </tr>
-<tr>
-<td style="text-align: center;">41</td>
-<td><code>f1_score</code> (scRNA)</td>
-<td>DE Detection F1-Score</td>
-<td>V. Biological Signal</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Harmonic balance between marker detection precision and recall for single-cell gene expression.</td>
+<tr class="odd">
+<td align="center">41</td>
+<td align="left">
+<code>f1_score</code> (scRNA)</td>
+<td align="left">DE Detection F1-Score</td>
+<td align="left">V. Biological Signal</td>
+<td align="center">Higher is better</td>
+<td align="left">Harmonic balance between marker detection precision and
+recall for single-cell gene expression.</td>
 </tr>
-<tr>
-<td style="text-align: center;">42</td>
-<td><code>f1_score</code> (scATAC)</td>
-<td>DA Detection F1-Score</td>
-<td>V. Biological Signal</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Harmonic balance between peak detection precision and recall for single-cell chromatin accessibility.</td>
+<tr class="even">
+<td align="center">42</td>
+<td align="left">
+<code>f1_score</code> (scATAC)</td>
+<td align="left">DA Detection F1-Score</td>
+<td align="left">V. Biological Signal</td>
+<td align="center">Higher is better</td>
+<td align="left">Harmonic balance between peak detection precision and
+recall for single-cell chromatin accessibility.</td>
 </tr>
-<tr>
-<td style="text-align: center;">43</td>
-<td><code>auc</code> (scRNA)</td>
-<td>DE Ranking ROC-AUC</td>
-<td>V. Biological Signal</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Threshold-independent ranking test: verifies that true marker genes receive stronger statistical significance than noise.</td>
+<tr class="odd">
+<td align="center">43</td>
+<td align="left">
+<code>auc</code> (scRNA)</td>
+<td align="left">DE Ranking ROC-AUC</td>
+<td align="left">V. Biological Signal</td>
+<td align="center">Higher is better</td>
+<td align="left">Threshold-independent ranking test: verifies that true
+marker genes receive stronger statistical significance than noise.</td>
 </tr>
-<tr>
-<td style="text-align: center;">44</td>
-<td><code>auc</code> (scATAC)</td>
-<td>DA Ranking ROC-AUC</td>
-<td>V. Biological Signal</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Threshold-independent ranking test: verifies that true differential chromatin peaks are ranked at the top.</td>
+<tr class="even">
+<td align="center">44</td>
+<td align="left">
+<code>auc</code> (scATAC)</td>
+<td align="left">DA Ranking ROC-AUC</td>
+<td align="left">V. Biological Signal</td>
+<td align="center">Higher is better</td>
+<td align="left">Threshold-independent ranking test: verifies that true
+differential chromatin peaks are ranked at the top.</td>
 </tr>
-<tr>
-<td style="text-align: center;">45</td>
-<td><code>batch_asw</code></td>
-<td>Cross-Modal Batch ASW</td>
-<td>VI. Multiomics Alignment</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Evaluates whether RNA and ATAC modalities intermix smoothly within matching cell types in joint latent space.</td>
+<tr class="odd">
+<td align="center">45</td>
+<td align="left"><code>batch_asw</code></td>
+<td align="left">Cross-Modal Batch ASW</td>
+<td align="left">VI. Multiomics Alignment</td>
+<td align="center">Higher is better</td>
+<td align="left">Evaluates whether RNA and ATAC modalities intermix
+smoothly within matching cell types in joint latent space.</td>
 </tr>
-<tr>
-<td style="text-align: center;">46</td>
-<td><code>cell_type_asw</code></td>
-<td>Joint Cell-Type ASW</td>
-<td>VI. Multiomics Alignment</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Verifies that biological cell types remain distinctly separated from one another in the joint multiomics space.</td>
+<tr class="even">
+<td align="center">46</td>
+<td align="left"><code>cell_type_asw</code></td>
+<td align="left">Joint Cell-Type ASW</td>
+<td align="left">VI. Multiomics Alignment</td>
+<td align="center">Higher is better</td>
+<td align="left">Verifies that biological cell types remain distinctly
+separated from one another in the joint multiomics space.</td>
 </tr>
-<tr>
-<td style="text-align: center;">47</td>
-<td><code>graph_connectivity</code></td>
-<td>Graph Connectivity</td>
-<td>VI. Multiomics Alignment</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Checks whether cells of the same biological type form an unbroken, interconnected network across modalities.</td>
+<tr class="odd">
+<td align="center">47</td>
+<td align="left"><code>graph_connectivity</code></td>
+<td align="left">Graph Connectivity</td>
+<td align="left">VI. Multiomics Alignment</td>
+<td align="center">Higher is better</td>
+<td align="left">Checks whether cells of the same biological type form
+an unbroken, interconnected network across modalities.</td>
 </tr>
-<tr>
-<td style="text-align: center;">48</td>
-<td><code>ari</code></td>
-<td>Integration ARI</td>
-<td>VI. Multiomics Alignment</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Accuracy of unsupervised clustering on joint multiomics embeddings compared to ground-truth cell labels.</td>
+<tr class="even">
+<td align="center">48</td>
+<td align="left"><code>ari</code></td>
+<td align="left">Integration ARI</td>
+<td align="left">VI. Multiomics Alignment</td>
+<td align="center">Higher is better</td>
+<td align="left">Accuracy of unsupervised clustering on joint multiomics
+embeddings compared to ground-truth cell labels.</td>
 </tr>
-<tr>
-<td style="text-align: center;">49</td>
-<td><code>nmi</code></td>
-<td>Integration NMI</td>
-<td>VI. Multiomics Alignment</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Shared information between joint multiomics clusters and true biological cell identities.</td>
+<tr class="odd">
+<td align="center">49</td>
+<td align="left"><code>nmi</code></td>
+<td align="left">Integration NMI</td>
+<td align="left">VI. Multiomics Alignment</td>
+<td align="center">Higher is better</td>
+<td align="left">Shared information between joint multiomics clusters
+and true biological cell identities.</td>
 </tr>
-<tr>
-<td style="text-align: center;">50</td>
-<td><code>him</code></td>
-<td>HIM Topology Similarity</td>
-<td>VII. Lineage Trajectory</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Combines local edge structure and global graph spectra to test whether trajectory branching trees match real biology.</td>
+<tr class="even">
+<td align="center">50</td>
+<td align="left"><code>him</code></td>
+<td align="left">HIM Topology Similarity</td>
+<td align="left">VII. Lineage Trajectory</td>
+<td align="center">Higher is better</td>
+<td align="left">Combines local edge structure and global graph spectra
+to test whether trajectory branching trees match real biology.</td>
 </tr>
-<tr>
-<td style="text-align: center;">51</td>
-<td><code>edge_flip</code></td>
-<td>Edge Flip Similarity</td>
-<td>VII. Lineage Trajectory</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Measures the minimum number of graph edits needed to morph simulated differentiation paths into real paths.</td>
+<tr class="odd">
+<td align="center">51</td>
+<td align="left"><code>edge_flip</code></td>
+<td align="left">Edge Flip Similarity</td>
+<td align="left">VII. Lineage Trajectory</td>
+<td align="center">Higher is better</td>
+<td align="left">Measures the minimum number of graph edits needed to
+morph simulated differentiation paths into real paths.</td>
 </tr>
-<tr>
-<td style="text-align: center;">52</td>
-<td><code>geodesic_correlation</code></td>
-<td>Geodesic Distance Corr.</td>
-<td>VII. Lineage Trajectory</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Tests whether continuous pseudotime progression distances between cells are preserved along developmental paths.</td>
+<tr class="even">
+<td align="center">52</td>
+<td align="left"><code>geodesic_correlation</code></td>
+<td align="left">Geodesic Distance Corr.</td>
+<td align="left">VII. Lineage Trajectory</td>
+<td align="center">Higher is better</td>
+<td align="left">Tests whether continuous pseudotime progression
+distances between cells are preserved along developmental paths.</td>
 </tr>
-<tr>
-<td style="text-align: center;">53</td>
-<td><code>F1_branches</code></td>
-<td>Branch Assignment F1</td>
-<td>VII. Lineage Trajectory</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Assesses whether cells are assigned to the correct developmental lineages and terminal fate branches.</td>
+<tr class="odd">
+<td align="center">53</td>
+<td align="left"><code>F1_branches</code></td>
+<td align="left">Branch Assignment F1</td>
+<td align="left">VII. Lineage Trajectory</td>
+<td align="center">Higher is better</td>
+<td align="left">Assesses whether cells are assigned to the correct
+developmental lineages and terminal fate branches.</td>
 </tr>
-<tr>
-<td style="text-align: center;">54</td>
-<td><code>wcor_features</code></td>
-<td>Driver Gene Importance Corr.</td>
-<td>VII. Lineage Trajectory</td>
-<td style="text-align: center;">Higher is better</td>
-<td>Verifies that the exact same dynamic regulatory genes govern trajectory progression in simulated and real cells.</td>
+<tr class="even">
+<td align="center">54</td>
+<td align="left"><code>wcor_features</code></td>
+<td align="left">Driver Gene Importance Corr.</td>
+<td align="left">VII. Lineage Trajectory</td>
+<td align="center">Higher is better</td>
+<td align="left">Verifies that the exact same dynamic regulatory genes
+govern trajectory progression in simulated and real cells.</td>
 </tr>
-<tr>
-<td style="text-align: center;">55</td>
-<td><code>core_seconds</code></td>
-<td>Cumulative Core-Seconds</td>
-<td>VIII. Scalability</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Total computational effort: elapsed wall-clock seconds multiplied by the number of allocated processor cores.</td>
+<tr class="odd">
+<td align="center">55</td>
+<td align="left"><code>core_seconds</code></td>
+<td align="left">Cumulative Core-Seconds</td>
+<td align="left">VIII. Scalability</td>
+<td align="center">Lower is better</td>
+<td align="left">Total computational effort: elapsed wall-clock seconds
+multiplied by the number of allocated processor cores.</td>
 </tr>
-<tr>
-<td style="text-align: center;">56</td>
-<td><code>memory_per_core_mib</code></td>
-<td>Peak RAM per Core (MiB)</td>
-<td>VIII. Scalability</td>
-<td style="text-align: center;">Lower is better</td>
-<td>Hardware-normalized resident memory footprint: peak RAM consumption divided by allocated cores.</td>
+<tr class="even">
+<td align="center">56</td>
+<td align="left"><code>memory_per_core_mib</code></td>
+<td align="left">Peak RAM per Core (MiB)</td>
+<td align="left">VIII. Scalability</td>
+<td align="center">Lower is better</td>
+<td align="left">Hardware-normalized resident memory footprint: peak RAM
+consumption divided by allocated cores.</td>
 </tr>
 </tbody>
 </table>
-</div>
 <hr>
-<div class="section level2">
-<h2 id="session-information">Session Information<a class="anchor" aria-label="anchor" href="#session-information"></a></h2>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-
 </div>
-</main>
+<div class="section level2">
+<h2 id="session-information">Session Information<a class="anchor" aria-label="anchor" href="#session-information"></a>
+</h2>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; R version 4.6.2 (2026-10-29)</span></span>
+<span><span class="co">#&gt; Platform: x86_64-pc-linux-gnu</span></span>
+<span><span class="co">#&gt; Running under: Ubuntu 24.04.5 LTS</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Matrix products: default</span></span>
+<span><span class="co">#&gt; BLAS:   /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.12.0 </span></span>
+<span><span class="co">#&gt; LAPACK: /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.12.0  LAPACK version 3.12.0</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; locale:</span></span>
+<span><span class="co">#&gt;  [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              </span></span>
+<span><span class="co">#&gt;  [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    </span></span>
+<span><span class="co">#&gt;  [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   </span></span>
+<span><span class="co">#&gt;  [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 </span></span>
+<span><span class="co">#&gt;  [9] LC_ADDRESS=C               LC_TELEPHONE=C            </span></span>
+<span><span class="co">#&gt; [11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; time zone: Asia/Kolkata</span></span>
+<span><span class="co">#&gt; tzcode source: system (glibc)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attached base packages:</span></span>
+<span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span><span class="co">#&gt;  [1] digest_0.6.39     desc_1.4.3        R6_2.6.1          fastmap_1.2.0    </span></span>
+<span><span class="co">#&gt;  [5] xfun_0.62         cachem_1.1.0      knitr_1.52        htmltools_0.5.9  </span></span>
+<span><span class="co">#&gt;  [9] rmarkdown_2.32    lifecycle_1.0.5   cli_3.6.6         sass_0.4.10      </span></span>
+<span><span class="co">#&gt; [13] pkgdown_2.2.1     textshaping_1.0.5 jquerylib_0.1.4   systemfonts_1.3.3</span></span>
+<span><span class="co">#&gt; [17] compiler_4.6.2    tools_4.6.2       ragg_1.5.2        bslib_0.12.0     </span></span>
+<span><span class="co">#&gt; [21] evaluate_1.0.5    yaml_2.3.12       otel_0.3.0        jsonlite_2.0.0   </span></span>
+<span><span class="co">#&gt; [25] rlang_1.3.0       fs_2.1.0          htmlwidgets_1.6.4</span></span></code></pre></div>
+</div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 
 
     <footer><div class="pkgdown-footer-left">
+  <p>NULL</p>
 </div>
 
 <div class="pkgdown-footer-right">

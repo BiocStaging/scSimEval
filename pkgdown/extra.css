@@ -959,3 +959,66 @@ small.dont-index {
 [data-bs-theme="dark"] table::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
+/* ==========================================================================
+   Collapsible "On this page" TOC Sidebar & Floating Restore Button
+   ========================================================================== */
+.toc-toggle-btn {
+  font-size: 0.72rem !important;
+  font-weight: 500 !important;
+  padding: 0.15rem 0.45rem !important;
+  line-height: 1.2 !important;
+  border-radius: 4px !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #64748b !important;
+  background-color: transparent !important;
+  cursor: pointer !important;
+  margin-top: -0.1rem !important;
+}
+
+.toc-toggle-btn:hover {
+  background-color: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  color: #1e293b !important;
+}
+
+[data-bs-theme="dark"] .toc-toggle-btn {
+  border-color: #475569 !important;
+  color: #94a3b8 !important;
+}
+
+[data-bs-theme="dark"] .toc-toggle-btn:hover {
+  background-color: #334155 !important;
+  border-color: #64748b !important;
+  color: #f8fafc !important;
+}
+
+.toc-floating-show-btn {
+  position: fixed !important;
+  top: 85px !important;
+  right: 20px !important;
+  z-index: 1040 !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  padding: 0.38rem 0.85rem !important;
+  border-radius: 20px !important;
+  background-color: #2563eb !important;
+  border: 1px solid #1d4ed8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.toc-floating-show-btn:hover {
+  background-color: #1d4ed8 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
+}
+
+[data-bs-theme="dark"] .toc-floating-show-btn {
+  background-color: #3b82f6 !important;
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}

@@ -30,6 +30,12 @@ zero-inflation curves, and manifold distances between reference and simulated da
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch"><li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/kabilanbio/scSimEval" aria-label="GitHub repository"><span class="fa fa-github fa-lg"></span></a></li>
       </ul></div>
 
@@ -69,7 +75,8 @@ zero-inflation curves, and manifold distances between reference and simulated da
 <span>  memory_unit <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MiB"</span>, <span class="st">"MB"</span><span class="op">)</span>,</span>
 <span>  sim_cores <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  trajectory_num_trees <span class="op">=</span> <span class="fl">10000L</span>,</span>
-<span>  include_trajectory <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  include_trajectory <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  include_downstream <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -83,6 +90,34 @@ zero-inflation curves, and manifold distances between reference and simulated da
 
 <dt id="arg-sim-data">sim_data<a class="anchor" aria-label="anchor" href="#arg-sim-data"></a></dt>
 <dd><p>Simulated count matrix (features x cells).</p></dd>
+
+
+<dt id="arg-cell-types">cell_types<a class="anchor" aria-label="anchor" href="#arg-cell-types"></a></dt>
+<dd><p>Cell type metadata details</p></dd>
+
+
+<dt id="arg-cell-types-ref">cell_types_ref<a class="anchor" aria-label="anchor" href="#arg-cell-types-ref"></a></dt>
+<dd><p>Cell type details of reference dataset</p></dd>
+
+
+<dt id="arg-cell-types-sim">cell_types_sim<a class="anchor" aria-label="anchor" href="#arg-cell-types-sim"></a></dt>
+<dd><p>Cell type details of simulated dataset</p></dd>
+
+
+<dt id="arg-batch-info">batch_info<a class="anchor" aria-label="anchor" href="#arg-batch-info"></a></dt>
+<dd><p>Batch details</p></dd>
+
+
+<dt id="arg-batch-ref">batch_ref<a class="anchor" aria-label="anchor" href="#arg-batch-ref"></a></dt>
+<dd><p>Batch details of reference dataset</p></dd>
+
+
+<dt id="arg-batch-sim">batch_sim<a class="anchor" aria-label="anchor" href="#arg-batch-sim"></a></dt>
+<dd><p>Batch details of simulated dataset</p></dd>
+
+
+<dt id="arg-modality">modality<a class="anchor" aria-label="anchor" href="#arg-modality"></a></dt>
+<dd><p>Name of modality</p></dd>
 
 
 <dt id="arg-compute-bivariate">compute_bivariate<a class="anchor" aria-label="anchor" href="#arg-compute-bivariate"></a></dt>
@@ -129,6 +164,12 @@ by the simulator to generate <code>sim_data</code>. Default is NULL.</p></dd>
 <dd><p>Logical; whether to evaluate Category VII trajectory &amp; lineage topology
 metrics when <code>modality</code> is scRNA-seq (automatically skipped for <code>scATAC-seq</code>). Default is <code>TRUE</code>.</p></dd>
 
+
+<dt id="arg-include-downstream">include_downstream<a class="anchor" aria-label="anchor" href="#arg-include-downstream"></a></dt>
+<dd><p>Logical; whether to evaluate Category III clustering, Category IV batch mixing,
+and Category V biological signal differential expression/accessibility metrics when metadata are available.
+Default is <code>TRUE</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -138,26 +179,31 @@ metrics when <code>modality</code> is scRNA-seq (automatically skipped for <code
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><img src="figures/workflow_diagram.png" width="800" alt="scSimEval Unified Benchmarking Workflow Diagram"></p>
 
-<p><strong>Metric Measurement Capacity by Data &amp; Metadata Mode (56 Evaluation Measures Suite):</strong></p><ul><li><p><strong>Count Matrix Alone (No Metadata):</strong> Evaluates Category I (Distributional
-    Properties: 10 univariate metrics—Wasserstein, KS, MAD, MAE, RMSE, Bhattacharyya,
-    KDE-ISE, Runs statistic, NN mismatch, Inter-dataset silhouette—and 4 bivariate metrics—
-    Fasano-Franceschini 2D KS, 2D EMD, 2D NN mismatch, 2D Inter-dataset silhouette),
-    Category II (Sparsity &amp; Zero-Inflation Dynamics: logistic dropout curve midpoint/slope/R2
-    or accessibility-sparsity curve RMSE/R2, and excess zero-inflation weight discrepancy),
-    Category III manifold metrics (MMD, Generative Precision/Recall), and Category VII
-    (Trajectory &amp; Lineage Topology via the HVG-filtered dynverse workflow, evaluated for
-    <code>scRNA-seq</code> only and skipped for <code>scATAC-seq</code>: HIM topology similarity,
-    edge flip similarity, geodesic distance correlation, branch assignment F1,
-    and Random Forest feature importance weighted correlation wcor_features).</p></li>
-<li><p><strong>+ Cell Types (Optional):</strong> Unlocks Category III subpopulation metrics
-    (Silhouette ASW, CDI, Neighborhood Purity, ARI, NMI, and auxiliary Davies-Bouldin Index).</p></li>
-<li><p><strong>+ Batch / Biological Replicate Annotations (Optional):</strong> Unlocks Category IV
-    (Technical Variation &amp; Batch Mixing Dynamics: Batch Silhouette, PCR R2, CMS score,
-    LISI/ISI, Cross-Batch F1) and Category V (Biological Signal &amp; Differential Fidelity:
-    Libra pseudobulk edgeR-QLF null P-value uniformity, accuracy, precision, recall,
-    F1-score, and ROC-AUC for scRNA-seq DE or scATAC-seq DA).</p></li>
-<li><p><strong>Full Metadata (+ Runtime &amp; Memory):</strong> Unlocks Category VIII scalability tracking
-    (<code>core_seconds</code>, <code>memory_per_core_mib</code>) for the complete 56-measure suite.</p></li>
+<p><strong>Metric Measurement Capacity across 4 Analysis Options (56 Evaluation Measures Suite):</strong>
+Both <code>cell_type</code> and <code>batch</code> metadata annotations are strictly mandatory for benchmarking to enable complete evaluation across all biological and technical dimensions.</p><ul><li><p><strong>1. scRNA-seq (45 Metrics):</strong> Evaluates 45 metrics across 7 categories:
+    Category I (Distributional Properties: 10 univariate + 4 bivariate metrics),
+    Category II (Sparsity &amp; Zero-Inflation Dynamics: 5 metrics),
+    Category III (Cellular Manifold &amp; Clustering Concordance: 8 metrics, including MMD, Precision/Recall, Silhouette, CDI, Purity, ARI, NMI),
+    Category IV (Technical Variation &amp; Batch Mixing Dynamics: 5 metrics, including Batch Silhouette, PCR R2, CMS, ISI, Cross-Batch F1),
+    Category V (Biological Signal &amp; Differential Expression Fidelity: 6 metrics via pseudobulk edgeR-QLF),
+    Category VII (Trajectory &amp; Lineage Topology: 5 metrics via dynverse workflow), and
+    Category VIII (Computational Scalability &amp; Efficiency: 2 metrics, core_seconds and memory_per_core_mib).</p></li>
+<li><p><strong>2. scATAC-seq (32 Metrics):</strong> Evaluates 32 metrics across 6 categories:
+    Category I (Peak Accessibility Distribution Moments: 7 metrics),
+    Category II (Accessibility-Sparsity Dynamics: 4 metrics),
+    Category III (Epigenomic Manifold &amp; Clustering Concordance: 8 metrics),
+    Category IV (Technical Variation &amp; Batch Mixing Dynamics: 5 metrics),
+    Category V (Biological Signal &amp; Differential Accessibility Fidelity: 6 metrics via pseudobulk edgeR-QLF), and
+    Category VIII (Computational Scalability &amp; Efficiency: 2 metrics). Trajectory (Category VII) is skipped for ATAC.</p></li>
+<li><p><strong>3. Paired Multiomics (56 Metrics):</strong> Evaluates all 56 metrics across all 8 canonical categories (I–VIII):
+    both unimodal layers (Cat I &amp; II), dual clustering concordance (Cat III), dual batch mixing dynamics (Cat IV),
+    dual biological signal fidelity (Cat V: 6 for scRNA DE + 6 for scATAC DA), Multiomics Integration &amp; Alignment (Cat VI:
+    Batch ASW, Cell-Type ASW, Graph Connectivity, Integration ARI/NMI, FOSCTTM, Match@1, Cross-modal Generation Fidelity,
+    Peak-to-Gene Coupling), scRNA Trajectory (Cat VII), and Scalability (Cat VIII).</p></li>
+<li><p><strong>4. Unpaired Multiomics (51 Metrics):</strong> Evaluates 51 metrics across 7 categories:
+    evaluates both unimodal layers (Cat I &amp; II), dual clustering (Cat III), dual batch mixing (Cat IV), dual differential signal (Cat V),
+    population-level multiomics integration &amp; alignment (Cat VI), scRNA trajectory (Cat VII), and scalability (Cat VIII).
+    Omits 5 cell-level pairing measures (FOSCTTM, Match@1, cross-modal generation, and cell-matched coupling) due to separate cell identities (56 - 5 = 51).</p></li>
 </ul></div>
 
     <div class="section level2">
@@ -171,8 +217,6 @@ metrics when <code>modality</code> is scRNA-seq (automatically skipped for <code
 <span class="r-msg co"><span class="r-pr">#&gt;</span> [5/5] Computing zero-probability and manifold distances...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating batch integration &amp; confounder mixing...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Evaluating scRNA-seq biological signal fidelity (Libra Pseudobulk edgeR-QLF)...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> [6/7] Evaluating trajectory and lineage topology (HVG + dynverse, scRNA-seq only)...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Unimodal accuracy evaluation complete.</span>
 </code></pre></div>
@@ -182,6 +226,7 @@ metrics when <code>modality</code> is scRNA-seq (automatically skipped for <code
 
 
     <footer><div class="pkgdown-footer-left">
+  <p>NULL</p>
 </div>
 
 <div class="pkgdown-footer-right">
@@ -207,6 +252,72 @@ document.addEventListener("DOMContentLoaded", function() {
   const searchInput = document.getElementById("search-input");
   if (searchInput) {
     searchInput.placeholder = "Search docs... (Press /)";
+  }
+
+  // On this page (TOC) Hide / Show Toggle Feature
+  const tocNav = document.getElementById("toc");
+  if (tocNav) {
+    const tocAside = tocNav.closest("aside") || tocNav.closest(".col-md-3");
+    const mainEl = document.getElementById("main");
+    const tocH2 = tocNav.querySelector("h2");
+
+    if (tocAside && mainEl && tocH2) {
+      // Add hide button to TOC header
+      if (!document.getElementById("btn-hide-toc")) {
+        const hideBtn = document.createElement("button");
+        hideBtn.id = "btn-hide-toc";
+        hideBtn.type = "button";
+        hideBtn.className = "btn btn-sm btn-outline-secondary float-end toc-toggle-btn";
+        hideBtn.title = "Hide 'On this page' sidebar";
+        hideBtn.setAttribute("aria-label", "Hide Table of Contents");
+        hideBtn.innerHTML = '<span class="fa fa-angle-right me-1"></span>Hide';
+        tocH2.appendChild(hideBtn);
+
+        hideBtn.addEventListener("click", function(e) {
+          e.preventDefault();
+          setTocState(false);
+        });
+      }
+
+      // Create floating show button
+      let showBtn = document.getElementById("btn-show-toc");
+      if (!showBtn) {
+        showBtn = document.createElement("button");
+        showBtn.id = "btn-show-toc";
+        showBtn.type = "button";
+        showBtn.className = "btn btn-sm btn-primary toc-floating-show-btn shadow-sm d-none";
+        showBtn.title = "Show 'On this page' sidebar";
+        showBtn.setAttribute("aria-label", "Show Table of Contents");
+        showBtn.innerHTML = '<span class="fa fa-list-ul me-1"></span> On this page';
+        document.body.appendChild(showBtn);
+
+        showBtn.addEventListener("click", function(e) {
+          e.preventDefault();
+          setTocState(true);
+        });
+      }
+
+      function setTocState(visible) {
+        if (visible) {
+          tocAside.classList.remove("d-none");
+          mainEl.classList.remove("col-md-12");
+          mainEl.classList.add("col-md-9");
+          if (showBtn) showBtn.classList.add("d-none");
+          localStorage.setItem("scSimEval_toc_hidden", "false");
+        } else {
+          tocAside.classList.add("d-none");
+          mainEl.classList.remove("col-md-9");
+          mainEl.classList.add("col-md-12");
+          if (showBtn) showBtn.classList.remove("d-none");
+          localStorage.setItem("scSimEval_toc_hidden", "true");
+        }
+      }
+
+      // Restore user preference
+      if (localStorage.getItem("scSimEval_toc_hidden") === "true") {
+        setTocState(false);
+      }
+    }
   }
 });
 </script></body></html>

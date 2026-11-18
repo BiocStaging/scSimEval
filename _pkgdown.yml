@@ -29,6 +29,72 @@ template:
         if (searchInput) {
           searchInput.placeholder = "Search docs... (Press /)";
         }
+
+        // On this page (TOC) Hide / Show Toggle Feature
+        const tocNav = document.getElementById("toc");
+        if (tocNav) {
+          const tocAside = tocNav.closest("aside") || tocNav.closest(".col-md-3");
+          const mainEl = document.getElementById("main");
+          const tocH2 = tocNav.querySelector("h2");
+
+          if (tocAside && mainEl && tocH2) {
+            // Add hide button to TOC header
+            if (!document.getElementById("btn-hide-toc")) {
+              const hideBtn = document.createElement("button");
+              hideBtn.id = "btn-hide-toc";
+              hideBtn.type = "button";
+              hideBtn.className = "btn btn-sm btn-outline-secondary float-end toc-toggle-btn";
+              hideBtn.title = "Hide 'On this page' sidebar";
+              hideBtn.setAttribute("aria-label", "Hide Table of Contents");
+              hideBtn.innerHTML = '<span class="fa fa-angle-right me-1"></span>Hide';
+              tocH2.appendChild(hideBtn);
+
+              hideBtn.addEventListener("click", function(e) {
+                e.preventDefault();
+                setTocState(false);
+              });
+            }
+
+            // Create floating show button
+            let showBtn = document.getElementById("btn-show-toc");
+            if (!showBtn) {
+              showBtn = document.createElement("button");
+              showBtn.id = "btn-show-toc";
+              showBtn.type = "button";
+              showBtn.className = "btn btn-sm btn-primary toc-floating-show-btn shadow-sm d-none";
+              showBtn.title = "Show 'On this page' sidebar";
+              showBtn.setAttribute("aria-label", "Show Table of Contents");
+              showBtn.innerHTML = '<span class="fa fa-list-ul me-1"></span> On this page';
+              document.body.appendChild(showBtn);
+
+              showBtn.addEventListener("click", function(e) {
+                e.preventDefault();
+                setTocState(true);
+              });
+            }
+
+            function setTocState(visible) {
+              if (visible) {
+                tocAside.classList.remove("d-none");
+                mainEl.classList.remove("col-md-12");
+                mainEl.classList.add("col-md-9");
+                if (showBtn) showBtn.classList.add("d-none");
+                localStorage.setItem("scSimEval_toc_hidden", "false");
+              } else {
+                tocAside.classList.add("d-none");
+                mainEl.classList.remove("col-md-9");
+                mainEl.classList.add("col-md-12");
+                if (showBtn) showBtn.classList.remove("d-none");
+                localStorage.setItem("scSimEval_toc_hidden", "true");
+              }
+            }
+
+            // Restore user preference
+            if (localStorage.getItem("scSimEval_toc_hidden") === "true") {
+              setTocState(false);
+            }
+          }
+        }
       });
       </script>
 
@@ -38,7 +104,7 @@ home:
 
 footer:
   structure:
-    left: []
+    left: copyright
     right: built_with
 
 navbar:
@@ -64,6 +130,19 @@ navbar:
       href: reference/index.html
   right:
     - search: true
+    - icon: fa-sun
+      aria-label: Light switch
+      id: lightswitch
+      menu:
+        - text: Light
+          theme: light
+          icon: fa-sun
+        - text: Dark
+          theme: dark
+          icon: fa-moon
+        - text: Auto
+          theme: auto
+          icon: fa-adjust
     - icon: fa-github fa-lg
       href: https://github.com/kabilanbio/scSimEval
       aria-label: GitHub repository
@@ -96,6 +175,8 @@ reference:
       - compute_embedding_quality_metrics
       - compute_method_leaderboard
       - zoom_plot
+      - normalize_bubble_scores
+      - .normalize_bubble_scores
 
   - title: "Interactive Graphical Interface (Shiny App Studio)"
     desc: "Interactive Shiny web application providing point-and-click simulation benchmarking, UMAP/t-SNE embedding explorations, and dynamic data packaging."

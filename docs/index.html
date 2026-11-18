@@ -59,6 +59,14 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
 </form></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/kabilanbio/scSimEval" aria-label="GitHub repository"><span class="fa fa-github fa-lg"></span></a></li>
       </ul>
 </div>
@@ -74,41 +82,42 @@
 </h1>
 </div>
 <p><a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a> <a href="https://kabilanbio.github.io/scSimEval/"><img src="https://img.shields.io/badge/docs-pkgdown-blue.svg" alt="Documentation"></a> <a href="https://github.com/BiocStaging/scSimEval" class="external-link"><img src="https://img.shields.io/badge/Bioconductor-submission%20v0.99.10-brightgreen.svg" alt="Bioconductor submission"></a></p>
+<hr>
 <div class="section level2">
-<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a></h2>
+<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+</h2>
 <p><strong><code>scSimEval</code></strong> is a unified evaluation and benchmarking toolkit designed to systematically quantify how faithfully single-cell and multiomics simulation methods reproduce empirical biological experiments.</p>
-<p>The package provides a standardized, reference-based benchmarking framework supporting four primary operational modalities:</p>
-<ul>
-<li><strong><code>scRNA-seq</code></strong> (Single-cell transcriptomic count matrices)</li>
-<li><strong><code>scATAC-seq</code></strong> (Single-cell chromatin accessibility peak matrices)</li>
-<li><strong><code>Paired Multiomics</code></strong> (Simultaneous co-assays across identical cells, e.g., 10x Chromium Multiome, SHARE-seq)</li>
-<li><strong><code>Unpaired Multiomics</code></strong> (Independent scRNA-seq and scATAC-seq profiled from separate cells of the same biological system)</li>
-</ul>
+<p>The package provides a standardized, reference-based benchmarking framework supporting four primary operational modalities: * <strong><code>scRNA-seq</code></strong> (Single-cell transcriptomic count matrices) * <strong><code>scATAC-seq</code></strong> (Single-cell chromatin accessibility peak matrices) * <strong><code>Paired Multiomics</code></strong> (Simultaneous co-assays across identical cells, e.g., 10x Chromium Multiome, SHARE-seq) * <strong><code>Unpaired Multiomics</code></strong> (Independent scRNA-seq and scATAC-seq profiled from separate cells of the same biological system)</p>
 <hr>
 </div>
-
 <div class="section level2">
-<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a></h2>
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
 <div class="section level3">
-<h3 id="prerequisites-system-requirements">Prerequisites &amp; System Requirements<a class="anchor" aria-label="anchor" href="#prerequisites-system-requirements"></a></h3>
+<h3 id="prerequisites--system-requirements">Prerequisites &amp; System Requirements<a class="anchor" aria-label="anchor" href="#prerequisites--system-requirements"></a>
+</h3>
 <p>Before installing <code>scSimEval</code>, please ensure your system meets the following requirements:</p>
 <ol style="list-style-type: decimal">
-<li><strong>R Version:</strong> R (&gt;= 4.3.0).</li>
-<li><strong>C++ Compilation Tools:</strong>
+<li><p><strong>R Version:</strong> R (&gt;= 4.3.0).</p></li>
+<li>
+<p><strong>C++ Compilation Tools:</strong></p>
 <ul>
-<li><strong>Windows:</strong> Install <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">Rtools</a> matching your R version (required for compiling C++ extensions such as <code>Rcpp</code> and <code>RANN</code>).</li>
-<li><strong>macOS:</strong> Install Xcode Command Line Tools (<code>xcode-select --install</code>) and <code>gfortran</code>.</li>
-<li><strong>Linux:</strong> Ensure standard development packages (<code>build-essential</code>, <code>g++</code>, <code>libcurl4-openssl-dev</code>, <code>libxml2-dev</code>) are installed.</li>
+<li>
+<strong>Windows:</strong> Install <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">Rtools</a> matching your R version (required for compiling C++ extensions such as <code>Rcpp</code> and <code>RANN</code>).</li>
+<li>
+<strong>macOS:</strong> Install Xcode Command Line Tools (<code>xcode-select --install</code>) and <code>gfortran</code>.</li>
+<li>
+<strong>Linux:</strong> Ensure standard development packages (<code>build-essential</code>, <code>g++</code>, <code>libcurl4-openssl-dev</code>, <code>libxml2-dev</code>) are installed.</li>
 </ul>
 </li>
-<li><strong>Bioconductor Dependencies:</strong>
-<p><code>scSimEval</code> relies on core Bioconductor packages for single-cell data structures and pseudobulk differential testing. We recommend installing them first via <code>BiocManager</code>:</p>
-<div class="sourceCode" id="cb-bioc"><pre class="downlit sourceCode r">
+<li>
+<p><strong>Bioconductor Dependencies:</strong> <code>scSimEval</code> relies on core Bioconductor packages for single-cell data structures and pseudobulk differential testing. We recommend installing them first via <code>BiocManager</code>:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"BiocManager"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"BiocManager"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="fu">BiocManager</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/BiocManager/man/install.html" class="external-link">install</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span><span class="fu">BiocManager</span><span class="fu">::</span><span class="fu"><a href="https://bioconductor.github.io/BiocManager/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">"SingleCellExperiment"</span>,</span>
 <span>  <span class="st">"SummarizedExperiment"</span>,</span>
 <span>  <span class="st">"edgeR"</span>,</span>
@@ -118,71 +127,52 @@
 </li>
 </ol>
 </div>
-
 <div class="section level3">
-<h3 id="installing-scsimeval-from-github">Installing scSimEval from GitHub<a class="anchor" aria-label="anchor" href="#installing-scsimeval-from-github"></a></h3>
+<h3 id="installing-scsimeval-from-github">Installing <code>scSimEval</code> from GitHub<a class="anchor" aria-label="anchor" href="#installing-scsimeval-from-github"></a>
+</h3>
 <p>Install the development release of <strong><code>scSimEval</code></strong> from GitHub using <code>remotes</code>:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"remotes"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"kabilanbio/scSimEval"</span>, dependencies <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
-
 <div class="section level3">
-<h3 id="verification">Verification<a class="anchor" aria-label="anchor" href="#verification"></a></h3>
+<h3 id="verification">Verification<a class="anchor" aria-label="anchor" href="#verification"></a>
+</h3>
 <p>Verify that <code>scSimEval</code> has installed successfully:</p>
-<div class="sourceCode" id="cb-ver"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval/">scSimEval</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="st">"scSimEval"</span><span class="op">)</span></span></code></pre></div>
-</div>
 <hr>
 </div>
+</div>
 <div class="section level2">
-<h2 id="execution-options">Execution Options: Interactive Shiny Studio &amp; Reproducible R Script<a class="anchor" aria-label="anchor" href="#execution-options"></a></h2>
+<h2 id="execution-options-interactive-shiny-studio--reproducible-r-script">Execution Options: Interactive Shiny Studio &amp; Reproducible R Script<a class="anchor" aria-label="anchor" href="#execution-options-interactive-shiny-studio--reproducible-r-script"></a>
+</h2>
 <p><code>scSimEval</code> supports two distinct, flexible execution workflows tailored for both interactive exploratory analysis and large-scale computational pipelines:</p>
 <div class="section level3">
-<h3 id="option-1-interactive-shiny-app-studio">Option 1: Interactive Shiny App Studio (<code>scSimEvalApp</code>)<a class="anchor" aria-label="anchor" href="#option-1-interactive-shiny-app-studio"></a></h3>
-<p>For interactive graphical exploration, <code>scSimEval</code> provides an all-in-one, no-code web studio directly within R:</p>
-<ul>
-<li><strong>Interactive Upload &amp; Validation:</strong> Automated file format checking, metadata alignment, and assay detection.</li>
-<li><strong>Comparative Visualizations:</strong> Live generation of 600 DPI publication-grade plots including Comparative Bubble Matrices, Category Radar Charts, Heatmaps, Boxplots, and Multi-Simulator UMAP/PCA Embeddings.</li>
-<li><strong>Filter &amp; Leaderboard Exploration:</strong> Real-time simulator rank ordering, metric selection, and Excel/CSV summary report exports.</li>
-</ul>
+<h3 id="option-1-interactive-shiny-app-studio-scsimevalapp">Option 1: Interactive Shiny App Studio (<code>scSimEvalApp</code>)<a class="anchor" aria-label="anchor" href="#option-1-interactive-shiny-app-studio-scsimevalapp"></a>
+</h3>
+<p>For interactive graphical exploration, <code>scSimEval</code> provides an all-in-one, no-code web studio directly within R: * <strong>Interactive Upload &amp; Validation:</strong> Automated file format checking, metadata alignment, and assay detection. * <strong>Comparative Visualizations:</strong> Live generation of 600 DPI publication-grade plots including Comparative Bubble Matrices, Category Radar Charts, Heatmaps, Boxplots, and Multi-Simulator UMAP/PCA Embeddings. * <strong>Filter &amp; Leaderboard Exploration:</strong> Real-time simulator rank ordering, metric selection, and Excel/CSV summary report exports.</p>
 <p>Launch the Shiny studio directly from your R console:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval/">scSimEval</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/launch_scSimEval_app.html">launch_scSimEval_app</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="option-2-standalone-headless-r-script">Option 2: Standalone &amp; Headless R Script (Workstations &amp; HPC Clusters)<a class="anchor" aria-label="anchor" href="#option-2-standalone-headless-r-script"></a></h3>
-<p>For large-scale, automated, or compute-intensive benchmarking on multi-core workstations and High-Performance Computing (HPC) clusters:</p>
-<ul>
-<li><strong>Download Pre-Configured R Script:</strong> In the Shiny app <strong>Data Hub</strong>, clicking <strong>"Download R Script"</strong> automatically generates a complete, self-contained, and procedural R workflow script pre-populated with your exact dataset paths, metadata columns, and core settings.</li>
-<li><strong>Headless Command-Line Execution:</strong> Run directly in batch scripts or via R without launching a browser or consuming graphical display resources:
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval/">scSimEval</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Run full benchmark evaluation headlessly</span></span>
-<span><span class="va">benchmark_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy</a></span><span class="op">(</span></span>
-<span>  ref_data   <span class="op">=</span> <span class="va">reference_counts</span>,</span>
-<span>  sim_data   <span class="op">=</span> <span class="va">simulated_counts</span>,</span>
-<span>  cell_types <span class="op">=</span> <span class="va">cell_type_annotations</span>,</span>
-<span>  batch_info <span class="op">=</span> <span class="va">batch_annotations</span>,</span>
-<span>  threads    <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>  verbose    <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Save results object</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">benchmark_results</span>, <span class="st">"scSimEval_benchmark_results.rds"</span><span class="op">)</span></span></code></pre></div>
-</li>
-</ul>
-</div>
+<h3 id="option-2-standalone--headless-r-script-workstations--hpc-clusters">Option 2: Standalone &amp; Headless R Script (Workstations &amp; HPC Clusters)<a class="anchor" aria-label="anchor" href="#option-2-standalone--headless-r-script-workstations--hpc-clusters"></a>
+</h3>
+<p>For large-scale, automated, or compute-intensive benchmarking on multi-core workstations and High-Performance Computing (HPC) clusters: * <strong>Download Pre-Configured R Script:</strong> In the Shiny app <strong>Data Hub</strong>, clicking <strong>“Download R Script”</strong> automatically generates a complete, self-contained, and procedural R workflow script pre-populated with your exact dataset paths, metadata columns, and core settings. * <strong>Headless Command-Line Execution:</strong> Run directly in batch scripts or via R without launching a browser or consuming graphical display resources: ```R library(scSimEval)</p>
+<p># Run full benchmark evaluation headlessly benchmark_results &lt;- evaluate_simulation_accuracy( ref_data = reference_counts, sim_data = simulated_counts, cell_types = cell_type_annotations, batch_info = batch_annotations, threads = 4, verbose = TRUE )</p>
+<p># Save results object saveRDS(benchmark_results, “scSimEval_benchmark_results.rds”) ```</p>
 <hr>
 </div>
+</div>
 <div class="section level2">
-<h2 id="authors">Authors<a class="anchor" aria-label="anchor" href="#authors"></a></h2>
+<h2 id="authors">Authors<a class="anchor" aria-label="anchor" href="#authors"></a>
+</h2>
 <p><code>scSimEval</code> is developed and maintained at the <strong>Division of Agricultural Bioinformatics, ICAR-Indian Agricultural Statistics Research Institute (ICAR-IASRI)</strong>, New Delhi, India:</p>
 <ul>
 <li><p><strong>Kabilan Sakthivel</strong> (Maintainer &amp; Ph.D Scholar) — <code>kabilan151414@gmail.com</code></p></li>
@@ -197,7 +187,6 @@
 <li><p><strong>Dr. Sharanbasappa</strong> (Scientist) — <code>smadival509@gmail.com</code></p></li>
 <li><p><strong>Bug Reports &amp; Issues:</strong> <a href="https://github.com/kabilanbio/scSimEval/issues" class="external-link">https://github.com/kabilanbio/scSimEval/issues</a></p></li>
 </ul>
-<hr>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
@@ -228,15 +217,15 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Kabilan Sakthivel <br><small class="roles"> Author, maintainer </small>   </li>
-<li>Dr. Dwijesh Chandra Mishra <br><small class="roles"> Author </small>   </li>
-<li>Dr. Shashi Bhushan Lal <br><small class="roles"> Author </small>   </li>
-<li>Dr. Ulavappa Angadi <br><small class="roles"> Author </small>   </li>
-<li>Dr. Sudhir Srivastava <br><small class="roles"> Author </small>   </li>
-<li>Dr. Neeraj Budhlakoti <br><small class="roles"> Author </small>   </li>
-<li>Dr. Krishna Kumar Chaturvedi <br><small class="roles"> Author </small>   </li>
-<li>Dr. Ranjeet Ranjan Kumar <br><small class="roles"> Author </small>   </li>
-<li>Dr. Navin Chandra Gupta <br><small class="roles"> Author </small>   </li>
+<li>Kabilan Sakthivel <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0009-0002-9422-0938" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>Dr Dwijesh Chandra Mishra <br><small class="roles"> Author, thesis advisor </small> <a href="https://orcid.org/0000-0002-3327-6156" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>Dr Shashi Bhushan Lal <br><small class="roles"> Author </small> <a href="https://orcid.org/0000-0002-2958-6178" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>Dr Ulavappa Angadi <br><small class="roles"> Author </small> <a href="https://orcid.org/0000-0003-0012-0179" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>Dr Sudhir Srivastava <br><small class="roles"> Author </small> <a href="https://orcid.org/0000-0003-4990-7693" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>Dr Neeraj Budhlakoti <br><small class="roles"> Author </small> <a href="https://orcid.org/0000-0003-3380-7831" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>Dr Krishna Kumar Chaturvedi <br><small class="roles"> Author </small> <a href="https://orcid.org/0000-0002-6529-5466" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>Dr Ranjeet Ranjan Kumar <br><small class="roles"> Author </small> <a href="https://orcid.org/0000-0002-2279-6340" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>Dr Navin Chandra Gupta <br><small class="roles"> Author </small> <a href="https://orcid.org/0000-0002-6502-448X" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
 <li><a href="authors.html">More about authors...</a></li>
 </ul>
 </div>
@@ -248,6 +237,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
+  <p>NULL</p>
 </div>
 
 <div class="pkgdown-footer-right">
@@ -274,6 +264,72 @@ document.addEventListener("DOMContentLoaded", function() {
   const searchInput = document.getElementById("search-input");
   if (searchInput) {
     searchInput.placeholder = "Search docs... (Press /)";
+  }
+
+  // On this page (TOC) Hide / Show Toggle Feature
+  const tocNav = document.getElementById("toc");
+  if (tocNav) {
+    const tocAside = tocNav.closest("aside") || tocNav.closest(".col-md-3");
+    const mainEl = document.getElementById("main");
+    const tocH2 = tocNav.querySelector("h2");
+
+    if (tocAside && mainEl && tocH2) {
+      // Add hide button to TOC header
+      if (!document.getElementById("btn-hide-toc")) {
+        const hideBtn = document.createElement("button");
+        hideBtn.id = "btn-hide-toc";
+        hideBtn.type = "button";
+        hideBtn.className = "btn btn-sm btn-outline-secondary float-end toc-toggle-btn";
+        hideBtn.title = "Hide 'On this page' sidebar";
+        hideBtn.setAttribute("aria-label", "Hide Table of Contents");
+        hideBtn.innerHTML = '<span class="fa fa-angle-right me-1"></span>Hide';
+        tocH2.appendChild(hideBtn);
+
+        hideBtn.addEventListener("click", function(e) {
+          e.preventDefault();
+          setTocState(false);
+        });
+      }
+
+      // Create floating show button
+      let showBtn = document.getElementById("btn-show-toc");
+      if (!showBtn) {
+        showBtn = document.createElement("button");
+        showBtn.id = "btn-show-toc";
+        showBtn.type = "button";
+        showBtn.className = "btn btn-sm btn-primary toc-floating-show-btn shadow-sm d-none";
+        showBtn.title = "Show 'On this page' sidebar";
+        showBtn.setAttribute("aria-label", "Show Table of Contents");
+        showBtn.innerHTML = '<span class="fa fa-list-ul me-1"></span> On this page';
+        document.body.appendChild(showBtn);
+
+        showBtn.addEventListener("click", function(e) {
+          e.preventDefault();
+          setTocState(true);
+        });
+      }
+
+      function setTocState(visible) {
+        if (visible) {
+          tocAside.classList.remove("d-none");
+          mainEl.classList.remove("col-md-12");
+          mainEl.classList.add("col-md-9");
+          if (showBtn) showBtn.classList.add("d-none");
+          localStorage.setItem("scSimEval_toc_hidden", "false");
+        } else {
+          tocAside.classList.add("d-none");
+          mainEl.classList.remove("col-md-9");
+          mainEl.classList.add("col-md-12");
+          if (showBtn) showBtn.classList.remove("d-none");
+          localStorage.setItem("scSimEval_toc_hidden", "true");
+        }
+      }
+
+      // Restore user preference
+      if (localStorage.getItem("scSimEval_toc_hidden") === "true") {
+        setTocState(false);
+      }
+    }
   }
 });
 </script>

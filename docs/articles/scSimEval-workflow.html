@@ -56,6 +56,14 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/kabilanbio/scSimEval" aria-label="GitHub repository"><span class="fa fa-github fa-lg"></span></a></li>
       </ul>
 </div>
@@ -76,7 +84,7 @@ Dr. Ulavappa Angadi, Dr. Sudhir Srivastava, Dr. Neeraj Budhlakoti,
 Dr. Krishna Kumar Chaturvedi, Dr. Ranjeet Ranjan Kumar, Dr. Navin
 Chandra Gupta, Dr. Sharanbasappa</h4>
             
-            <h4 data-toc-skip class="date">2026-11-13</h4>
+            <h4 data-toc-skip class="date">2026-11-18</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/kabilanbio/scSimEval/blob/HEAD/vignettes/scSimEval-workflow.Rmd" class="external-link"><code>vignettes/scSimEval-workflow.Rmd</code></a></small>
       <div class="d-none name"><code>scSimEval-workflow.Rmd</code></div>
@@ -85,161 +93,299 @@ Chandra Gupta, Dr. Sharanbasappa</h4>
     
     
 <div class="section level2">
-<h2 id="what-do-the-8-evaluation-categories-measure">1. What Do the 8 Evaluation Categories Measure? (56 Metrics)<a class="anchor" aria-label="anchor" href="#what-do-the-8-evaluation-categories-measure"></a></h2>
-<p>Each category answers one simple question about how realistic a simulated dataset is:</p>
-<div class="table-responsive">
-<table class="table table-sm table-bordered align-middle">
-<thead>
-<tr class="header">
-<th style="width: 25%;">Category</th>
-<th style="width: 10%; text-align: center;"># Metrics</th>
-<th style="width: 17%;">Data Needed</th>
-<th style="width: 48%;">What Question Does It Answer? (and What It Measures)</th>
-</tr>
-</thead>
+<h2 id="what-do-the-8-evaluation-categories-measure-56-metrics">1. What Do the 8 Evaluation Categories Measure? (56 Metrics)<a class="anchor" aria-label="anchor" href="#what-do-the-8-evaluation-categories-measure-56-metrics"></a>
+</h2>
+<p>Each category answers one simple question about how realistic a
+simulated dataset is:</p>
+<table class="table">
+<colgroup>
+<col width="23%">
+<col width="29%">
+<col width="23%">
+<col width="23%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Category</th>
+<th align="center"># Metrics</th>
+<th align="left">Data Needed</th>
+<th align="left">What Question Does It Answer? (and What It
+Measures)</th>
+</tr></thead>
 <tbody>
-<tr>
-<td style="font-weight: 700; color: #1B4F72;">I. Distributional Properties</td>
-<td style="text-align: center; font-weight: 700;">14</td>
-<td>Count matrix only</td>
-<td><strong>Do the simulated cell and gene/peak count distributions match real data?</strong><br><span style="color: #64748B; font-size: 0.88rem;">10 univariate &amp; 4 bivariate distributional similarity measures (Wasserstein, KS, MAD, Bhattacharyya, Runs test, NN mismatch, Silhouette, 2D KS, 2D EMD, 2D NN mismatch, 2D Silhouette) across 7 cell-level, 7 feature-level, and 4 bivariate properties.</span></td>
+<tr class="odd">
+<td align="left"><strong>I. Distributional Properties</strong></td>
+<td align="center"><strong>14</strong></td>
+<td align="left">Count matrix only</td>
+<td align="left">
+<strong>Do the simulated cell and gene/peak count
+distributions match real data?</strong><br>10 univariate &amp; 4
+bivariate distributional similarity measures (Wasserstein, KS, MAD,
+Bhattacharyya, Runs test, NN mismatch, Silhouette, 2D KS, 2D EMD, 2D NN
+mismatch, 2D Silhouette) across 7 cell-level, 7 feature-level, and 4
+bivariate properties.</td>
 </tr>
-<tr>
-<td style="font-weight: 700; color: #1B4F72;">II. Sparsity &amp; Zero-Inflation Dynamics</td>
-<td style="text-align: center; font-weight: 700;">5</td>
-<td>Count matrix only</td>
-<td><strong>Are zero counts and dropout rates realistic across genes/peaks and cells?</strong><br><span style="color: #64748B; font-size: 0.88rem;">Logistic dropout curve fidelity (midpoint error <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>0</mn></msub><annotation encoding="application/x-tex">x_0</annotation></semantics></math>, transition slope error <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>, goodness-of-fit <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>), quadratic accessibility-sparsity RMSE &amp; <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math> (scATAC-seq), and excess zero proportion difference.</span></td>
+<tr class="even">
+<td align="left"><strong>II. Sparsity &amp; Zero-Inflation
+Dynamics</strong></td>
+<td align="center"><strong>5</strong></td>
+<td align="left">Count matrix only</td>
+<td align="left">
+<strong>Are zero counts and dropout rates realistic
+across genes/peaks and cells?</strong><br>Logistic dropout curve
+fidelity (midpoint error
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>0</mn></msub><annotation encoding="application/x-tex">x_0</annotation></semantics></math>,
+transition slope error
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>,
+goodness-of-fit
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>),
+quadratic accessibility-sparsity RMSE &amp;
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>
+(scATAC-seq), and excess zero proportion difference.</td>
 </tr>
-<tr>
-<td style="font-weight: 700; color: #1B4F72;">III. Cellular Manifold &amp; Clustering Concordance</td>
-<td style="text-align: center; font-weight: 700;">8</td>
-<td>Uses <code>cell_type</code></td>
-<td><strong>Do simulated cells form the right cell-type clusters and neighborhood structures?</strong><br><span style="color: #64748B; font-size: 0.88rem;">Maximum Mean Discrepancy (MMD), Generative Precision &amp; Recall, Average Silhouette Width (ASW), Clustering Deviation Index (CDI), Neighborhood Purity, Adjusted Rand Index (ARI), and Normalized Mutual Information (NMI).</span></td>
+<tr class="odd">
+<td align="left"><strong>III. Cellular Manifold &amp; Clustering
+Concordance</strong></td>
+<td align="center"><strong>8</strong></td>
+<td align="left">Uses <code>cell_type</code>
+</td>
+<td align="left">
+<strong>Do simulated cells form the right cell-type
+clusters and neighborhood structures?</strong><br>Maximum Mean
+Discrepancy (MMD), Generative Precision &amp; Recall, Average Silhouette
+Width (ASW), Clustering Deviation Index (CDI), Neighborhood Purity,
+Adjusted Rand Index (ARI), and Normalized Mutual Information (NMI).</td>
 </tr>
-<tr>
-<td style="font-weight: 700; color: #1B4F72;">IV. Technical Variation &amp; Batch Mixing Dynamics</td>
-<td style="text-align: center; font-weight: 700;">5</td>
-<td>Uses <code>batch</code></td>
-<td><strong>Are technical batch differences reproduced properly across batches?</strong><br><span style="color: #64748B; font-size: 0.88rem;">Batch Silhouette Width, Principal Component Regression (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mi>C</mi><mi>R</mi><mspace width="0.222em"></mspace><msup><mi>R</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">PCR\ R^2</annotation></semantics></math>), Cell-Specific Mixing Score (CMS), Inverse Simpson's Index (ISI), and Cross-Batch F1 Score.</span></td>
+<tr class="even">
+<td align="left"><strong>IV. Technical Variation &amp; Batch Mixing
+Dynamics</strong></td>
+<td align="center"><strong>5</strong></td>
+<td align="left">Uses <code>batch</code>
+</td>
+<td align="left">
+<strong>Are technical batch differences reproduced
+properly across batches?</strong><br>Batch Silhouette Width, Principal
+Component Regression
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mi>C</mi><mi>R</mi><mspace width="0.222em"></mspace><msup><mi>R</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">PCR\ R^2</annotation></semantics></math>),
+Cell-Specific Mixing Score (CMS), Inverse Simpson’s Index (ISI), and
+Cross-Batch F1 Score.</td>
 </tr>
-<tr>
-<td style="font-weight: 700; color: #1B4F72;">V. Biological Signal &amp; Differential Fidelity</td>
-<td style="text-align: center; font-weight: 700;">12</td>
-<td>Uses <code>cell_type</code></td>
-<td><strong>Can we still detect true marker genes (DEGs) and accessible chromatin peaks (DARs)?</strong><br><span style="color: #64748B; font-size: 0.88rem;">Pseudobulk <code>edgeR-QLF</code> differential testing for scRNA-seq DE (6 metrics) and scATAC-seq DA (6 metrics): <em>p</em>-value uniformity, accuracy, precision, recall, F1-score, and ROC-AUC.</span></td>
+<tr class="odd">
+<td align="left"><strong>V. Biological Signal &amp; Differential
+Fidelity</strong></td>
+<td align="center"><strong>12</strong></td>
+<td align="left">Uses <code>cell_type</code>
+</td>
+<td align="left">
+<strong>Can we still detect true marker genes (DEGs)
+and accessible chromatin peaks (DARs)?</strong><br>Pseudobulk
+<code>edgeR-QLF</code> differential testing for scRNA-seq DE (6 metrics)
+and scATAC-seq DA (6 metrics):
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>-value
+uniformity, accuracy, precision, recall, F1-score, and ROC-AUC.</td>
 </tr>
-<tr>
-<td style="font-weight: 700; color: #1B4F72;">VI. Multiomics Integration &amp; Alignment</td>
-<td style="text-align: center; font-weight: 700;">5</td>
-<td>Paired / Unpaired Multiomics</td>
-<td><strong>Do simulated RNA and ATAC modalities align and integrate well together?</strong><br><span style="color: #64748B; font-size: 0.88rem;">Joint-embedding integration quality: Batch ASW, Cell-Type ASW, <em>k</em>-NN Graph Connectivity, Integration ARI, and Integration NMI.</span></td>
+<tr class="even">
+<td align="left"><strong>VI. Multiomics Integration &amp;
+Alignment</strong></td>
+<td align="center"><strong>5</strong></td>
+<td align="left">Paired / Unpaired Multiomics</td>
+<td align="left">
+<strong>Do simulated RNA and ATAC modalities align and
+integrate well together?</strong><br>Joint-embedding integration
+quality: Batch ASW, Cell-Type ASW,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>-NN
+Graph Connectivity, Integration ARI, and Integration NMI.</td>
 </tr>
-<tr>
-<td style="font-weight: 700; color: #1B4F72;">VII. Trajectory &amp; Lineage Topology</td>
-<td style="text-align: center; font-weight: 700;">5</td>
-<td>scRNA-seq counts</td>
-<td><strong>Are cell developmental paths, branches, and trajectory genes preserved?</strong><br><span style="color: #64748B; font-size: 0.88rem;">HVG-filtered dynverse workflow on scRNA-seq: HIM topology similarity, edge-flip similarity, geodesic distance correlation, branch assignment F1 (<code>F1_branches</code>), and RF feature importance correlation (<code>wcor_features</code>).</span></td>
+<tr class="odd">
+<td align="left"><strong>VII. Trajectory &amp; Lineage
+Topology</strong></td>
+<td align="center"><strong>5</strong></td>
+<td align="left">scRNA-seq counts</td>
+<td align="left">
+<strong>Are cell developmental paths, branches, and
+trajectory genes preserved?</strong><br>HVG-filtered dynverse workflow
+on scRNA-seq: HIM topology similarity, edge-flip similarity, geodesic
+distance correlation, branch assignment F1 (<code>F1_branches</code>),
+and RF feature importance correlation (<code>wcor_features</code>).</td>
 </tr>
-<tr>
-<td style="font-weight: 700; color: #1B4F72;">VIII. Computational Scalability &amp; Efficiency</td>
-<td style="text-align: center; font-weight: 700;">2</td>
-<td>Runtime &amp; RAM inputs</td>
-<td><strong>How fast and memory-light is each simulator?</strong><br><span style="color: #64748B; font-size: 0.88rem;">Core-normalized runtime (<code>core_seconds</code>) and memory per allocated core (<code>memory_per_core_mib</code>), alongside wall-clock elapsed time (s / min) and total peak RAM (MiB / GiB).</span></td>
+<tr class="even">
+<td align="left"><strong>VIII. Computational Scalability &amp;
+Efficiency</strong></td>
+<td align="center"><strong>2</strong></td>
+<td align="left">Runtime &amp; RAM inputs</td>
+<td align="left">
+<strong>How fast and memory-light is each
+simulator?</strong><br>Core-normalized runtime
+(<code>core_seconds</code>) and memory per allocated core
+(<code>memory_per_core_mib</code>), alongside wall-clock elapsed time (s
+/ min) and total peak RAM (MiB / GiB).</td>
 </tr>
 </tbody>
 </table>
-</div>
 <blockquote>
-<p><strong>Curated Metric Measurement Capacity by Modality:</strong></p>
-<ul>
-<li><strong>scRNA-seq:</strong> <strong>44 Metrics</strong> across 7 categories (Cat I: 14, Cat II: 4, Cat III: 8, Cat IV: 5, Cat V: 6 DE, Cat VII: 5 Trajectory, Cat VIII: 2 Scalability).</li>
-<li><strong>scATAC-seq:</strong> <strong>38 Metrics</strong> across 6 categories (Cat I: 14, Cat II: 3, Cat III: 8, Cat IV: 5, Cat V: 6 DA, Cat VIII: 2 Scalability; Trajectory skipped for ATAC).</li>
-<li><strong>Paired Multiomics:</strong> <strong>56 Metrics</strong> across all 8 canonical categories (I–VIII, with 50 unique columns in Comparative Bubble Matrix).</li>
-<li><strong>Unpaired Multiomics:</strong> <strong>56 Metrics</strong> across all 8 canonical categories (same 56 metrics, with Cat VI integration evaluated on joint stacked embeddings).</li>
-</ul>
+<p><strong>Curated Metric Measurement Capacity by Modality:</strong> -
+<strong>scRNA-seq:</strong> <strong>44 Metrics</strong> across 7
+categories (Cat I: 14, Cat II: 4, Cat III: 8, Cat IV: 5, Cat V: 6 DE,
+Cat VII: 5 Trajectory, Cat VIII: 2 Scalability). -
+<strong>scATAC-seq:</strong> <strong>38 Metrics</strong> across 6
+categories (Cat I: 14, Cat II: 3, Cat III: 8, Cat IV: 5, Cat V: 6 DA,
+Cat VIII: 2 Scalability; Trajectory skipped for ATAC). - <strong>Paired
+Multiomics:</strong> <strong>56 Metrics</strong> across all 8 canonical
+categories (I–VIII, with 50 unique columns in Comparative Bubble
+Matrix). - <strong>Unpaired Multiomics:</strong> <strong>56
+Metrics</strong> across all 8 canonical categories (same 56 metrics,
+with Cat VI integration evaluated on joint stacked embeddings).</p>
 </blockquote>
 <div class="figure" style="text-align: center">
-<img src="figures/workflow_diagram.png" class="r-plt" alt="Figure 1: Unified benchmarking architecture of scSimEval." width="100%">
-<p class="caption">
-<strong>Figure 1: Unified benchmarking architecture of scSimEval.</strong> The end-to-end framework ingests reference and simulated single-cell and multiomics count matrices with experimental metadata, evaluates 56 curated evaluation measures across eight biological and computational dimensions, standardizes scores via direction-aware normalization, and generates publication-grade comparative visualizations and leaderboards.
+<img src="figures/workflow_diagram.png" class="r-plt" alt="**Figure 1: Unified benchmarking architecture of scSimEval.** The end-to-end framework ingests reference and simulated single-cell and multiomics count matrices with experimental metadata, evaluates 56 curated evaluation measures across eight biological and computational dimensions, standardizes scores via direction-aware normalization, and generates publication-grade comparative visualizations and leaderboards." width="100%"><p class="caption">
+<strong>Figure 1: Unified benchmarking architecture of
+scSimEval.</strong> The end-to-end framework ingests reference and
+simulated single-cell and multiomics count matrices with experimental
+metadata, evaluates 56 curated evaluation measures across eight
+biological and computational dimensions, standardizes scores via
+direction-aware normalization, and generates publication-grade
+comparative visualizations and leaderboards.
 </p>
 </div>
 <hr>
 </div>
-
 <div class="section level2">
-<h2 id="input-data-formats-metadata-requirements">2. Input Data Formats &amp; Metadata Requirements<a class="anchor" aria-label="anchor" href="#input-data-formats-metadata-requirements"></a></h2>
-<p>In <code>scSimEval</code>, reference and simulated datasets can be supplied as either standard count matrices with metadata vectors or encapsulated as S4 objects (<code>Seurat</code> or <code>SingleCellExperiment</code> saved as <code>.rds</code> files):</p>
+<h2 id="input-data-formats-metadata-requirements">2. Input Data Formats &amp; Metadata Requirements<a class="anchor" aria-label="anchor" href="#input-data-formats-metadata-requirements"></a>
+</h2>
+<p>In <code>scSimEval</code>, reference and simulated datasets can be
+supplied as either standard count matrices with metadata vectors or
+encapsulated as S4 objects (<code>Seurat</code> or
+<code>SingleCellExperiment</code> saved as <code>.rds</code> files):</p>
 <ol style="list-style-type: decimal">
-<li><p><strong>Count Matrices (<code>ref_data</code>, <code>sim_data</code>):</strong></p>
+<li>
+<strong>Count Matrices (<code>ref_data</code>,
+<code>sim_data</code>):</strong>
 <ul>
-<li><strong>Dimensions:</strong> Features (Genes or ATAC Peaks) in <strong>rows</strong> <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math> Cells in <strong>columns</strong>.</li>
-<li><strong>Data Types:</strong> Sparse matrices (<code>dgCMatrix</code>), standard numeric matrices, <code>data.frame</code>, or embedded inside <code>Seurat</code> / <code>SingleCellExperiment</code> objects.</li>
+<li>
+<strong>Dimensions:</strong> Features (Genes or ATAC Peaks) in
+<strong>rows</strong>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math>
+Cells in <strong>columns</strong>.</li>
+<li>
+<strong>Data Types:</strong> Sparse matrices
+(<code>dgCMatrix</code>), standard numeric matrices,
+<code>data.frame</code>, or embedded inside <code>Seurat</code> /
+<code>SingleCellExperiment</code> objects.</li>
 </ul>
 </li>
-<li><p><strong>Cell-Type Annotations (<code>cell_types</code> — Mandatory):</strong></p>
+<li>
+<strong>Cell-Type Annotations (<code>cell_types</code> —
+Mandatory):</strong>
 <ul>
 <li>Character vector or factor matching cell columns.</li>
-<li>Required for cellular manifold concordance (Category III: ARI, NMI, Silhouette width), biological signal fidelity (Category V: DEGs and DARs), and cross-batch cell type transfer F1.</li>
+<li>Required for cellular manifold concordance (Category III: ARI, NMI,
+Silhouette width), biological signal fidelity (Category V: DEGs and
+DARs), and cross-batch cell type transfer F1.</li>
 </ul>
 </li>
-<li><p><strong>Batch Identifiers (<code>batch_info</code> — Mandatory):</strong></p>
+<li>
+<strong>Batch Identifiers (<code>batch_info</code> —
+Mandatory):</strong>
 <ul>
 <li>Character vector or factor matching cell columns.</li>
-<li>Required for technical variation and batch mixing dynamics (Category IV: CMS, ISI, PCR <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>, Batch Silhouette) and pseudobulk biological replicate modeling (Category V: <code>edgeR-QLF</code>).</li>
+<li>Required for technical variation and batch mixing dynamics (Category
+IV: CMS, ISI, PCR
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>,
+Batch Silhouette) and pseudobulk biological replicate modeling (Category
+V: <code>edgeR-QLF</code>).</li>
 </ul>
 </li>
-<li><p><strong>Computational Resource Logs (Optional / Category VIII):</strong></p>
+<li>
+<strong>Computational Resource Logs (Optional / Category
+VIII):</strong>
 <ul>
-<li>Standardized execution runtime (<code>core_seconds</code>) and resident memory footprint per core (<code>memory_per_core_mib</code>) to benchmark computational scalability and algorithmic efficiency.</li>
+<li>Standardized execution runtime (<code>core_seconds</code>) and
+resident memory footprint per core (<code>memory_per_core_mib</code>) to
+benchmark computational scalability and algorithmic efficiency.</li>
 </ul>
 </li>
 </ol>
 <hr>
 </div>
-
 <div class="section level2">
-<h2 id="modality-specific-metrics-object-guidelines">3. Modality-Specific Metrics &amp; Object Guidelines (Seurat / SingleCellExperiment)<a class="anchor" aria-label="anchor" href="#modality-specific-metrics-object-guidelines"></a></h2>
-<p>In <code>scSimEval</code>, reference and simulated datasets are uploaded as standard <code>Seurat</code> or <code>SingleCellExperiment</code> S4 objects (<code>.rds</code>). Providing <code>cell_type</code> and <code>batch</code> metadata annotations enables complete benchmarking across all biological clustering, batch mixing, and differential signal evaluation categories (embedded directly in <code>meta.data</code> in Seurat or <code>colData</code> in SingleCellExperiment):</p>
+<h2 id="modality-specific-metrics-object-guidelines-seurat-singlecellexperiment">3. Modality-Specific Metrics &amp; Object Guidelines (Seurat /
+SingleCellExperiment)<a class="anchor" aria-label="anchor" href="#modality-specific-metrics-object-guidelines-seurat-singlecellexperiment"></a>
+</h2>
+<p>In <code>scSimEval</code>, reference and simulated datasets are
+uploaded as standard <code>Seurat</code> or
+<code>SingleCellExperiment</code> S4 objects (<code>.rds</code>).
+Providing <code>cell_type</code> and <code>batch</code> metadata
+annotations enables complete benchmarking across all biological
+clustering, batch mixing, and differential signal evaluation categories
+(embedded directly in <code>meta.data</code> in Seurat or
+<code>colData</code> in SingleCellExperiment):</p>
 <div class="section level3">
-<h3 id="quantitative-metric-measurement-capacity-by-modality">Quantitative Metric Measurement Capacity by Modality<a class="anchor" aria-label="anchor" href="#quantitative-metric-measurement-capacity-by-modality"></a></h3>
-<p>When both <code>cell_type</code> and <code>batch</code> metadata are provided, <code>scSimEval</code> evaluates the full suite of curated metrics tailored for each analysis modality:</p>
-<div class="table-responsive">
-<table class="table table-sm table-bordered align-middle">
-<thead>
-<tr class="header">
-<th style="width: 24%;">Modality / Analysis Option</th>
-<th style="width: 24%; text-align: center;">Exact Metrics Evaluated</th>
-<th style="width: 52%;">Active Evaluation Categories &amp; Scope</th>
-</tr>
-</thead>
+<h3 id="quantitative-metric-measurement-capacity-by-modality">Quantitative Metric Measurement Capacity by Modality<a class="anchor" aria-label="anchor" href="#quantitative-metric-measurement-capacity-by-modality"></a>
+</h3>
+<p>When both <code>cell_type</code> and <code>batch</code> metadata are
+provided, <code>scSimEval</code> evaluates the full suite of curated
+metrics tailored for each analysis modality:</p>
+<table class="table">
+<colgroup>
+<col width="30%">
+<col width="38%">
+<col width="30%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Modality / Analysis Option</th>
+<th align="center">Exact Metrics Evaluated</th>
+<th align="left">Active Evaluation Categories &amp; Scope</th>
+</tr></thead>
 <tbody>
-<tr>
-<td><strong>1. scRNA-seq</strong></td>
-<td style="text-align: center;"><span class="badge" style="background-color: #16A34A !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.84rem; padding: 6px 12px; border-radius: 6px;">44 Metrics</span></td>
-<td><strong>7 Categories:</strong> Distributional Properties (14), Sparsity &amp; Dropout (4), Clustering Concordance (8), Batch Mixing Dynamics (5), edgeR-QLF DE Signal (6), dynverse Trajectory (5), and Computational Scalability (2).</td>
+<tr class="odd">
+<td align="left"><strong>1. scRNA-seq</strong></td>
+<td align="center"><strong>44 Metrics</strong></td>
+<td align="left">
+<strong>7 Categories:</strong> Distributional
+Properties (14), Sparsity &amp; Dropout (4), Clustering Concordance (8),
+Batch Mixing Dynamics (5), edgeR-QLF DE Signal (6), dynverse Trajectory
+(5), and Computational Scalability (2).</td>
 </tr>
-<tr>
-<td><strong>2. scATAC-seq</strong></td>
-<td style="text-align: center;"><span class="badge" style="background-color: #0284C7 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.84rem; padding: 6px 12px; border-radius: 6px;">38 Metrics</span></td>
-<td><strong>6 Categories:</strong> Distributional Properties (14), Sparsity &amp; Dropout (3), Clustering Concordance (8), Batch Mixing Dynamics (5), edgeR-QLF DA Signal (6), and Computational Scalability (2). <em>(Trajectory [Cat VII] is skipped for ATAC).</em></td>
+<tr class="even">
+<td align="left"><strong>2. scATAC-seq</strong></td>
+<td align="center"><strong>38 Metrics</strong></td>
+<td align="left">
+<strong>6 Categories:</strong> Distributional
+Properties (14), Sparsity &amp; Dropout (3), Clustering Concordance (8),
+Batch Mixing Dynamics (5), edgeR-QLF DA Signal (6), and Computational
+Scalability (2). <em>(Trajectory [Cat VII] is skipped for
+ATAC).</em>
+</td>
 </tr>
-<tr>
-<td><strong>3. Paired Multiomics</strong></td>
-<td style="text-align: center;"><span class="badge" style="background-color: #15803D !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.84rem; padding: 6px 12px; border-radius: 6px;">56 Metrics</span><br><small class="text-muted fw-semibold">(50 Plot Columns)</small></td>
-<td><strong>All 8 Categories:</strong> Distributional Properties (14), Sparsity &amp; Dropout (5), Clustering Concordance (8), Batch Mixing Dynamics (5), Differential Signal (12: 6 DE + 6 DA), Multiomics Integration (5), Trajectory (5), and Computational Scalability (2).</td>
+<tr class="odd">
+<td align="left"><strong>3. Paired Multiomics</strong></td>
+<td align="center">
+<strong>56 Metrics</strong><br><em>(50 Plot
+Columns)</em>
+</td>
+<td align="left">
+<strong>All 8 Categories:</strong> Distributional
+Properties (14), Sparsity &amp; Dropout (5), Clustering Concordance (8),
+Batch Mixing Dynamics (5), Differential Signal (12: 6 DE + 6 DA),
+Multiomics Integration (5), Trajectory (5), and Computational
+Scalability (2).</td>
 </tr>
-<tr>
-<td><strong>4. Unpaired Multiomics</strong></td>
-<td style="text-align: center;"><span class="badge" style="background-color: #4F46E5 !important; color: #FFFFFF !important; font-weight: 700; font-size: 0.84rem; padding: 6px 12px; border-radius: 6px;">56 Metrics</span><br><small class="text-muted fw-semibold">(50 Plot Columns)</small></td>
-<td><strong>All 8 Categories:</strong> Evaluates the exact same 56 metrics across all 8 categories as paired multiomics. Category VI multiomics integration is evaluated on joint stacked embeddings.</td>
+<tr class="even">
+<td align="left"><strong>4. Unpaired Multiomics</strong></td>
+<td align="center">
+<strong>56 Metrics</strong><br><em>(50 Plot
+Columns)</em>
+</td>
+<td align="left">
+<strong>All 8 Categories:</strong> Evaluates the exact
+same 56 metrics across all 8 categories as paired multiomics. Category
+VI multiomics integration is evaluated on joint stacked embeddings.</td>
 </tr>
 </tbody>
 </table>
 </div>
-</div>
 <div class="section level3">
-<h3 id="object-setup-guidelines">Object Setup Guidelines<a class="anchor" aria-label="anchor" href="#object-setup-guidelines"></a></h3>
+<h3 id="object-setup-guidelines">Object Setup Guidelines<a class="anchor" aria-label="anchor" href="#object-setup-guidelines"></a>
+</h3>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 1. Seurat Object Setup (.rds)</span></span>
 <span><span class="co"># Embed annotations in meta.data or via standard column assignment:</span></span>
@@ -251,78 +397,103 @@ Chandra Gupta, Dr. Sharanbasappa</h4>
 <span></span>
 <span><span class="co"># 2. SingleCellExperiment Setup (.rds)</span></span>
 <span><span class="co"># Embed annotations in colData:</span></span>
-<span><span class="fu">SummarizedExperiment</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">colData</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">$</span><span class="va">cell_type</span> <span class="op">&lt;-</span> <span class="va">cell_types_vector</span> <span class="co"># Enables Cat III, V, VI</span></span>
-<span><span class="fu">SummarizedExperiment</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">colData</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">$</span><span class="va">batch</span>     <span class="op">&lt;-</span> <span class="va">batch_vector</span>      <span class="co"># Enables Cat IV &amp; V</span></span>
+<span><span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">$</span><span class="va">cell_type</span> <span class="op">&lt;-</span> <span class="va">cell_types_vector</span> <span class="co"># Enables Cat III, V, VI</span></span>
+<span><span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">$</span><span class="va">batch</span>     <span class="op">&lt;-</span> <span class="va">batch_vector</span>      <span class="co"># Enables Cat IV &amp; V</span></span>
 <span></span>
 <span><span class="co"># Save for scSimEval analysis</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">sce</span>, file <span class="op">=</span> <span class="st">"dataset.rds"</span><span class="op">)</span></span></code></pre></div>
-</div>
 <hr>
 </div>
-
+</div>
 <div class="section level2">
-<h2 id="complete-pipeline-core-allocation-table">4. Complete Pipeline Core Allocation Table (All 8 Categories)<a class="anchor" aria-label="anchor" href="#complete-pipeline-core-allocation-table"></a></h2>
-<div class="table-responsive">
-<table class="table table-sm table-bordered align-middle">
-<thead>
-<tr class="header">
-<th style="width: 32%;">Pipeline Step / Category</th>
-<th style="width: 23%; text-align: center;">Cores Used</th>
-<th style="width: 45%;">Exact Reason</th>
-</tr>
-</thead>
+<h2 id="complete-pipeline-core-allocation-table-all-8-categories">4. Complete Pipeline Core Allocation Table (All 8 Categories)<a class="anchor" aria-label="anchor" href="#complete-pipeline-core-allocation-table-all-8-categories"></a>
+</h2>
+<table class="table">
+<colgroup>
+<col width="30%">
+<col width="38%">
+<col width="30%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Pipeline Step / Category</th>
+<th align="center">Cores Used</th>
+<th align="left">Exact Reason</th>
+</tr></thead>
 <tbody>
-<tr>
-<td><strong>Property Extraction</strong></td>
-<td style="text-align: center; font-weight: 600;">4 cores</td>
-<td>Exactly 4 matrices exist: Ref Cells, Sim Cells, Ref Features, Sim Features.</td>
+<tr class="odd">
+<td align="left"><strong>Property Extraction</strong></td>
+<td align="center">4 cores</td>
+<td align="left">Exactly 4 matrices exist: Ref Cells, Sim Cells, Ref
+Features, Sim Features.</td>
 </tr>
-<tr>
-<td><strong>Category I (Distributional Metrics)</strong></td>
-<td style="text-align: center; font-weight: 600;">20 cores</td>
-<td>140+ metric-property combinations split across all cores.</td>
+<tr class="even">
+<td align="left"><strong>Category I (Distributional
+Metrics)</strong></td>
+<td align="center">20 cores</td>
+<td align="left">140+ metric-property combinations split across all
+cores.</td>
 </tr>
-<tr>
-<td><strong>Category II &amp; III (Dropout, MMD, Gen-PR)</strong></td>
-<td style="text-align: center; font-weight: 600;">5 cores</td>
-<td>Exactly 5 distinct mathematical algorithms run in parallel.</td>
+<tr class="odd">
+<td align="left"><strong>Category II &amp; III (Dropout, MMD,
+Gen-PR)</strong></td>
+<td align="center">5 cores</td>
+<td align="left">Exactly 5 distinct mathematical algorithms run in
+parallel.</td>
 </tr>
-<tr>
-<td><strong>Category IV (Batch Integration &amp; Mixing)</strong></td>
-<td style="text-align: center; font-weight: 600;">2 cores (if 2 batches)</td>
-<td>Number of batches <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>B</mi><mo>=</mo><mn>2</mn><mo>⟹</mo></mrow><annotation encoding="application/x-tex">B=2 \implies</annotation></semantics></math> only 2 cross-batch transfer pairs exist (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo>→</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">1 \to 2</annotation></semantics></math> and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2</mn><mo>→</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">2 \to 1</annotation></semantics></math>).</td>
+<tr class="even">
+<td align="left"><strong>Category IV (Batch Integration &amp;
+Mixing)</strong></td>
+<td align="center">2 cores (if 2 batches)</td>
+<td align="left">Number of batches
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>B</mi><mo>=</mo><mn>2</mn><mo>⟹</mo></mrow><annotation encoding="application/x-tex">B = 2 \implies</annotation></semantics></math>
+only
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>B</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>B</mi><mo>−</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">B(B-1) = 2</annotation></semantics></math>
+cross-batch transfer pairs exist
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo>→</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">1 \to 2</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2</mn><mo>→</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">2 \to 1</annotation></semantics></math>).</td>
 </tr>
-<tr>
-<td><strong>Category V (DE / DA Pseudobulk Fidelity)</strong></td>
-<td style="text-align: center; font-weight: 600;">20 cores</td>
-<td>Thousands of genes and peaks tested in parallel via <code>edgeR-QLF</code>.</td>
+<tr class="odd">
+<td align="left"><strong>Category V (DE / DA Pseudobulk
+Fidelity)</strong></td>
+<td align="center">20 cores</td>
+<td align="left">Thousands of genes and peaks tested in parallel via
+<code>edgeR-QLF</code>.</td>
 </tr>
-<tr>
-<td><strong>Category VI (Multiomics Integration &amp; Alignment)</strong></td>
-<td style="text-align: center; font-weight: 600;">Adaptive (4 to 20 cores)</td>
-<td>Runs on joint low-dim space; ASW scales to all 20 cores, and graph connectivity runs in fast C++ via <code>RANN</code>. <em>(Multiomics mode only)</em></td>
+<tr class="even">
+<td align="left"><strong>Category VI (Multiomics Integration &amp;
+Alignment)</strong></td>
+<td align="center">Adaptive (4 to 20 cores)</td>
+<td align="left">Runs on joint low-dim space; ASW scales to all 20
+cores, and graph connectivity runs in fast C++ via <code>RANN</code>.
+<em>(Multiomics mode only)</em>
+</td>
 </tr>
-<tr>
-<td><strong>Category VII (Trajectory &amp; Dynverse)</strong></td>
-<td style="text-align: center; font-weight: 600;">20 cores</td>
-<td>Random Forest trees (<code>ranger</code>) and geodesic distances scale across all cores.</td>
+<tr class="odd">
+<td align="left"><strong>Category VII (Trajectory &amp;
+Dynverse)</strong></td>
+<td align="center">20 cores</td>
+<td align="left">Random Forest trees (<code>ranger</code>) and geodesic
+distances scale across all cores.</td>
 </tr>
-<tr>
-<td><strong>Category VIII (Computational Scalability)</strong></td>
-<td style="text-align: center; font-weight: 600;">1 core</td>
-<td>Measures wall-clock runtime (<code>core_seconds</code>) and peak resident memory (RAM MiB).</td>
+<tr class="even">
+<td align="left"><strong>Category VIII (Computational
+Scalability)</strong></td>
+<td align="center">1 core</td>
+<td align="left">Measures wall-clock runtime (<code>core_seconds</code>)
+and peak resident memory (RAM MiB).</td>
 </tr>
 </tbody>
 </table>
 </div>
-</div>
-</main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>
 
 
 
     <footer><div class="pkgdown-footer-left">
+  <p>NULL</p>
 </div>
 
 <div class="pkgdown-footer-right">
