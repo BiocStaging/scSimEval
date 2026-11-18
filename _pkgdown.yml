@@ -450,8 +450,10 @@ home:
 
 footer:
   structure:
-    left: copyright
+    left: developed_by
     right: built_with
+  text:
+    left: "Division of Agricultural Bioinformatics, ICAR-IASRI, New Delhi"
 
 navbar:
   title: "scSimEval"

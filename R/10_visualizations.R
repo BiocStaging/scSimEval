@@ -2138,9 +2138,8 @@ plot_scalability_benchmark <- function(
   if (nrow(sc_df) == 0) stop("No computational scalability metrics (Category VIII) found in benchmark_data.")
 
   mod_tag <- switch(modality,
-    rna   = " (scRNA-seq Layer)",
-    atac  = " (scATAC-seq Layer)",
-    total = " (Combined Total)",
+    rna   = " (scRNA)",
+    atac  = " (scATAC)",
     ""
   )
 
@@ -2190,15 +2189,15 @@ plot_scalability_benchmark <- function(
   if (t_u_raw %in% c("core_hours", "core_hour", "hours", "hour", "hr", "hrs")) {
     wide_sc$display_time <- as.numeric(wide_sc$core_seconds) / 3600
     t_label <- "Core-Hours"
-    t_abbr  <- "core-h"
+    t_abbr  <- "h"
   } else if (t_u_raw %in% c("minutes", "min", "mins", "minute", "core_minutes")) {
     wide_sc$display_time <- as.numeric(wide_sc$core_seconds) / 60
     t_label <- "Core-Minutes"
-    t_abbr  <- "core-min"
+    t_abbr  <- "min"
   } else {
     wide_sc$display_time <- as.numeric(wide_sc$core_seconds)
     t_label <- "Core-Seconds"
-    t_abbr  <- "core\u00b7s"
+    t_abbr  <- "s"
   }
 
   m_u_raw <- tolower(trimws(as.character(memory_unit[1])))
@@ -2250,19 +2249,16 @@ plot_scalability_benchmark <- function(
   wide_sc <- wide_sc[order(wide_sc$core_seconds, decreasing = FALSE), ]
   wide_sc$Method <- factor(wide_sc$Method, levels = rev(wide_sc$Method))
 
-  has_cores <- any(!is.na(wide_sc$Sim_Cores) & wide_sc$Sim_Cores >= 1L)
-  core_tag <- ifelse(!is.na(wide_sc$Sim_Cores) & wide_sc$Sim_Cores >= 1L,
-                     sprintf(" [%dc]", wide_sc$Sim_Cores), "")
   time_num_str <- if (t_u_raw %in% c("core_hours", "core_hour", "hours", "hour", "hr", "hrs")) {
-    sprintf("%.3f %s", wide_sc$display_time, t_abbr)
+    sprintf("%.2f h", wide_sc$display_time)
   } else if (t_u_raw %in% c("minutes", "min", "mins", "minute", "core_minutes")) {
-    sprintf("%.2f %s", wide_sc$display_time, t_abbr)
+    sprintf("%.1f min", wide_sc$display_time)
   } else {
-    sprintf("%.1f %s", wide_sc$display_time, t_abbr)
+    sprintf("%.1f s", wide_sc$display_time)
   }
-  wide_sc$time_label <- paste0(time_num_str, core_tag)
+  wide_sc$time_label <- time_num_str
 
-  # 1. Panel A: Core-Seconds (Elapsed Time * Cores) Barplot
+  # 1. Panel A: Execution Time Barplot
   p_runtime <- ggplot2::ggplot(wide_sc, ggplot2::aes(x = .data$display_time, y = .data$Method, fill = .data$Method)) +
     ggplot2::geom_col(width = 0.65, color = "#1E293B", linewidth = 0.4, alpha = 0.9) +
     ggplot2::geom_text(
@@ -2270,16 +2266,15 @@ plot_scalability_benchmark <- function(
       hjust = -0.12, size = base_size * 0.28, fontface = "bold", color = "#1E293B"
     ) +
     ggplot2::scale_fill_manual(values = active_pal, guide = "none") +
-    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, if (has_cores) 0.30 else 0.24))) +
+    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.22))) +
     ggplot2::labs(
-      title    = paste0("A. Cumulative CPU Work (Core-Seconds)", mod_tag),
-      subtitle = paste0("Core-Seconds (Elapsed Time * Cores) in ", tolower(t_label), " (lower is faster)",
-                        if (has_cores) " | [Nc] = sim cores" else "", mod_tag),
-      x        = sprintf("Core-Seconds (%s, Lower = Faster)", t_label),
+      title    = "A. Execution Time",
+      subtitle = NULL,
+      x        = sprintf("Execution Time (%s)", t_label),
       y        = "Simulator"
     ) +
     .pub_theme(base_size = base_size) +
-    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0), plot.subtitle = ggplot2::element_text(hjust = 0))
+    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0, face = "bold"))
 
   if (type == "runtime") return(p_runtime)
 
@@ -2298,15 +2293,15 @@ plot_scalability_benchmark <- function(
       hjust = -0.15, size = base_size * 0.28, fontface = "bold", color = "#1E293B"
     ) +
     ggplot2::scale_fill_manual(values = active_pal, guide = "none") +
-    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.24))) +
+    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.22))) +
     ggplot2::labs(
-      title    = paste0("B. Peak Memory per Core", mod_tag),
-      subtitle = paste0("Peak RAM normalized by allocated CPU cores in ", m_abbr, " (lower is better)", mod_tag),
-      x        = sprintf("Peak RAM per Core (%s, Lower = More Efficient)", m_abbr),
+      title    = "B. Peak Memory per Core",
+      subtitle = NULL,
+      x        = sprintf("Peak Memory (%s)", m_abbr),
       y        = NULL
     ) +
     .pub_theme(base_size = base_size) +
-    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0), plot.subtitle = ggplot2::element_text(hjust = 0))
+    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0, face = "bold"))
 
   if (type == "memory") return(p_memory)
 
@@ -2323,34 +2318,40 @@ plot_scalability_benchmark <- function(
     ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0.12, 0.18))) +
     ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0.12, 0.18))) +
     ggplot2::labs(
-      title    = "C. Scalability Trade-Off Frontier",
-      subtitle = "Bivariate resource consumption: Core-Seconds vs. Peak RAM/Core (dashed lines = medians)",
-      x        = sprintf("Core-Seconds (%s, Lower = Faster)", t_label),
-      y        = sprintf("Peak RAM per Core (%s, Lower = Less Memory)", m_abbr)
+      title    = "C. Speed vs. Memory Trade-Off",
+      subtitle = NULL,
+      x        = sprintf("Execution Time (%s)", t_label),
+      y        = sprintf("Peak Memory (%s)", m_abbr)
     ) +
     .pub_theme(base_size = base_size) +
-    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0), plot.subtitle = ggplot2::element_text(hjust = 0))
+    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0, face = "bold"))
 
   if (type == "tradeoff") return(p_tradeoff)
 
   # 4. Panel D: Resource Cost Footprint
+  cost_label_str <- if (max(wide_sc$resource_cost, na.rm = TRUE) < 10) {
+    sprintf("%.2f", wide_sc$resource_cost)
+  } else {
+    sprintf("%.1f", wide_sc$resource_cost)
+  }
+  wide_sc$cost_label <- cost_label_str
+
   p_cost <- ggplot2::ggplot(wide_sc, ggplot2::aes(x = .data$resource_cost, y = .data$Method, fill = .data$Method)) +
     ggplot2::geom_col(width = 0.65, color = "#1E293B", linewidth = 0.4, alpha = 0.9) +
     ggplot2::geom_text(
-      ggplot2::aes(label = sprintf(ifelse(.data$resource_cost < 10, "%.2f k%s-%s", "%.1f k%s-%s"),
-                                   .data$resource_cost, m_abbr, t_abbr)),
+      ggplot2::aes(label = .data$cost_label),
       hjust = -0.15, size = base_size * 0.28, fontface = "bold", color = "#1E293B"
     ) +
     ggplot2::scale_fill_manual(values = active_pal, guide = "none") +
-    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.28))) +
+    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.22))) +
     ggplot2::labs(
-      title    = "D. Normalized Resource Cost Footprint",
-      subtitle = "Combined scalability footprint: (Core-Seconds * Peak RAM/Core) / 1000",
-      x        = sprintf("Scalability Footprint (kilo-%s-%s, Lower = Cheaper)", m_abbr, t_abbr),
+      title    = "D. Composite Resource Cost",
+      subtitle = NULL,
+      x        = "Resource Cost Score",
       y        = NULL
     ) +
     .pub_theme(base_size = base_size) +
-    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0), plot.subtitle = ggplot2::element_text(hjust = 0))
+    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0, face = "bold"))
 
   if (type == "cost") return(p_cost)
 
@@ -2365,12 +2366,12 @@ plot_scalability_benchmark <- function(
     ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.25))) +
     ggplot2::labs(
       title    = "Simulation Throughput",
-      subtitle = sprintf("Cells generated per elapsed wall-clock second (benchmark: %d cells)", cell_count),
-      x        = "Throughput (Cells / Second, Higher = Faster)",
+      subtitle = NULL,
+      x        = "Throughput (cells/s)",
       y        = NULL
     ) +
     .pub_theme(base_size = base_size) +
-    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0), plot.subtitle = ggplot2::element_text(hjust = 0))
+    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0, face = "bold"))
 
   if (type == "throughput") return(p_thru)
 
@@ -2390,13 +2391,13 @@ plot_scalability_benchmark <- function(
       ggplot2::scale_fill_manual(values = active_pal, guide = "none") +
       ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.24))) +
       ggplot2::labs(
-        title    = "CPU Multithreading Efficiency",
-        subtitle = "Ratio of CPU Time to Elapsed Time (> 1.0x indicates multicore concurrency)",
+        title    = "CPU Efficiency",
+        subtitle = NULL,
         x        = "Efficiency Ratio (CPU / Elapsed)",
         y        = NULL
       ) +
       .pub_theme(base_size = base_size) +
-      ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0), plot.subtitle = ggplot2::element_text(hjust = 0))
+      ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0, face = "bold"))
     return(p_eff)
   }
 
@@ -2408,21 +2409,21 @@ plot_scalability_benchmark <- function(
   if (layout == "6panel") {
     composite <- (p_runtime | p_memory) / (p_tradeoff | p_cost) / (p_thru | patchwork::plot_spacer()) +
       patchwork::plot_annotation(
-        title    = "Computational Scalability & Resource Utilization Benchmark",
-        subtitle = "Multi-panel profiling of cumulative CPU work (core-seconds), peak memory per core, trade-off frontier, and cost footprint",
+        title    = "Computational Scalability Benchmark",
+        caption  = "Division of Agricultural Bioinformatics, ICAR-IASRI, New Delhi",
         theme    = ggplot2::theme(
-          plot.title    = ggplot2::element_text(face = "bold", size = base_size * 1.35, hjust = 0.5, color = "#0F172A"),
-          plot.subtitle = ggplot2::element_text(size = base_size * 0.95, hjust = 0.5, color = "#475569", margin = ggplot2::margin(b = 10))
+          plot.title   = ggplot2::element_text(face = "bold", size = base_size * 1.30, hjust = 0.5, color = "#0F172A"),
+          plot.caption = ggplot2::element_text(face = "plain", size = base_size * 0.85, hjust = 0.5, color = "#64748B", margin = ggplot2::margin(t = 12))
         )
       )
   } else {
     composite <- (p_runtime | p_memory) / (p_tradeoff | p_cost) +
       patchwork::plot_annotation(
-        title    = "Computational Scalability & Resource Utilization Benchmark",
-        subtitle = "Multi-panel profiling of cumulative CPU work (core-seconds), peak memory per core, and resource tradeoff frontier",
+        title    = "Computational Scalability Benchmark",
+        caption  = "Division of Agricultural Bioinformatics, ICAR-IASRI, New Delhi",
         theme    = ggplot2::theme(
-          plot.title    = ggplot2::element_text(face = "bold", size = base_size * 1.30, hjust = 0.5, color = "#0F172A"),
-          plot.subtitle = ggplot2::element_text(size = base_size * 0.95, hjust = 0.5, color = "#475569", margin = ggplot2::margin(b = 10))
+          plot.title   = ggplot2::element_text(face = "bold", size = base_size * 1.30, hjust = 0.5, color = "#0F172A"),
+          plot.caption = ggplot2::element_text(face = "plain", size = base_size * 0.85, hjust = 0.5, color = "#64748B", margin = ggplot2::margin(t = 12))
         )
       )
   }
