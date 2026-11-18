@@ -1050,3 +1050,284 @@ aside.d-none {
   display: none !important;
 }
 
+/* ==========================================================================
+   Documentation Plot Sizing, Interactive Zoom & Pan, and Fullscreen Lightbox
+   ========================================================================== */
+
+/* 1. Constrain figure wrapper size so plots never balloon on TOC collapse */
+.template-article .figure,
+.template-article figure,
+.template-article .sc-doc-zoom-wrapper,
+.figure,
+figure,
+.sc-doc-zoom-wrapper {
+  max-width: 860px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box;
+}
+
+.figure .caption,
+figure figcaption,
+p.caption {
+  max-width: 860px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: justify !important;
+  text-justify: inter-word !important;
+  font-size: 0.90rem !important;
+  color: #475569 !important;
+  line-height: 1.45 !important;
+  margin-top: 0.6rem !important;
+}
+
+[data-bs-theme="dark"] .figure .caption,
+[data-bs-theme="dark"] figure figcaption,
+[data-bs-theme="dark"] p.caption {
+  color: #94a3b8 !important;
+}
+
+/* 2. In-Article Zoom & Pan Component */
+.sc-doc-zoom-wrapper {
+  margin: 1.5rem auto 1.2rem auto !important;
+  width: 100%;
+}
+
+.sc-doc-zoom-toolbar {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  user-select: none;
+  font-size: 0.82rem;
+}
+
+[data-bs-theme="dark"] .sc-doc-zoom-toolbar {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+.sc-doc-zoom-hint {
+  font-size: 0.76rem;
+  color: #64748B;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+[data-bs-theme="dark"] .sc-doc-zoom-hint {
+  color: #94A3B8;
+}
+
+.sc-doc-zoom-toolbar .sc-zoom-slider {
+  width: 110px;
+  accent-color: #2563eb;
+  cursor: pointer;
+  height: 6px;
+}
+
+.sc-doc-zoom-toolbar .btn {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  border-radius: 4px;
+}
+
+.sc-doc-zoom-badge {
+  font-family: 'JetBrains Mono', Consolas, monospace !important;
+  font-size: 0.78rem !important;
+  min-width: 48px;
+  text-align: center;
+}
+
+[data-bs-theme="dark"] .sc-doc-zoom-badge {
+  background-color: #0f172a !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+.sc-doc-zoom-container {
+  overflow: auto;
+  max-width: 100%;
+  max-height: 720px;
+  position: relative;
+  border: 1px solid #E2E8F0;
+  border-radius: 0 0 8px 8px;
+  background: #FFFFFF;
+  padding: 8px;
+  text-align: center;
+  user-select: none;
+  scrollbar-width: thin;
+}
+
+[data-bs-theme="dark"] .sc-doc-zoom-container {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.sc-doc-zoom-container.sc-pannable {
+  cursor: grab;
+}
+
+.sc-doc-zoom-container.sc-panning,
+.sc-doc-zoom-container.sc-panning * {
+  cursor: grabbing !important;
+}
+
+.sc-doc-zoom-stage {
+  display: block;
+  position: relative;
+  margin: 0 auto;
+}
+
+.sc-doc-zoom-target {
+  display: block;
+  width: 100%;
+  transform-origin: 0 0;
+}
+
+.sc-doc-zoom-target img {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 auto !important;
+  border-radius: 4px !important;
+  border: 1.5px solid #000000 !important;
+  padding: 3px !important;
+  background: #ffffff !important;
+  box-sizing: border-box !important;
+  -webkit-user-drag: none;
+  user-select: none;
+  cursor: zoom-in;
+}
+
+[data-bs-theme="dark"] .sc-doc-zoom-target img {
+  border-color: #475569 !important;
+}
+
+/* 3. Fullscreen Lightbox Modal (Microsoft Photos Style) */
+.sc-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(15, 23, 42, 0.94);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  animation: scFadeIn 0.15s ease-out;
+}
+
+@keyframes scFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.sc-lightbox-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.sc-lightbox-canvas.sc-panning {
+  cursor: grabbing;
+}
+
+.sc-lightbox-img {
+  background: #FFFFFF;
+  border-radius: 4px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.65);
+  transform-origin: center center;
+  max-width: none !important;
+  max-height: none !important;
+  -webkit-user-drag: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+.sc-lightbox-close {
+  position: fixed;
+  top: 18px;
+  right: 24px;
+  z-index: 1000001;
+  background: rgba(30, 41, 59, 0.85);
+  color: #F8FAFC;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.sc-lightbox-close:hover {
+  background: #DC2626;
+  border-color: #DC2626;
+  color: #FFFFFF;
+  transform: scale(1.05);
+}
+
+.sc-lightbox-bar {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000001;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #F8FAFC;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 8px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+}
+
+.sc-lightbox-bar button {
+  background: rgba(255, 255, 255, 0.1);
+  color: #F8FAFC;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 3px 11px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 0.15s ease;
+}
+
+.sc-lightbox-bar button:hover {
+  background: rgba(59, 130, 246, 0.7);
+  border-color: rgba(96, 165, 250, 0.8);
+}
+
+.sc-lightbox-bar input[type='range'] {
+  width: 150px;
+  accent-color: #60A5FA;
+  cursor: pointer;
+  height: 6px;
+}
+

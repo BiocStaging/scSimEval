@@ -3866,21 +3866,7 @@ ui <- page_navbar(
                      div(style = "margin-bottom: 8px;",
                        actionButton("btn_plot_heat", "Confirm & Plot Heatmap", class = "btn btn-primary btn-sm w-100", icon = icon("table-cells"), style = "font-weight: 600;")
                      ),
-                     selectInput(
-                       "sel_heat_cat", "Category Filter:",
-                       choices = c(
-                         "All 8 Categories Combined" = "all",
-                         "(I) Distributional Properties",
-                         "(II) Sparsity & Zero-Inflation Dynamics",
-                         "(III) Cellular Manifold & Clustering Concordance",
-                         "(IV) Technical Variation & Batch Mixing Dynamics",
-                         "(V) Biological Signal & Differential Fidelity",
-                         "(VI) Multiomics Integration & Alignment",
-                         "(VII) Trajectory & Lineage Topology",
-                         "(VIII) Computational Scalability & Efficiency"
-                       ),
-                       selected = "all"
-                     ),
+                     uiOutput("ui_heat_cat_selector"),
                      selectInput(
                        "sel_heat_score_type", "Score Scale:",
                        choices = c("Normalized Fidelity [0, 1]" = "relative", "Raw Metric Values" = "raw"),
@@ -3947,20 +3933,7 @@ ui <- page_navbar(
                 column(2, uiOutput("ui_box_dataset_selector")),
                 column(2, uiOutput("ui_box_modality_selector")),
                 column(3,
-                       selectInput(
-                         "sel_box_cat_first", "1. Choose Category First:",
-                         choices = c(
-                           "(I) Distributional Properties",
-                           "(II) Sparsity & Zero-Inflation Dynamics",
-                           "(III) Cellular Manifold & Clustering Concordance",
-                           "(IV) Technical Variation & Batch Mixing Dynamics",
-                           "(V) Biological Signal & Differential Fidelity",
-                           "(VI) Multiomics Integration & Alignment",
-                           "(VII) Trajectory & Lineage Topology",
-                           "(VIII) Computational Scalability & Efficiency"
-                         ),
-                         selected = "(I) Distributional Properties"
-                       )
+                       uiOutput("ui_box_cat_first_selector")
                 ),
                 column(3, uiOutput("ui_box_metric_picker")),
                 column(2,
@@ -3976,21 +3949,7 @@ ui <- page_navbar(
                 column(3, uiOutput("ui_box_dataset_selector_cat")),
                 column(3, uiOutput("ui_box_modality_selector_cat")),
                 column(3,
-                       selectInput(
-                         "sel_box_cat_group", "Choose Category:",
-                         choices = c(
-                           "All 8 Categories" = "all",
-                           "(I) Distributional Properties",
-                           "(II) Sparsity & Zero-Inflation Dynamics",
-                           "(III) Cellular Manifold & Clustering Concordance",
-                           "(IV) Technical Variation & Batch Mixing Dynamics",
-                           "(V) Biological Signal & Differential Fidelity",
-                           "(VI) Multiomics Integration & Alignment",
-                           "(VII) Trajectory & Lineage Topology",
-                           "(VIII) Computational Scalability & Efficiency"
-                         ),
-                         selected = "all"
-                       )
+                       uiOutput("ui_box_cat_group_selector")
                 ),
                 column(3, selectInput("sel_box_score_type", "Score Type:", choices = c("Normalized Score [0, 1]" = "normalized", "Raw Value" = "raw"), selected = "normalized"))
               )
@@ -4734,7 +4693,7 @@ ui <- page_navbar(
                 icon = bsicons::bs_icon("bar-chart-line-fill"),
                 tags$ol(
                   style = "margin-bottom: 0; font-size: 0.86rem; color: #334155; line-height: 1.6;",
-                  tags$li(tags$b("Evaluation Summary: "), "Horizontal bar charts ranking simulators across Overall Score and all 8 Categories."),
+                  tags$li(tags$b("Evaluation Summary: "), "Horizontal bar charts ranking simulators across Overall Score and active evaluation categories (7 categories for scRNA-seq, 6 for scATAC-seq, 8 for multiomics)."),
                   tags$li(tags$b("Distribution QC: "), "Q-Q plots and 1D/2D density curves comparing real vs. simulated cell and gene/peak properties."),
                   tags$li(tags$b("Metric Heatmap: "), "Color-coded matrix of simulators × metrics (scaled or raw values)."),
                   tags$li(tags$b("Metric Plots: "), "Individual metric bar charts and category score boxplots."),
@@ -10474,6 +10433,35 @@ server <- function(input, output, session) {
   # Tab 4: Diagnostic Visualizations (Multi-Dataset Support & R Script Export)
   # ============================================================================
   
+  # Dynamic modality-to-category helper: returns only active categories
+  # (7 for scRNA-seq, 6 for scATAC-seq, 8 for paired/unpaired multiomics)
+  get_active_categories_for_modality <- function(df = NULL, mod_choice = NULL, mode = NULL) {
+    canon_order <- c(
+      "(I) Distributional Properties",
+      "(II) Sparsity & Zero-Inflation Dynamics",
+      "(III) Cellular Manifold & Clustering Concordance",
+      "(IV) Technical Variation & Batch Mixing Dynamics",
+      "(V) Biological Signal & Differential Fidelity",
+      "(VI) Multiomics Integration & Alignment",
+      "(VII) Trajectory & Lineage Topology",
+      "(VIII) Computational Scalability & Efficiency"
+    )
+    if (!is.null(df) && "Category" %in% colnames(df)) {
+      avail <- unique(df$Category)
+      avail <- avail[!is.na(avail) & trimws(avail) != ""]
+      cats <- intersect(canon_order, avail)
+      if (length(cats) > 0) return(cats)
+    }
+    
+    target_mod <- tolower(paste(mod_choice %||% "", mode %||% ""))
+    if (grepl("atac", target_mod)) {
+      return(canon_order[-c(6, 7)]) # 6 categories for ATAC (no Cat VI, no Cat VII)
+    } else if (grepl("rna", target_mod)) {
+      return(canon_order[-6]) # 7 categories for RNA (no Cat VI)
+    }
+    canon_order
+  }
+
   # Centralized multi-dataset filtering and cross-dataset arithmetic average helper
   get_viz_benchmark_data <- function(dataset_choice = NULL, modality_choice = NULL) {
     req(rv$benchmark_df)
@@ -11636,12 +11624,38 @@ server <- function(input, output, session) {
   )
   
   # 4. Metric Plots
+  output$ui_box_cat_first_selector <- renderUI({
+    eff_mod <- input$sel_box_modality %||% (input$sel_viz_modality %||% "all")
+    df <- get_viz_benchmark_data(
+      dataset_choice = input$sel_box_dataset,
+      modality_choice = eff_mod
+    )
+    cats <- get_active_categories_for_modality(df, mod_choice = eff_mod, mode = input$sel_sim_mode)
+    current_sel <- input$sel_box_cat_first %||% cats[1]
+    if (!current_sel %in% cats) current_sel <- cats[1]
+    selectInput("sel_box_cat_first", "1. Choose Category First:", choices = stats::setNames(cats, cats), selected = current_sel)
+  })
+
   output$ui_box_metric_picker <- renderUI({
     df <- get_viz_benchmark_data(dataset_choice = input$sel_box_dataset, modality_choice = input$sel_box_modality)
     req(input$sel_box_cat_first)
     sub_df <- df[df$Category == input$sel_box_cat_first, , drop = FALSE]
     avail_metrics <- sort(unique(sub_df$Metric))
     selectInput("sel_box_metric_single", "2. Choose Metric Name:", choices = avail_metrics, selected = avail_metrics[1])
+  })
+
+  output$ui_box_cat_group_selector <- renderUI({
+    eff_mod <- input$sel_box_modality_cat %||% (input$sel_viz_modality %||% "all")
+    df <- get_viz_benchmark_data(
+      dataset_choice = input$sel_box_dataset_cat,
+      modality_choice = eff_mod
+    )
+    cats <- get_active_categories_for_modality(df, mod_choice = eff_mod, mode = input$sel_sim_mode)
+    all_label <- sprintf("All %d Categories", length(cats))
+    choices <- c(stats::setNames("all", all_label), stats::setNames(cats, cats))
+    current_sel <- input$sel_box_cat_group %||% "all"
+    if (!current_sel %in% c("all", cats)) current_sel <- "all"
+    selectInput("sel_box_cat_group", "Choose Category:", choices = choices, selected = current_sel)
   })
   
   metric_box_reactive <- reactive({
@@ -11726,6 +11740,20 @@ server <- function(input, output, session) {
   )
   
   # 5. Metric Heatmap
+  output$ui_heat_cat_selector <- renderUI({
+    eff_mod <- input$sel_heat_modality %||% (input$sel_viz_modality %||% "all")
+    df <- get_viz_benchmark_data(
+      dataset_choice = input$sel_heat_dataset,
+      modality_choice = eff_mod
+    )
+    cats <- get_active_categories_for_modality(df, mod_choice = eff_mod, mode = input$sel_sim_mode)
+    all_label <- sprintf("All %d Categories Combined", length(cats))
+    choices <- c(stats::setNames("all", all_label), stats::setNames(cats, cats))
+    current_sel <- input$sel_heat_cat %||% "all"
+    if (!current_sel %in% c("all", cats)) current_sel <- "all"
+    selectInput("sel_heat_cat", "Category Filter:", choices = choices, selected = current_sel)
+  })
+  
   output$ui_plot_metric_heat <- renderUI({
     if (rv_plot_triggers$heat == 0) {
       return(render_plot_placeholder(
