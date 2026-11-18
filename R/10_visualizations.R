@@ -2899,6 +2899,9 @@ plot_metric_heatmap <- function(
 #'   When \code{"scATAC-seq"}, feature-level metrics are labeled \code{"peak"}.
 #'   When \code{"scRNA-seq"}, feature-level metrics are labeled \code{"gene"}.
 #'   When \code{"multiomics"}, feature-level metrics are labeled \code{"features"}.
+#' @param group_by Character. Grouping variable for metric points when \code{ordination_by = "summaries"}:
+#'   \code{"category"} (default) groups points by evaluation category (I–VIII);
+#'   \code{"summary_type"} groups by feature/cell/global level.
 #' @param by_category Logical. If \code{TRUE} and \code{ordination_by = "summaries"}, generates
 #'   a multi-panel grid displaying an MDS ordination for each evaluation category separately
 #'   (skipping categories with fewer than 3 measures). Default is \code{FALSE}.
@@ -2925,6 +2928,7 @@ plot_metric_mds <- function(
   benchmark_data,
   ordination_by      = c("simulators", "summaries"),
   assay_modality     = c("auto", "scRNA-seq", "scATAC-seq", "multiomics"),
+  group_by           = c("category", "summary_type"),
   by_category        = FALSE,
   as_list            = FALSE,
   category           = NULL,
@@ -2948,6 +2952,7 @@ plot_metric_mds <- function(
       ordination_by <- match.arg(ordination_by, c("simulators", "summaries"))
     }
   }
+  group_by <- if (is.null(group_by) || length(group_by) == 0) "category" else match.arg(group_by, c("category", "summary_type"))
   df <- .ingest_bubble_data(benchmark_data)
 
   feature_label <- .resolve_modality_summary_type(df, assay_modality)
@@ -3031,26 +3036,47 @@ plot_metric_mds <- function(
         stringsAsFactors = FALSE
       )
 
-      # Classify into feature_label (peak, gene, or features), cell, global
-      raw_types <- .SUMMARY_TYPE_MAP[mds_df$Metric]
-      mds_df$Type <- ifelse(raw_types %in% c("feature", "gene"), feature_label, raw_types)
-      for (i in seq_len(nrow(mds_df))) {
-        if (is.na(mds_df$Type[i])) {
-          m <- tolower(mds_df$Metric[i])
-          if (grepl("generative", m)) {
-            mds_df$Type[i] <- "global"
-          } else if (grepl("cell|lib|ldf|knn|neighborhood", m)) {
-            mds_df$Type[i] <- "cell"
-          } else if (grepl("gene|peak|feat|deg|da_|da |cpm|var|disp|fc|dropout|sparsity", m)) {
-            mds_df$Type[i] <- feature_label
-          } else {
-            mds_df$Type[i] <- "global"
+      # Grouping configuration (by category or summary type)
+      if (group_by == "category") {
+        mds_df$Category <- sub_df$Category[match(mds_df$Metric, sub_df$Metric)]
+        missing_cats <- is.na(mds_df$Category) | mds_df$Category == "" | mds_df$Category == "Uncategorized"
+        if (any(missing_cats)) {
+          mds_df$Category[missing_cats] <- .METRIC_CATEGORY_MAP[mds_df$Metric[missing_cats]]
+        }
+        cat_levels <- .CANONICAL_CATEGORY_ORDER[.CANONICAL_CATEGORY_ORDER %in% unique(mds_df$Category)]
+        if (length(cat_levels) == 0) cat_levels <- unique(mds_df$Category)
+        mds_df$Group   <- factor(mds_df$Category, levels = cat_levels)
+        present_groups <- levels(mds_df$Group)
+        group_colors   <- if (!is.null(palette) && all(present_groups %in% names(palette))) {
+          palette[present_groups]
+        } else {
+          .CANONICAL_CATEGORY_COLORS[present_groups]
+        }
+        legend_title   <- "Category"
+      } else {
+        raw_types <- .SUMMARY_TYPE_MAP[mds_df$Metric]
+        mds_df$Type <- ifelse(raw_types %in% c("feature", "gene"), feature_label, raw_types)
+        for (i in seq_len(nrow(mds_df))) {
+          if (is.na(mds_df$Type[i])) {
+            m <- tolower(mds_df$Metric[i])
+            if (grepl("generative", m)) {
+              mds_df$Type[i] <- "global"
+            } else if (grepl("cell|lib|ldf|knn|neighborhood", m)) {
+              mds_df$Type[i] <- "cell"
+            } else if (grepl("gene|peak|feat|deg|da_|da |cpm|var|disp|fc|dropout|sparsity", m)) {
+              mds_df$Type[i] <- feature_label
+            } else {
+              mds_df$Type[i] <- "global"
+            }
           }
         }
+        all_possible_types <- c(feature_label, "cell", "global")
+        present_types <- all_possible_types[all_possible_types %in% unique(as.character(mds_df$Type))]
+        mds_df$Group   <- factor(mds_df$Type, levels = present_types)
+        present_groups <- levels(mds_df$Group)
+        group_colors   <- type_colors[present_groups]
+        legend_title   <- NULL
       }
-      all_possible_types <- c(feature_label, "cell", "global")
-      present_types <- all_possible_types[all_possible_types %in% unique(as.character(mds_df$Type))]
-      mds_df$Type   <- factor(mds_df$Type, levels = present_types)
 
       # Display labels
       mds_df$Display_Label <- .SUMMARY_DISPLAY_NAME_MAP[mds_df$Metric]
@@ -3079,13 +3105,13 @@ plot_metric_mds <- function(
         ggplot2::geom_hline(yintercept = 0, color = "#CCCCCC", linewidth = 0.5) +
         ggplot2::geom_vline(xintercept = 0, color = "#CCCCCC", linewidth = 0.5) +
         ggplot2::geom_point(
-          ggplot2::aes(fill = .data$Type, color = .data$Type),
+          ggplot2::aes(fill = .data$Group, color = .data$Group),
           shape = 21, size = ifelse(by_category, 3.2, 3.8), stroke = 0.75, alpha = 0.88
         )
 
       if (requireNamespace("ggrepel", quietly = TRUE)) {
         p_panel <- p_panel + ggrepel::geom_text_repel(
-          ggplot2::aes(label = .data$Display_Label, color = .data$Type),
+          ggplot2::aes(label = .data$Display_Label, color = .data$Group),
           fontface = "bold", size = p_base_size * 0.28,
           segment.color = "#999999", segment.size = 0.32,
           box.padding = 0.28, point.padding = 0.25,
@@ -3093,14 +3119,14 @@ plot_metric_mds <- function(
         )
       } else {
         p_panel <- p_panel + ggplot2::geom_text(
-          ggplot2::aes(label = .data$Display_Label, color = .data$Type),
+          ggplot2::aes(label = .data$Display_Label, color = .data$Group),
           vjust = -0.8, fontface = "bold", size = p_base_size * 0.28, show.legend = FALSE
         )
       }
 
       p_panel <- p_panel +
-        ggplot2::scale_color_manual(values = type_colors[present_types], name = NULL, drop = TRUE) +
-        ggplot2::scale_fill_manual(values = type_colors[present_types], name = NULL, drop = TRUE) +
+        ggplot2::scale_color_manual(values = group_colors, name = legend_title, drop = TRUE) +
+        ggplot2::scale_fill_manual(values = group_colors, name = legend_title, drop = TRUE) +
         ggplot2::labs(
           title = panel_title,
           tag   = panel_tag,
@@ -3118,11 +3144,15 @@ plot_metric_mds <- function(
           axis.text        = ggplot2::element_text(size = p_base_size * 0.80, color = "black"),
           legend.position  = if (show_legend) "bottom" else "none",
           legend.direction = "horizontal",
+          legend.title     = if (!is.null(legend_title)) ggplot2::element_text(face = "bold", size = p_base_size * 0.85) else ggplot2::element_blank(),
           legend.text      = ggplot2::element_text(face = "bold", size = p_base_size * 0.85),
           legend.key       = ggplot2::element_blank(),
           plot.margin      = ggplot2::margin(8, 8, 8, 8)
         ) +
-        ggplot2::guides(fill = ggplot2::guide_legend(override.aes = list(size = 3.8, shape = 21, stroke = 0.8)))
+        ggplot2::guides(
+          fill  = ggplot2::guide_legend(override.aes = list(size = 3.8, shape = 21, stroke = 0.8), title = legend_title),
+          color = "none"
+        )
 
       p_panel
     }
@@ -3313,6 +3343,9 @@ plot_metric_mds <- function(
 #'   When \code{"scATAC-seq"}, feature-level metrics are labeled \code{"peak"}.
 #'   When \code{"scRNA-seq"}, feature-level metrics are labeled \code{"gene"}.
 #'   When \code{"multiomics"}, feature-level metrics are labeled \code{"features"}.
+#' @param group_by Character. Grouping variable for loading vectors in panel b:
+#'   \code{"category"} (default) groups vectors by evaluation category (I–VIII);
+#'   \code{"summary_type"} groups by feature/cell/global level.
 #' @param by_category Logical. If \code{TRUE}, perform separate PCA ordinations per evaluation category. Default \code{FALSE}.
 #' @param as_list Logical. If \code{TRUE} and \code{by_category = TRUE}, returns a named list of ggplot objects. Default \code{FALSE}.
 #' @param category Optional character vector to filter by evaluation category.
@@ -3333,6 +3366,7 @@ plot_metric_pca <- function(
   benchmark_data,
   panel              = c("both", "methods", "loadings"),
   assay_modality     = c("auto", "scRNA-seq", "scATAC-seq", "multiomics"),
+  group_by           = c("category", "summary_type"),
   by_category        = FALSE,
   as_list            = FALSE,
   category           = NULL,
@@ -3356,6 +3390,7 @@ plot_metric_pca <- function(
       panel <- match.arg(panel, c("both", "methods", "loadings"))
     }
   }
+  group_by <- if (is.null(group_by) || length(group_by) == 0) "category" else match.arg(group_by, c("category", "summary_type"))
   df <- .ingest_bubble_data(benchmark_data)
 
   feature_label <- .resolve_modality_summary_type(df, assay_modality)
@@ -3611,26 +3646,47 @@ plot_metric_pca <- function(
     loadings_df <- head(loadings_df[order(loadings_df$mag, decreasing = TRUE), ], top_n_loadings)
   }
 
-  # Assign type: feature_label (peak, gene, or features), cell, global
-  raw_types <- .SUMMARY_TYPE_MAP[loadings_df$Metric]
-  loadings_df$Type <- ifelse(raw_types %in% c("feature", "gene"), feature_label, raw_types)
-  for (i in seq_len(nrow(loadings_df))) {
-    if (is.na(loadings_df$Type[i])) {
-      m <- tolower(loadings_df$Metric[i])
-      if (grepl("generative", m)) {
-        loadings_df$Type[i] <- "global"
-      } else if (grepl("cell|lib|ldf|knn|neighborhood", m)) {
-        loadings_df$Type[i] <- "cell"
-      } else if (grepl("gene|peak|feat|deg|da_|da |cpm|var|disp|fc|dropout|sparsity", m)) {
-        loadings_df$Type[i] <- feature_label
-      } else {
-        loadings_df$Type[i] <- "global"
+  # Assign group: category (default) or summary_type
+  if (group_by == "category") {
+    loadings_df$Category <- df$Category[match(loadings_df$Metric, df$Metric)]
+    missing_cats <- is.na(loadings_df$Category) | loadings_df$Category == "" | loadings_df$Category == "Uncategorized"
+    if (any(missing_cats)) {
+      loadings_df$Category[missing_cats] <- .METRIC_CATEGORY_MAP[loadings_df$Metric[missing_cats]]
+    }
+    cat_levels <- .CANONICAL_CATEGORY_ORDER[.CANONICAL_CATEGORY_ORDER %in% unique(loadings_df$Category)]
+    if (length(cat_levels) == 0) cat_levels <- unique(loadings_df$Category)
+    loadings_df$Group <- factor(loadings_df$Category, levels = cat_levels)
+    present_groups <- levels(loadings_df$Group)
+    group_colors <- if (!is.null(palette) && all(present_groups %in% names(palette))) {
+      palette[present_groups]
+    } else {
+      .CANONICAL_CATEGORY_COLORS[present_groups]
+    }
+    legend_title <- "Category"
+  } else {
+    raw_types <- .SUMMARY_TYPE_MAP[loadings_df$Metric]
+    loadings_df$Type <- ifelse(raw_types %in% c("feature", "gene"), feature_label, raw_types)
+    for (i in seq_len(nrow(loadings_df))) {
+      if (is.na(loadings_df$Type[i])) {
+        m <- tolower(loadings_df$Metric[i])
+        if (grepl("generative", m)) {
+          loadings_df$Type[i] <- "global"
+        } else if (grepl("cell|lib|ldf|knn|neighborhood", m)) {
+          loadings_df$Type[i] <- "cell"
+        } else if (grepl("gene|peak|feat|deg|da_|da |cpm|var|disp|fc|dropout|sparsity", m)) {
+          loadings_df$Type[i] <- feature_label
+        } else {
+          loadings_df$Type[i] <- "global"
+        }
       }
     }
+    all_possible_types <- c(feature_label, "cell", "global")
+    present_types <- all_possible_types[all_possible_types %in% unique(as.character(loadings_df$Type))]
+    loadings_df$Group <- factor(loadings_df$Type, levels = present_types)
+    present_groups <- levels(loadings_df$Group)
+    group_colors <- type_colors[present_groups]
+    legend_title <- "summary type"
   }
-  all_possible_types <- c(feature_label, "cell", "global")
-  present_types <- all_possible_types[all_possible_types %in% unique(as.character(loadings_df$Type))]
-  loadings_df$Type <- factor(loadings_df$Type, levels = present_types)
 
   loadings_df$Display_Label <- .SUMMARY_DISPLAY_NAME_MAP[loadings_df$Metric]
   idx_na <- is.na(loadings_df$Display_Label)
@@ -3658,14 +3714,14 @@ plot_metric_pca <- function(
     ggplot2::geom_hline(yintercept = 0, color = "black", linewidth = 0.5) +
     ggplot2::geom_vline(xintercept = 0, color = "black", linewidth = 0.5) +
     ggplot2::geom_segment(
-      ggplot2::aes(x = 0, y = 0, xend = .data$PC1, yend = .data$PC2, color = .data$Type),
+      ggplot2::aes(x = 0, y = 0, xend = .data$PC1, yend = .data$PC2, color = .data$Group),
       arrow = ggplot2::arrow(length = ggplot2::unit(0.24, "cm"), type = "closed"),
       linewidth = 0.72, alpha = 0.85
     )
 
   if (requireNamespace("ggrepel", quietly = TRUE)) {
     p_b <- p_b + ggrepel::geom_label_repel(
-      ggplot2::aes(x = .data$PC1, y = .data$PC2, label = .data$Display_Label, color = .data$Type),
+      ggplot2::aes(x = .data$PC1, y = .data$PC2, label = .data$Display_Label, color = .data$Group),
       fill = "white", fontface = "bold", size = base_size * 0.25,
       label.padding = ggplot2::unit(0.18, "lines"), label.r = ggplot2::unit(0.30, "lines"),
       label.size = 0.65, box.padding = 0.35, point.padding = 0.25,
@@ -3673,13 +3729,13 @@ plot_metric_pca <- function(
     )
   } else {
     p_b <- p_b + ggplot2::geom_text(
-      ggplot2::aes(x = .data$PC1, y = .data$PC2, label = .data$Display_Label, color = .data$Type),
+      ggplot2::aes(x = .data$PC1, y = .data$PC2, label = .data$Display_Label, color = .data$Group),
       vjust = -0.6, fontface = "bold", size = base_size * 0.25, show.legend = FALSE
     )
   }
 
   p_b <- p_b +
-    ggplot2::scale_color_manual(values = type_colors[present_types], name = "summary type", drop = TRUE) +
+    ggplot2::scale_color_manual(values = group_colors, name = legend_title, drop = TRUE) +
     ggplot2::labs(
       title    = sprintf("Metric Loadings Vectors (Top %d Discriminating Metrics)", nrow(loadings_df)),
       subtitle = "Vector length and direction indicate metric influence on PC1 and PC2 separation",
