@@ -20,6 +20,9 @@
 ^docs$
 ^pkgdown$
 ^_pkgdown\.yml$
+^vignettes/demo-.*\.Rmd$
+^vignettes/figures$
+^vignettes/.*\.rds$
 
 # man/figures (images embedded in README, not needed in package)
 ^man/figures$
