@@ -10,7 +10,13 @@ calc_excess_zero_weights(counts)
 \item{counts}{Count matrix (features x cells).}
 }
 \value{
-A list with mean excess zero weight, gene-level weights, and estimated zero-inflation rate.
+A named list summarizing posterior excess-zero probabilities under a Negative Binomial model:
+  \describe{
+    \item{\code{mean_excess_zero_weight}}{Mean posterior excess-zero weight across features.}
+    \item{\code{median_excess_zero_weight}}{Median posterior excess-zero weight across features.}
+    \item{\code{mean_zero_inflation}}{Mean estimated excess-zero fraction (\code{pi}) beyond Negative Binomial expectations.}
+    \item{\code{gene_excess_weights}}{Numeric vector of per-feature posterior excess-zero weights.}
+  }
 }
 \description{
 Calculates the posterior probability of zero counts being technical dropouts

@@ -18,8 +18,24 @@ calc_zero_probability_curve(counts)
 
 ## Value
 
-A list containing intercept, slope, midpoint (inflection point), and
-R-squared.
+A named list with the fitted logistic dropout model parameters:
+
+- `intercept`:
+
+  Estimated logistic regression intercept (`beta_0`), or `NA_real_` if
+  fewer than 10 valid genes.
+
+- `slope`:
+
+  Estimated logistic regression slope (`beta_1`) on `log(mean)`.
+
+- `midpoint`:
+
+  Inflection point (`-beta_0 / beta_1`) on the log-mean scale.
+
+- `r_squared`:
+
+  Coefficient of determination (\\R^2\\) of the linear fit.
 
 ## Examples
 

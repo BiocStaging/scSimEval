@@ -78,8 +78,20 @@ proportion (NZP) between reference and simulated scATAC-seq datasets.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list containing <code>curve_rmse</code> and <code>r2_discrepancy</code> (along with fitted reference and simulated curve parameters).</p>
-    </div>
+    <p>A named list quantifying concordance between reference and simulated accessibility-sparsity curves:</p><dl><dt><code>curve_rmse</code></dt>
+<dd><p>Root mean squared error between predicted NZP curves over a 100-point grid spanning the reference mean range.</p></dd>
+
+    <dt><code>r2_discrepancy</code></dt>
+<dd><p>Absolute difference between simulated and reference polynomial \(R^2\) values.</p></dd>
+
+    <dt><code>ref_r_squared</code></dt>
+<dd><p>Polynomial \(R^2\) of the reference dataset.</p></dd>
+
+    <dt><code>sim_r_squared</code></dt>
+<dd><p>Polynomial \(R^2\) of the simulated dataset.</p></dd>
+
+
+</dl></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

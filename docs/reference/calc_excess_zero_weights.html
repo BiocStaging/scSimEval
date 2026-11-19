@@ -70,8 +70,20 @@
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list with mean excess zero weight, gene-level weights, and estimated zero-inflation rate.</p>
-    </div>
+    <p>A named list summarizing posterior excess-zero probabilities under a Negative Binomial model:</p><dl><dt><code>mean_excess_zero_weight</code></dt>
+<dd><p>Mean posterior excess-zero weight across features.</p></dd>
+
+    <dt><code>median_excess_zero_weight</code></dt>
+<dd><p>Median posterior excess-zero weight across features.</p></dd>
+
+    <dt><code>mean_zero_inflation</code></dt>
+<dd><p>Mean estimated excess-zero fraction (<code>pi</code>) beyond Negative Binomial expectations.</p></dd>
+
+    <dt><code>gene_excess_weights</code></dt>
+<dd><p>Numeric vector of per-feature posterior excess-zero weights.</p></dd>
+
+
+</dl></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

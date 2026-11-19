@@ -51,7 +51,53 @@ extract_dataset_summary(
 
 ## Value
 
-A data.frame with 1 row summarizing the dataset properties.
+A 1-row `data.frame` (with `check.names = FALSE`) summarizing the
+dataset with columns:
+
+- `Dataset / Simulator`:
+
+  Character label from `method_name`.
+
+- `Role`:
+
+  Dataset role label from `role`.
+
+- `Modality`:
+
+  Molecular modality label from `modality`.
+
+- `Cells (N)`:
+
+  Formatted total number of cells.
+
+- `Features (P)`:
+
+  Formatted total number of features.
+
+- `Sparsity`:
+
+  Percentage of zero entries formatted to two decimal places.
+
+- `Cell Types (Groups)`:
+
+  Formatted count of unique non-missing cell types, or
+  `"Not specified"`.
+
+- `Batches`:
+
+  Formatted count of unique non-missing batches (defaults to `"1"`).
+
+- `Median Lib Size`:
+
+  Formatted median total counts per cell.
+
+- `Median Detected Features`:
+
+  Formatted median number of detected (non-zero) features per cell.
+
+- `Mean Expression`:
+
+  Formatted overall mean count across all matrix entries.
 
 ## Examples
 

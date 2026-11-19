@@ -77,10 +77,47 @@ runtime/memory metrics and core-normalized Category VIII scalability indicators
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list with elapsed seconds/minutes, peak memory allocated (MiB and MB),
-  <code>core_seconds</code>, <code>core_hours</code>, <code>memory_per_core_mib</code>, <code>memory_per_core_gib</code>,
-  and <code>sim_cores</code>.</p>
-    </div>
+    <p>A named list containing the evaluated expression result and resource metrics:</p><dl><dt><code>result</code></dt>
+<dd><p>Return value of <code>expr</code> (or <code>NULL</code> if evaluation errored).</p></dd>
+
+    <dt><code>core_seconds</code></dt>
+<dd><p>Total CPU core-seconds (<code>elapsed_seconds * cores</code>).</p></dd>
+
+    <dt><code>core_hours</code></dt>
+<dd><p>Total CPU core-hours (<code>core_seconds / 3600</code>).</p></dd>
+
+    <dt><code>memory_per_core_mib</code></dt>
+<dd><p>Peak R heap memory per allocated core in MiB.</p></dd>
+
+    <dt><code>memory_per_core_gib</code></dt>
+<dd><p>Peak R heap memory per allocated core in GiB.</p></dd>
+
+    <dt><code>memory_per_core_mb</code></dt>
+<dd><p>Peak R heap memory per allocated core in decimal MB.</p></dd>
+
+    <dt><code>memory_per_core_gb</code></dt>
+<dd><p>Peak R heap memory per allocated core in decimal GB.</p></dd>
+
+    <dt><code>elapsed_seconds</code></dt>
+<dd><p>Wall-clock elapsed runtime in seconds.</p></dd>
+
+    <dt><code>elapsed_minutes</code></dt>
+<dd><p>Wall-clock elapsed runtime in minutes.</p></dd>
+
+    <dt><code>memory_mb</code></dt>
+<dd><p>Peak R heap memory allocated in MiB.</p></dd>
+
+    <dt><code>memory_mib</code></dt>
+<dd><p>Alias of <code>memory_mb</code> in MiB.</p></dd>
+
+    <dt><code>memory_mb_si</code></dt>
+<dd><p>Peak R heap memory allocated in decimal MB.</p></dd>
+
+    <dt><code>sim_cores</code></dt>
+<dd><p>Normalized integer core count (included only when <code>sim_cores</code> is supplied).</p></dd>
+
+
+</dl></div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
     <p>Lannelongue, L., et al. (2021). Green Algorithms. <em>Advanced Science</em>, 8(12), 2100707.
@@ -94,37 +131,37 @@ Holtgrewe, M., et al. (2015). <em>Bioinformatics</em>, 31(12), 1904–1912.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $core_seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.011</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $core_hours</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2.777778e-06</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 3.055556e-06</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $memory_per_core_mib</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.004515076</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.004438782</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $memory_per_core_gib</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 4.409254e-06</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 4.334748e-06</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $memory_per_core_mb</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.0047344</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.0046544</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $memory_per_core_gb</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 4.7344e-06</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 4.6544e-06</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $elapsed_seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.011</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $elapsed_minutes</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.0001666667</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.0001833333</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $memory_mb</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.004515076</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.004438782</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $memory_mib</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.004515076</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.004438782</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $memory_mb_si</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.0047344</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.0046544</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>
     </div>

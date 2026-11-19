@@ -112,8 +112,50 @@ and supervised concordance against ground truth labels (ARI, NMI).</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A named list of all clustering metrics.</p>
-    </div>
+    <p>A named list of clustering quality and cluster concordance metrics (keys present depend on inputs):</p><dl><dt><code>silhouette_sim</code></dt>
+<dd><p>Mean silhouette width across ground-truth labels in simulated data.</p></dd>
+
+    <dt><code>silhouette</code></dt>
+<dd><p>Alias of <code>silhouette_sim</code>.</p></dd>
+
+    <dt><code>davies_bouldin</code></dt>
+<dd><p>Davies-Bouldin index computed on simulated data.</p></dd>
+
+    <dt><code>davies_bouldin_sim</code></dt>
+<dd><p>Alias of <code>davies_bouldin</code>.</p></dd>
+
+    <dt><code>neighborhood_purity</code></dt>
+<dd><p>Mean k-nearest-neighbor label purity in simulated data.</p></dd>
+
+    <dt><code>silhouette_ref</code></dt>
+<dd><p>Mean silhouette width in reference data (present when <code>ref_data</code> is supplied).</p></dd>
+
+    <dt><code>davies_bouldin_ref</code></dt>
+<dd><p>Davies-Bouldin index in reference data (present when <code>ref_data</code> is supplied).</p></dd>
+
+    <dt><code>cdi</code></dt>
+<dd><p>Normalized CDI-AIC score from <code><a href="calc_cdi.html">calc_cdi</a></code> (when finite).</p></dd>
+
+    <dt><code>CDI_AIC</code></dt>
+<dd><p>Alias of <code>cdi</code>.</p></dd>
+
+    <dt><code>CDI_BIC</code></dt>
+<dd><p>Normalized CDI-BIC score from <code><a href="calc_cdi.html">calc_cdi</a></code> (when finite).</p></dd>
+
+    <dt><code>ari</code></dt>
+<dd><p>Adjusted Rand Index between <code>pred_clusters</code> (or k-means clusters) and <code>cluster_info</code>.</p></dd>
+
+    <dt><code>ARI</code></dt>
+<dd><p>Alias of <code>ari</code>.</p></dd>
+
+    <dt><code>nmi</code></dt>
+<dd><p>Normalized Mutual Information between <code>pred_clusters</code> and <code>cluster_info</code>.</p></dd>
+
+    <dt><code>NMI</code></dt>
+<dd><p>Alias of <code>nmi</code>.</p></dd>
+
+
+</dl></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

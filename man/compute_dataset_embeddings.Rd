@@ -18,9 +18,9 @@ compute_dataset_embeddings(
 )
 }
 \arguments{
-\item{reference}{Biological reference count matrix (features x cells), dgCMatrix, SingleCellExperiment, or Seurat object.}
+\item{reference}{Biological reference \code{SingleCellExperiment} object or count matrix (features x cells).}
 
-\item{simulated}{A single simulated count matrix or a named list of simulated count matrices (e.g. \code{list("Splatter" = sim1, "scDesign3" = sim2)}).}
+\item{simulated}{A single simulated count matrix/\code{SingleCellExperiment} or a named list of them.}
 
 \item{reduction}{Character string specifying the dimensionality reduction method: \code{"umap"} (default), \code{"tsne"}, or \code{"pca"}.}
 

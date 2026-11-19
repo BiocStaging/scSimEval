@@ -65,7 +65,72 @@ evaluate_clustering_metrics(
 
 ## Value
 
-A named list of all clustering metrics.
+A named list of clustering quality and cluster concordance metrics (keys
+present depend on inputs):
+
+- `silhouette_sim`:
+
+  Mean silhouette width across ground-truth labels in simulated data.
+
+- `silhouette`:
+
+  Alias of `silhouette_sim`.
+
+- `davies_bouldin`:
+
+  Davies-Bouldin index computed on simulated data.
+
+- `davies_bouldin_sim`:
+
+  Alias of `davies_bouldin`.
+
+- `neighborhood_purity`:
+
+  Mean k-nearest-neighbor label purity in simulated data.
+
+- `silhouette_ref`:
+
+  Mean silhouette width in reference data (present when `ref_data` is
+  supplied).
+
+- `davies_bouldin_ref`:
+
+  Davies-Bouldin index in reference data (present when `ref_data` is
+  supplied).
+
+- `cdi`:
+
+  Normalized CDI-AIC score from
+  [`calc_cdi`](https://kabilanbio.github.io/scSimEval/reference/calc_cdi.md)
+  (when finite).
+
+- `CDI_AIC`:
+
+  Alias of `cdi`.
+
+- `CDI_BIC`:
+
+  Normalized CDI-BIC score from
+  [`calc_cdi`](https://kabilanbio.github.io/scSimEval/reference/calc_cdi.md)
+  (when finite).
+
+- `ari`:
+
+  Adjusted Rand Index between `pred_clusters` (or k-means clusters) and
+  `cluster_info`.
+
+- `ARI`:
+
+  Alias of `ari`.
+
+- `nmi`:
+
+  Normalized Mutual Information between `pred_clusters` and
+  `cluster_info`.
+
+- `NMI`:
+
+  Alias of `nmi`.
 
 ## Examples
 

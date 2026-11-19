@@ -12,8 +12,17 @@ calc_accessibility_sparsity_curve(data, poly_degree = 2)
 \item{poly_degree}{Degree of polynomial (default: 2 for quadratic curve).}
 }
 \value{
-A list with estimated coefficients (c0, c1, c2), R-squared, Spearman/Pearson
-  correlations, and model fit summary.
+A named list summarizing the polynomial fit relating peak mean accessibility to non-zero proportion (NZP):
+  \describe{
+    \item{\code{c0}}{Estimated intercept coefficient.}
+    \item{\code{c1}}{Estimated linear term coefficient.}
+    \item{\code{c2}}{Estimated quadratic term coefficient (or \code{0} if \code{poly_degree < 2}).}
+    \item{\code{r_squared}}{Coefficient of determination (\eqn{R^2}) of the polynomial regression.}
+    \item{\code{spearman_cor}}{Spearman correlation between mean accessibility and NZP.}
+    \item{\code{pearson_cor}}{Pearson correlation between mean accessibility and NZP.}
+    \item{\code{poly_degree}}{Polynomial degree used in the fit.}
+    \item{\code{model}}{The fitted \code{lm} object (omitted when too few valid peaks exist).}
+  }
 }
 \description{
 Fits a polynomial curve relating peak/bin mean accessibility to non-zero cell

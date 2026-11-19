@@ -36,7 +36,23 @@ evaluate_clustering_metrics(
 \item{threads}{Integer number of parallel CPU threads passed to \code{\link{calc_cdi}} (default \code{1L}).}
 }
 \value{
-A named list of all clustering metrics.
+A named list of clustering quality and cluster concordance metrics (keys present depend on inputs):
+  \describe{
+    \item{\code{silhouette_sim}}{Mean silhouette width across ground-truth labels in simulated data.}
+    \item{\code{silhouette}}{Alias of \code{silhouette_sim}.}
+    \item{\code{davies_bouldin}}{Davies-Bouldin index computed on simulated data.}
+    \item{\code{davies_bouldin_sim}}{Alias of \code{davies_bouldin}.}
+    \item{\code{neighborhood_purity}}{Mean k-nearest-neighbor label purity in simulated data.}
+    \item{\code{silhouette_ref}}{Mean silhouette width in reference data (present when \code{ref_data} is supplied).}
+    \item{\code{davies_bouldin_ref}}{Davies-Bouldin index in reference data (present when \code{ref_data} is supplied).}
+    \item{\code{cdi}}{Normalized CDI-AIC score from \code{\link{calc_cdi}} (when finite).}
+    \item{\code{CDI_AIC}}{Alias of \code{cdi}.}
+    \item{\code{CDI_BIC}}{Normalized CDI-BIC score from \code{\link{calc_cdi}} (when finite).}
+    \item{\code{ari}}{Adjusted Rand Index between \code{pred_clusters} (or k-means clusters) and \code{cluster_info}.}
+    \item{\code{ARI}}{Alias of \code{ari}.}
+    \item{\code{nmi}}{Normalized Mutual Information between \code{pred_clusters} and \code{cluster_info}.}
+    \item{\code{NMI}}{Alias of \code{nmi}.}
+  }
 }
 \description{
 Evaluates both unsupervised cluster separation (ASW, DB, Neighborhood Purity, CDI)

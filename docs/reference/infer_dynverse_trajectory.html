@@ -98,10 +98,32 @@ distances along the milestone network.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list (augmented <code>dynwrap</code> trajectory object when <span class="pkg">dynwrap</span> is available)
-  containing <code>milestone_ids</code>, <code>milestone_network</code>, <code>progressions</code>,
-  <code>milestone_percentages</code>, <code>pca_coords</code>, and <code>cell_milestone_geodesic</code>.</p>
-    </div>
+    <p>A named list representing the MST trajectory model with elements:</p><dl><dt><code>cell_ids</code></dt>
+<dd><p>Character vector of cell identifiers.</p></dd>
+
+    <dt><code>milestone_ids</code></dt>
+<dd><p>Character vector of milestone node identifiers.</p></dd>
+
+    <dt><code>milestone_network</code></dt>
+<dd><p><code>data.frame</code> of directed MST edges with columns <code>from</code>, <code>to</code>, <code>length</code>, and <code>directed</code>.</p></dd>
+
+    <dt><code>progressions</code></dt>
+<dd><p><code>data.frame</code> of continuous cell projections along MST edges (<code>cell_id</code>, <code>from</code>, <code>to</code>, <code>percentage</code>).</p></dd>
+
+    <dt><code>pca_coords</code></dt>
+<dd><p>Matrix of cell PCA coordinates used for MST construction.</p></dd>
+
+    <dt><code>centroids</code></dt>
+<dd><p>Matrix of milestone centroid coordinates in PCA space.</p></dd>
+
+    <dt><code>cell_milestone_geodesic</code></dt>
+<dd><p>Numeric matrix of shortest-path geodesic distances from each cell to each milestone.</p></dd>
+
+    <dt><code>branch_assignment</code></dt>
+<dd><p>Character vector assigning each cell to its undirected MST branch edge.</p></dd>
+
+
+</dl></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

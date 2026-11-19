@@ -61,6 +61,21 @@ calc_wcor_features(
 
 ## Value
 
-A list containing `wcor_features` (weighted correlation clipped to
-`[0, 1]`), `cor_features` (unweighted correlation clipped to `[0, 1]`),
-`ref_importance`, and `sim_importance`.
+A named list summarizing feature-importance preservation along
+trajectory milestones:
+
+- `wcor_features`:
+
+  Reference-importance-weighted Pearson correlation clipped to `[0, 1]`.
+
+- `cor_features`:
+
+  Unweighted Pearson correlation across features clipped to `[0, 1]`.
+
+- `ref_importance`:
+
+  Named numeric vector of mean reference feature importance scores.
+
+- `sim_importance`:
+
+  Named numeric vector of mean simulated feature importance scores.

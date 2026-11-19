@@ -24,8 +24,40 @@ calc_accessibility_sparsity_curve(data, poly_degree = 2)
 
 ## Value
 
-A list with estimated coefficients (c0, c1, c2), R-squared,
-Spearman/Pearson correlations, and model fit summary.
+A named list summarizing the polynomial fit relating peak mean
+accessibility to non-zero proportion (NZP):
+
+- `c0`:
+
+  Estimated intercept coefficient.
+
+- `c1`:
+
+  Estimated linear term coefficient.
+
+- `c2`:
+
+  Estimated quadratic term coefficient (or `0` if `poly_degree < 2`).
+
+- `r_squared`:
+
+  Coefficient of determination (\\R^2\\) of the polynomial regression.
+
+- `spearman_cor`:
+
+  Spearman correlation between mean accessibility and NZP.
+
+- `pearson_cor`:
+
+  Pearson correlation between mean accessibility and NZP.
+
+- `poly_degree`:
+
+  Polynomial degree used in the fit.
+
+- `model`:
+
+  The fitted `lm` object (omitted when too few valid peaks exist).
 
 ## Examples
 

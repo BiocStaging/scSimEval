@@ -10,7 +10,13 @@ calc_zero_probability_curve(counts)
 \item{counts}{Count matrix (genes x cells) or SingleCellExperiment.}
 }
 \value{
-A list containing intercept, slope, midpoint (inflection point), and R-squared.
+A named list with the fitted logistic dropout model parameters:
+  \describe{
+    \item{\code{intercept}}{Estimated logistic regression intercept (\code{beta_0}), or \code{NA_real_} if fewer than 10 valid genes.}
+    \item{\code{slope}}{Estimated logistic regression slope (\code{beta_1}) on \code{log(mean)}.}
+    \item{\code{midpoint}}{Inflection point (\code{-beta_0 / beta_1}) on the log-mean scale.}
+    \item{\code{r_squared}}{Coefficient of determination (\eqn{R^2}) of the linear fit.}
+  }
 }
 \description{
 Fits an empirical logistic dropout curve: logit(P(Y=0)) = beta_0 + beta_1 * log(mu)

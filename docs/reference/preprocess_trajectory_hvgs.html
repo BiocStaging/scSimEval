@@ -140,10 +140,29 @@ from the <em>dynverse</em> benchmarking study (<em>Saelens et al., Nature Biotec
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list containing HVG-filtered log-normalized expression matrices (<code>ref_expr</code>, <code>sim_expr</code>),
-  selected HVG names (<code>hvgs</code>), synced cell-type vectors (<code>cell_types_ref</code>, <code>cell_types_sim</code>),
-  HVG statistics table (<code>hvg_stats</code>), and filtering counts (<code>summary</code>).</p>
-    </div>
+    <p>A named list containing preprocessed expression matrices and HVG metadata:</p><dl><dt><code>ref_expr</code></dt>
+<dd><p>Sparse/dense log-normalized HVG expression matrix for the reference dataset.</p></dd>
+
+    <dt><code>sim_expr</code></dt>
+<dd><p>Sparse/dense log-normalized HVG expression matrix for the simulated dataset (or <code>NULL</code>).</p></dd>
+
+    <dt><code>hvgs</code></dt>
+<dd><p>Character vector of retained highly variable gene identifiers.</p></dd>
+
+    <dt><code>cell_types_ref</code></dt>
+<dd><p>Reference cell-type vector synchronized with remaining cells (or <code>NULL</code>).</p></dd>
+
+    <dt><code>cell_types_sim</code></dt>
+<dd><p>Simulated cell-type vector synchronized with remaining cells (or <code>NULL</code>).</p></dd>
+
+    <dt><code>hvg_stats</code></dt>
+<dd><p><code>data.frame</code> of per-gene empirical mean-variance statistics (<code>gene</code>, <code>mean</code>, <code>total</code>, <code>tech</code>, <code>bio</code>, <code>p.value</code>, <code>FDR</code>).</p></dd>
+
+    <dt><code>summary</code></dt>
+<dd><p>List of summary counts (<code>n_hvgs</code>, <code>n_strict_hvgs</code>, <code>n_ref_cells</code>, <code>n_sim_cells</code>, <code>hvg_method</code>).</p></dd>
+
+
+</dl></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

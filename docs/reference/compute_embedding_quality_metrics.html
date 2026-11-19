@@ -80,8 +80,32 @@ sparsity percentage, and relative percentage error) between reference and simula
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A <code>data.frame</code> summarizing quantitative embedding quality metrics for each dataset.</p>
-    </div>
+    <p>A <code>data.frame</code> (with <code>check.names = FALSE</code>) containing one row per dataset with columns:</p><dl><dt><code>Dataset</code></dt>
+<dd><p>Dataset label (e.g., <code>"Reference"</code> or simulator name).</p></dd>
+
+    <dt><code>Role</code></dt>
+<dd><p>Dataset role (<code>"Reference"</code> or <code>"Simulated"</code>).</p></dd>
+
+    <dt><code>Cells (N)</code></dt>
+<dd><p>Number of cells in the embedding.</p></dd>
+
+    <dt><code>Mean Silhouette</code></dt>
+<dd><p>Mean silhouette width across cell-type labels rounded to 4 decimals (or <code>NA_real_</code>).</p></dd>
+
+    <dt><code>ARI (Cluster Fidelity)</code></dt>
+<dd><p>Adjusted Rand Index between clustering and cell-type labels rounded to 4 decimals (or <code>NA_real_</code>).</p></dd>
+
+    <dt><code>Mean Library Size</code></dt>
+<dd><p>Mean total counts per cell rounded to 1 decimal.</p></dd>
+
+    <dt><code>Mean Detected Features</code></dt>
+<dd><p>Mean detected features per cell rounded to 1 decimal.</p></dd>
+
+    <dt><code>Library Size Diff (%)</code></dt>
+<dd><p>Relative percent difference in mean library size vs. Reference (present when a <code>"Reference"</code> row exists).</p></dd>
+
+
+</dl></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

@@ -44,9 +44,43 @@ infer_dynverse_trajectory(
 
 ## Value
 
-A list (augmented `dynwrap` trajectory object when dynwrap is available)
-containing `milestone_ids`, `milestone_network`, `progressions`,
-`milestone_percentages`, `pca_coords`, and `cell_milestone_geodesic`.
+A named list representing the MST trajectory model with elements:
+
+- `cell_ids`:
+
+  Character vector of cell identifiers.
+
+- `milestone_ids`:
+
+  Character vector of milestone node identifiers.
+
+- `milestone_network`:
+
+  `data.frame` of directed MST edges with columns `from`, `to`,
+  `length`, and `directed`.
+
+- `progressions`:
+
+  `data.frame` of continuous cell projections along MST edges
+  (`cell_id`, `from`, `to`, `percentage`).
+
+- `pca_coords`:
+
+  Matrix of cell PCA coordinates used for MST construction.
+
+- `centroids`:
+
+  Matrix of milestone centroid coordinates in PCA space.
+
+- `cell_milestone_geodesic`:
+
+  Numeric matrix of shortest-path geodesic distances from each cell to
+  each milestone.
+
+- `branch_assignment`:
+
+  Character vector assigning each cell to its undirected MST branch
+  edge.
 
 ## Examples
 

@@ -615,7 +615,23 @@ calc_cdi <- function(
 #' @param batch_info Optional batch labels per cell passed to \code{\link{calc_cdi}}.
 #' @param threads Integer number of parallel CPU threads passed to \code{\link{calc_cdi}} (default \code{1L}).
 #'
-#' @return A named list of all clustering metrics.
+#' @return A named list of clustering quality and cluster concordance metrics (keys present depend on inputs):
+#'   \describe{
+#'     \item{\code{silhouette_sim}}{Mean silhouette width across ground-truth labels in simulated data.}
+#'     \item{\code{silhouette}}{Alias of \code{silhouette_sim}.}
+#'     \item{\code{davies_bouldin}}{Davies-Bouldin index computed on simulated data.}
+#'     \item{\code{davies_bouldin_sim}}{Alias of \code{davies_bouldin}.}
+#'     \item{\code{neighborhood_purity}}{Mean k-nearest-neighbor label purity in simulated data.}
+#'     \item{\code{silhouette_ref}}{Mean silhouette width in reference data (present when \code{ref_data} is supplied).}
+#'     \item{\code{davies_bouldin_ref}}{Davies-Bouldin index in reference data (present when \code{ref_data} is supplied).}
+#'     \item{\code{cdi}}{Normalized CDI-AIC score from \code{\link{calc_cdi}} (when finite).}
+#'     \item{\code{CDI_AIC}}{Alias of \code{cdi}.}
+#'     \item{\code{CDI_BIC}}{Normalized CDI-BIC score from \code{\link{calc_cdi}} (when finite).}
+#'     \item{\code{ari}}{Adjusted Rand Index between \code{pred_clusters} (or k-means clusters) and \code{cluster_info}.}
+#'     \item{\code{ARI}}{Alias of \code{ari}.}
+#'     \item{\code{nmi}}{Normalized Mutual Information between \code{pred_clusters} and \code{cluster_info}.}
+#'     \item{\code{NMI}}{Alias of \code{nmi}.}
+#'   }
 #' @examples
 #' data <- matrix(stats::rpois(200, lambda = 3), 20, 10)
 #' cl <- factor(rep(c("A", "B"), each = 5))
@@ -849,7 +865,12 @@ evaluate_clustering_metrics <- function(
 #' @param max_cells Maximum number of cells to subsample (default 500).
 #' @param max_features Maximum number of features to retain for speed (default 1000).
 #'
-#' @return A list containing Generative Precision, Generative Recall, and Generative F1.
+#' @return A named list summarizing k-NN hypersphere manifold overlap:
+#'   \describe{
+#'     \item{\code{generative_precision}}{Fraction of simulated cells falling within the \code{k}-NN radius of at least one reference cell.}
+#'     \item{\code{generative_recall}}{Fraction of reference cells falling within the \code{k}-NN radius of at least one simulated cell.}
+#'     \item{\code{generative_f1}}{Harmonic mean of \code{generative_precision} and \code{generative_recall}.}
+#'   }
 #' @examples
 #' ref <- matrix(stats::rnorm(200), 20, 10)
 #' sim <- matrix(stats::rnorm(200), 20, 10)

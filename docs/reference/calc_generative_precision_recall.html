@@ -97,8 +97,17 @@ single-cell distributions relative to empirical reference data using k-NN hypers
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list containing Generative Precision, Generative Recall, and Generative F1.</p>
-    </div>
+    <p>A named list summarizing k-NN hypersphere manifold overlap:</p><dl><dt><code>generative_precision</code></dt>
+<dd><p>Fraction of simulated cells falling within the <code>k</code>-NN radius of at least one reference cell.</p></dd>
+
+    <dt><code>generative_recall</code></dt>
+<dd><p>Fraction of reference cells falling within the <code>k</code>-NN radius of at least one simulated cell.</p></dd>
+
+    <dt><code>generative_f1</code></dt>
+<dd><p>Harmonic mean of <code>generative_precision</code> and <code>generative_recall</code>.</p></dd>
+
+
+</dl></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

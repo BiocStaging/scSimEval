@@ -15,7 +15,17 @@ compute_embedding_quality_metrics(
 \item{metric_coords}{Character vector of the 2 coordinate columns used to compute distances (default: \code{c("Dim1", "Dim2")}).}
 }
 \value{
-A \code{data.frame} summarizing quantitative embedding quality metrics for each dataset.
+A \code{data.frame} (with \code{check.names = FALSE}) containing one row per dataset with columns:
+  \describe{
+    \item{\code{Dataset}}{Dataset label (e.g., \code{"Reference"} or simulator name).}
+    \item{\code{Role}}{Dataset role (\code{"Reference"} or \code{"Simulated"}).}
+    \item{\code{Cells (N)}}{Number of cells in the embedding.}
+    \item{\code{Mean Silhouette}}{Mean silhouette width across cell-type labels rounded to 4 decimals (or \code{NA_real_}).}
+    \item{\code{ARI (Cluster Fidelity)}}{Adjusted Rand Index between clustering and cell-type labels rounded to 4 decimals (or \code{NA_real_}).}
+    \item{\code{Mean Library Size}}{Mean total counts per cell rounded to 1 decimal.}
+    \item{\code{Mean Detected Features}}{Mean detected features per cell rounded to 1 decimal.}
+    \item{\code{Library Size Diff (\%)}}{Relative percent difference in mean library size vs. Reference (present when a \code{"Reference"} row exists).}
+  }
 }
 \description{
 Computes quantitative cluster separability (Silhouette width), unsupervised cluster recovery

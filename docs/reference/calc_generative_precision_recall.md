@@ -46,8 +46,21 @@ calc_generative_precision_recall(
 
 ## Value
 
-A list containing Generative Precision, Generative Recall, and
-Generative F1.
+A named list summarizing k-NN hypersphere manifold overlap:
+
+- `generative_precision`:
+
+  Fraction of simulated cells falling within the `k`-NN radius of at
+  least one reference cell.
+
+- `generative_recall`:
+
+  Fraction of reference cells falling within the `k`-NN radius of at
+  least one simulated cell.
+
+- `generative_f1`:
+
+  Harmonic mean of `generative_precision` and `generative_recall`.
 
 ## Examples
 

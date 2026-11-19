@@ -195,9 +195,16 @@
 #' @param min_hvgs Minimum HVG floor with adaptive fallback if fewer pass strict thresholds (default \code{30L}).
 #' @param max_hvgs Maximum HVG cap for tractable Random Forest importance fitting (default \code{1500L}).
 #'
-#' @return A list containing HVG-filtered log-normalized expression matrices (\code{ref_expr}, \code{sim_expr}),
-#'   selected HVG names (\code{hvgs}), synced cell-type vectors (\code{cell_types_ref}, \code{cell_types_sim}),
-#'   HVG statistics table (\code{hvg_stats}), and filtering counts (\code{summary}).
+#' @return A named list containing preprocessed expression matrices and HVG metadata:
+#'   \describe{
+#'     \item{\code{ref_expr}}{Sparse/dense log-normalized HVG expression matrix for the reference dataset.}
+#'     \item{\code{sim_expr}}{Sparse/dense log-normalized HVG expression matrix for the simulated dataset (or \code{NULL}).}
+#'     \item{\code{hvgs}}{Character vector of retained highly variable gene identifiers.}
+#'     \item{\code{cell_types_ref}}{Reference cell-type vector synchronized with remaining cells (or \code{NULL}).}
+#'     \item{\code{cell_types_sim}}{Simulated cell-type vector synchronized with remaining cells (or \code{NULL}).}
+#'     \item{\code{hvg_stats}}{\code{data.frame} of per-gene empirical mean-variance statistics (\code{gene}, \code{mean}, \code{total}, \code{tech}, \code{bio}, \code{p.value}, \code{FDR}).}
+#'     \item{\code{summary}}{List of summary counts (\code{n_hvgs}, \code{n_strict_hvgs}, \code{n_ref_cells}, \code{n_sim_cells}, \code{hvg_method}).}
+#'   }
 #' @examples
 #' data(example_scrna, package = "scSimEval")
 #' prep <- preprocess_trajectory_hvgs(example_scrna$ref, example_scrna$sim,
@@ -502,9 +509,17 @@ preprocess_trajectory_hvgs <- function(
 #' @param pca_coords Optional precomputed cell PCA matrix (\code{cells x dims}).
 #' @param milestone_prefix Prefix for unsupervised cluster milestones when \code{cell_types} is \code{NULL}.
 #'
-#' @return A list (augmented \code{dynwrap} trajectory object when \pkg{dynwrap} is available)
-#'   containing \code{milestone_ids}, \code{milestone_network}, \code{progressions},
-#'   \code{milestone_percentages}, \code{pca_coords}, and \code{cell_milestone_geodesic}.
+#' @return A named list representing the MST trajectory model with elements:
+#'   \describe{
+#'     \item{\code{cell_ids}}{Character vector of cell identifiers.}
+#'     \item{\code{milestone_ids}}{Character vector of milestone node identifiers.}
+#'     \item{\code{milestone_network}}{\code{data.frame} of directed MST edges with columns \code{from}, \code{to}, \code{length}, and \code{directed}.}
+#'     \item{\code{progressions}}{\code{data.frame} of continuous cell projections along MST edges (\code{cell_id}, \code{from}, \code{to}, \code{percentage}).}
+#'     \item{\code{pca_coords}}{Matrix of cell PCA coordinates used for MST construction.}
+#'     \item{\code{centroids}}{Matrix of milestone centroid coordinates in PCA space.}
+#'     \item{\code{cell_milestone_geodesic}}{Numeric matrix of shortest-path geodesic distances from each cell to each milestone.}
+#'     \item{\code{branch_assignment}}{Character vector assigning each cell to its undirected MST branch edge.}
+#'   }
 #' @examples
 #' data(example_scrna, package = "scSimEval")
 #' prep <- preprocess_trajectory_hvgs(example_scrna$ref, cell_types_ref = example_scrna$cell_types)
@@ -843,9 +858,13 @@ calc_dynverse_f1_branches <- function(ref_traj, sim_traj, nn_map = NULL) {
 #' @param threads Number of threads for \pkg{ranger} (default \code{1L}).
 #' @param seed Random seed for reproducible forest fitting (default \code{42L}).
 #'
-#' @return A list containing \code{wcor_features} (weighted correlation clipped to \code{[0, 1]}),
-#'   \code{cor_features} (unweighted correlation clipped to \code{[0, 1]}),
-#'   \code{ref_importance}, and \code{sim_importance}.
+#' @return A named list summarizing feature-importance preservation along trajectory milestones:
+#'   \describe{
+#'     \item{\code{wcor_features}}{Reference-importance-weighted Pearson correlation clipped to \code{[0, 1]}.}
+#'     \item{\code{cor_features}}{Unweighted Pearson correlation across features clipped to \code{[0, 1]}.}
+#'     \item{\code{ref_importance}}{Named numeric vector of mean reference feature importance scores.}
+#'     \item{\code{sim_importance}}{Named numeric vector of mean simulated feature importance scores.}
+#'   }
 #' @export
 calc_wcor_features <- function(
   ref_traj,

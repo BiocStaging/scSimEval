@@ -33,9 +33,13 @@ calc_wcor_features(
 \item{seed}{Random seed for reproducible forest fitting (default \code{42L}).}
 }
 \value{
-A list containing \code{wcor_features} (weighted correlation clipped to \code{[0, 1]}),
-  \code{cor_features} (unweighted correlation clipped to \code{[0, 1]}),
-  \code{ref_importance}, and \code{sim_importance}.
+A named list summarizing feature-importance preservation along trajectory milestones:
+  \describe{
+    \item{\code{wcor_features}}{Reference-importance-weighted Pearson correlation clipped to \code{[0, 1]}.}
+    \item{\code{cor_features}}{Unweighted Pearson correlation across features clipped to \code{[0, 1]}.}
+    \item{\code{ref_importance}}{Named numeric vector of mean reference feature importance scores.}
+    \item{\code{sim_importance}}{Named numeric vector of mean simulated feature importance scores.}
+  }
 }
 \description{
 Trains \pkg{ranger} Random Forest regression models to predict cell-to-milestone geodesic

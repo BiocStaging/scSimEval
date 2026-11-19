@@ -12,9 +12,22 @@ benchmark_resource_usage(expr, sim_cores = NULL)
 \item{sim_cores}{Optional positive integer specifying CPU cores used during execution (default \code{1L}).}
 }
 \value{
-A list with elapsed seconds/minutes, peak memory allocated (MiB and MB),
-  \code{core_seconds}, \code{core_hours}, \code{memory_per_core_mib}, \code{memory_per_core_gib},
-  and \code{sim_cores}.
+A named list containing the evaluated expression result and resource metrics:
+  \describe{
+    \item{\code{result}}{Return value of \code{expr} (or \code{NULL} if evaluation errored).}
+    \item{\code{core_seconds}}{Total CPU core-seconds (\code{elapsed_seconds * cores}).}
+    \item{\code{core_hours}}{Total CPU core-hours (\code{core_seconds / 3600}).}
+    \item{\code{memory_per_core_mib}}{Peak R heap memory per allocated core in MiB.}
+    \item{\code{memory_per_core_gib}}{Peak R heap memory per allocated core in GiB.}
+    \item{\code{memory_per_core_mb}}{Peak R heap memory per allocated core in decimal MB.}
+    \item{\code{memory_per_core_gb}}{Peak R heap memory per allocated core in decimal GB.}
+    \item{\code{elapsed_seconds}}{Wall-clock elapsed runtime in seconds.}
+    \item{\code{elapsed_minutes}}{Wall-clock elapsed runtime in minutes.}
+    \item{\code{memory_mb}}{Peak R heap memory allocated in MiB.}
+    \item{\code{memory_mib}}{Alias of \code{memory_mb} in MiB.}
+    \item{\code{memory_mb_si}}{Peak R heap memory allocated in decimal MB.}
+    \item{\code{sim_cores}}{Normalized integer core count (included only when \code{sim_cores} is supplied).}
+  }
 }
 \description{
 Times an expression and measures change in memory allocation, computing both raw

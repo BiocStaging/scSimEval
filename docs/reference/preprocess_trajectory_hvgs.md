@@ -86,10 +86,42 @@ preprocess_trajectory_hvgs(
 
 ## Value
 
-A list containing HVG-filtered log-normalized expression matrices
-(`ref_expr`, `sim_expr`), selected HVG names (`hvgs`), synced cell-type
-vectors (`cell_types_ref`, `cell_types_sim`), HVG statistics table
-(`hvg_stats`), and filtering counts (`summary`).
+A named list containing preprocessed expression matrices and HVG
+metadata:
+
+- `ref_expr`:
+
+  Sparse/dense log-normalized HVG expression matrix for the reference
+  dataset.
+
+- `sim_expr`:
+
+  Sparse/dense log-normalized HVG expression matrix for the simulated
+  dataset (or `NULL`).
+
+- `hvgs`:
+
+  Character vector of retained highly variable gene identifiers.
+
+- `cell_types_ref`:
+
+  Reference cell-type vector synchronized with remaining cells (or
+  `NULL`).
+
+- `cell_types_sim`:
+
+  Simulated cell-type vector synchronized with remaining cells (or
+  `NULL`).
+
+- `hvg_stats`:
+
+  `data.frame` of per-gene empirical mean-variance statistics (`gene`,
+  `mean`, `total`, `tech`, `bio`, `p.value`, `FDR`).
+
+- `summary`:
+
+  List of summary counts (`n_hvgs`, `n_strict_hvgs`, `n_ref_cells`,
+  `n_sim_cells`, `hvg_method`).
 
 ## Examples
 

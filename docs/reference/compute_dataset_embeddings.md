@@ -27,13 +27,13 @@ compute_dataset_embeddings(
 
 - reference:
 
-  Biological reference count matrix (features x cells), dgCMatrix,
-  SingleCellExperiment, or Seurat object.
+  Biological reference `SingleCellExperiment` object or count matrix
+  (features x cells).
 
 - simulated:
 
-  A single simulated count matrix or a named list of simulated count
-  matrices (e.g. `list("Splatter" = sim1, "scDesign3" = sim2)`).
+  A single simulated count matrix/`SingleCellExperiment` or a named list
+  of them.
 
 - reduction:
 

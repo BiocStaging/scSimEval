@@ -24,9 +24,17 @@ infer_dynverse_trajectory(
 \item{milestone_prefix}{Prefix for unsupervised cluster milestones when \code{cell_types} is \code{NULL}.}
 }
 \value{
-A list (augmented \code{dynwrap} trajectory object when \pkg{dynwrap} is available)
-  containing \code{milestone_ids}, \code{milestone_network}, \code{progressions},
-  \code{milestone_percentages}, \code{pca_coords}, and \code{cell_milestone_geodesic}.
+A named list representing the MST trajectory model with elements:
+  \describe{
+    \item{\code{cell_ids}}{Character vector of cell identifiers.}
+    \item{\code{milestone_ids}}{Character vector of milestone node identifiers.}
+    \item{\code{milestone_network}}{\code{data.frame} of directed MST edges with columns \code{from}, \code{to}, \code{length}, and \code{directed}.}
+    \item{\code{progressions}}{\code{data.frame} of continuous cell projections along MST edges (\code{cell_id}, \code{from}, \code{to}, \code{percentage}).}
+    \item{\code{pca_coords}}{Matrix of cell PCA coordinates used for MST construction.}
+    \item{\code{centroids}}{Matrix of milestone centroid coordinates in PCA space.}
+    \item{\code{cell_milestone_geodesic}}{Numeric matrix of shortest-path geodesic distances from each cell to each milestone.}
+    \item{\code{branch_assignment}}{Character vector assigning each cell to its undirected MST branch edge.}
+  }
 }
 \description{
 Constructs a continuous Minimum Spanning Tree (MST) milestone trajectory directly from

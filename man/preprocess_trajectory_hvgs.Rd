@@ -42,9 +42,16 @@ preprocess_trajectory_hvgs(
 \item{max_hvgs}{Maximum HVG cap for tractable Random Forest importance fitting (default \code{1500L}).}
 }
 \value{
-A list containing HVG-filtered log-normalized expression matrices (\code{ref_expr}, \code{sim_expr}),
-  selected HVG names (\code{hvgs}), synced cell-type vectors (\code{cell_types_ref}, \code{cell_types_sim}),
-  HVG statistics table (\code{hvg_stats}), and filtering counts (\code{summary}).
+A named list containing preprocessed expression matrices and HVG metadata:
+  \describe{
+    \item{\code{ref_expr}}{Sparse/dense log-normalized HVG expression matrix for the reference dataset.}
+    \item{\code{sim_expr}}{Sparse/dense log-normalized HVG expression matrix for the simulated dataset (or \code{NULL}).}
+    \item{\code{hvgs}}{Character vector of retained highly variable gene identifiers.}
+    \item{\code{cell_types_ref}}{Reference cell-type vector synchronized with remaining cells (or \code{NULL}).}
+    \item{\code{cell_types_sim}}{Simulated cell-type vector synchronized with remaining cells (or \code{NULL}).}
+    \item{\code{hvg_stats}}{\code{data.frame} of per-gene empirical mean-variance statistics (\code{gene}, \code{mean}, \code{total}, \code{tech}, \code{bio}, \code{p.value}, \code{FDR}).}
+    \item{\code{summary}}{List of summary counts (\code{n_hvgs}, \code{n_strict_hvgs}, \code{n_ref_cells}, \code{n_sim_cells}, \code{hvg_method}).}
+  }
 }
 \description{
 Implements the standardized scRNA-seq quality control and HVG selection workflow

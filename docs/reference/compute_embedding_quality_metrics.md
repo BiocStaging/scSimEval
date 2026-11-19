@@ -29,8 +29,43 @@ compute_embedding_quality_metrics(
 
 ## Value
 
-A `data.frame` summarizing quantitative embedding quality metrics for
-each dataset.
+A `data.frame` (with `check.names = FALSE`) containing one row per
+dataset with columns:
+
+- `Dataset`:
+
+  Dataset label (e.g., `"Reference"` or simulator name).
+
+- `Role`:
+
+  Dataset role (`"Reference"` or `"Simulated"`).
+
+- `Cells (N)`:
+
+  Number of cells in the embedding.
+
+- `Mean Silhouette`:
+
+  Mean silhouette width across cell-type labels rounded to 4 decimals
+  (or `NA_real_`).
+
+- `ARI (Cluster Fidelity)`:
+
+  Adjusted Rand Index between clustering and cell-type labels rounded to
+  4 decimals (or `NA_real_`).
+
+- `Mean Library Size`:
+
+  Mean total counts per cell rounded to 1 decimal.
+
+- `Mean Detected Features`:
+
+  Mean detected features per cell rounded to 1 decimal.
+
+- `Library Size Diff (%)`:
+
+  Relative percent difference in mean library size vs. Reference
+  (present when a `"Reference"` row exists).
 
 ## Examples
 

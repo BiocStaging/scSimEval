@@ -18,8 +18,25 @@ calc_excess_zero_weights(counts)
 
 ## Value
 
-A list with mean excess zero weight, gene-level weights, and estimated
-zero-inflation rate.
+A named list summarizing posterior excess-zero probabilities under a
+Negative Binomial model:
+
+- `mean_excess_zero_weight`:
+
+  Mean posterior excess-zero weight across features.
+
+- `median_excess_zero_weight`:
+
+  Median posterior excess-zero weight across features.
+
+- `mean_zero_inflation`:
+
+  Mean estimated excess-zero fraction (`pi`) beyond Negative Binomial
+  expectations.
+
+- `gene_excess_weights`:
+
+  Numeric vector of per-feature posterior excess-zero weights.
 
 ## Examples
 

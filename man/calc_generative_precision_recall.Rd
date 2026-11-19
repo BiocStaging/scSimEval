@@ -27,7 +27,12 @@ calc_generative_precision_recall(
 \item{max_features}{Maximum number of features to retain for speed (default 1000).}
 }
 \value{
-A list containing Generative Precision, Generative Recall, and Generative F1.
+A named list summarizing k-NN hypersphere manifold overlap:
+  \describe{
+    \item{\code{generative_precision}}{Fraction of simulated cells falling within the \code{k}-NN radius of at least one reference cell.}
+    \item{\code{generative_recall}}{Fraction of reference cells falling within the \code{k}-NN radius of at least one simulated cell.}
+    \item{\code{generative_f1}}{Harmonic mean of \code{generative_precision} and \code{generative_recall}.}
+  }
 }
 \description{
 Evaluates the realism (Precision) and coverage/diversity (Recall) of generated

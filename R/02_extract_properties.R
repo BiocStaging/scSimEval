@@ -9,7 +9,13 @@
 #' to model the scRNA-seq dropout relationship with mean expression.
 #'
 #' @param counts Count matrix (genes x cells) or SingleCellExperiment.
-#' @return A list containing intercept, slope, midpoint (inflection point), and R-squared.
+#' @return A named list with the fitted logistic dropout model parameters:
+#'   \describe{
+#'     \item{\code{intercept}}{Estimated logistic regression intercept (\code{beta_0}), or \code{NA_real_} if fewer than 10 valid genes.}
+#'     \item{\code{slope}}{Estimated logistic regression slope (\code{beta_1}) on \code{log(mean)}.}
+#'     \item{\code{midpoint}}{Inflection point (\code{-beta_0 / beta_1}) on the log-mean scale.}
+#'     \item{\code{r_squared}}{Coefficient of determination (\eqn{R^2}) of the linear fit.}
+#'   }
 #' @examples
 #' data(example_scrna, package = "scSimEval")
 #' calc_zero_probability_curve(example_scrna$ref)
@@ -81,7 +87,13 @@ evaluate_zero_probability_curve <- function(ref_counts, sim_counts) {
 #' (excess zeros) versus biological sampling zeros under a Negative Binomial model.
 #'
 #' @param counts Count matrix (features x cells).
-#' @return A list with mean excess zero weight, gene-level weights, and estimated zero-inflation rate.
+#' @return A named list summarizing posterior excess-zero probabilities under a Negative Binomial model:
+#'   \describe{
+#'     \item{\code{mean_excess_zero_weight}}{Mean posterior excess-zero weight across features.}
+#'     \item{\code{median_excess_zero_weight}}{Median posterior excess-zero weight across features.}
+#'     \item{\code{mean_zero_inflation}}{Mean estimated excess-zero fraction (\code{pi}) beyond Negative Binomial expectations.}
+#'     \item{\code{gene_excess_weights}}{Numeric vector of per-feature posterior excess-zero weights.}
+#'   }
 #' @examples
 #' data(example_scrna, package = "scSimEval")
 #' calc_excess_zero_weights(example_scrna$ref)
@@ -127,8 +139,17 @@ calc_excess_zero_weights <- function(counts) {
 #' @param data Count matrix (features/peaks x cells) or data.frame with 'mean' and 'nzp'.
 #' @param poly_degree Degree of polynomial (default: 2 for quadratic curve).
 #'
-#' @return A list with estimated coefficients (c0, c1, c2), R-squared, Spearman/Pearson
-#'   correlations, and model fit summary.
+#' @return A named list summarizing the polynomial fit relating peak mean accessibility to non-zero proportion (NZP):
+#'   \describe{
+#'     \item{\code{c0}}{Estimated intercept coefficient.}
+#'     \item{\code{c1}}{Estimated linear term coefficient.}
+#'     \item{\code{c2}}{Estimated quadratic term coefficient (or \code{0} if \code{poly_degree < 2}).}
+#'     \item{\code{r_squared}}{Coefficient of determination (\eqn{R^2}) of the polynomial regression.}
+#'     \item{\code{spearman_cor}}{Spearman correlation between mean accessibility and NZP.}
+#'     \item{\code{pearson_cor}}{Pearson correlation between mean accessibility and NZP.}
+#'     \item{\code{poly_degree}}{Polynomial degree used in the fit.}
+#'     \item{\code{model}}{The fitted \code{lm} object (omitted when too few valid peaks exist).}
+#'   }
 #' @examples
 #' data(example_scatac, package = "scSimEval")
 #' calc_accessibility_sparsity_curve(example_scatac$ref)
@@ -202,7 +223,13 @@ calc_accessibility_sparsity_curve <- function(data, poly_degree = 2) {
 #' @param sim_data Simulated count matrix (peaks x cells).
 #' @param poly_degree Degree of polynomial (default: 2).
 #'
-#' @return A list containing \code{curve_rmse} and \code{r2_discrepancy} (along with fitted reference and simulated curve parameters).
+#' @return A named list quantifying concordance between reference and simulated accessibility-sparsity curves:
+#'   \describe{
+#'     \item{\code{curve_rmse}}{Root mean squared error between predicted NZP curves over a 100-point grid spanning the reference mean range.}
+#'     \item{\code{r2_discrepancy}}{Absolute difference between simulated and reference polynomial \eqn{R^2} values.}
+#'     \item{\code{ref_r_squared}}{Polynomial \eqn{R^2} of the reference dataset.}
+#'     \item{\code{sim_r_squared}}{Polynomial \eqn{R^2} of the simulated dataset.}
+#'   }
 #' @examples
 #' data(example_scatac, package = "scSimEval")
 #' evaluate_accessibility_sparsity_curve(example_scatac$ref, example_scatac$sim)

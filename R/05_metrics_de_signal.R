@@ -543,7 +543,13 @@ calc_simpipe_distribution_score <- function(
 #' @param n_top Number of top features to select if de_features is NULL (default 50).
 #' @param method Classifier algorithm: "svm" (default in Simpipe), "knn", or "rf".
 #'
-#' @return A list containing accuracy, precision, recall, and F1 score.
+#' @return A named list summarizing held-out cell-type classification performance:
+#'   \describe{
+#'     \item{\code{accuracy}}{Overall classification accuracy on the held-out fold.}
+#'     \item{\code{precision}}{Mean per-class precision across cell types.}
+#'     \item{\code{recall}}{Mean per-class recall across cell types.}
+#'     \item{\code{F1}}{Mean per-class F1 score across cell types.}
+#'   }
 #' @examples
 #' data(example_scrna, package = "scSimEval")
 #' evaluate_predictive_de_model(example_scrna$ref, group = example_scrna$cell_types)

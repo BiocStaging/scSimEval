@@ -26,8 +26,26 @@ evaluate_accessibility_sparsity_curve(ref_data, sim_data, poly_degree = 2)
 
 ## Value
 
-A list containing `curve_rmse` and `r2_discrepancy` (along with fitted
-reference and simulated curve parameters).
+A named list quantifying concordance between reference and simulated
+accessibility-sparsity curves:
+
+- `curve_rmse`:
+
+  Root mean squared error between predicted NZP curves over a 100-point
+  grid spanning the reference mean range.
+
+- `r2_discrepancy`:
+
+  Absolute difference between simulated and reference polynomial \\R^2\\
+  values.
+
+- `ref_r_squared`:
+
+  Polynomial \\R^2\\ of the reference dataset.
+
+- `sim_r_squared`:
+
+  Polynomial \\R^2\\ of the simulated dataset.
 
 ## Examples
 

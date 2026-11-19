@@ -24,7 +24,13 @@ evaluate_predictive_de_model(
 \item{method}{Classifier algorithm: "svm" (default in Simpipe), "knn", or "rf".}
 }
 \value{
-A list containing accuracy, precision, recall, and F1 score.
+A named list summarizing held-out cell-type classification performance:
+  \describe{
+    \item{\code{accuracy}}{Overall classification accuracy on the held-out fold.}
+    \item{\code{precision}}{Mean per-class precision across cell types.}
+    \item{\code{recall}}{Mean per-class recall across cell types.}
+    \item{\code{F1}}{Mean per-class F1 score across cell types.}
+  }
 }
 \description{
 Constructs classification models (Support Vector Machine with radial kernel,

@@ -116,10 +116,20 @@ correlation (<code>wcor_features</code>) clipped to <code>[0, 1]</code>.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list containing <code>wcor_features</code> (weighted correlation clipped to <code>[0, 1]</code>),
-  <code>cor_features</code> (unweighted correlation clipped to <code>[0, 1]</code>),
-  <code>ref_importance</code>, and <code>sim_importance</code>.</p>
-    </div>
+    <p>A named list summarizing feature-importance preservation along trajectory milestones:</p><dl><dt><code>wcor_features</code></dt>
+<dd><p>Reference-importance-weighted Pearson correlation clipped to <code>[0, 1]</code>.</p></dd>
+
+    <dt><code>cor_features</code></dt>
+<dd><p>Unweighted Pearson correlation across features clipped to <code>[0, 1]</code>.</p></dd>
+
+    <dt><code>ref_importance</code></dt>
+<dd><p>Named numeric vector of mean reference feature importance scores.</p></dd>
+
+    <dt><code>sim_importance</code></dt>
+<dd><p>Named numeric vector of mean simulated feature importance scores.</p></dd>
+
+
+</dl></div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

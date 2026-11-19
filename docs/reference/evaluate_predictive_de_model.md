@@ -44,7 +44,23 @@ evaluate_predictive_de_model(
 
 ## Value
 
-A list containing accuracy, precision, recall, and F1 score.
+A named list summarizing held-out cell-type classification performance:
+
+- `accuracy`:
+
+  Overall classification accuracy on the held-out fold.
+
+- `precision`:
+
+  Mean per-class precision across cell types.
+
+- `recall`:
+
+  Mean per-class recall across cell types.
+
+- `F1`:
+
+  Mean per-class F1 score across cell types.
 
 ## Examples
 

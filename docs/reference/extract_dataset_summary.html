@@ -100,8 +100,42 @@ batch counts, median library size, median detected features per cell, and mean e
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A data.frame with 1 row summarizing the dataset properties.</p>
-    </div>
+    <p>A 1-row <code>data.frame</code> (with <code>check.names = FALSE</code>) summarizing
+  the dataset with columns:</p><dl><dt><code>Dataset / Simulator</code></dt>
+<dd><p>Character label from <code>method_name</code>.</p></dd>
+
+    <dt><code>Role</code></dt>
+<dd><p>Dataset role label from <code>role</code>.</p></dd>
+
+    <dt><code>Modality</code></dt>
+<dd><p>Molecular modality label from <code>modality</code>.</p></dd>
+
+    <dt><code>Cells (N)</code></dt>
+<dd><p>Formatted total number of cells.</p></dd>
+
+    <dt><code>Features (P)</code></dt>
+<dd><p>Formatted total number of features.</p></dd>
+
+    <dt><code>Sparsity</code></dt>
+<dd><p>Percentage of zero entries formatted to two decimal places.</p></dd>
+
+    <dt><code>Cell Types (Groups)</code></dt>
+<dd><p>Formatted count of unique non-missing cell types, or <code>"Not specified"</code>.</p></dd>
+
+    <dt><code>Batches</code></dt>
+<dd><p>Formatted count of unique non-missing batches (defaults to <code>"1"</code>).</p></dd>
+
+    <dt><code>Median Lib Size</code></dt>
+<dd><p>Formatted median total counts per cell.</p></dd>
+
+    <dt><code>Median Detected Features</code></dt>
+<dd><p>Formatted median number of detected (non-zero) features per cell.</p></dd>
+
+    <dt><code>Mean Expression</code></dt>
+<dd><p>Formatted overall mean count across all matrix entries.</p></dd>
+
+
+</dl></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

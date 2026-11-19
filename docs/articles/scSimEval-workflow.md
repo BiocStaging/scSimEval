@@ -232,7 +232,7 @@ and summarize multiple simulators with
 - **Interactive Shiny Interface**: Point-and-click dataset exploration,
   dynamic filtering, and high-resolution report exports are available in
   the companion package **`scSimEvalStudio`**
-  ([`scSimEvalStudio::launch_scSimEval_app()`](https://rdrr.io/pkg/scSimEvalStudio/man/launch_scSimEval_app.html)).
+  ([`scSimEvalStudio::launch_scSimEval_app()`](https://kabilanbio.github.io/scSimEvalStudio/reference/launch_scSimEval_app.html)).
 
 ------------------------------------------------------------------------
 

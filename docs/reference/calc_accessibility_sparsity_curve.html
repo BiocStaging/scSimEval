@@ -77,9 +77,32 @@ proportion (NZP / detection frequency) as modeled in the simATAC framework
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list with estimated coefficients (c0, c1, c2), R-squared, Spearman/Pearson
-  correlations, and model fit summary.</p>
-    </div>
+    <p>A named list summarizing the polynomial fit relating peak mean accessibility to non-zero proportion (NZP):</p><dl><dt><code>c0</code></dt>
+<dd><p>Estimated intercept coefficient.</p></dd>
+
+    <dt><code>c1</code></dt>
+<dd><p>Estimated linear term coefficient.</p></dd>
+
+    <dt><code>c2</code></dt>
+<dd><p>Estimated quadratic term coefficient (or <code>0</code> if <code>poly_degree &lt; 2</code>).</p></dd>
+
+    <dt><code>r_squared</code></dt>
+<dd><p>Coefficient of determination (\(R^2\)) of the polynomial regression.</p></dd>
+
+    <dt><code>spearman_cor</code></dt>
+<dd><p>Spearman correlation between mean accessibility and NZP.</p></dd>
+
+    <dt><code>pearson_cor</code></dt>
+<dd><p>Pearson correlation between mean accessibility and NZP.</p></dd>
+
+    <dt><code>poly_degree</code></dt>
+<dd><p>Polynomial degree used in the fit.</p></dd>
+
+    <dt><code>model</code></dt>
+<dd><p>The fitted <code>lm</code> object (omitted when too few valid peaks exist).</p></dd>
+
+
+</dl></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

@@ -2250,6 +2250,137 @@ plot_category_metric_bars <- function(
   if (u %in% c("mb", "megabyte", "megabytes", "mb/core")) "MB" else "MiB"
 }
 
+#' Resolve Simulator Color Palette
+#' @keywords internal
+#' @noRd
+.resolve_sim_palette <- function(sim_methods, palette = NULL) {
+  if (!is.null(palette)) return(palette)
+  default_cols <- c(
+    "scDesign3" = "#1E8449", "Splatter" = "#2E86AB", "SCRIP" = "#E67E22",
+    "SymSim" = "#8E44AD", "dyngen" = "#D4AC0D", "simATAC" = "#C0392B"
+  )
+  active <- default_cols[sim_methods]
+  miss <- sim_methods[is.na(active)]
+  if (length(miss) > 0) {
+    extra <- grDevices::hcl.colors(length(miss), palette = "Dark 3")
+    names(extra) <- miss
+    active[miss] <- extra
+  }
+  active
+}
+
+#' Prepare Wide Category VIII Scalability Table with Normalized Display Units
+#' @keywords internal
+#' @noRd
+.prepare_scalability_wide <- function(benchmark_data, modality, cell_count, time_unit, memory_unit) {
+  df <- .standardize_scalability_rows(.ingest_bubble_data(benchmark_data))
+  if ("Modality" %in% colnames(df)) {
+    if (modality == "rna") df <- df[grepl("RNA", df$Modality, ignore.case = TRUE), , drop = FALSE]
+    else if (modality == "atac") df <- df[grepl("ATAC", df$Modality, ignore.case = TRUE), , drop = FALSE]
+    else if (modality == "total" && any(df$Modality %in% c("Computation", "Total", "Combined"))) {
+      df <- df[df$Modality %in% c("Computation", "Total", "Combined"), , drop = FALSE]
+    }
+  }
+  sc_df <- df[df$Metric %in% c("core_seconds", "memory_per_core_mib", "elapsed_time_seconds", "peak_memory_mb"), , drop = FALSE]
+
+  if (nrow(sc_df) == 0 && modality %in% c("rna", "atac") && is.list(benchmark_data) && !is.data.frame(benchmark_data)) {
+    res_list <- if (is.list(benchmark_data$dataset_results)) benchmark_data$dataset_results else benchmark_data
+    res_names <- names(res_list)
+    layer_rows <- list()
+    for (idx in seq_along(res_list)) {
+      item <- res_list[[idx]]
+      ru <- if (is.list(item) && is.list(item$resource_usage)) item$resource_usage[[modality]] else NULL
+      if (is.null(ru)) next
+      m_name <- if (!is.null(res_names) && nzchar(res_names[idx])) res_names[idx] else paste0("Method_", idx)
+      c_val <- if (!is.null(ru$sim_cores) && is.finite(ru$sim_cores)) as.integer(ru$sim_cores) else 1L
+      c_sec <- ru$core_seconds %||% (if (!is.null(ru$elapsed_time)) as.numeric(ru$elapsed_time) * c_val else NA_real_)
+      m_core <- ru$memory_per_core_mib %||% (if (!is.null(ru$memory_mb)) as.numeric(ru$memory_mb) / c_val else NA_real_)
+      if (is.finite(c_sec)) layer_rows[[length(layer_rows) + 1L]] <- data.frame(Method = m_name, Metric = "core_seconds", Score_Raw = as.numeric(c_sec), Sim_Cores = c_val, stringsAsFactors = FALSE)
+      if (is.finite(m_core)) layer_rows[[length(layer_rows) + 1L]] <- data.frame(Method = m_name, Metric = "memory_per_core_mib", Score_Raw = as.numeric(m_core), Sim_Cores = c_val, stringsAsFactors = FALSE)
+    }
+    if (length(layer_rows) > 0) sc_df <- do.call(rbind, layer_rows)
+  }
+  if (nrow(sc_df) == 0) stop("No computational scalability metrics (Category VIII) found in benchmark_data.")
+
+  wide_sc <- stats::reshape(sc_df[, c("Method", "Metric", "Score_Raw")], timevar = "Metric", idvar = "Method", direction = "wide")
+  colnames(wide_sc) <- gsub("^Score_Raw\\.", "", colnames(wide_sc))
+  for (m_req in c("core_seconds", "memory_per_core_mib", "elapsed_time_seconds", "peak_memory_mb")) {
+    if (!m_req %in% colnames(wide_sc)) wide_sc[[m_req]] <- NA_real_
+  }
+
+  cores_col <- intersect(c("Sim_Cores", "Cores_Used", "Cores", "n_cores", "cores"), colnames(sc_df))
+  wide_sc$Sim_Cores <- NA_integer_
+  if (length(cores_col) > 0) {
+    c_vals <- stats::aggregate(.safe_parse_int(sc_df[[cores_col[1]]]), by = list(Method = sc_df$Method),
+                               FUN = function(x) { xo <- x[!is.na(x) & x >= 1L]; if (length(xo) > 0) xo[1] else NA_integer_ })
+    wide_sc$Sim_Cores <- c_vals$x[match(wide_sc$Method, c_vals$Method)]
+  } else if (any(tolower(df$Metric) %in% c("sim_cores", "cores_used", "n_cores"))) {
+    c_rows <- df[tolower(df$Metric) %in% c("sim_cores", "cores_used", "n_cores"), , drop = FALSE]
+    wide_sc$Sim_Cores <- .safe_parse_int(c_rows$Score_Raw[match(wide_sc$Method, c_rows$Method)])
+  }
+
+  cv <- ifelse(!is.na(wide_sc$Sim_Cores) & wide_sc$Sim_Cores >= 1L, wide_sc$Sim_Cores, 1L)
+  needs_cs <- is.na(wide_sc$core_seconds) & !is.na(wide_sc$elapsed_time_seconds)
+  if (any(needs_cs)) wide_sc$core_seconds[needs_cs] <- wide_sc$elapsed_time_seconds[needs_cs] * cv[needs_cs]
+  needs_mpc <- is.na(wide_sc$memory_per_core_mib) & !is.na(wide_sc$peak_memory_mb)
+  if (any(needs_mpc)) wide_sc$memory_per_core_mib[needs_mpc] <- wide_sc$peak_memory_mb[needs_mpc] / cv[needs_mpc]
+
+  tu <- tolower(trimws(as.character(time_unit[1])))
+  if (tu %in% c("core_hours", "core_hour", "hours", "hour", "hr", "hrs")) {
+    wide_sc$display_time <- as.numeric(wide_sc$core_seconds) / 3600; t_label <- "Core-Hours"
+    wide_sc$time_label <- sprintf("%.2f h", wide_sc$display_time)
+  } else if (tu %in% c("minutes", "min", "mins", "minute", "core_minutes")) {
+    wide_sc$display_time <- as.numeric(wide_sc$core_seconds) / 60; t_label <- "Core-Minutes"
+    wide_sc$time_label <- sprintf("%.1f min", wide_sc$display_time)
+  } else {
+    wide_sc$display_time <- as.numeric(wide_sc$core_seconds); t_label <- "Core-Seconds"
+    wide_sc$time_label <- sprintf("%.1f s", wide_sc$display_time)
+  }
+
+  mu <- tolower(trimws(as.character(memory_unit[1])))
+  if (mu %in% c("gib", "gib/core", "gib_per_core", "gb_bin")) {
+    wide_sc$display_mem <- as.numeric(wide_sc$memory_per_core_mib) / 1024; m_abbr <- "GiB/core"
+  } else if (mu %in% c("mb", "mb/core", "mb_per_core", "megabyte")) {
+    wide_sc$display_mem <- as.numeric(wide_sc$memory_per_core_mib) * (1024^2 / 1000^2); m_abbr <- "MB/core"
+  } else if (mu %in% c("gb", "gb/core", "gb_per_core", "gigabyte")) {
+    wide_sc$display_mem <- (as.numeric(wide_sc$memory_per_core_mib) * (1024^2 / 1000^2)) / 1000; m_abbr <- "GB/core"
+  } else {
+    wide_sc$display_mem <- as.numeric(wide_sc$memory_per_core_mib); m_abbr <- "MiB/core"
+  }
+  wide_sc$mem_label <- if (grepl("gib|gb", m_abbr, ignore.case = TRUE)) sprintf("%.2f %s", wide_sc$display_mem, m_abbr) else sprintf("%.1f %s", wide_sc$display_mem, m_abbr)
+  wide_sc$resource_cost <- (wide_sc$display_time * wide_sc$display_mem) / 1000
+  wide_sc$cost_label <- if (max(wide_sc$resource_cost, na.rm = TRUE) < 10) sprintf("%.2f", wide_sc$resource_cost) else sprintf("%.1f", wide_sc$resource_cost)
+  raw_wall <- pmax(0.1, wide_sc$core_seconds / cv)
+  wide_sc$throughput_cells_sec <- cell_count / raw_wall
+  wide_sc$cpu_efficiency <- if ("cpu_time_seconds" %in% colnames(wide_sc)) wide_sc$cpu_time_seconds / raw_wall else NA_real_
+
+  wide_sc <- wide_sc[order(wide_sc$core_seconds, decreasing = FALSE), ]
+  wide_sc$Method <- factor(wide_sc$Method, levels = rev(wide_sc$Method))
+  list(wide = wide_sc, t_label = t_label, m_abbr = m_abbr)
+}
+
+#' Build Single Scalability Horizontal Bar Panel
+#' @keywords internal
+#' @noRd
+.scalability_bar_panel <- function(wide_sc, x_col, label_expr, active_pal, title_txt, x_lab,
+                                   y_lab = NULL, subtitle_txt = NULL, exp_hi = 0.22,
+                                   vline_one = FALSE, base_size = 11) {
+  p <- ggplot2::ggplot(wide_sc, ggplot2::aes(x = .data[[x_col]], y = .data$Method, fill = .data$Method))
+  if (vline_one) p <- p + ggplot2::geom_vline(xintercept = 1.0, linetype = "dashed", color = "#64748B", linewidth = 0.6)
+  p <- p +
+    ggplot2::geom_col(width = 0.65, color = "#1E293B", linewidth = 0.4, alpha = 0.9) +
+    ggplot2::geom_text(ggplot2::aes(label = .data[[label_expr]]), hjust = -0.15, size = base_size * 0.28, fontface = "bold", color = "#1E293B") +
+    ggplot2::scale_fill_manual(values = active_pal, guide = "none") +
+    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, exp_hi))) +
+    ggplot2::labs(title = title_txt, subtitle = subtitle_txt, x = x_lab, y = y_lab) +
+    .pub_theme(base_size = base_size) +
+    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0, face = "bold", size = base_size * 1.15))
+  if (!is.null(subtitle_txt)) {
+    p <- p + ggplot2::theme(plot.subtitle = ggplot2::element_text(hjust = 0, size = base_size * 0.70, color = "#475569", margin = ggplot2::margin(t = 2, b = 6)))
+  }
+  p
+}
+
 #' Plot Multi-Dimensional Computational Scalability Benchmark
 #'
 #' Evaluates computational resource efficiency across single-cell simulators using
@@ -2301,360 +2432,55 @@ plot_scalability_benchmark <- function(
   time_unit   = c("core_seconds", "core_hours", "seconds", "minutes"),
   memory_unit = c("MiB/core", "GiB/core", "MB/core", "GB/core", "MiB", "MB")
 ) {
-  type      <- match.arg(type)
-  layout    <- match.arg(layout)
-  modality  <- if (!is.null(modality)) match.arg(modality) else "total"
+  type <- match.arg(type)
+  layout <- match.arg(layout)
+  modality <- if (!is.null(modality)) match.arg(modality) else "total"
 
-  df <- .ingest_bubble_data(benchmark_data)
-  df <- .standardize_scalability_rows(df)
-  if ("Modality" %in% colnames(df)) {
-    if (modality == "rna") {
-      df <- df[grepl("RNA", df$Modality, ignore.case = TRUE), , drop = FALSE]
-    } else if (modality == "atac") {
-      df <- df[grepl("ATAC", df$Modality, ignore.case = TRUE), , drop = FALSE]
-    } else if (modality == "total") {
-      has_total <- any(df$Modality %in% c("Computation", "Total", "Combined"))
-      if (has_total) {
-        df <- df[df$Modality %in% c("Computation", "Total", "Combined"), , drop = FALSE]
-      }
-    }
-  }
+  prep <- .prepare_scalability_wide(benchmark_data, modality, cell_count, time_unit, memory_unit)
+  w <- prep$wide
+  w$thru_label <- sprintf("%.1f cells/s", w$throughput_cells_sec)
+  w$eff_label  <- sprintf("%.2fx", w$cpu_efficiency)
+  pal <- .resolve_sim_palette(unique(as.character(w$Method)), palette)
 
-  sc_mets <- c("core_seconds", "memory_per_core_mib", "elapsed_time_seconds", "peak_memory_mb")
-  sc_df <- df[df$Metric %in% sc_mets, , drop = FALSE]
+  p_rt <- .scalability_bar_panel(w, "display_time", "time_label", pal, "A. Execution Time", sprintf("Execution Time (%s)", prep$t_label), y_lab = "Simulator", base_size = base_size)
+  if (type == "runtime") return(p_rt)
+  p_mm <- .scalability_bar_panel(w, "display_mem", "mem_label", pal, "B. Peak Memory per Core", sprintf("Peak Memory (%s)", prep$m_abbr), base_size = base_size)
+  if (type == "memory") return(p_mm)
 
-  # Fallback for layer-specific ("rna" / "atac") plots when benchmark_data is a
-  # consolidated object or named list containing resource_usage[[modality]]
-  if (nrow(sc_df) == 0 && modality %in% c("rna", "atac") &&
-      is.list(benchmark_data) && !is.data.frame(benchmark_data)) {
-    res_list <- if (!is.null(benchmark_data$dataset_results) && is.list(benchmark_data$dataset_results)) {
-      benchmark_data$dataset_results
-    } else {
-      benchmark_data
-    }
-    res_names <- names(res_list)
-    layer_rows <- list()
-    for (idx in seq_along(res_list)) {
-      item <- res_list[[idx]]
-      if (!is.list(item) || is.null(item$resource_usage) || is.null(item$resource_usage[[modality]])) next
-      ru <- item$resource_usage[[modality]]
-      m_name <- if (!is.null(res_names) && nzchar(res_names[idx])) res_names[idx] else paste0("Method_", idx)
-      c_val <- if (!is.null(ru$sim_cores) && is.finite(ru$sim_cores)) as.integer(ru$sim_cores) else 1L
-      c_sec <- if (!is.null(ru$core_seconds)) as.numeric(ru$core_seconds) else (if (!is.null(ru$elapsed_time)) as.numeric(ru$elapsed_time) * c_val else NA_real_)
-      m_core <- if (!is.null(ru$memory_per_core_mib)) as.numeric(ru$memory_per_core_mib) else (if (!is.null(ru$memory_mb)) as.numeric(ru$memory_mb) / c_val else NA_real_)
-      if (is.finite(c_sec)) {
-        layer_rows[[length(layer_rows) + 1L]] <- data.frame(
-          Method = m_name, Metric = "core_seconds",
-          Score_Raw = c_sec, Sim_Cores = c_val,
-          stringsAsFactors = FALSE
-        )
-      }
-      if (is.finite(m_core)) {
-        layer_rows[[length(layer_rows) + 1L]] <- data.frame(
-          Method = m_name, Metric = "memory_per_core_mib",
-          Score_Raw = m_core, Sim_Cores = c_val,
-          stringsAsFactors = FALSE
-        )
-      }
-    }
-    if (length(layer_rows) > 0) {
-      sc_df <- do.call(rbind, layer_rows)
-    }
-  }
-
-  if (nrow(sc_df) == 0) stop("No computational scalability metrics (Category VIII) found in benchmark_data.")
-
-  mod_tag <- switch(modality,
-    rna   = " (scRNA)",
-    atac  = " (scATAC)",
-    ""
-  )
-
-  wide_sc <- stats::reshape(
-    sc_df[, c("Method", "Metric", "Score_Raw")],
-    timevar   = "Metric",
-    idvar     = "Method",
-    direction = "wide"
-  )
-  colnames(wide_sc) <- gsub("^Score_Raw\\.", "", colnames(wide_sc))
-
-  for (m_req in c("core_seconds", "memory_per_core_mib", "elapsed_time_seconds", "peak_memory_mb")) {
-    if (!m_req %in% colnames(wide_sc)) wide_sc[[m_req]] <- NA_real_
-  }
-
-  # Extract optional simulation CPU cores per Method
-  cores_col <- intersect(c("Sim_Cores", "Cores_Used", "Cores", "n_cores", "cores"), colnames(sc_df))
-  wide_sc$Sim_Cores <- NA_integer_
-  if (length(cores_col) > 0) {
-    c_vals <- stats::aggregate(
-      .safe_parse_int(sc_df[[cores_col[1]]]),
-      by = list(Method = sc_df$Method),
-      FUN = function(x) { x_ok <- x[!is.na(x) & x >= 1L]; if (length(x_ok) > 0) x_ok[1] else NA_integer_ }
-    )
-    m_c <- match(wide_sc$Method, c_vals$Method)
-    wide_sc$Sim_Cores <- c_vals$x[m_c]
-  } else if (any(tolower(df$Metric) %in% c("sim_cores", "cores_used", "n_cores"))) {
-    c_rows <- df[tolower(df$Metric) %in% c("sim_cores", "cores_used", "n_cores"), , drop = FALSE]
-    m_c <- match(wide_sc$Method, c_rows$Method)
-    wide_sc$Sim_Cores <- .safe_parse_int(c_rows$Score_Raw[m_c])
-  }
-
-  cores_vec <- ifelse(!is.na(wide_sc$Sim_Cores) & wide_sc$Sim_Cores >= 1L, wide_sc$Sim_Cores, 1L)
-
-  # Fallback: compute core_seconds and memory_per_core_mib from legacy columns if needed
-  needs_cs <- is.na(wide_sc$core_seconds) & !is.na(wide_sc$elapsed_time_seconds)
-  if (any(needs_cs)) {
-    wide_sc$core_seconds[needs_cs] <- wide_sc$elapsed_time_seconds[needs_cs] * cores_vec[needs_cs]
-  }
-  needs_mpc <- is.na(wide_sc$memory_per_core_mib) & !is.na(wide_sc$peak_memory_mb)
-  if (any(needs_mpc)) {
-    wide_sc$memory_per_core_mib[needs_mpc] <- wide_sc$peak_memory_mb[needs_mpc] / cores_vec[needs_mpc]
-  }
-
-  # Convert canonical (core_seconds, memory_per_core_mib) to requested display units
-  t_u_raw <- tolower(trimws(as.character(time_unit[1])))
-  if (t_u_raw %in% c("core_hours", "core_hour", "hours", "hour", "hr", "hrs")) {
-    wide_sc$display_time <- as.numeric(wide_sc$core_seconds) / 3600
-    t_label <- "Core-Hours"
-    t_abbr  <- "h"
-  } else if (t_u_raw %in% c("minutes", "min", "mins", "minute", "core_minutes")) {
-    wide_sc$display_time <- as.numeric(wide_sc$core_seconds) / 60
-    t_label <- "Core-Minutes"
-    t_abbr  <- "min"
-  } else {
-    wide_sc$display_time <- as.numeric(wide_sc$core_seconds)
-    t_label <- "Core-Seconds"
-    t_abbr  <- "s"
-  }
-
-  m_u_raw <- tolower(trimws(as.character(memory_unit[1])))
-  if (m_u_raw %in% c("gib", "gib/core", "gib_per_core", "gb_bin")) {
-    wide_sc$display_mem <- as.numeric(wide_sc$memory_per_core_mib) / 1024
-    m_abbr <- "GiB/core"
-  } else if (m_u_raw %in% c("mb", "mb/core", "mb_per_core", "megabyte")) {
-    wide_sc$display_mem <- as.numeric(wide_sc$memory_per_core_mib) * (1024^2 / 1000^2)
-    m_abbr <- "MB/core"
-  } else if (m_u_raw %in% c("gb", "gb/core", "gb_per_core", "gigabyte")) {
-    wide_sc$display_mem <- (as.numeric(wide_sc$memory_per_core_mib) * (1024^2 / 1000^2)) / 1000
-    m_abbr <- "GB/core"
-  } else {
-    wide_sc$display_mem <- as.numeric(wide_sc$memory_per_core_mib)
-    m_abbr <- "MiB/core"
-  }
-
-  wide_sc$resource_cost        <- (wide_sc$display_time * wide_sc$display_mem) / 1000
-  raw_wall_sec <- pmax(0.1, wide_sc$core_seconds / cores_vec)
-  wide_sc$throughput_cells_sec <- cell_count / raw_wall_sec
-  if ("cpu_time_seconds" %in% colnames(wide_sc)) {
-    wide_sc$cpu_efficiency     <- wide_sc$cpu_time_seconds / raw_wall_sec
-  } else {
-    wide_sc$cpu_efficiency     <- NA_real_
-  }
-
-  default_sim_cols <- c(
-    "scDesign3" = "#1E8449",
-    "Splatter"  = "#2E86AB",
-    "SCRIP"     = "#E67E22",
-    "SymSim"    = "#8E44AD",
-    "dyngen"    = "#D4AC0D",
-    "simATAC"   = "#C0392B"
-  )
-  sim_methods <- unique(wide_sc$Method)
-  if (is.null(palette)) {
-    active_pal <- default_sim_cols[sim_methods]
-    missing_sims <- sim_methods[is.na(active_pal)]
-    if (length(missing_sims) > 0) {
-      extra_cols <- grDevices::hcl.colors(length(missing_sims), palette = "Dark 3")
-      names(extra_cols) <- missing_sims
-      active_pal[missing_sims] <- extra_cols
-    }
-  } else {
-    active_pal <- palette
-  }
-
-  # Order methods by core-seconds (fastest total CPU work first)
-  wide_sc <- wide_sc[order(wide_sc$core_seconds, decreasing = FALSE), ]
-  wide_sc$Method <- factor(wide_sc$Method, levels = rev(wide_sc$Method))
-
-  time_num_str <- if (t_u_raw %in% c("core_hours", "core_hour", "hours", "hour", "hr", "hrs")) {
-    sprintf("%.2f h", wide_sc$display_time)
-  } else if (t_u_raw %in% c("minutes", "min", "mins", "minute", "core_minutes")) {
-    sprintf("%.1f min", wide_sc$display_time)
-  } else {
-    sprintf("%.1f s", wide_sc$display_time)
-  }
-  wide_sc$time_label <- time_num_str
-
-  # 1. Panel A: Execution Time Barplot
-  p_runtime <- ggplot2::ggplot(wide_sc, ggplot2::aes(x = .data$display_time, y = .data$Method, fill = .data$Method)) +
-    ggplot2::geom_col(width = 0.65, color = "#1E293B", linewidth = 0.4, alpha = 0.9) +
-    ggplot2::geom_text(
-      ggplot2::aes(label = .data$time_label),
-      hjust = -0.12, size = base_size * 0.28, fontface = "bold", color = "#1E293B"
-    ) +
-    ggplot2::scale_fill_manual(values = active_pal, guide = "none") +
-    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.22))) +
-    ggplot2::labs(
-      title    = "A. Execution Time",
-      subtitle = NULL,
-      x        = sprintf("Execution Time (%s)", t_label),
-      y        = "Simulator"
-    ) +
-    .pub_theme(base_size = base_size) +
-    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0, face = "bold"))
-
-  if (type == "runtime") return(p_runtime)
-
-  # 2. Panel B: Peak Memory per Core Barplot
-  mem_label_str <- if (grepl("gib|gb", m_abbr, ignore.case = TRUE)) {
-    sprintf("%.2f %s", wide_sc$display_mem, m_abbr)
-  } else {
-    sprintf("%.1f %s", wide_sc$display_mem, m_abbr)
-  }
-  wide_sc$mem_label <- mem_label_str
-
-  p_memory <- ggplot2::ggplot(wide_sc, ggplot2::aes(x = .data$display_mem, y = .data$Method, fill = .data$Method)) +
-    ggplot2::geom_col(width = 0.65, color = "#1E293B", linewidth = 0.4, alpha = 0.9) +
-    ggplot2::geom_text(
-      ggplot2::aes(label = .data$mem_label),
-      hjust = -0.15, size = base_size * 0.28, fontface = "bold", color = "#1E293B"
-    ) +
-    ggplot2::scale_fill_manual(values = active_pal, guide = "none") +
-    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.22))) +
-    ggplot2::labs(
-      title    = "B. Peak Memory per Core",
-      subtitle = NULL,
-      x        = sprintf("Peak Memory (%s)", m_abbr),
-      y        = NULL
-    ) +
-    .pub_theme(base_size = base_size) +
-    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0, face = "bold"))
-
-  if (type == "memory") return(p_memory)
-
-  # 3. Panel C: Runtime vs Memory Tradeoff
-  med_x <- stats::median(wide_sc$display_time, na.rm = TRUE)
-  med_y <- stats::median(wide_sc$display_mem, na.rm = TRUE)
-
-  p_tradeoff <- ggplot2::ggplot(wide_sc, ggplot2::aes(x = .data$display_time, y = .data$display_mem, color = .data$Method)) +
+  med_x <- stats::median(w$display_time, na.rm = TRUE); med_y <- stats::median(w$display_mem, na.rm = TRUE)
+  p_tr <- ggplot2::ggplot(w, ggplot2::aes(x = .data$display_time, y = .data$display_mem, color = .data$Method)) +
     ggplot2::geom_vline(xintercept = med_x, linetype = "dashed", color = "#CBD5E1", linewidth = 0.5) +
     ggplot2::geom_hline(yintercept = med_y, linetype = "dashed", color = "#CBD5E1", linewidth = 0.5) +
     ggplot2::geom_point(size = 4.5, alpha = 0.9) +
     ggplot2::geom_text(ggplot2::aes(label = .data$Method), vjust = -1.1, fontface = "bold", size = base_size * 0.30, show.legend = FALSE) +
-    ggplot2::scale_color_manual(values = active_pal, guide = "none") +
+    ggplot2::scale_color_manual(values = pal, guide = "none") +
     ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0.12, 0.18))) +
     ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0.12, 0.18))) +
-    ggplot2::labs(
-      title    = "C. Speed vs. Memory Trade-Off",
-      subtitle = NULL,
-      x        = sprintf("Execution Time (%s)", t_label),
-      y        = sprintf("Peak Memory (%s)", m_abbr)
-    ) +
+    ggplot2::labs(title = "C. Speed vs. Memory Trade-Off", x = sprintf("Execution Time (%s)", prep$t_label), y = sprintf("Peak Memory (%s)", prep$m_abbr)) +
     .pub_theme(base_size = base_size) +
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0, face = "bold"))
+  if (type == "tradeoff") return(p_tr)
 
-  if (type == "tradeoff") return(p_tradeoff)
+  p_cs <- .scalability_bar_panel(w, "resource_cost", "cost_label", pal, "D. Composite Resource Cost", "Resource Cost Score",
+                                 subtitle_txt = "(Core-Seconds \u00d7 Peak RAM/Core) / 1000", base_size = base_size)
+  if (type == "cost") return(p_cs)
 
-  # 4. Panel D: Resource Cost Footprint
-  cost_label_str <- if (max(wide_sc$resource_cost, na.rm = TRUE) < 10) {
-    sprintf("%.2f", wide_sc$resource_cost)
-  } else {
-    sprintf("%.1f", wide_sc$resource_cost)
-  }
-  wide_sc$cost_label <- cost_label_str
-
-  p_cost <- ggplot2::ggplot(wide_sc, ggplot2::aes(x = .data$resource_cost, y = .data$Method, fill = .data$Method)) +
-    ggplot2::geom_col(width = 0.65, color = "#1E293B", linewidth = 0.4, alpha = 0.9) +
-    ggplot2::geom_text(
-      ggplot2::aes(label = .data$cost_label),
-      hjust = -0.15, size = base_size * 0.28, fontface = "bold", color = "#1E293B"
-    ) +
-    ggplot2::scale_fill_manual(values = active_pal, guide = "none") +
-    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.22))) +
-    ggplot2::labs(
-      title    = "D. Composite Resource Cost",
-      subtitle = "(Core-Seconds \u00d7 Peak RAM/Core) / 1000",
-      x        = "Resource Cost Score",
-      y        = NULL
-    ) +
-    .pub_theme(base_size = base_size) +
-    ggplot2::theme(
-      plot.title    = ggplot2::element_text(hjust = 0, face = "bold", size = base_size * 1.15),
-      plot.subtitle = ggplot2::element_text(hjust = 0, size = base_size * 0.70, color = "#475569", margin = ggplot2::margin(t = 2, b = 6))
-    )
-
-  if (type == "cost") return(p_cost)
-
-  # 5. Panel E: Throughput
-  p_thru <- ggplot2::ggplot(wide_sc, ggplot2::aes(x = .data$throughput_cells_sec, y = .data$Method, fill = .data$Method)) +
-    ggplot2::geom_col(width = 0.65, color = "#1E293B", linewidth = 0.4, alpha = 0.9) +
-    ggplot2::geom_text(
-      ggplot2::aes(label = sprintf("%.1f cells/s", .data$throughput_cells_sec)),
-      hjust = -0.15, size = base_size * 0.28, fontface = "bold", color = "#1E293B"
-    ) +
-    ggplot2::scale_fill_manual(values = active_pal, guide = "none") +
-    ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.25))) +
-    ggplot2::labs(
-      title    = "Simulation Throughput",
-      subtitle = NULL,
-      x        = "Throughput (cells/s)",
-      y        = NULL
-    ) +
-    .pub_theme(base_size = base_size) +
-    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0, face = "bold"))
-
-  if (type == "throughput") return(p_thru)
-
-  # Optional Efficiency panel (if CPU time is provided)
+  p_th <- .scalability_bar_panel(w, "throughput_cells_sec", "thru_label", pal, "Simulation Throughput", "Throughput (cells/s)", exp_hi = 0.25, base_size = base_size)
+  if (type == "throughput") return(p_th)
   if (type == "efficiency") {
-    if (all(is.na(wide_sc$cpu_efficiency))) {
+    if (all(is.na(w$cpu_efficiency))) {
       message("Note: cpu_efficiency requires CPU execution time; displaying simulation throughput instead.")
-      return(p_thru)
+      return(p_th)
     }
-    p_eff <- ggplot2::ggplot(wide_sc, ggplot2::aes(x = .data$cpu_efficiency, y = .data$Method, fill = .data$Method)) +
-      ggplot2::geom_vline(xintercept = 1.0, linetype = "dashed", color = "#64748B", linewidth = 0.6) +
-      ggplot2::geom_col(width = 0.65, color = "#1E293B", linewidth = 0.4, alpha = 0.9) +
-      ggplot2::geom_text(
-        ggplot2::aes(label = sprintf("%.2fx", .data$cpu_efficiency)),
-        hjust = -0.15, size = base_size * 0.28, fontface = "bold", color = "#1E293B"
-      ) +
-      ggplot2::scale_fill_manual(values = active_pal, guide = "none") +
-      ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.24))) +
-      ggplot2::labs(
-        title    = "CPU Efficiency",
-        subtitle = NULL,
-        x        = "Efficiency Ratio (CPU / Elapsed)",
-        y        = NULL
-      ) +
-      .pub_theme(base_size = base_size) +
-      ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0, face = "bold"))
-    return(p_eff)
+    return(.scalability_bar_panel(w, "cpu_efficiency", "eff_label", pal, "CPU Efficiency", "Efficiency Ratio (CPU / Elapsed)", exp_hi = 0.24, vline_one = TRUE, base_size = base_size))
   }
 
-  # Composite Assembly
-  if (!requireNamespace("patchwork", quietly = TRUE)) {
-    return(p_runtime)
-  }
-
-  if (layout == "6panel") {
-    composite <- (p_runtime | p_memory) / (p_tradeoff | p_cost) / (p_thru | patchwork::plot_spacer()) +
-      patchwork::plot_annotation(
-        title    = "Computational Scalability Benchmark",
-        theme    = ggplot2::theme(
-          plot.title = ggplot2::element_text(face = "bold", size = base_size * 1.30, hjust = 0.5, color = "#0F172A")
-        )
-      )
-  } else {
-    composite <- (p_runtime | p_memory) / (p_tradeoff | p_cost) +
-      patchwork::plot_annotation(
-        title    = "Computational Scalability Benchmark",
-        theme    = ggplot2::theme(
-          plot.title = ggplot2::element_text(face = "bold", size = base_size * 1.30, hjust = 0.5, color = "#0F172A")
-        )
-      )
-  }
-
-  composite
+  if (!requireNamespace("patchwork", quietly = TRUE)) return(p_rt)
+  grid_p <- if (layout == "6panel") (p_rt | p_mm) / (p_tr | p_cs) / (p_th | patchwork::plot_spacer()) else (p_rt | p_mm) / (p_tr | p_cs)
+  grid_p + patchwork::plot_annotation(
+    title = "Computational Scalability Benchmark",
+    theme = ggplot2::theme(plot.title = ggplot2::element_text(face = "bold", size = base_size * 1.30, hjust = 0.5, color = "#0F172A"))
+  )
 }
 
 
@@ -2969,6 +2795,128 @@ plot_metric_heatmap <- function(
 # 6b. plot_metric_mds()
 # ============================================================================
 
+#' Annotate Ordination Coordinates (MDS/PCA Loadings) by Group and Modality Labels
+#' @keywords internal
+#' @noRd
+.annotate_ordination_metrics <- function(coord_df, ref_df, group_by, feature_label,
+                                         palette = NULL, type_colors = NULL,
+                                         default_summary_legend = "Category") {
+  if (is.null(type_colors)) {
+    type_colors <- stats::setNames(c("#E04038", "#3876E0", "#28A745"), c(feature_label, "cell", "global"))
+  }
+
+  if (group_by == "category") {
+    coord_df$Category <- ref_df$Category[match(coord_df$Metric, ref_df$Metric)]
+    miss <- is.na(coord_df$Category) | coord_df$Category == "" | coord_df$Category == "Uncategorized"
+    if (any(miss)) coord_df$Category[miss] <- .METRIC_CATEGORY_MAP[coord_df$Metric[miss]]
+    short_cats <- ifelse(coord_df$Category %in% names(.SHORT_CATEGORY_LEGEND_MAP),
+                         .SHORT_CATEGORY_LEGEND_MAP[coord_df$Category], coord_df$Category)
+    short_ord <- unname(.SHORT_CATEGORY_LEGEND_MAP)
+    cat_lvls <- short_ord[short_ord %in% unique(short_cats)]
+    if (length(cat_lvls) == 0) cat_lvls <- unique(short_cats)
+    coord_df$Group <- factor(short_cats, levels = cat_lvls)
+    pg <- levels(coord_df$Group)
+    group_colors <- if (!is.null(palette) && all(pg %in% names(palette))) palette[pg] else .SHORT_CATEGORY_COLORS[pg]
+    legend_title <- default_summary_legend
+  } else {
+    raw_types <- .SUMMARY_TYPE_MAP[coord_df$Metric]
+    coord_df$Type <- ifelse(raw_types %in% c("feature", "gene"), feature_label, raw_types)
+    for (i in seq_len(nrow(coord_df))) {
+      if (is.na(coord_df$Type[i])) {
+        m <- tolower(coord_df$Metric[i])
+        coord_df$Type[i] <- if (grepl("generative", m)) "global"
+        else if (grepl("cell|lib|ldf|knn|neighborhood", m)) "cell"
+        else if (grepl("gene|peak|feat|deg|da_|da |cpm|var|disp|fc|dropout|sparsity", m)) feature_label
+        else "global"
+      }
+    }
+    all_t <- c(feature_label, "cell", "global")
+    coord_df$Group <- factor(coord_df$Type, levels = all_t[all_t %in% unique(as.character(coord_df$Type))])
+    group_colors <- type_colors[levels(coord_df$Group)]
+    legend_title <- NULL
+  }
+
+  lbl <- .SUMMARY_DISPLAY_NAME_MAP[coord_df$Metric]
+  idx_na <- is.na(lbl)
+  if (any(idx_na)) lbl[idx_na] <- gsub("_", " ", coord_df$Metric[idx_na])
+  if (feature_label == "peak") {
+    lbl <- gsub("gene-to-gene", "peak-to-peak", lbl, ignore.case = TRUE)
+    lbl <- gsub("gene detection", "peak detection", lbl, ignore.case = TRUE)
+    lbl <- gsub("DEG |DE/DA |DA/DE ", "DA ", lbl, ignore.case = TRUE)
+    lbl <- gsub("average of logCPM", "mean accessibility", lbl, ignore.case = TRUE)
+    lbl <- gsub("variance of logCPM", "variance of accessibility", lbl, ignore.case = TRUE)
+  } else if (feature_label == "features") {
+    lbl <- gsub("gene-to-gene", "feature", lbl, ignore.case = TRUE)
+    lbl <- gsub("gene detection", "feature detection", lbl, ignore.case = TRUE)
+  } else if (feature_label == "gene") {
+    lbl <- gsub("DE/DA |DA/DE ", "DE ", lbl, ignore.case = TRUE)
+  }
+  coord_df$Display_Label <- lbl
+  list(df = coord_df, group_colors = group_colors, legend_title = legend_title)
+}
+
+#' Build Single Metric-Space MDS Panel
+#' @keywords internal
+#' @noRd
+.build_mds_summary_panel <- function(sub_df, score_col, normalize_scores, group_by, feature_label,
+                                     palette, type_colors, by_category, panel_title = NULL,
+                                     panel_tag = NULL, show_legend = TRUE, p_base_size = 11) {
+  wide_m <- stats::reshape(sub_df[, c("Method", "Metric", score_col)], timevar = "Method", idvar = "Metric", direction = "wide")
+  mat <- as.matrix(wide_m[, -1, drop = FALSE])
+  rownames(mat) <- wide_m$Metric
+  mat[is.na(mat)] <- 0
+  if (nrow(mat) < 3) return(NULL)
+  if (!normalize_scores) {
+    mat <- t(scale(t(mat)))
+    mat[is.na(mat)] <- 0
+  }
+
+  mds <- stats::cmdscale(stats::dist(mat), k = 2, eig = TRUE)
+  ann <- .annotate_ordination_metrics(
+    data.frame(Metric = rownames(mat), MDS1 = mds$points[, 1], MDS2 = mds$points[, 2], stringsAsFactors = FALSE),
+    sub_df, group_by, feature_label, palette, type_colors
+  )
+
+  p <- ggplot2::ggplot(ann$df, ggplot2::aes(x = .data$MDS1, y = .data$MDS2)) +
+    ggplot2::geom_hline(yintercept = 0, color = "#CCCCCC", linewidth = 0.5) +
+    ggplot2::geom_vline(xintercept = 0, color = "#CCCCCC", linewidth = 0.5) +
+    ggplot2::geom_point(ggplot2::aes(fill = .data$Group, color = .data$Group),
+                        shape = 21, size = ifelse(by_category, 3.2, 3.8), stroke = 0.75, alpha = 0.88)
+
+  if (requireNamespace("ggrepel", quietly = TRUE)) {
+    p <- p + ggrepel::geom_text_repel(
+      ggplot2::aes(label = .data$Display_Label, color = .data$Group),
+      fontface = "bold", size = p_base_size * 0.28, segment.color = "#999999", segment.size = 0.32,
+      box.padding = 0.28, point.padding = 0.25, max.overlaps = 60, show.legend = FALSE
+    )
+  } else {
+    p <- p + ggplot2::geom_text(ggplot2::aes(label = .data$Display_Label, color = .data$Group),
+                                vjust = -0.8, fontface = "bold", size = p_base_size * 0.28, show.legend = FALSE)
+  }
+
+  p +
+    ggplot2::scale_color_manual(values = ann$group_colors, name = ann$legend_title, drop = TRUE) +
+    ggplot2::scale_fill_manual(values = ann$group_colors, name = ann$legend_title, drop = TRUE) +
+    ggplot2::labs(title = panel_title, tag = panel_tag, x = "MDS dim. 1", y = "MDS dim. 2") +
+    ggplot2::theme_bw(base_size = p_base_size) +
+    ggplot2::theme(
+      panel.grid.major = ggplot2::element_line(color = "#EFEFEF", linewidth = 0.5),
+      panel.grid.minor = ggplot2::element_blank(),
+      panel.border = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8),
+      plot.title = ggplot2::element_text(face = "bold", size = p_base_size * 0.95),
+      plot.tag = ggplot2::element_text(face = "bold", size = p_base_size * 1.15),
+      axis.title = ggplot2::element_text(face = "bold", size = p_base_size * 0.90),
+      axis.text = ggplot2::element_text(size = p_base_size * 0.80, color = "black"),
+      legend.position = if (show_legend) "bottom" else "none",
+      legend.direction = "horizontal",
+      legend.title = if (!is.null(ann$legend_title)) ggplot2::element_text(face = "bold", size = p_base_size * 0.85) else ggplot2::element_blank(),
+      legend.text = ggplot2::element_text(face = "bold", size = p_base_size * 0.85),
+      legend.key = ggplot2::element_blank(),
+      plot.margin = ggplot2::margin(8, 8, 8, 8)
+    ) +
+    ggplot2::guides(fill = ggplot2::guide_legend(override.aes = list(size = 3.8, shape = 21, stroke = 0.8), title = ann$legend_title), color = "none")
+}
+
 #' Multi-Dimensional Scaling (MDS) Ordination of Evaluation Metrics or Simulators
 #'
 #' Projects evaluation metric profiles or simulator performances into a 2D MDS space
@@ -3032,387 +2980,198 @@ plot_metric_mds <- function(
   base_size          = 11,
   ncol               = 2
 ) {
-  if (is.null(ordination_by) || length(ordination_by) == 0) {
-    ordination_by <- "simulators"
-  } else {
-    ord_val <- tolower(as.character(ordination_by[1]))
-    if (ord_val %in% c("methods", "simulators")) {
-      ordination_by <- "simulators"
-    } else if (ord_val %in% c("metrics", "summaries")) {
-      ordination_by <- "summaries"
-    } else {
-      ordination_by <- match.arg(ordination_by, c("simulators", "summaries"))
-    }
+  ordination_by <- if (is.null(ordination_by) || length(ordination_by) == 0) "simulators" else {
+    ov <- tolower(as.character(ordination_by[1]))
+    if (ov %in% c("methods", "simulators")) "simulators" else if (ov %in% c("metrics", "summaries")) "summaries" else match.arg(ordination_by, c("simulators", "summaries"))
   }
   group_by <- if (is.null(group_by) || length(group_by) == 0) "category" else match.arg(group_by, c("category", "summary_type"))
   df <- .ingest_bubble_data(benchmark_data)
-
   feature_label <- .resolve_modality_summary_type(df, assay_modality)
 
   if (anyDuplicated(df[, c("Method", "Metric")])) {
     val_c <- if ("Score_Raw" %in% colnames(df)) "Score_Raw" else if ("Score" %in% colnames(df)) "Score" else "Value"
-    agg_df <- stats::aggregate(
-      df[[val_c]],
-      by = list(Method = df$Method, Category = df$Category, Metric = df$Metric),
-      FUN = mean,
-      na.rm = TRUE
-    )
-    colnames(agg_df)[4] <- "Score_Raw"
-    df <- agg_df
+    df <- stats::aggregate(df[[val_c]], by = list(Method = df$Method, Category = df$Category, Metric = df$Metric), FUN = mean, na.rm = TRUE)
+    colnames(df)[4] <- "Score_Raw"
   }
-
-  if (!is.null(category) && !identical(category, "all")) {
-    df <- df[df$Category %in% category, , drop = FALSE]
-  } else if (!is.null(exclude_categories)) {
-    ex_pattern <- paste(exclude_categories, collapse = "|")
-    df <- df[!grepl(ex_pattern, df$Category, ignore.case = TRUE), , drop = FALSE]
-  }
-  if (!is.null(metrics)) {
-    df <- df[df$Metric %in% metrics, , drop = FALSE]
-  }
+  if (!is.null(category) && !identical(category, "all")) df <- df[df$Category %in% category, , drop = FALSE]
+  else if (!is.null(exclude_categories)) df <- df[!grepl(paste(exclude_categories, collapse = "|"), df$Category, ignore.case = TRUE), , drop = FALSE]
+  if (!is.null(metrics)) df <- df[df$Metric %in% metrics, , drop = FALSE]
   if (nrow(df) == 0) stop("No data remaining after applying category/metric filters.")
 
-  if (normalize_scores) {
-    if ("Score_Norm" %in% colnames(df)) {
-      score_col <- "Score_Norm"
-    } else {
-      df <- normalize_bubble_scores(df)
-      score_col <- "Score_Norm"
-    }
-  } else {
-    score_col <- if ("Score_Raw" %in% colnames(df)) "Score_Raw" else "Score"
-  }
+  score_col <- if (normalize_scores) {
+    if (!"Score_Norm" %in% colnames(df)) df <- normalize_bubble_scores(df)
+    "Score_Norm"
+  } else if ("Score_Raw" %in% colnames(df)) "Score_Raw" else "Score"
 
-  type_colors <- stats::setNames(
-    c("#E04038", "#3876E0", "#28A745"),
-    c(feature_label, "cell", "global")
-  )
+  type_colors <- stats::setNames(c("#E04038", "#3876E0", "#28A745"), c(feature_label, "cell", "global"))
   if (!is.null(palette) && ordination_by == "summaries") {
     for (nm in names(palette)) {
-      if (nm %in% names(type_colors)) {
-        type_colors[nm] <- palette[nm]
-      } else if (nm %in% c("gene", "peak", "features", "feature")) {
-        type_colors[feature_label] <- palette[nm]
-      }
+      if (nm %in% names(type_colors)) type_colors[nm] <- palette[nm]
+      else if (nm %in% c("gene", "peak", "features", "feature")) type_colors[feature_label] <- palette[nm]
     }
   }
 
   if (ordination_by == "summaries") {
-    # Helper to build a single summary ordination panel
-    .build_summary_panel <- function(sub_df, panel_title = NULL, panel_tag = NULL, show_legend = TRUE, p_base_size = base_size) {
-      wide_m <- stats::reshape(
-        sub_df[, c("Method", "Metric", score_col)],
-        timevar   = "Method",
-        idvar     = "Metric",
-        direction = "wide"
-      )
-      rnames <- wide_m$Metric
-      mat <- as.matrix(wide_m[, -1, drop = FALSE])
-      rownames(mat) <- rnames
-      mat[is.na(mat)] <- 0
-
-      if (nrow(mat) < 3) return(NULL)
-
-      if (!normalize_scores) {
-        mat <- t(scale(t(mat)))
-        mat[is.na(mat)] <- 0
-      }
-
-      dist_mat <- stats::dist(mat)
-      mds      <- stats::cmdscale(dist_mat, k = 2, eig = TRUE)
-
-      mds_df <- data.frame(
-        Metric = rownames(mat),
-        MDS1   = mds$points[, 1],
-        MDS2   = mds$points[, 2],
-        stringsAsFactors = FALSE
-      )
-
-      # Grouping configuration (by category or summary type)
-      if (group_by == "category") {
-        mds_df$Category <- sub_df$Category[match(mds_df$Metric, sub_df$Metric)]
-        missing_cats <- is.na(mds_df$Category) | mds_df$Category == "" | mds_df$Category == "Uncategorized"
-        if (any(missing_cats)) {
-          mds_df$Category[missing_cats] <- .METRIC_CATEGORY_MAP[mds_df$Metric[missing_cats]]
-        }
-        short_cats <- ifelse(mds_df$Category %in% names(.SHORT_CATEGORY_LEGEND_MAP),
-                             .SHORT_CATEGORY_LEGEND_MAP[mds_df$Category],
-                             mds_df$Category)
-        short_order <- unname(.SHORT_CATEGORY_LEGEND_MAP)
-        cat_levels <- short_order[short_order %in% unique(short_cats)]
-        if (length(cat_levels) == 0) cat_levels <- unique(short_cats)
-        mds_df$Group   <- factor(short_cats, levels = cat_levels)
-        present_groups <- levels(mds_df$Group)
-        group_colors   <- if (!is.null(palette) && all(present_groups %in% names(palette))) {
-          palette[present_groups]
-        } else {
-          .SHORT_CATEGORY_COLORS[present_groups]
-        }
-        legend_title   <- "Category"
-      } else {
-        raw_types <- .SUMMARY_TYPE_MAP[mds_df$Metric]
-        mds_df$Type <- ifelse(raw_types %in% c("feature", "gene"), feature_label, raw_types)
-        for (i in seq_len(nrow(mds_df))) {
-          if (is.na(mds_df$Type[i])) {
-            m <- tolower(mds_df$Metric[i])
-            if (grepl("generative", m)) {
-              mds_df$Type[i] <- "global"
-            } else if (grepl("cell|lib|ldf|knn|neighborhood", m)) {
-              mds_df$Type[i] <- "cell"
-            } else if (grepl("gene|peak|feat|deg|da_|da |cpm|var|disp|fc|dropout|sparsity", m)) {
-              mds_df$Type[i] <- feature_label
-            } else {
-              mds_df$Type[i] <- "global"
-            }
-          }
-        }
-        all_possible_types <- c(feature_label, "cell", "global")
-        present_types <- all_possible_types[all_possible_types %in% unique(as.character(mds_df$Type))]
-        mds_df$Group   <- factor(mds_df$Type, levels = present_types)
-        present_groups <- levels(mds_df$Group)
-        group_colors   <- type_colors[present_groups]
-        legend_title   <- NULL
-      }
-
-      # Display labels
-      mds_df$Display_Label <- .SUMMARY_DISPLAY_NAME_MAP[mds_df$Metric]
-      idx_na <- is.na(mds_df$Display_Label)
-      if (any(idx_na)) {
-        mds_df$Display_Label[idx_na] <- gsub("_", " ", mds_df$Metric[idx_na])
-      }
-
-      if (feature_label == "peak") {
-        mds_df$Display_Label <- gsub("gene-to-gene", "peak-to-peak", mds_df$Display_Label, ignore.case = TRUE)
-        mds_df$Display_Label <- gsub("gene detection", "peak detection", mds_df$Display_Label, ignore.case = TRUE)
-        mds_df$Display_Label <- gsub("DEG ", "DA ", mds_df$Display_Label, ignore.case = TRUE)
-        mds_df$Display_Label <- gsub("DE/DA ", "DA ", mds_df$Display_Label, ignore.case = TRUE)
-        mds_df$Display_Label <- gsub("DA/DE ", "DA ", mds_df$Display_Label, ignore.case = TRUE)
-        mds_df$Display_Label <- gsub("average of logCPM", "mean accessibility", mds_df$Display_Label, ignore.case = TRUE)
-        mds_df$Display_Label <- gsub("variance of logCPM", "variance of accessibility", mds_df$Display_Label, ignore.case = TRUE)
-      } else if (feature_label == "features") {
-        mds_df$Display_Label <- gsub("gene-to-gene", "feature", mds_df$Display_Label, ignore.case = TRUE)
-        mds_df$Display_Label <- gsub("gene detection", "feature detection", mds_df$Display_Label, ignore.case = TRUE)
-      } else if (feature_label == "gene") {
-        mds_df$Display_Label <- gsub("DE/DA ", "DE ", mds_df$Display_Label, ignore.case = TRUE)
-        mds_df$Display_Label <- gsub("DA/DE ", "DE ", mds_df$Display_Label, ignore.case = TRUE)
-      }
-
-      p_panel <- ggplot2::ggplot(mds_df, ggplot2::aes(x = .data$MDS1, y = .data$MDS2)) +
-        ggplot2::geom_hline(yintercept = 0, color = "#CCCCCC", linewidth = 0.5) +
-        ggplot2::geom_vline(xintercept = 0, color = "#CCCCCC", linewidth = 0.5) +
-        ggplot2::geom_point(
-          ggplot2::aes(fill = .data$Group, color = .data$Group),
-          shape = 21, size = ifelse(by_category, 3.2, 3.8), stroke = 0.75, alpha = 0.88
-        )
-
-      if (requireNamespace("ggrepel", quietly = TRUE)) {
-        p_panel <- p_panel + ggrepel::geom_text_repel(
-          ggplot2::aes(label = .data$Display_Label, color = .data$Group),
-          fontface = "bold", size = p_base_size * 0.28,
-          segment.color = "#999999", segment.size = 0.32,
-          box.padding = 0.28, point.padding = 0.25,
-          max.overlaps = 60, show.legend = FALSE
-        )
-      } else {
-        p_panel <- p_panel + ggplot2::geom_text(
-          ggplot2::aes(label = .data$Display_Label, color = .data$Group),
-          vjust = -0.8, fontface = "bold", size = p_base_size * 0.28, show.legend = FALSE
-        )
-      }
-
-      p_panel <- p_panel +
-        ggplot2::scale_color_manual(values = group_colors, name = legend_title, drop = TRUE) +
-        ggplot2::scale_fill_manual(values = group_colors, name = legend_title, drop = TRUE) +
-        ggplot2::labs(
-          title = panel_title,
-          tag   = panel_tag,
-          x     = "MDS dim. 1",
-          y     = "MDS dim. 2"
-        ) +
-        ggplot2::theme_bw(base_size = p_base_size) +
-        ggplot2::theme(
-          panel.grid.major = ggplot2::element_line(color = "#EFEFEF", linewidth = 0.5),
-          panel.grid.minor = ggplot2::element_blank(),
-          panel.border     = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8),
-          plot.title       = ggplot2::element_text(face = "bold", size = p_base_size * 0.95),
-          plot.tag         = ggplot2::element_text(face = "bold", size = p_base_size * 1.15),
-          axis.title       = ggplot2::element_text(face = "bold", size = p_base_size * 0.90),
-          axis.text        = ggplot2::element_text(size = p_base_size * 0.80, color = "black"),
-          legend.position  = if (show_legend) "bottom" else "none",
-          legend.direction = "horizontal",
-          legend.title     = if (!is.null(legend_title)) ggplot2::element_text(face = "bold", size = p_base_size * 0.85) else ggplot2::element_blank(),
-          legend.text      = ggplot2::element_text(face = "bold", size = p_base_size * 0.85),
-          legend.key       = ggplot2::element_blank(),
-          plot.margin      = ggplot2::margin(8, 8, 8, 8)
-        ) +
-        ggplot2::guides(
-          fill  = ggplot2::guide_legend(override.aes = list(size = 3.8, shape = 21, stroke = 0.8), title = legend_title),
-          color = "none"
-        )
-
-      p_panel
-    }
-
     if (by_category) {
       ordered_cats <- .CANONICAL_CATEGORY_ORDER[.CANONICAL_CATEGORY_ORDER %in% unique(df$Category)]
       if (length(ordered_cats) == 0) ordered_cats <- unique(df$Category)
-
       plot_list <- list()
       tags <- letters[seq_along(ordered_cats)]
       for (idx in seq_along(ordered_cats)) {
         c_nm <- ordered_cats[idx]
         sub_c <- df[df$Category == c_nm, , drop = FALSE]
         if (length(unique(sub_c$Metric)) >= 3) {
-          p_c <- .build_summary_panel(
-            sub_c,
-            panel_title = if (as_list) sprintf("Metric MDS Plot - %s", c_nm) else c_nm,
-            panel_tag   = if (as_list) NULL else tags[idx],
-            show_legend = if (as_list) TRUE else (length(plot_list) == 0),
-            p_base_size = base_size * 0.9
-          )
-          if (!is.null(p_c)) {
-            plot_list[[length(plot_list) + 1]] <- p_c
-          }
+          p_c <- .build_mds_summary_panel(sub_c, score_col, normalize_scores, group_by, feature_label,
+                                          palette, type_colors, TRUE,
+                                          panel_title = if (as_list) sprintf("Metric MDS Plot - %s", c_nm) else c_nm,
+                                          panel_tag = if (as_list) NULL else tags[idx],
+                                          show_legend = if (as_list) TRUE else (length(plot_list) == 0),
+                                          p_base_size = base_size * 0.9)
+          if (!is.null(p_c)) plot_list[[c_nm]] <- p_c
         }
       }
-
-      if (length(plot_list) == 0) {
-        stop("None of the evaluated categories have >= 3 distinct metrics for MDS ordination.")
-      }
-
-      valid_cats <- character(0)
-      for (idx in seq_along(ordered_cats)) {
-        c_nm <- ordered_cats[idx]
-        sub_c <- df[df$Category == c_nm, , drop = FALSE]
-        if (length(unique(sub_c$Metric)) >= 3) valid_cats <- c(valid_cats, c_nm)
-      }
-      names(plot_list) <- valid_cats
-
-      if (as_list) {
-        return(plot_list)
-      }
-
-      if (requireNamespace("patchwork", quietly = TRUE)) {
-        p_final <- patchwork::wrap_plots(plot_list, ncol = ncol, guides = "collect") &
-          ggplot2::theme(legend.position = "bottom")
-        if (!is.null(title)) {
-          p_final <- p_final + patchwork::plot_annotation(
-            title = title,
-            theme = ggplot2::theme(plot.title = ggplot2::element_text(face = "bold", size = base_size * 1.15))
-          )
-        }
-        return(p_final)
-      } else {
-        return(plot_list[[1]])
-      }
-    } else {
-      default_title <- if (!is.null(title)) {
-        title
-      } else if (!is.null(category) && length(category) == 1) {
-        sprintf("Metric MDS Plot - %s", category)
-      } else if (length(unique(df$Category)) == 1) {
-        sprintf("Metric MDS Plot - %s", unique(df$Category))
-      } else {
-        "Metric MDS Plot"
-      }
-      p <- .build_summary_panel(
-        df,
-        panel_title = default_title,
-        panel_tag   = NULL,
-        show_legend = TRUE,
-        p_base_size = base_size
-      )
-      if (is.null(p)) stop("MDS ordination of summaries requires at least 3 distinct metrics.")
-      return(p)
+      if (length(plot_list) == 0) stop("None of the evaluated categories have >= 3 distinct metrics for MDS ordination.")
+      if (as_list) return(plot_list)
+      if (!requireNamespace("patchwork", quietly = TRUE)) return(plot_list[[1]])
+      p_final <- patchwork::wrap_plots(plot_list, ncol = ncol, guides = "collect") & ggplot2::theme(legend.position = "bottom")
+      if (!is.null(title)) p_final <- p_final + patchwork::plot_annotation(title = title, theme = ggplot2::theme(plot.title = ggplot2::element_text(face = "bold", size = base_size * 1.15)))
+      return(p_final)
     }
 
-  } else {
-    # -------------------------------------------------------------------------
-    # Simulators Ordination (Backwards compatible)
-    # -------------------------------------------------------------------------
-    wide_m <- stats::reshape(
-      df[, c("Method", "Metric", score_col)],
-      timevar   = "Metric",
-      idvar     = "Method",
-      direction = "wide"
-    )
-    rnames <- wide_m$Method
-    mat <- as.matrix(wide_m[, -1, drop = FALSE])
-    rownames(mat) <- rnames
-    colnames(mat) <- gsub(paste0("^", score_col, "\\."), "", colnames(mat))
-    mat[is.na(mat)] <- 0
-
-    if (nrow(mat) < 3) stop("MDS ordination requires at least 3 distinct simulators.")
-
-    dist_mat <- stats::dist(mat)
-    mds      <- stats::cmdscale(dist_mat, k = 2, eig = TRUE)
-    var_exp  <- round(100 * (mds$eig[seq_len(2)] / sum(abs(mds$eig))), 1)
-
-    mds_df <- data.frame(
-      Simulator = rownames(mat),
-      MDS1      = mds$points[, 1],
-      MDS2      = mds$points[, 2],
-      stringsAsFactors = FALSE
-    )
-
-    default_sim_cols <- c(
-      "scDesign3" = "#1E8449",
-      "Splatter"  = "#2E86AB",
-      "SCRIP"     = "#E67E22",
-      "SymSim"    = "#8E44AD",
-      "dyngen"    = "#D4AC0D",
-      "simATAC"   = "#C0392B"
-    )
-    sim_methods <- unique(mds_df$Simulator)
-    if (is.null(palette)) {
-      active_pal <- default_sim_cols[sim_methods]
-      missing_sims <- sim_methods[is.na(active_pal)]
-      if (length(missing_sims) > 0) {
-        extra_cols <- grDevices::hcl.colors(length(missing_sims), palette = "Dark 3")
-        names(extra_cols) <- missing_sims
-        active_pal[missing_sims] <- extra_cols
-      }
-    } else {
-      active_pal <- palette
-    }
-
-    p <- ggplot2::ggplot(mds_df, ggplot2::aes(x = .data$MDS1, y = .data$MDS2, color = .data$Simulator, label = .data$Simulator)) +
-      ggplot2::geom_hline(yintercept = 0, color = "#CCCCCC", linewidth = 0.5) +
-      ggplot2::geom_vline(xintercept = 0, color = "#CCCCCC", linewidth = 0.5) +
-      ggplot2::geom_point(size = 4.8, alpha = 0.9)
-
-    if (requireNamespace("ggrepel", quietly = TRUE)) {
-      p <- p + ggrepel::geom_label_repel(
-        fill = "white", fontface = "bold", size = base_size * 0.30,
-        label.padding = ggplot2::unit(0.22, "lines"), label.r = ggplot2::unit(0.35, "lines"),
-        label.size = 0.7, box.padding = 0.4, show.legend = FALSE
-      )
-    } else {
-      p <- p + ggplot2::geom_text(vjust = -1.0, fontface = "bold", size = base_size * 0.32, show.legend = FALSE)
-    }
-
-    p <- p +
-      ggplot2::scale_color_manual(values = active_pal, guide = "none") +
-      ggplot2::labs(
-        title = title,
-        x     = paste0("MDS dim. 1 (", var_exp[1], "% var)"),
-        y     = paste0("MDS dim. 2 (", var_exp[2], "% var)")
-      ) +
-      ggplot2::theme_bw(base_size = base_size) +
-      ggplot2::theme(
-        panel.grid.major = ggplot2::element_line(color = "#EFEFEF", linewidth = 0.5),
-        panel.grid.minor = ggplot2::element_blank(),
-        panel.border     = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8),
-        axis.title       = ggplot2::element_text(face = "bold", size = base_size * 0.95),
-        axis.text        = ggplot2::element_text(size = base_size * 0.85, color = "black"),
-        plot.margin      = ggplot2::margin(10, 10, 10, 10)
-      )
+    default_title <- title %||% if (!is.null(category) && length(category) == 1) sprintf("Metric MDS Plot - %s", category)
+    else if (length(unique(df$Category)) == 1) sprintf("Metric MDS Plot - %s", unique(df$Category)) else "Metric MDS Plot"
+    p <- .build_mds_summary_panel(df, score_col, normalize_scores, group_by, feature_label,
+                                  palette, type_colors, FALSE, panel_title = default_title,
+                                  panel_tag = NULL, show_legend = TRUE, p_base_size = base_size)
+    if (is.null(p)) stop("MDS ordination of summaries requires at least 3 distinct metrics.")
     return(p)
   }
+
+  wide_m <- stats::reshape(df[, c("Method", "Metric", score_col)], timevar = "Metric", idvar = "Method", direction = "wide")
+  mat <- as.matrix(wide_m[, -1, drop = FALSE]); rownames(mat) <- wide_m$Method
+  colnames(mat) <- gsub(paste0("^", score_col, "\\."), "", colnames(mat)); mat[is.na(mat)] <- 0
+  if (nrow(mat) < 3) stop("MDS ordination requires at least 3 distinct simulators.")
+
+  mds <- stats::cmdscale(stats::dist(mat), k = 2, eig = TRUE)
+  var_exp <- round(100 * (mds$eig[seq_len(2)] / sum(abs(mds$eig))), 1)
+  mds_df <- data.frame(Simulator = rownames(mat), MDS1 = mds$points[, 1], MDS2 = mds$points[, 2], stringsAsFactors = FALSE)
+  active_pal <- .resolve_sim_palette(unique(mds_df$Simulator), palette)
+
+  p <- ggplot2::ggplot(mds_df, ggplot2::aes(x = .data$MDS1, y = .data$MDS2, color = .data$Simulator, label = .data$Simulator)) +
+    ggplot2::geom_hline(yintercept = 0, color = "#CCCCCC", linewidth = 0.5) +
+    ggplot2::geom_vline(xintercept = 0, color = "#CCCCCC", linewidth = 0.5) +
+    ggplot2::geom_point(size = 4.8, alpha = 0.9)
+  if (requireNamespace("ggrepel", quietly = TRUE)) {
+    p <- p + ggrepel::geom_label_repel(fill = "white", fontface = "bold", size = base_size * 0.30,
+                                       label.padding = ggplot2::unit(0.22, "lines"), label.r = ggplot2::unit(0.35, "lines"),
+                                       label.size = 0.7, box.padding = 0.4, show.legend = FALSE)
+  } else {
+    p <- p + ggplot2::geom_text(vjust = -1.0, fontface = "bold", size = base_size * 0.32, show.legend = FALSE)
+  }
+  p +
+    ggplot2::scale_color_manual(values = active_pal, guide = "none") +
+    ggplot2::labs(title = title, x = paste0("MDS dim. 1 (", var_exp[1], "% var)"), y = paste0("MDS dim. 2 (", var_exp[2], "% var)")) +
+    ggplot2::theme_bw(base_size = base_size) +
+    ggplot2::theme(panel.grid.major = ggplot2::element_line(color = "#EFEFEF", linewidth = 0.5),
+                   panel.grid.minor = ggplot2::element_blank(),
+                   panel.border = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8),
+                   axis.title = ggplot2::element_text(face = "bold", size = base_size * 0.95),
+                   axis.text = ggplot2::element_text(size = base_size * 0.85, color = "black"),
+                   plot.margin = ggplot2::margin(10, 10, 10, 10))
 }
 
 # 6c. plot_metric_pca()
 # ============================================================================
+
+#' Prepare Filtered Numeric Matrix for PCA Ordination
+#' @keywords internal
+#' @noRd
+.prepare_pca_matrix <- function(df, score_col) {
+  if (anyDuplicated(df[, c("Method", "Metric")])) {
+    agg <- stats::aggregate(df[[score_col]], by = list(Method = df$Method, Metric = df$Metric), FUN = mean, na.rm = TRUE)
+    colnames(agg)[3] <- score_col
+    agg$Category <- stats::setNames(df$Category, df$Metric)[agg$Metric]
+    df <- agg
+  }
+  wide_m <- stats::reshape(df[, c("Method", "Metric", score_col)], timevar = "Metric", idvar = "Method", direction = "wide")
+  mat <- as.matrix(wide_m[, -1, drop = FALSE]); rownames(mat) <- wide_m$Method
+  colnames(mat) <- gsub(paste0("^", score_col, "\\."), "", colnames(mat))
+  for (j in seq_len(ncol(mat))) {
+    nf <- !is.finite(mat[, j])
+    if (any(nf)) mat[nf, j] <- if (any(!nf)) mean(mat[!nf, j]) else 0
+  }
+  col_sds <- apply(mat, 2, stats::sd)
+  mat <- mat[, which(!is.na(col_sds) & is.finite(col_sds) & col_sds > 1e-7), drop = FALSE]
+  list(df = df, mat = mat)
+}
+
+#' Build PCA Scores and Loadings ggplot Panels
+#' @keywords internal
+#' @noRd
+.build_pca_panels <- function(pca, df, group_by, feature_label, palette, top_n_loadings, base_size) {
+  pca_var <- round(100 * summary(pca)$importance[2, seq_len(2)], 1)
+  scores_df <- data.frame(Method = rownames(pca$x), PC1 = pca$x[, 1], PC2 = pca$x[, 2], stringsAsFactors = FALSE)
+  m_names <- unique(scores_df$Method)
+  base_pal <- c("#3B82F6", "#10B981", "#EF4444", "#F59E0B", "#8B5CF6", "#EC4899", "#14B8A6", "#6366F1", "#84CC16", "#06B6D4")
+  m_cols <- palette %||% (if (length(m_names) <= length(base_pal)) stats::setNames(base_pal[seq_along(m_names)], m_names)
+                          else stats::setNames(grDevices::hcl.colors(length(m_names), "Dark 3"), m_names))
+
+  pca_theme <- ggplot2::theme_bw(base_size = base_size) +
+    ggplot2::theme(
+      panel.grid.major = ggplot2::element_line(color = "#EFEFEF", linewidth = 0.5),
+      panel.grid.minor = ggplot2::element_blank(),
+      panel.border = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8),
+      plot.title = ggplot2::element_text(face = "bold", size = base_size * 1.05),
+      plot.subtitle = ggplot2::element_text(size = base_size * 0.85, color = "#475569"),
+      axis.title = ggplot2::element_text(face = "bold", size = base_size * 0.95),
+      axis.text = ggplot2::element_text(size = base_size * 0.85, color = "black"),
+      legend.title = ggplot2::element_text(face = "bold", size = base_size * 0.90),
+      legend.text = ggplot2::element_text(size = base_size * 0.82),
+      plot.margin = ggplot2::margin(10, 10, 10, 10)
+    )
+
+  p_a <- ggplot2::ggplot(scores_df, ggplot2::aes(x = .data$PC1, y = .data$PC2)) +
+    ggplot2::geom_hline(yintercept = 0, color = "black", linewidth = 0.5) +
+    ggplot2::geom_vline(xintercept = 0, color = "black", linewidth = 0.5) +
+    ggplot2::geom_point(ggplot2::aes(color = .data$Method, fill = .data$Method), shape = 21, size = 4.8, stroke = 0.9, alpha = 0.92) +
+    (if (requireNamespace("ggrepel", quietly = TRUE)) ggrepel::geom_label_repel(
+      ggplot2::aes(label = .data$Method, color = .data$Method), fill = "white", fontface = "bold",
+      size = base_size * 0.30, label.padding = ggplot2::unit(0.22, "lines"), label.r = ggplot2::unit(0.35, "lines"),
+      label.size = 0.7, box.padding = 0.4, point.padding = 0.3, max.overlaps = 50, show.legend = FALSE
+    ) else ggplot2::geom_text(ggplot2::aes(label = .data$Method, color = .data$Method), vjust = -0.8, fontface = "bold", size = base_size * 0.30, show.legend = FALSE)) +
+    ggplot2::scale_color_manual(values = m_cols, name = "method") +
+    ggplot2::scale_fill_manual(values = m_cols, name = "method") +
+    ggplot2::labs(title = "Simulator Performance Biplot (PC1 vs. PC2)",
+                  subtitle = sprintf("Variance Explained: PC1 = %s%%, PC2 = %s%% (Cumulative = %s%%)", pca_var[1], pca_var[2], round(pca_var[1] + pca_var[2], 1)),
+                  x = sprintf("PC1 (%s%%)", pca_var[1]), y = sprintf("PC2 (%s%%)", pca_var[2])) +
+    pca_theme + ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size = 4, shape = 21, fill = m_cols)), fill = "none")
+
+  ldf <- as.data.frame(pca$rotation[, seq_len(2), drop = FALSE])
+  ldf$Metric <- rownames(ldf); ldf$mag <- sqrt(ldf$PC1^2 + ldf$PC2^2)
+  if (!is.null(top_n_loadings) && is.finite(top_n_loadings) && top_n_loadings < nrow(ldf)) {
+    ldf <- utils::head(ldf[order(ldf$mag, decreasing = TRUE), ], top_n_loadings)
+  }
+  ann <- .annotate_ordination_metrics(ldf, df, group_by, feature_label, palette, default_summary_legend = "Category")
+
+  p_b <- ggplot2::ggplot(ann$df) +
+    ggplot2::geom_hline(yintercept = 0, color = "black", linewidth = 0.5) +
+    ggplot2::geom_vline(xintercept = 0, color = "black", linewidth = 0.5) +
+    ggplot2::geom_segment(ggplot2::aes(x = 0, y = 0, xend = .data$PC1, yend = .data$PC2, color = .data$Group),
+                          arrow = ggplot2::arrow(length = ggplot2::unit(0.24, "cm"), type = "closed"), linewidth = 0.72, alpha = 0.85) +
+    (if (requireNamespace("ggrepel", quietly = TRUE)) ggrepel::geom_label_repel(
+      ggplot2::aes(x = .data$PC1, y = .data$PC2, label = .data$Display_Label, color = .data$Group),
+      fill = "white", fontface = "bold", size = base_size * 0.25, label.padding = ggplot2::unit(0.18, "lines"),
+      label.r = ggplot2::unit(0.30, "lines"), label.size = 0.65, box.padding = 0.35, point.padding = 0.25,
+      max.overlaps = 70, show.legend = FALSE
+    ) else ggplot2::geom_text(ggplot2::aes(x = .data$PC1, y = .data$PC2, label = .data$Display_Label, color = .data$Group),
+                              vjust = -0.6, fontface = "bold", size = base_size * 0.25, show.legend = FALSE)) +
+    ggplot2::scale_color_manual(values = ann$group_colors, name = ann$legend_title %||% "summary type", drop = TRUE) +
+    ggplot2::labs(title = sprintf("Metric Loadings Vectors (Top %d Discriminating Metrics)", nrow(ann$df)),
+                  subtitle = "Vector length and direction indicate metric influence on PC1 and PC2 separation",
+                  x = sprintf("PC1 (%s%%)", pca_var[1]), y = sprintf("PC2 (%s%%)", pca_var[2])) +
+    pca_theme + ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(linewidth = 1.0, shape = NA)))
+  list(p_a = p_a, p_b = p_b)
+}
 
 #' Principal Component Analysis (PCA) Dashboard of Benchmark Metrics and Methods
 #'
@@ -3472,406 +3231,62 @@ plot_metric_pca <- function(
   top_n_loadings     = 14,
   base_size          = 11
 ) {
-  if (is.null(panel) || length(panel) == 0) {
-    panel <- "both"
-  } else {
-    panel_val <- tolower(as.character(panel[1]))
-    if (panel_val %in% c("both", "all", "biplot")) {
-      panel <- "both"
-    } else if (panel_val %in% c("methods", "scores", "simulators")) {
-      panel <- "methods"
-    } else if (panel_val %in% c("loadings", "scree", "metrics")) {
-      panel <- "loadings"
-    } else {
-      panel <- match.arg(panel, c("both", "methods", "loadings"))
-    }
+  panel <- if (is.null(panel) || length(panel) == 0) "both" else {
+    pv <- tolower(as.character(panel[1]))
+    if (pv %in% c("both", "all", "biplot")) "both" else if (pv %in% c("methods", "scores", "simulators")) "methods"
+    else if (pv %in% c("loadings", "scree", "metrics")) "loadings" else match.arg(panel, c("both", "methods", "loadings"))
   }
   group_by <- if (is.null(group_by) || length(group_by) == 0) "category" else match.arg(group_by, c("category", "summary_type"))
   df <- .ingest_bubble_data(benchmark_data)
-
   feature_label <- .resolve_modality_summary_type(df, assay_modality)
-
-  # Robust score column detection: prioritize normalized fidelity scores [0, 1] for PCA ordination
-  val_c <- if ("Score_Norm" %in% colnames(df)) "Score_Norm" else
-           if ("Score"      %in% colnames(df)) "Score"      else
-           if ("Score_Raw"  %in% colnames(df)) "Score_Raw"  else "Value"
-
+  val_c <- if ("Score_Norm" %in% colnames(df)) "Score_Norm" else if ("Score" %in% colnames(df)) "Score" else if ("Score_Raw" %in% colnames(df)) "Score_Raw" else "Value"
   if (anyDuplicated(df[, c("Method", "Metric")])) {
-    agg_df <- stats::aggregate(
-      df[[val_c]],
-      by = list(Method = df$Method, Category = df$Category, Metric = df$Metric),
-      FUN = mean,
-      na.rm = TRUE
-    )
-    colnames(agg_df)[4] <- val_c
-    df <- agg_df
+    df <- stats::aggregate(df[[val_c]], by = list(Method = df$Method, Category = df$Category, Metric = df$Metric), FUN = mean, na.rm = TRUE)
+    colnames(df)[4] <- val_c
   }
 
   if (by_category) {
     ordered_cats <- .CANONICAL_CATEGORY_ORDER[.CANONICAL_CATEGORY_ORDER %in% unique(df$Category)]
     if (length(ordered_cats) == 0) ordered_cats <- unique(df$Category)
-    if (!is.null(exclude_categories)) {
-      ex_pattern <- paste(exclude_categories, collapse = "|")
-      ordered_cats <- ordered_cats[!grepl(ex_pattern, ordered_cats, ignore.case = TRUE)]
-    } else {
-      ordered_cats <- ordered_cats[!grepl("Trajectory|Scalability", ordered_cats, ignore.case = TRUE)]
-    }
-
+    ordered_cats <- ordered_cats[!grepl(if (!is.null(exclude_categories)) paste(exclude_categories, collapse = "|") else "Trajectory|Scalability", ordered_cats, ignore.case = TRUE)]
     plot_list <- list()
     for (cn in ordered_cats) {
       sub_c <- df[df$Category == cn, , drop = FALSE]
       if (length(unique(sub_c$Metric)) >= 2) {
-        p_c <- plot_metric_pca(
-          benchmark_data     = sub_c,
-          panel              = panel,
-          by_category        = FALSE,
-          as_list            = FALSE,
-          category           = NULL,
-          exclude_categories = "(VIII) Computational Scalability & Efficiency",
-          metrics            = NULL,
-          palette            = palette,
-          top_n_loadings     = if (is.null(top_n_loadings)) NULL else top_n_loadings,
-          base_size          = base_size
-        )
-        plot_list[[cn]] <- p_c
+        plot_list[[cn]] <- plot_metric_pca(sub_c, panel = panel, by_category = FALSE, as_list = FALSE,
+                                           palette = palette, top_n_loadings = top_n_loadings, base_size = base_size)
       }
     }
     return(plot_list)
   }
 
-  if (!is.null(category) && !identical(category, "all")) {
-    df <- df[df$Category %in% category, , drop = FALSE]
-  } else if (!is.null(exclude_categories)) {
-    ex_pattern <- paste(exclude_categories, collapse = "|")
-    df <- df[!grepl(ex_pattern, df$Category, ignore.case = TRUE), , drop = FALSE]
-  }
-  if (!is.null(metrics)) {
-    df <- df[df$Metric %in% metrics, , drop = FALSE]
-  }
+  if (!is.null(category) && !identical(category, "all")) df <- df[df$Category %in% category, , drop = FALSE]
+  else if (!is.null(exclude_categories)) df <- df[!grepl(paste(exclude_categories, collapse = "|"), df$Category, ignore.case = TRUE), , drop = FALSE]
+  if (!is.null(metrics)) df <- df[df$Metric %in% metrics, , drop = FALSE]
   if (nrow(df) == 0) {
-    p_empty <- ggplot2::ggplot() +
-      ggplot2::annotate(
-        "text", x = 0.5, y = 0.5,
-        label = "No benchmark data remaining after applying category and metric filters.",
-        size = base_size * 0.4, fontface = "italic", color = "#475569", hjust = 0.5
-      ) +
-      ggplot2::theme_void(base_size = base_size)
-    return(p_empty)
+    return(ggplot2::ggplot() + ggplot2::annotate("text", x = 0.5, y = 0.5, label = "No benchmark data remaining after applying filters.", size = base_size * 0.4, fontface = "italic", color = "#475569") + ggplot2::theme_void(base_size = base_size))
   }
 
-  score_col <- if ("Score_Norm" %in% colnames(df)) "Score_Norm" else
-               if ("Score"      %in% colnames(df)) "Score"      else
-               if ("Score_Raw"  %in% colnames(df)) "Score_Raw"  else "Value"
-
-  # Ensure strictly unique (Method, Metric) pairs before wide reshape
-  if (anyDuplicated(df[, c("Method", "Metric")])) {
-    agg_df <- stats::aggregate(
-      df[[score_col]],
-      by = list(Method = df$Method, Metric = df$Metric),
-      FUN = mean,
-      na.rm = TRUE
-    )
-    colnames(agg_df)[3] <- score_col
-    cat_map <- stats::setNames(df$Category, df$Metric)
-    agg_df$Category <- cat_map[agg_df$Metric]
-    df <- agg_df
-  }
-
-  # Reshape: Simulators (rows) x Metrics (columns)
-  wide_m <- stats::reshape(
-    df[, c("Method", "Metric", score_col)],
-    timevar   = "Metric",
-    idvar     = "Method",
-    direction = "wide"
-  )
-  rnames <- wide_m$Method
-  mat <- as.matrix(wide_m[, -1, drop = FALSE])
-  rownames(mat) <- rnames
-  colnames(mat) <- gsub(paste0("^", score_col, "\\."), "", colnames(mat))
-
-  # Replace all non-finite entries (NA, NaN, Inf, -Inf) with column finite mean or zero
-  for (j in seq_len(ncol(mat))) {
-    non_fin <- !is.finite(mat[, j])
-    if (any(non_fin)) {
-      fin_vals <- mat[!non_fin, j]
-      mat[non_fin, j] <- if (length(fin_vals) > 0) mean(fin_vals) else 0
-    }
-  }
-
-  # Filter out invariant / zero-variance columns strictly (avoiding NA indexing)
-  col_sds <- apply(mat, 2, stats::sd)
-  valid_cols <- which(!is.na(col_sds) & is.finite(col_sds) & (col_sds > 1e-7))
-  mat <- mat[, valid_cols, drop = FALSE]
-
+  prep <- .prepare_pca_matrix(df, val_c)
+  mat <- prep$mat
   if (nrow(mat) < 3 || ncol(mat) < 2) {
-    reason <- if (nrow(mat) < 3) {
-      sprintf("PCA requires at least 3 distinct simulators (found: %d).", nrow(mat))
-    } else {
-      sprintf("Category contains %d varying metric(s).\nPCA Biplot ordination requires at least 2 discriminating metrics with non-zero variance.\nPlease select 'All Categories' or a category with multiple metrics.", ncol(mat))
-    }
-    p_empty <- ggplot2::ggplot() +
-      ggplot2::annotate(
-        "text", x = 0.5, y = 0.5,
-        label = reason,
-        size = base_size * 0.4, fontface = "italic", color = "#475569", hjust = 0.5
-      ) +
-      ggplot2::labs(
-        title = "Simulator Performance Biplot (PCA Ordination)",
-        subtitle = "Insufficient dimensionality for 2D principal component ordination"
-      ) +
-      ggplot2::theme_void(base_size = base_size) +
-      ggplot2::theme(
-        plot.title = ggplot2::element_text(face = "bold", hjust = 0.5, color = "#1E293B"),
-        plot.subtitle = ggplot2::element_text(hjust = 0.5, color = "#64748B", margin = ggplot2::margin(b = 15)),
-        plot.margin = ggplot2::margin(20, 20, 20, 20)
-      )
-    return(p_empty)
+    reason <- if (nrow(mat) < 3) sprintf("PCA requires at least 3 distinct simulators (found: %d).", nrow(mat)) else sprintf("Category contains %d varying metric(s).\nPCA requires at least 2 discriminating metrics with non-zero variance.", ncol(mat))
+    return(ggplot2::ggplot() + ggplot2::annotate("text", x = 0.5, y = 0.5, label = reason, size = base_size * 0.4, fontface = "italic", color = "#475569") +
+             ggplot2::labs(title = "Simulator Performance Biplot (PCA Ordination)", subtitle = "Insufficient dimensionality for 2D PCA") + ggplot2::theme_void(base_size = base_size))
   }
 
-  pca <- tryCatch({
-    stats::prcomp(mat, scale. = TRUE, center = TRUE)
-  }, error = function(e) {
-    tryCatch({
-      stats::prcomp(mat, scale. = FALSE, center = TRUE)
-    }, error = function(e2) {
-      NULL
-    })
-  })
-
+  pca <- tryCatch(stats::prcomp(mat, scale. = TRUE, center = TRUE), error = function(e) tryCatch(stats::prcomp(mat, scale. = FALSE, center = TRUE), error = function(e2) NULL))
   if (is.null(pca)) {
-    p_err <- ggplot2::ggplot() +
-      ggplot2::annotate(
-        "text", x = 0.5, y = 0.5,
-        label = "Unable to compute PCA ordination with the current metric matrix.\nPlease select another category or additional simulators.",
-        size = base_size * 0.4, fontface = "italic", color = "#EF4444", hjust = 0.5
-      ) +
-      ggplot2::theme_void(base_size = base_size)
-    return(p_err)
+    return(ggplot2::ggplot() + ggplot2::annotate("text", x = 0.5, y = 0.5, label = "Unable to compute PCA ordination with the current metric matrix.", size = base_size * 0.4, fontface = "italic", color = "#EF4444") + ggplot2::theme_void(base_size = base_size))
   }
 
-  pca_var <- round(100 * summary(pca)$importance[2, seq_len(2)], 1)
-
-  # Scores data frame (Methods)
-  scores_df <- data.frame(
-    Method = rownames(pca$x),
-    PC1    = pca$x[, 1],
-    PC2    = pca$x[, 2],
-    stringsAsFactors = FALSE
-  )
-
-  method_names <- unique(scores_df$Method)
-  n_m <- length(method_names)
-  base_pal <- c("#3B82F6", "#10B981", "#EF4444", "#F59E0B", "#8B5CF6", "#EC4899", "#14B8A6", "#6366F1", "#84CC16", "#06B6D4")
-  if (!is.null(palette)) {
-    method_cols <- palette
-  } else if (n_m <= length(base_pal)) {
-    method_cols <- stats::setNames(base_pal[seq_len(n_m)], method_names)
-  } else {
-    method_cols <- stats::setNames(grDevices::hcl.colors(n_m, "Dark 3"), method_names)
-  }
-
-  type_colors <- stats::setNames(
-    c("#E04038", "#3876E0", "#28A745"),
-    c(feature_label, "cell", "global")
-  )
-
-  # ---------------------------------------------------------------------------
-  # Panel a: Methods Ordination
-  # ---------------------------------------------------------------------------
-  p_a <- ggplot2::ggplot(scores_df, ggplot2::aes(x = .data$PC1, y = .data$PC2)) +
-    ggplot2::geom_hline(yintercept = 0, color = "black", linewidth = 0.5) +
-    ggplot2::geom_vline(xintercept = 0, color = "black", linewidth = 0.5) +
-    ggplot2::geom_point(
-      ggplot2::aes(color = .data$Method, fill = .data$Method),
-      shape = 21, size = 4.8, stroke = 0.9, alpha = 0.92
-    )
-
-  if (requireNamespace("ggrepel", quietly = TRUE)) {
-    p_a <- p_a + ggrepel::geom_label_repel(
-      ggplot2::aes(label = .data$Method, color = .data$Method),
-      fill = "white", fontface = "bold", size = base_size * 0.30,
-      label.padding = ggplot2::unit(0.22, "lines"), label.r = ggplot2::unit(0.35, "lines"),
-      label.size = 0.7, box.padding = 0.4, point.padding = 0.3,
-      max.overlaps = 50, show.legend = FALSE
-    )
-  } else {
-    p_a <- p_a + ggplot2::geom_text(
-      ggplot2::aes(label = .data$Method, color = .data$Method),
-      vjust = -0.8, fontface = "bold", size = base_size * 0.30, show.legend = FALSE
-    )
-  }
-
-  p_a <- p_a +
-    ggplot2::scale_color_manual(values = method_cols, name = "method") +
-    ggplot2::scale_fill_manual(values = method_cols, name = "method") +
-    ggplot2::labs(
-      title    = "Simulator Performance Biplot (PC1 vs. PC2)",
-      subtitle = sprintf("Variance Explained: PC1 = %s%%, PC2 = %s%% (Cumulative = %s%%)",
-                         pca_var[1], pca_var[2], round(pca_var[1] + pca_var[2], 1)),
-      x = sprintf("PC1 (%s%%)", pca_var[1]),
-      y = sprintf("PC2 (%s%%)", pca_var[2])
-    ) +
-    ggplot2::theme_bw(base_size = base_size) +
-    ggplot2::theme(
-      panel.grid.major = ggplot2::element_line(color = "#EFEFEF", linewidth = 0.5),
-      panel.grid.minor = ggplot2::element_blank(),
-      panel.border     = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8),
-      plot.title       = ggplot2::element_text(face = "bold", size = base_size * 1.05),
-      plot.subtitle    = ggplot2::element_text(size = base_size * 0.85, color = "#475569"),
-      axis.title       = ggplot2::element_text(face = "bold", size = base_size * 0.95),
-      axis.text        = ggplot2::element_text(size = base_size * 0.85, color = "black"),
-      legend.title     = ggplot2::element_text(face = "bold", size = base_size * 0.90),
-      legend.text      = ggplot2::element_text(size = base_size * 0.82),
-      plot.margin      = ggplot2::margin(10, 10, 10, 10)
-    ) +
-    ggplot2::guides(
-      color = ggplot2::guide_legend(override.aes = list(size = 4, shape = 21, fill = method_cols)),
-      fill  = "none"
-    )
-
-  if (panel == "methods") return(p_a)
-
-  # ---------------------------------------------------------------------------
-  # Panel b: PC Loadings Vectors
-  # ---------------------------------------------------------------------------
-  loadings_df <- as.data.frame(pca$rotation[, seq_len(2), drop = FALSE])
-  loadings_df$Metric <- rownames(loadings_df)
-  loadings_df$mag <- sqrt(loadings_df$PC1^2 + loadings_df$PC2^2)
-
-  if (!is.null(top_n_loadings) && is.finite(top_n_loadings) && top_n_loadings < nrow(loadings_df)) {
-    loadings_df <- head(loadings_df[order(loadings_df$mag, decreasing = TRUE), ], top_n_loadings)
-  }
-
-  # Assign group: category (default) or summary_type
-  if (group_by == "category") {
-    loadings_df$Category <- df$Category[match(loadings_df$Metric, df$Metric)]
-    missing_cats <- is.na(loadings_df$Category) | loadings_df$Category == "" | loadings_df$Category == "Uncategorized"
-    if (any(missing_cats)) {
-      loadings_df$Category[missing_cats] <- .METRIC_CATEGORY_MAP[loadings_df$Metric[missing_cats]]
-    }
-    short_cats <- ifelse(loadings_df$Category %in% names(.SHORT_CATEGORY_LEGEND_MAP),
-                         .SHORT_CATEGORY_LEGEND_MAP[loadings_df$Category],
-                         loadings_df$Category)
-    short_order <- unname(.SHORT_CATEGORY_LEGEND_MAP)
-    cat_levels <- short_order[short_order %in% unique(short_cats)]
-    if (length(cat_levels) == 0) cat_levels <- unique(short_cats)
-    loadings_df$Group <- factor(short_cats, levels = cat_levels)
-    present_groups <- levels(loadings_df$Group)
-    group_colors <- if (!is.null(palette) && all(present_groups %in% names(palette))) {
-      palette[present_groups]
-    } else {
-      .SHORT_CATEGORY_COLORS[present_groups]
-    }
-    legend_title <- "Category"
-  } else {
-    raw_types <- .SUMMARY_TYPE_MAP[loadings_df$Metric]
-    loadings_df$Type <- ifelse(raw_types %in% c("feature", "gene"), feature_label, raw_types)
-    for (i in seq_len(nrow(loadings_df))) {
-      if (is.na(loadings_df$Type[i])) {
-        m <- tolower(loadings_df$Metric[i])
-        if (grepl("generative", m)) {
-          loadings_df$Type[i] <- "global"
-        } else if (grepl("cell|lib|ldf|knn|neighborhood", m)) {
-          loadings_df$Type[i] <- "cell"
-        } else if (grepl("gene|peak|feat|deg|da_|da |cpm|var|disp|fc|dropout|sparsity", m)) {
-          loadings_df$Type[i] <- feature_label
-        } else {
-          loadings_df$Type[i] <- "global"
-        }
-      }
-    }
-    all_possible_types <- c(feature_label, "cell", "global")
-    present_types <- all_possible_types[all_possible_types %in% unique(as.character(loadings_df$Type))]
-    loadings_df$Group <- factor(loadings_df$Type, levels = present_types)
-    present_groups <- levels(loadings_df$Group)
-    group_colors <- type_colors[present_groups]
-    legend_title <- "summary type"
-  }
-
-  loadings_df$Display_Label <- .SUMMARY_DISPLAY_NAME_MAP[loadings_df$Metric]
-  idx_na <- is.na(loadings_df$Display_Label)
-  if (any(idx_na)) {
-    loadings_df$Display_Label[idx_na] <- gsub("_", " ", loadings_df$Metric[idx_na])
-  }
-
-  if (feature_label == "peak") {
-    loadings_df$Display_Label <- gsub("gene-to-gene", "peak-to-peak", loadings_df$Display_Label, ignore.case = TRUE)
-    loadings_df$Display_Label <- gsub("gene detection", "peak detection", loadings_df$Display_Label, ignore.case = TRUE)
-    loadings_df$Display_Label <- gsub("DEG ", "DA ", loadings_df$Display_Label, ignore.case = TRUE)
-    loadings_df$Display_Label <- gsub("DE/DA ", "DA ", loadings_df$Display_Label, ignore.case = TRUE)
-    loadings_df$Display_Label <- gsub("DA/DE ", "DA ", loadings_df$Display_Label, ignore.case = TRUE)
-    loadings_df$Display_Label <- gsub("average of logCPM", "mean accessibility", loadings_df$Display_Label, ignore.case = TRUE)
-    loadings_df$Display_Label <- gsub("variance of logCPM", "variance of accessibility", loadings_df$Display_Label, ignore.case = TRUE)
-  } else if (feature_label == "features") {
-    loadings_df$Display_Label <- gsub("gene-to-gene", "feature", loadings_df$Display_Label, ignore.case = TRUE)
-    loadings_df$Display_Label <- gsub("gene detection", "feature detection", loadings_df$Display_Label, ignore.case = TRUE)
-  } else if (feature_label == "gene") {
-    loadings_df$Display_Label <- gsub("DE/DA ", "DE ", loadings_df$Display_Label, ignore.case = TRUE)
-    loadings_df$Display_Label <- gsub("DA/DE ", "DE ", loadings_df$Display_Label, ignore.case = TRUE)
-  }
-
-  p_b <- ggplot2::ggplot(loadings_df) +
-    ggplot2::geom_hline(yintercept = 0, color = "black", linewidth = 0.5) +
-    ggplot2::geom_vline(xintercept = 0, color = "black", linewidth = 0.5) +
-    ggplot2::geom_segment(
-      ggplot2::aes(x = 0, y = 0, xend = .data$PC1, yend = .data$PC2, color = .data$Group),
-      arrow = ggplot2::arrow(length = ggplot2::unit(0.24, "cm"), type = "closed"),
-      linewidth = 0.72, alpha = 0.85
-    )
-
-  if (requireNamespace("ggrepel", quietly = TRUE)) {
-    p_b <- p_b + ggrepel::geom_label_repel(
-      ggplot2::aes(x = .data$PC1, y = .data$PC2, label = .data$Display_Label, color = .data$Group),
-      fill = "white", fontface = "bold", size = base_size * 0.25,
-      label.padding = ggplot2::unit(0.18, "lines"), label.r = ggplot2::unit(0.30, "lines"),
-      label.size = 0.65, box.padding = 0.35, point.padding = 0.25,
-      max.overlaps = 70, show.legend = FALSE
-    )
-  } else {
-    p_b <- p_b + ggplot2::geom_text(
-      ggplot2::aes(x = .data$PC1, y = .data$PC2, label = .data$Display_Label, color = .data$Group),
-      vjust = -0.6, fontface = "bold", size = base_size * 0.25, show.legend = FALSE
-    )
-  }
-
-  p_b <- p_b +
-    ggplot2::scale_color_manual(values = group_colors, name = legend_title, drop = TRUE) +
-    ggplot2::labs(
-      title    = sprintf("Metric Loadings Vectors (Top %d Discriminating Metrics)", nrow(loadings_df)),
-      subtitle = "Vector length and direction indicate metric influence on PC1 and PC2 separation",
-      x = sprintf("PC1 (%s%%)", pca_var[1]),
-      y = sprintf("PC2 (%s%%)", pca_var[2])
-    ) +
-    ggplot2::theme_bw(base_size = base_size) +
-    ggplot2::theme(
-      panel.grid.major = ggplot2::element_line(color = "#EFEFEF", linewidth = 0.5),
-      panel.grid.minor = ggplot2::element_blank(),
-      panel.border     = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.8),
-      plot.title       = ggplot2::element_text(face = "bold", size = base_size * 1.05),
-      plot.subtitle    = ggplot2::element_text(size = base_size * 0.85, color = "#475569"),
-      axis.title       = ggplot2::element_text(face = "bold", size = base_size * 0.95),
-      axis.text        = ggplot2::element_text(size = base_size * 0.85, color = "black"),
-      legend.title     = ggplot2::element_text(face = "bold", size = base_size * 0.90),
-      legend.text      = ggplot2::element_text(size = base_size * 0.82),
-      plot.margin      = ggplot2::margin(10, 10, 10, 10)
-    ) +
-    ggplot2::guides(
-      color = ggplot2::guide_legend(override.aes = list(linewidth = 1.0, shape = NA))
-    )
-
-  if (panel == "loadings") return(p_b)
-
-  # ---------------------------------------------------------------------------
-  # Stacked layout (both panel a and panel b)
-  # ---------------------------------------------------------------------------
+  panels <- .build_pca_panels(pca, prep$df, group_by, feature_label, palette, top_n_loadings, base_size)
+  if (panel == "methods") return(panels$p_a)
+  if (panel == "loadings") return(panels$p_b)
   if (requireNamespace("patchwork", quietly = TRUE)) {
-    p_final <- patchwork::wrap_plots(p_a, p_b, ncol = 1) +
-      patchwork::plot_annotation(tag_levels = "a") &
-      ggplot2::theme(plot.tag = ggplot2::element_text(face = "bold", size = base_size * 1.1))
-    return(p_final)
-  } else {
-    return(p_a)
+    return(patchwork::wrap_plots(panels$p_a, panels$p_b, ncol = 1) + patchwork::plot_annotation(tag_levels = "a") & ggplot2::theme(plot.tag = ggplot2::element_text(face = "bold", size = base_size * 1.1)))
   }
+  panels$p_a
 }
 
 # ============================================================================
@@ -4615,6 +4030,89 @@ normalize_bubble_scores <- function(df) {
 # Evaluation Summary Horizontal Bar Matrix
 # -------------------------------------------------------------------------
 
+#' Prepare Category-Level and Overall Summary Bar Table
+#' @keywords internal
+#' @noRd
+.prepare_summary_bars_data <- function(data, method_classes, normalize_scores, simulators_order) {
+  df <- .ingest_bubble_data(data)
+  df$Display_Category <- if ("Category" %in% colnames(df)) {
+    ifelse(df$Category %in% names(.LEGACY_CATEGORY_MAP), .LEGACY_CATEGORY_MAP[df$Category], df$Category)
+  } else "(I) Distributional Properties"
+  if ("Metric" %in% colnames(df)) {
+    miss_c <- is.na(df$Display_Category) | df$Display_Category == "" | df$Display_Category == "Uncategorized"
+    mc_ov <- .METRIC_CATEGORY_MAP[df$Metric]
+    ix <- miss_c & !is.na(mc_ov)
+    df$Display_Category[ix] <- mc_ov[ix]
+  }
+
+  score_var <- if (normalize_scores) "Score_Norm" else "Score_Plot"
+  if (normalize_scores) {
+    if ("Score_Raw" %in% colnames(df)) df <- normalize_bubble_scores(df)
+    else if (!"Score_Norm" %in% colnames(df)) df$Score_Norm <- pmax(0, pmin(1, df$Score_Raw))
+  } else {
+    raw_col <- if ("Score_Raw" %in% colnames(df)) "Score_Raw" else if ("Score" %in% colnames(df)) "Score" else "Value"
+    df$Score_Plot <- df[[raw_col]]
+  }
+
+  has_classes <- FALSE
+  if (!is.null(method_classes)) {
+    has_classes <- TRUE
+    df$Method_Class <- as.character(method_classes[df$Method])
+    df$Method_Class[is.na(df$Method_Class)] <- "Other Simulators"
+  } else if ("Method_Class" %in% colnames(df) || "Class" %in% colnames(df)) {
+    cls_col <- if ("Method_Class" %in% colnames(df)) "Method_Class" else "Class"
+    df$Method_Class <- as.character(df[[cls_col]])
+    has_classes <- TRUE
+  }
+
+  sm <- .COMPACT_CATEGORY_STRIPS
+  dc_chr <- as.character(df$Display_Category)
+  sc <- sm[dc_chr]
+  unm <- is.na(sc)
+  if (any(unm)) {
+    for (u_i in which(unm)) {
+      dc <- dc_chr[u_i]
+      sc[u_i] <- if (grepl("Distribut", dc, ignore.case = TRUE)) "(I)\nDistribution"
+      else if (grepl("Sparsit|Correlat|Zero", dc, ignore.case = TRUE)) "(II)\nSparsity & Zero"
+      else if (grepl("Manifold|Cell|Cluster|Concord", dc, ignore.case = TRUE)) "(III)\nCell Manifold"
+      else if (grepl("Technical|Batch|Confound", dc, ignore.case = TRUE)) "(IV)\nBatch Mixing"
+      else if (grepl("Bio|Signal|DE|Downstream|Differential", dc, ignore.case = TRUE)) "(V)\nBio-Signal & DE"
+      else if (grepl("Traj|Lineage", dc, ignore.case = TRUE)) "(VII)\nTrajectory"
+      else if (grepl("Cross|Modal|Multiomics|Integration", dc, ignore.case = TRUE)) "(VI)\nMultiomics"
+      else if (grepl("Scalab|Comput", dc, ignore.case = TRUE)) "(VIII)\nScalability"
+      else "(I)\nDistribution"
+    }
+  }
+  df$Short_Category <- sc
+
+  grp_cols <- if (has_classes) c("Method", "Short_Category", "Method_Class") else c("Method", "Short_Category")
+  cat_means <- stats::aggregate(stats::as.formula(paste(score_var, "~", paste(grp_cols, collapse = " + "))),
+                                data = df, FUN = function(x) mean(x, na.rm = TRUE))
+  colnames(cat_means)[colnames(cat_means) == "Short_Category"] <- "Panel"
+
+  ov_cols <- if (has_classes) c("Method", "Method_Class") else "Method"
+  ov_means <- stats::aggregate(stats::as.formula(paste(score_var, "~", paste(ov_cols, collapse = " + "))),
+                               data = cat_means, FUN = function(x) mean(x, na.rm = TRUE))
+  ov_means$Panel <- "Overall\nScore"
+  combined <- rbind(cat_means, ov_means)
+
+  ranked_methods <- simulators_order %||% if (has_classes) {
+    unique(ov_means$Method[order(ov_means$Method_Class, -ov_means[[score_var]])])
+  } else {
+    ov_means$Method[order(ov_means[[score_var]], decreasing = TRUE)]
+  }
+  combined$Method <- factor(combined$Method, levels = rev(ranked_methods))
+  p_lvls <- c(unname(sm[.CANONICAL_CATEGORY_ORDER]), "Overall\nScore")
+  combined$Panel <- factor(combined$Panel, levels = intersect(p_lvls, unique(combined$Panel)))
+  if (has_classes) combined$Method_Class <- factor(combined$Method_Class, levels = unique(df$Method_Class))
+
+  combined$Label <- if (normalize_scores) sprintf("%.2f", combined[[score_var]]) else {
+    v <- combined[[score_var]]
+    ifelse(is.na(v), "-", ifelse(abs(v) >= 100, sprintf("%.1f", v), ifelse(abs(v) >= 1, sprintf("%.2f", v), sprintf("%.3f", v))))
+  }
+  list(combined = combined, score_var = score_var, has_classes = has_classes, n_methods = length(ranked_methods))
+}
+
 #' Plot Single-Cell Simulator Evaluation Summary
 #'
 #' Produces a 600 DPI horizontal bar matrix ranking single-cell simulators
@@ -4654,297 +4152,66 @@ plot_evaluation_summary <- function(
   subtitle          = "Average fidelity scores across 8 evaluation categories",
   base_size         = 11
 ) {
-  # 1. Ingest data
-  df <- .ingest_bubble_data(data)
-
-  # 2. Canonical category mapping
-  if ("Category" %in% colnames(df)) {
-    df$Display_Category <- ifelse(df$Category %in% names(.LEGACY_CATEGORY_MAP),
-                                  .LEGACY_CATEGORY_MAP[df$Category], df$Category)
-  } else {
-    df$Display_Category <- "(I) Distributional Properties"
-  }
-
-  if ("Metric" %in% colnames(df)) {
-    missing_cat <- is.na(df$Display_Category) | df$Display_Category == "" | df$Display_Category == "Uncategorized"
-    mc_override <- .METRIC_CATEGORY_MAP[df$Metric]
-    idx         <- missing_cat & !is.na(mc_override)
-    df$Display_Category[idx] <- mc_override[idx]
-  }
-
-  # 3. Score normalization
-  score_var <- if (normalize_scores) "Score_Norm" else "Score_Plot"
-  if (normalize_scores) {
-    if ("Score_Raw" %in% colnames(df)) {
-      df <- normalize_bubble_scores(df)
-    } else if (!"Score_Norm" %in% colnames(df)) {
-      df$Score_Norm <- pmax(0, pmin(1, df$Score_Raw))
-    }
-  } else {
-    raw_col <- if ("Score_Raw" %in% colnames(df)) "Score_Raw" else if ("Score" %in% colnames(df)) "Score" else "Value"
-    df$Score_Plot <- df[[raw_col]]
-  }
-
-  # 4. Method classes (optional)
-  has_classes <- FALSE
-  if (!is.null(method_classes)) {
-    has_classes <- TRUE
-    df$Method_Class <- as.character(method_classes[df$Method])
-    df$Method_Class[is.na(df$Method_Class)] <- "Other Simulators"
-  } else if ("Method_Class" %in% colnames(df) || "Class" %in% colnames(df)) {
-    cls_col <- if ("Method_Class" %in% colnames(df)) "Method_Class" else "Class"
-    df$Method_Class <- as.character(df[[cls_col]])
-    has_classes <- TRUE
-  }
-
-  strip_map <- c(
-    "(I) Distributional Properties"                    = "(I)\nDistribution",
-    "Distributional Properties"                        = "(I)\nDistribution",
-    "Distribution"                                     = "(I)\nDistribution",
-    "(II) Sparsity & Zero-Inflation Dynamics"          = "(II)\nSparsity & Zero",
-    "Sparsity & Zero-Inflation Dynamics"               = "(II)\nSparsity & Zero",
-    "Sparsity & Zero"                                  = "(II)\nSparsity & Zero",
-    "(II) Correlations & Zero-Inflation"               = "(II)\nSparsity & Zero",
-    "Correlations & Zero-Inflation"                    = "(II)\nSparsity & Zero",
-    "Correlation & Dependencies"                       = "(II)\nSparsity & Zero",
-    "Correlation"                                      = "(II)\nSparsity & Zero",
-    "(III) Cellular Manifold & Clustering Concordance" = "(III)\nCell Manifold",
-    "Cellular Manifold & Clustering Concordance"       = "(III)\nCell Manifold",
-    "Cell Manifold"                                    = "(III)\nCell Manifold",
-    "(III) Cellular Structure & Concordance"           = "(III)\nCell Manifold",
-    "Cellular Structure & Concordance"                 = "(III)\nCell Manifold",
-    "Cellular Structure & Mixing"                      = "(III)\nCell Manifold",
-    "Cell Structure"                                   = "(III)\nCell Manifold",
-    "(IV) Technical Variation & Batch Mixing Dynamics" = "(IV)\nBatch Mixing",
-    "Technical Variation & Batch Mixing Dynamics"      = "(IV)\nBatch Mixing",
-    "(IV) Batch Effects & Confounder Mixing"           = "(IV)\nBatch Mixing",
-    "Batch Effects & Confounder Mixing"                = "(IV)\nBatch Mixing",
-    "Batch Mixing"                                     = "(IV)\nBatch Mixing",
-    "(V) Biological Signal & Differential Fidelity"    = "(V)\nBio-Signal & DE",
-    "Biological Signal & Differential Fidelity"        = "(V)\nBio-Signal & DE",
-    "(V) Biological Signal & Downstream Fidelity"      = "(V)\nBio-Signal & DE",
-    "Biological Signal & Downstream Fidelity"          = "(V)\nBio-Signal & DE",
-    "Biological Signal & Downstream"                   = "(V)\nBio-Signal & DE",
-    "Bio-Signal & DE"                                  = "(V)\nBio-Signal & DE",
-    "(VII) Trajectory & Lineage Topology"              = "(VII)\nTrajectory",
-    "(VII) Trajectory & Lineage Dynamics"              = "(VII)\nTrajectory",
-    "(VI) Trajectory & Lineage Dynamics"               = "(VII)\nTrajectory",
-    "Trajectory & Lineage Topology"                    = "(VII)\nTrajectory",
-    "Trajectory & Lineage Dynamics"                    = "(VII)\nTrajectory",
-    "Trajectory Dynamics"                              = "(VII)\nTrajectory",
-    "Trajectory"                                       = "(VII)\nTrajectory",
-    "Traj."                                            = "(VII)\nTrajectory",
-    "(VI) Multiomics Integration & Alignment"          = "(VI)\nMultiomics",
-    "(VI) Cross-Modal Coupling & Modularity"           = "(VI)\nMultiomics",
-    "Multiomics Integration & Alignment"               = "(VI)\nMultiomics",
-    "Cross-Modal Coupling & Modularity"                = "(VI)\nMultiomics",
-    "Cross-Modal Relationships"                        = "(VI)\nMultiomics",
-    "Cross-Modal"                                      = "(VI)\nMultiomics",
-    "Multiomics"                                       = "(VI)\nMultiomics",
-    "(VIII) Computational Scalability & Efficiency"    = "(VIII)\nScalability",
-    "(VIII) Computational Scalability"                 = "(VIII)\nScalability",
-    "Computational Scalability & Efficiency"           = "(VIII)\nScalability",
-    "Computational Scalability"                        = "(VIII)\nScalability",
-    "Scalability"                                      = "(VIII)\nScalability"
-  )
-
-  df$Display_Category <- as.character(df$Display_Category)
-  df$Short_Category <- strip_map[df$Display_Category]
-  unmatched <- is.na(df$Short_Category)
-  if (any(unmatched)) {
-    for (u_i in which(unmatched)) {
-      dc <- df$Display_Category[u_i]
-      if (grepl("Distribut", dc, ignore.case = TRUE)) df$Short_Category[u_i] <- "(I)\nDistribution"
-      else if (grepl("Sparsit|Correlat|Zero", dc, ignore.case = TRUE)) df$Short_Category[u_i] <- "(II)\nSparsity & Zero"
-      else if (grepl("Manifold|Cell|Cluster|Concord", dc, ignore.case = TRUE)) df$Short_Category[u_i] <- "(III)\nCell Manifold"
-      else if (grepl("Technical|Batch|Confound", dc, ignore.case = TRUE)) df$Short_Category[u_i] <- "(IV)\nBatch Mixing"
-      else if (grepl("Bio|Signal|DE|Downstream|Differential", dc, ignore.case = TRUE)) df$Short_Category[u_i] <- "(V)\nBio-Signal & DE"
-      else if (grepl("Traj|Lineage", dc, ignore.case = TRUE)) df$Short_Category[u_i] <- "(VII)\nTrajectory"
-      else if (grepl("Cross|Modal|Multiomics|Integration", dc, ignore.case = TRUE)) df$Short_Category[u_i] <- "(VI)\nMultiomics"
-      else if (grepl("Scalab|Comput", dc, ignore.case = TRUE)) df$Short_Category[u_i] <- "(VIII)\nScalability"
-      else df$Short_Category[u_i] <- "(I)\nDistribution"
-    }
-  }
-
-  # 5. Aggregate category means
-  group_cols <- c("Method", "Short_Category")
-  if (has_classes) group_cols <- c(group_cols, "Method_Class")
-  cat_means <- stats::aggregate(
-    stats::as.formula(paste(score_var, "~", paste(group_cols, collapse = " + "))),
-    data = df, FUN = function(x) mean(x, na.rm = TRUE)
-  )
-  colnames(cat_means)[colnames(cat_means) == "Short_Category"] <- "Panel"
-
-  # 6. Aggregate overall means (macro-average across categories)
-  ov_group_cols <- "Method"
-  if (has_classes) ov_group_cols <- c(ov_group_cols, "Method_Class")
-  overall_means <- stats::aggregate(
-    stats::as.formula(paste(score_var, "~", paste(ov_group_cols, collapse = " + "))),
-    data = cat_means, FUN = function(x) mean(x, na.rm = TRUE)
-  )
-  overall_means$Panel <- "Overall\nScore"
-
-  combined <- rbind(cat_means, overall_means)
-
-  # 7. Simulator ordering
-  if (!is.null(simulators_order)) {
-    ranked_methods <- simulators_order
-  } else if (has_classes) {
-    cls_ord <- order(overall_means$Method_Class, -overall_means[[score_var]])
-    ranked_methods <- unique(overall_means$Method[cls_ord])
-  } else {
-    ord <- order(overall_means[[score_var]], decreasing = TRUE)
-    ranked_methods <- overall_means$Method[ord]
-  }
-
-  combined$Method <- factor(combined$Method, levels = rev(ranked_methods))
-
-  panel_levels <- c(unname(strip_map[.CANONICAL_CATEGORY_ORDER]), "Overall\nScore")
-  present_panels <- intersect(panel_levels, unique(combined$Panel))
-  combined$Panel <- factor(combined$Panel, levels = present_panels)
-
-  if (has_classes) {
-    combined$Method_Class <- factor(combined$Method_Class, levels = unique(df$Method_Class))
-  }
-
-  # 8. Colors (earlier pleasant tinted palette)
+  prep <- .prepare_summary_bars_data(data, method_classes, normalize_scores, simulators_order)
+  combined <- prep$combined; score_var <- prep$score_var
   default_colors <- c(
-    "(I)\nDistribution"    = "#60A5FA",  # Sky Blue
-    "(II)\nSparsity & Zero"= "#34D399",  # Emerald Green
-    "(II)\nCorrelation"    = "#34D399",  # Emerald Green (legacy)
-    "(III)\nCell Manifold" = "#A78BFA",  # Purple / Lavender
-    "(III)\nCell Structure"= "#A78BFA",  # Purple / Lavender (legacy)
-    "(IV)\nBatch Mixing"   = "#FBBF24",  # Amber / Warm Yellow
-    "(V)\nBio-Signal & DE" = "#FB923C",  # Coral / Orange
-    "(VI)\nMultiomics"     = "#6D28D9",  # Royal Violet
-    "(VII)\nTrajectory"    = "#2DD4BF",  # Teal / Mint
-    "(VI)\nTraj."          = "#2DD4BF",  # Teal / Mint (legacy)
-    "(VIII)\nScalability"  = "#4ADE80",  # Light Green
-    "Overall\nScore"       = "#94A3B8"   # Slate Grey
+    "(I)\nDistribution" = "#60A5FA", "(II)\nSparsity & Zero" = "#34D399", "(II)\nCorrelation" = "#34D399",
+    "(III)\nCell Manifold" = "#A78BFA", "(III)\nCell Structure" = "#A78BFA", "(IV)\nBatch Mixing" = "#FBBF24",
+    "(V)\nBio-Signal & DE" = "#FB923C", "(VI)\nMultiomics" = "#6D28D9", "(VII)\nTrajectory" = "#2DD4BF",
+    "(VI)\nTraj." = "#2DD4BF", "(VIII)\nScalability" = "#4ADE80", "Overall\nScore" = "#94A3B8"
   )
+  if (!is.null(category_colors)) for (nm in names(category_colors)) if (nm %in% names(default_colors)) default_colors[nm] <- category_colors[nm]
 
-  if (!is.null(category_colors)) {
-    for (nm in names(category_colors)) {
-      if (nm %in% names(default_colors)) default_colors[nm] <- category_colors[nm]
-    }
+  p <- ggplot2::ggplot(combined, ggplot2::aes(x = .data[[score_var]], y = .data$Method))
+  if (!prep$has_classes) {
+    zdf <- data.frame(ymin = seq(0.5, prep$n_methods - 0.5, by = 1), ymax = seq(1.5, prep$n_methods + 0.5, by = 1),
+                      is_even = rep(c(TRUE, FALSE), length.out = prep$n_methods))
+    p <- p + ggplot2::geom_rect(data = zdf[zdf$is_even, ], ggplot2::aes(ymin = .data$ymin, ymax = .data$ymax, xmin = -Inf, xmax = Inf), fill = "#F8FAFC", inherit.aes = FALSE) +
+      ggplot2::geom_hline(yintercept = seq(0.5, prep$n_methods + 0.5, by = 1), color = "#E2E8F0", linewidth = 0.5)
   }
-
-  combined$Label <- if (normalize_scores) {
-    sprintf("%.2f", combined[[score_var]])
-  } else {
-    ifelse(is.na(combined[[score_var]]), "-",
-    ifelse(abs(combined[[score_var]]) >= 100, sprintf("%.1f", combined[[score_var]]),
-    ifelse(abs(combined[[score_var]]) >= 1,   sprintf("%.2f", combined[[score_var]]),
-    sprintf("%.3f", combined[[score_var]]))))
-  }
-
-  # Zebra striping
-  n_methods <- length(ranked_methods)
-  zebra_df <- data.frame(
-    ymin = seq(0.5, n_methods - 0.5, by = 1),
-    ymax = seq(1.5, n_methods + 0.5, by = 1),
-    is_even = rep(c(TRUE, FALSE), length.out = n_methods)
-  )
-  zebra_df <- zebra_df[zebra_df$is_even, ]
-
-  p <- ggplot2::ggplot(combined, ggplot2::aes(x = .data[[score_var]], y = Method))
-
-  if (!has_classes) {
-    p <- p + ggplot2::geom_rect(
-      data = zebra_df,
-      ggplot2::aes(ymin = ymin, ymax = ymax, xmin = -Inf, xmax = Inf),
-      fill = "#F8FAFC", inherit.aes = FALSE
-    ) +
-    ggplot2::geom_hline(yintercept = seq(0.5, n_methods + 0.5, by = 1), color = "#E2E8F0", linewidth = 0.5)
-  }
-
   p <- p + ggplot2::geom_vline(xintercept = 0, color = "#475569", linewidth = 0.6)
   if (normalize_scores) {
-    p <- p +
-      ggplot2::geom_vline(xintercept = 0.5, linetype = "dotted", color = "#CBD5E1", linewidth = 0.4) +
+    p <- p + ggplot2::geom_vline(xintercept = 0.5, linetype = "dotted", color = "#CBD5E1", linewidth = 0.4) +
       ggplot2::geom_vline(xintercept = 1.0, linetype = "dashed", color = "#64748B", linewidth = 0.5)
   }
+  p <- p + ggplot2::geom_col(ggplot2::aes(fill = .data$Panel), width = 0.68, color = "#1E293B", linewidth = 0.45, alpha = 0.95)
 
-  p <- p + ggplot2::geom_col(
-    ggplot2::aes(fill = Panel),
-    width     = 0.68,
-    color     = "#1E293B",
-    linewidth = 0.45,
-    alpha     = 0.95
-  )
-
-  max_score_val <- max(combined[[score_var]], na.rm = TRUE)
-  if (!is.finite(max_score_val) || max_score_val <= 0) max_score_val <- 1
-  thresh <- if (normalize_scores) 0.28 else max_score_val * 0.28
-  offset <- if (normalize_scores) 0.02 else max_score_val * 0.02
-
+  mx <- max(combined[[score_var]], na.rm = TRUE); if (!is.finite(mx) || mx <= 0) mx <- 1
+  thresh <- if (normalize_scores) 0.28 else mx * 0.28
+  off <- if (normalize_scores) 0.02 else mx * 0.02
   if (show_labels) {
     p <- p +
-      ggplot2::geom_text(
-        data = combined[combined[[score_var]] < thresh, ],
-        ggplot2::aes(x = .data[[score_var]] + offset, label = Label),
-        hjust = 0, size = base_size * 0.29, fontface = "bold", color = "#0F172A"
-      ) +
-      ggplot2::geom_text(
-        data = combined[combined[[score_var]] >= thresh, ],
-        ggplot2::aes(x = .data[[score_var]] - offset, label = Label),
-        hjust = 1, size = base_size * 0.29, fontface = "bold", color = "#0F172A"
-      )
+      ggplot2::geom_text(data = combined[combined[[score_var]] < thresh, ], ggplot2::aes(x = .data[[score_var]] + off, label = .data$Label), hjust = 0, size = base_size * 0.29, fontface = "bold", color = "#0F172A") +
+      ggplot2::geom_text(data = combined[combined[[score_var]] >= thresh, ], ggplot2::aes(x = .data[[score_var]] - off, label = .data$Label), hjust = 1, size = base_size * 0.29, fontface = "bold", color = "#0F172A")
   }
+  p <- p + if (prep$has_classes) ggplot2::facet_grid(Method_Class ~ Panel, scales = "free_y", space = "free_y") else ggplot2::facet_grid(. ~ Panel, scales = "fixed")
+  p <- p + ggplot2::scale_fill_manual(values = default_colors, guide = "none") +
+    (if (normalize_scores) ggplot2::scale_x_continuous(limits = c(0, 1.18), breaks = c(0, 0.5, 1.0), labels = c("0", "0.5", "1.0"), expand = c(0, 0))
+     else ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0.04, 0.20))))
 
-  if (has_classes) {
-    p <- p + ggplot2::facet_grid(Method_Class ~ Panel, scales = "free_y", space = "free_y")
-  } else {
-    p <- p + ggplot2::facet_grid(. ~ Panel, scales = "fixed")
-  }
+  sub_txt <- if (identical(subtitle, "Average fidelity scores across 8 evaluation categories")) {
+    if (normalize_scores) "Average fidelity scores across 8 evaluation categories (Direction-normalized [0, 1])"
+    else "Average unnormalized raw metric values across evaluation categories"
+  } else subtitle
 
-  p <- p + ggplot2::scale_fill_manual(values = default_colors, guide = "none")
-
-  x_lab <- if (normalize_scores) "Average Evaluation Score (0 - 1, Higher = Better)" else "Average Raw Metric Score (Native Units)"
-  sub_txt <- if (normalize_scores) {
-    if (identical(subtitle, "Average fidelity scores across 8 evaluation categories")) "Average fidelity scores across 8 evaluation categories (Direction-normalized [0, 1])" else subtitle
-  } else {
-    if (identical(subtitle, "Average fidelity scores across 8 evaluation categories")) "Average unnormalized raw metric values across evaluation categories" else subtitle
-  }
-
-  if (normalize_scores) {
-    p <- p + ggplot2::scale_x_continuous(
-      limits = c(0, 1.18),
-      breaks = c(0, 0.5, 1.0),
-      labels = c("0", "0.5", "1.0"),
-      expand = c(0, 0)
-    )
-  } else {
-    p <- p + ggplot2::scale_x_continuous(
-      expand = ggplot2::expansion(mult = c(0.04, 0.20))
-    )
-  }
-
-  p <- p +
-    ggplot2::labs(
-      title    = title,
-      subtitle = sub_txt,
-      x        = x_lab,
-      y        = "Ranked Simulators"
-    ) +
+  p +
+    ggplot2::labs(title = title, subtitle = sub_txt,
+                  x = if (normalize_scores) "Average Evaluation Score (0 - 1, Higher = Better)" else "Average Raw Metric Score (Native Units)",
+                  y = "Ranked Simulators") +
     ggplot2::theme_minimal(base_size = base_size) +
     ggplot2::theme(
-      plot.title         = ggplot2::element_text(face = "bold", size = base_size * 1.35, hjust = 0.5, color = "#0F172A", margin = ggplot2::margin(b = 4)),
-      plot.subtitle      = ggplot2::element_text(size = base_size * 0.95, hjust = 0.5, color = "#475569", margin = ggplot2::margin(b = 14)),
-      axis.title.x       = ggplot2::element_text(face = "bold", size = base_size * 0.95, color = "#1E293B", margin = ggplot2::margin(t = 8)),
-      axis.title.y       = ggplot2::element_text(face = "bold", size = base_size * 1.0, color = "#0F172A", margin = ggplot2::margin(r = 10)),
-      axis.text.y        = ggplot2::element_text(face = "bold", size = base_size * 0.95, color = "#0F172A"),
-      axis.text.x        = ggplot2::element_text(size = base_size * 0.77, color = "#64748B"),
-      strip.text         = ggplot2::element_text(face = "bold", size = base_size * 0.83, color = "#0F172A", lineheight = 1.15),
-      strip.background   = ggplot2::element_rect(fill = "#F1F5F9", color = "#CBD5E1", linewidth = 0.7),
-      panel.grid.major   = ggplot2::element_blank(),
-      panel.grid.minor   = ggplot2::element_blank(),
-      panel.border       = ggplot2::element_rect(color = "#CBD5E1", fill = NA, linewidth = 0.7),
-      panel.spacing      = grid::unit(4, "pt"),
-      plot.margin        = ggplot2::margin(12, 14, 12, 12)
+      plot.title = ggplot2::element_text(face = "bold", size = base_size * 1.35, hjust = 0.5, color = "#0F172A", margin = ggplot2::margin(b = 4)),
+      plot.subtitle = ggplot2::element_text(size = base_size * 0.95, hjust = 0.5, color = "#475569", margin = ggplot2::margin(b = 14)),
+      axis.title.x = ggplot2::element_text(face = "bold", size = base_size * 0.95, color = "#1E293B", margin = ggplot2::margin(t = 8)),
+      axis.title.y = ggplot2::element_text(face = "bold", size = base_size * 1.0, color = "#0F172A", margin = ggplot2::margin(r = 10)),
+      axis.text.y = ggplot2::element_text(face = "bold", size = base_size * 0.95, color = "#0F172A"),
+      axis.text.x = ggplot2::element_text(size = base_size * 0.77, color = "#64748B"),
+      strip.text = ggplot2::element_text(face = "bold", size = base_size * 0.83, color = "#0F172A", lineheight = 1.15),
+      strip.background = ggplot2::element_rect(fill = "#F1F5F9", color = "#CBD5E1", linewidth = 0.7),
+      panel.grid.major = ggplot2::element_blank(), panel.grid.minor = ggplot2::element_blank(),
+      panel.border = ggplot2::element_rect(color = "#CBD5E1", fill = NA, linewidth = 0.7),
+      panel.spacing = grid::unit(4, "pt"), plot.margin = ggplot2::margin(12, 14, 12, 12)
     )
-
-  p
 }
 
 #' @rdname plot_evaluation_summary
@@ -4960,6 +4227,96 @@ plot_summary_bars <- plot_evaluation_summary
 # DIMENSION REDUCTION & EMBEDDING VISUALIZATION (UMAP / t-SNE / PCA)
 # ==============================================================================
 
+#' Compute Single-Dataset PCA/UMAP/t-SNE Embedding & Cluster Recovery
+#' @keywords internal
+#' @noRd
+.compute_single_embedding <- function(mat, dname, reduction, n_pcs, perplexity, n_neighbors,
+                                      min_dist, seed, cell_types, batch, ref_ct_actual, ref_pca_centroids) {
+  n_cells <- ncol(mat); n_feats <- nrow(mat)
+  if (is.null(n_cells) || is.null(n_feats) || is.na(n_cells) || is.na(n_feats) || n_cells < 3 || n_feats < 3) return(NULL)
+  libs <- if (inherits(mat, "dgCMatrix")) Matrix::colSums(mat) else colSums(mat)
+  det_feats <- if (inherits(mat, "dgCMatrix")) Matrix::colSums(mat > 0) else colSums(mat > 0)
+  sf <- stats::median(libs[libs > 0]); if (is.na(sf) || sf == 0) sf <- 1e4
+  norm_mat <- log2(sweep(as.matrix(mat), 2, pmax(libs, 1), "/") * sf + 1)
+  vars <- apply(norm_mat, 1, stats::var); vars[is.na(vars)] <- 0
+  top_n <- min(2000, n_feats)
+  sub_mat <- norm_mat[order(vars, decreasing = TRUE)[seq_len(top_n)], , drop = FALSE]
+
+  k_pc <- max(2L, min(n_pcs, n_cells - 1, top_n - 1))
+  pca_res <- if (requireNamespace("irlba", quietly = TRUE) && k_pc < (n_cells - 2) && k_pc < (top_n - 2)) {
+    tryCatch(irlba::prcomp_irlba(t(sub_mat), n = k_pc, center = TRUE, scale. = FALSE),
+             error = function(e) stats::prcomp(t(sub_mat), center = TRUE, scale. = FALSE))
+  } else stats::prcomp(t(sub_mat), center = TRUE, scale. = FALSE)
+  pca_coords <- pca_res$x[, seq_len(min(k_pc, ncol(pca_res$x))), drop = FALSE]
+
+  dim1 <- pca_coords[, 1]; dim2 <- if (ncol(pca_coords) >= 2) pca_coords[, 2] else pca_coords[, 1]
+  if (reduction == "tsne" && requireNamespace("Rtsne", quietly = TRUE)) {
+    perp <- max(2, min(perplexity, floor((n_cells - 1) / 3)))
+    tryCatch({ out <- Rtsne::Rtsne(pca_coords, perplexity = perp, check_duplicates = FALSE, pca = FALSE); dim1 <- out$Y[, 1]; dim2 <- out$Y[, 2] },
+             error = function(e) warning("t-SNE computation failed: ", e$message, "; falling back to PCA.", call. = FALSE))
+  } else if (reduction == "umap" && requireNamespace("uwot", quietly = TRUE)) {
+    nn <- max(2, min(n_neighbors, n_cells - 1))
+    tryCatch({ out <- uwot::umap(pca_coords, n_neighbors = nn, min_dist = min_dist, seed = seed); dim1 <- out[, 1]; dim2 <- out[, 2] },
+             error = function(e) warning("UMAP computation failed: ", e$message, "; falling back to PCA.", call. = FALSE))
+  }
+
+  k_clust <- if (!is.null(ref_ct_actual)) length(unique(stats::na.omit(ref_ct_actual)))
+  else if (!is.null(cell_types) && !is.list(cell_types)) length(unique(stats::na.omit(as.character(cell_types)))) else 3L
+  n_uniq_pc <- nrow(unique(pca_coords))
+  k_clust <- max(2L, min(k_clust, n_uniq_pc - 1L))
+  km_fit <- if (n_uniq_pc >= 3L) {
+    tryCatch(stats::kmeans(pca_coords, centers = k_clust, iter.max = 100L, nstart = 5L, algorithm = "MacQueen"),
+             error = function(e) list(cluster = rep(1L, n_cells), centers = matrix(0, 1L, ncol(pca_coords))))
+  } else list(cluster = rep(1L, n_cells), centers = matrix(0, 1L, ncol(pca_coords)))
+
+  ct_vec <- NULL
+  if (is.list(cell_types) && !is.data.frame(cell_types) && !is.factor(cell_types)) {
+    m_i <- if (!is.null(cell_types[[dname]])) match(dname, names(cell_types)) else match(tolower(dname), tolower(names(cell_types)))
+    if (!is.na(m_i) && length(cell_types[[m_i]]) == n_cells) ct_vec <- as.character(cell_types[[m_i]])
+  }
+  if (is.null(ct_vec) && !is.null(cell_types) && !is.null(names(cell_types)) && !is.null(colnames(mat))) {
+    mc <- match(colnames(mat), names(cell_types))
+    if (sum(!is.na(mc)) >= 0.7 * n_cells) { ct_vec <- as.character(cell_types[mc]); ct_vec[is.na(ct_vec)] <- "Unknown" }
+  }
+  if (is.null(ct_vec) && !is.null(cell_types) && !is.list(cell_types) && length(cell_types) == n_cells) ct_vec <- as.character(cell_types)
+  if (is.null(ct_vec) && dname == "Reference" && !is.null(ref_ct_actual) && length(ref_ct_actual) == n_cells) ct_vec <- ref_ct_actual
+
+  if (dname == "Reference" && !is.null(ct_vec) && !all(grepl("^Cluster ", ct_vec))) {
+    ref_pca_centroids <- stats::setNames(lapply(unique(ct_vec), function(u) colMeans(pca_coords[ct_vec == u, , drop = FALSE])), unique(ct_vec))
+  }
+  if (is.null(ct_vec) && dname != "Reference" && length(ref_pca_centroids) >= 2) {
+    ct_vec <- tryCatch({
+      urt <- names(ref_pca_centroids)
+      c_to_t <- vapply(seq_len(nrow(km_fit$centers)), function(ci) {
+        cv <- km_fit$centers[ci, , drop = TRUE]
+        ds <- vapply(urt, function(rt) { cent <- ref_pca_centroids[[rt]]; kl <- min(length(cv), length(cent)); sqrt(sum((cv[seq_len(kl)] - cent[seq_len(kl)])^2)) }, numeric(1))
+        urt[which.min(ds)]
+      }, character(1))
+      c_to_t[km_fit$cluster]
+    }, error = function(e) NULL)
+  }
+  if (is.null(ct_vec) || any(is.na(ct_vec)) || length(ct_vec) != n_cells) {
+    ct_vec <- if (!is.null(ref_ct_actual) && length(ref_ct_actual) == n_cells) ref_ct_actual else paste0("Cluster ", km_fit$cluster)
+  }
+  b_vec <- if (!is.null(batch)) {
+    if (is.list(batch) && !is.null(batch[[dname]]) && length(batch[[dname]]) == n_cells) as.character(batch[[dname]])
+    else if (length(batch) == n_cells) as.character(batch) else "Batch 1"
+  } else "Batch 1"
+
+  list(
+    ref_pca_centroids = ref_pca_centroids,
+    df = data.frame(
+      Cell_ID = colnames(mat) %||% paste0("Cell_", seq_len(n_cells)),
+      Dim1 = as.numeric(dim1), Dim2 = as.numeric(dim2), Dataset = dname,
+      Role = ifelse(dname == "Reference", "Reference", "Simulated"),
+      Dataset_Type = ifelse(dname == "Reference", "Reference", "Simulated"),
+      Cell_Type = as.character(ct_vec), Cluster = factor(paste0("Cluster_", km_fit$cluster)),
+      Library_Size = as.numeric(libs), Detected_Features = as.numeric(det_feats),
+      Batch = as.character(b_vec), stringsAsFactors = FALSE
+    )
+  )
+}
+
 #' Compute Low-Dimensional Embeddings for Reference and Simulated Single-Cell Datasets
 #'
 #' Projects empirical biological reference and simulated count matrices into low-dimensional
@@ -4967,8 +4324,8 @@ plot_summary_bars <- plot_evaluation_summary
 #' Automatically performs library-size normalization, variance-based feature selection, principal
 #' component analysis, and optional unsupervised clustering.
 #'
-#' @param reference Biological reference count matrix (features x cells), dgCMatrix, SingleCellExperiment, or Seurat object.
-#' @param simulated A single simulated count matrix or a named list of simulated count matrices (e.g. \code{list("Splatter" = sim1, "scDesign3" = sim2)}).
+#' @param reference Biological reference \code{SingleCellExperiment} object or count matrix (features x cells).
+#' @param simulated A single simulated count matrix/\code{SingleCellExperiment} or a named list of them.
 #' @param reduction Character string specifying the dimensionality reduction method: \code{"umap"} (default), \code{"tsne"}, or \code{"pca"}.
 #' @param n_pcs Integer specifying the number of principal components to calculate (default: 30).
 #' @param perplexity Numeric perplexity for t-SNE (default: 30; automatically adapted for small sample sizes).
@@ -5006,267 +4363,49 @@ compute_dataset_embeddings <- function(reference,
     if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
       old_seed <- get(".Random.seed", envir = .GlobalEnv)
       on.exit(assign(".Random.seed", old_seed, envir = .GlobalEnv), add = TRUE)
-    } else {
-      on.exit(rm(".Random.seed", envir = .GlobalEnv), add = TRUE)
-    }
-    set_seed_fn <- get("set.seed", asNamespace("base"))
-    set_seed_fn(seed)
+    } else on.exit(rm(".Random.seed", envir = .GlobalEnv), add = TRUE)
+    get("set.seed", asNamespace("base"))(seed)
   }
-  
+
   extract_counts <- function(obj) {
     if (is.null(obj)) return(NULL)
     if (inherits(obj, "SingleCellExperiment")) {
       cnts <- tryCatch(SummarizedExperiment::assay(obj, "counts"), error = function(e) NULL)
-      if (is.null(cnts)) cnts <- tryCatch(SummarizedExperiment::assay(obj, 1), error = function(e) NULL)
-      cnts %||% obj
+      (cnts %||% tryCatch(SummarizedExperiment::assay(obj, 1), error = function(e) NULL)) %||% obj
     } else if (inherits(obj, "Seurat")) {
       stop("Seurat objects are not directly supported; convert via Seurat::as.SingleCellExperiment().", call. = FALSE)
-    } else {
-      obj
-    }
+    } else obj
   }
-  
+
   ref_mat <- extract_counts(reference)
-  if (is.null(ref_mat) || length(dim(ref_mat)) < 2) {
-    stop("A valid 2D reference count matrix must be provided.", call. = FALSE)
-  }
-  
-  sim_list <- if (is.list(simulated) && !is.data.frame(simulated) && !inherits(simulated, "dgCMatrix")) {
-    simulated
-  } else {
-    list("Simulated" = simulated)
-  }
+  if (is.null(ref_mat) || length(dim(ref_mat)) < 2) stop("A valid 2D reference count matrix must be provided.", call. = FALSE)
+  sim_list <- if (is.list(simulated) && !is.data.frame(simulated) && !inherits(simulated, "dgCMatrix")) simulated else list("Simulated" = simulated)
   sim_list <- lapply(sim_list, extract_counts)
-  
-  if (is.null(names(sim_list)) || any(names(sim_list) == "")) {
-    names(sim_list) <- paste0("Simulator_", seq_along(sim_list))
-  }
-  
+  if (is.null(names(sim_list)) || any(names(sim_list) == "")) names(sim_list) <- paste0("Simulator_", seq_along(sim_list))
+
   all_datasets <- c(list("Reference" = ref_mat), sim_list)
-  dataset_names <- names(all_datasets)
-  results <- list()
-  
-  # Extract biological cell types for the empirical reference
-  ref_ct_actual <- NULL
-  if (!is.null(cell_types)) {
-    if (is.list(cell_types) && !is.data.frame(cell_types) && !is.factor(cell_types)) {
-      if (!is.null(cell_types[["Reference"]]) && length(cell_types[["Reference"]]) == ncol(ref_mat)) {
-        ref_ct_actual <- as.character(cell_types[["Reference"]])
-      } else {
-        for (item in cell_types) {
-          if (length(item) == ncol(ref_mat)) {
-            ref_ct_actual <- as.character(item)
-            break
-          }
-        }
-      }
-    } else if (is.data.frame(cell_types)) {
-      v <- if (!is.null(cell_types$CellType)) cell_types$CellType else if (!is.null(cell_types$Cell_Type)) cell_types$Cell_Type else cell_types[[1]]
-      if (length(v) == ncol(ref_mat)) ref_ct_actual <- as.character(v)
-    } else if (length(cell_types) == ncol(ref_mat)) {
-      ref_ct_actual <- as.character(cell_types)
-    }
-  }
-  ref_pca_centroids <- list()
-  
-  for (dname in dataset_names) {
+  ref_ct_actual <- if (is.null(cell_types)) NULL else if (is.list(cell_types) && !is.data.frame(cell_types) && !is.factor(cell_types)) {
+    if (!is.null(cell_types[["Reference"]]) && length(cell_types[["Reference"]]) == ncol(ref_mat)) as.character(cell_types[["Reference"]])
+    else { hit <- Filter(function(it) length(it) == ncol(ref_mat), cell_types); if (length(hit) > 0) as.character(hit[[1]]) else NULL }
+  } else if (is.data.frame(cell_types)) {
+    v <- cell_types$CellType %||% cell_types$Cell_Type %||% cell_types[[1]]
+    if (length(v) == ncol(ref_mat)) as.character(v) else NULL
+  } else if (length(cell_types) == ncol(ref_mat)) as.character(cell_types) else NULL
+
+  results <- list(); ref_pca_centroids <- list()
+  for (dname in names(all_datasets)) {
     mat <- all_datasets[[dname]]
     if (is.null(mat) || length(dim(mat)) < 2) next
-    
-    n_cells <- ncol(mat)
-    n_feats <- nrow(mat)
-    
-    if (is.null(n_cells) || is.null(n_feats) || is.na(n_cells) || is.na(n_feats) || n_cells < 3 || n_feats < 3) next
-    
-    # 1. Total library size and detected features
-    libs <- if (inherits(mat, "dgCMatrix")) Matrix::colSums(mat) else colSums(mat)
-    det_feats <- if (inherits(mat, "dgCMatrix")) Matrix::colSums(mat > 0) else colSums(mat > 0)
-    
-    # 2. Library size scaling and log-transformation
-    scale_factor <- stats::median(libs[libs > 0])
-    if (is.na(scale_factor) || scale_factor == 0) scale_factor <- 1e4
-    
-    mat_dense <- as.matrix(mat)
-    norm_mat <- log2(sweep(mat_dense, 2, pmax(libs, 1), "/") * scale_factor + 1)
-    
-    # 3. Variance-based feature selection (top 2,000 highly variable features)
-    vars <- apply(norm_mat, 1, stats::var)
-    vars[is.na(vars)] <- 0
-    top_n <- min(2000, n_feats)
-    top_idx <- order(vars, decreasing = TRUE)[seq_len(top_n)]
-    sub_mat <- norm_mat[top_idx, , drop = FALSE]
-    
-    # 4. Principal Component Analysis (PCA)
-    k_pc <- min(n_pcs, n_cells - 1, top_n - 1)
-    if (k_pc < 2) k_pc <- 2
-    
-    pca_res <- if (requireNamespace("irlba", quietly = TRUE) && k_pc < (n_cells - 2) && k_pc < (top_n - 2)) {
-      tryCatch(
-        irlba::prcomp_irlba(t(sub_mat), n = k_pc, center = TRUE, scale. = FALSE),
-        error = function(e) stats::prcomp(t(sub_mat), center = TRUE, scale. = FALSE)
-      )
-    } else {
-      stats::prcomp(t(sub_mat), center = TRUE, scale. = FALSE)
+    out <- .compute_single_embedding(mat, dname, reduction, n_pcs, perplexity, n_neighbors,
+                                     min_dist, seed, cell_types, batch, ref_ct_actual, ref_pca_centroids)
+    if (!is.null(out)) {
+      ref_pca_centroids <- out$ref_pca_centroids
+      results[[dname]] <- out$df
     }
-    pca_coords <- pca_res$x[, seq_len(min(k_pc, ncol(pca_res$x))), drop = FALSE]
-    
-    # 5. Non-linear Dimension Reduction (UMAP / t-SNE / PCA)
-    dim1 <- pca_coords[, 1]
-    dim2 <- if (ncol(pca_coords) >= 2) pca_coords[, 2] else pca_coords[, 1]
-    
-    if (reduction == "tsne") {
-      perp <- min(perplexity, floor((n_cells - 1) / 3))
-      if (perp < 2) perp <- 2
-      if (requireNamespace("Rtsne", quietly = TRUE)) {
-        tryCatch({
-          tsne_out <- Rtsne::Rtsne(pca_coords, perplexity = perp, check_duplicates = FALSE, pca = FALSE)
-          dim1 <- tsne_out$Y[, 1]
-          dim2 <- tsne_out$Y[, 2]
-        }, error = function(e) {
-          warning("t-SNE computation failed: ", e$message, "; falling back to PCA coordinates.", call. = FALSE)
-        })
-      }
-    } else if (reduction == "umap") {
-      n_neigh <- min(n_neighbors, n_cells - 1)
-      if (n_neigh < 2) n_neigh <- 2
-      if (requireNamespace("uwot", quietly = TRUE)) {
-        tryCatch({
-          umap_out <- uwot::umap(pca_coords, n_neighbors = n_neigh, min_dist = min_dist, seed = seed)
-          dim1 <- umap_out[, 1]
-          dim2 <- umap_out[, 2]
-        }, error = function(e) {
-          warning("UMAP computation failed: ", e$message, "; falling back to PCA coordinates.", call. = FALSE)
-        })
-      }
-    }
-    
-    # 6. Unsupervised Cluster Recovery (k-means on PCA)
-    k_clust <- if (!is.null(ref_ct_actual)) {
-      length(unique(stats::na.omit(ref_ct_actual)))
-    } else if (!is.null(cell_types) && !is.list(cell_types)) {
-      length(unique(stats::na.omit(as.character(cell_types))))
-    } else {
-      3
-    }
-    n_uniq_pc <- nrow(unique(pca_coords))
-    k_clust <- max(2L, min(k_clust, n_uniq_pc - 1L))
-    km_fit <- if (n_uniq_pc >= 3L) {
-      tryCatch(
-        stats::kmeans(pca_coords, centers = k_clust, iter.max = 100L, nstart = 5L, algorithm = "MacQueen"),
-        error = function(e) list(cluster = rep(1L, n_cells), centers = matrix(0, 1L, ncol(pca_coords)))
-      )
-    } else {
-      list(cluster = rep(1L, n_cells), centers = matrix(0, 1L, ncol(pca_coords)))
-    }
-    
-    # 7. Exact Biological Cell Type Alignment & Nearest-Neighbor Transfer
-    ct_vec <- NULL
-    
-    # 1. Direct list lookup
-    if (is.list(cell_types) && !is.data.frame(cell_types) && !is.factor(cell_types)) {
-      if (!is.null(cell_types[[dname]]) && length(cell_types[[dname]]) == n_cells) {
-        ct_vec <- as.character(cell_types[[dname]])
-      } else {
-        m_idx <- match(tolower(dname), tolower(names(cell_types)))
-        if (!is.na(m_idx) && length(cell_types[[m_idx]]) == n_cells) {
-          ct_vec <- as.character(cell_types[[m_idx]])
-        }
-      }
-    }
-    
-    # 2. Match by cell barcode/name
-    if (is.null(ct_vec) && !is.null(cell_types) && !is.null(names(cell_types)) && !is.null(colnames(mat))) {
-      m_cells <- match(colnames(mat), names(cell_types))
-      if (sum(!is.na(m_cells)) >= 0.7 * n_cells) {
-        ct_vec <- as.character(cell_types[m_cells])
-        ct_vec[is.na(ct_vec)] <- "Unknown"
-      }
-    }
-    
-    # 3. Exact cell count match
-    if (is.null(ct_vec) && !is.null(cell_types) && !is.list(cell_types) && length(cell_types) == n_cells) {
-      ct_vec <- as.character(cell_types)
-    }
-    
-    # 4. Reference dataset fallback to ref_ct_actual
-    if (is.null(ct_vec) && dname == "Reference" && !is.null(ref_ct_actual) && length(ref_ct_actual) == n_cells) {
-      ct_vec <- ref_ct_actual
-    }
-    
-    # 5. If this is Reference, compute reference PCA centroids for biological cell types
-    if (dname == "Reference" && !is.null(ct_vec) && !all(grepl("^Cluster ", ct_vec))) {
-      ref_pca_centroids <- list()
-      for (u_ct in unique(ct_vec)) {
-        idx_u <- which(ct_vec == u_ct)
-        if (length(idx_u) > 0) {
-          ref_pca_centroids[[u_ct]] <- colMeans(pca_coords[idx_u, , drop = FALSE])
-        }
-      }
-    }
-    
-    # 6. Simulator dataset: Transfer biological cell type labels from Reference via PCA centroid proximity
-    if (is.null(ct_vec) && dname != "Reference" && length(ref_pca_centroids) >= 2) {
-      ct_vec <- tryCatch({
-        km_centers <- km_fit$centers
-        u_ref_types <- names(ref_pca_centroids)
-        clust_to_type <- character(nrow(km_centers))
-        for (ci in seq_len(nrow(km_centers))) {
-          c_vec <- km_centers[ci, , drop = TRUE]
-          dists <- vapply(u_ref_types, function(rt) {
-            cent <- ref_pca_centroids[[rt]]
-            k_len <- min(length(c_vec), length(cent))
-            sqrt(sum((c_vec[seq_len(k_len)] - cent[seq_len(k_len)])^2))
-          }, numeric(1))
-          clust_to_type[ci] <- u_ref_types[which.min(dists)]
-        }
-        clust_to_type[km_fit$cluster]
-      }, error = function(e) NULL)
-    }
-    
-    # 7. Final fallback: Use ref_ct_actual if length matches, else "Cluster X"
-    if (is.null(ct_vec) || any(is.na(ct_vec)) || length(ct_vec) != n_cells) {
-      if (!is.null(ref_ct_actual) && length(ref_ct_actual) == n_cells) {
-        ct_vec <- ref_ct_actual
-      } else {
-        ct_vec <- paste0("Cluster ", km_fit$cluster)
-      }
-    }
-    
-    b_vec <- if (!is.null(batch)) {
-      if (is.list(batch) && !is.null(batch[[dname]]) && length(batch[[dname]]) == n_cells) {
-        as.character(batch[[dname]])
-      } else if (length(batch) == n_cells) {
-        as.character(batch)
-      } else {
-        "Batch 1"
-      }
-    } else {
-      "Batch 1"
-    }
-    
-    c_names <- if (!is.null(colnames(mat))) colnames(mat) else paste0("Cell_", seq_len(n_cells))
-    
-    df <- data.frame(
-      Cell_ID = c_names,
-      Dim1 = as.numeric(dim1),
-      Dim2 = as.numeric(dim2),
-      Dataset = dname,
-      Role = ifelse(dname == "Reference", "Reference", "Simulated"),
-      Dataset_Type = ifelse(dname == "Reference", "Reference", "Simulated"),
-      Cell_Type = as.character(ct_vec),
-      Cluster = factor(paste0("Cluster_", km_fit$cluster)),
-      Library_Size = as.numeric(libs),
-      Detected_Features = as.numeric(det_feats),
-      Batch = as.character(b_vec),
-      stringsAsFactors = FALSE
-    )
-    results[[dname]] <- df
   }
-  
   if (length(results) == 0) return(data.frame())
-  
   combined_df <- do.call(rbind, results)
-  combined_df$Dataset <- factor(combined_df$Dataset, levels = dataset_names)
+  combined_df$Dataset <- factor(combined_df$Dataset, levels = names(all_datasets))
   rownames(combined_df) <- NULL
   combined_df
 }
@@ -5462,7 +4601,17 @@ plot_dataset_embeddings <- function(embedding_data,
 #' @param embedding_data A \code{data.frame} produced by \code{\link{compute_dataset_embeddings}}.
 #' @param metric_coords Character vector of the 2 coordinate columns used to compute distances (default: \code{c("Dim1", "Dim2")}).
 #'
-#' @return A \code{data.frame} summarizing quantitative embedding quality metrics for each dataset.
+#' @return A \code{data.frame} (with \code{check.names = FALSE}) containing one row per dataset with columns:
+#'   \describe{
+#'     \item{\code{Dataset}}{Dataset label (e.g., \code{"Reference"} or simulator name).}
+#'     \item{\code{Role}}{Dataset role (\code{"Reference"} or \code{"Simulated"}).}
+#'     \item{\code{Cells (N)}}{Number of cells in the embedding.}
+#'     \item{\code{Mean Silhouette}}{Mean silhouette width across cell-type labels rounded to 4 decimals (or \code{NA_real_}).}
+#'     \item{\code{ARI (Cluster Fidelity)}}{Adjusted Rand Index between clustering and cell-type labels rounded to 4 decimals (or \code{NA_real_}).}
+#'     \item{\code{Mean Library Size}}{Mean total counts per cell rounded to 1 decimal.}
+#'     \item{\code{Mean Detected Features}}{Mean detected features per cell rounded to 1 decimal.}
+#'     \item{\code{Library Size Diff (\%)}}{Relative percent difference in mean library size vs. Reference (present when a \code{"Reference"} row exists).}
+#'   }
 #' @examples
 #' data(example_scrna, package = "scSimEval")
 #' emb <- compute_dataset_embeddings(
@@ -5587,6 +4736,39 @@ compute_method_leaderboard <- function(benchmark_data) {
 # 12. combine_benchmark_results() & append_benchmark_results()
 # -------------------------------------------------------------------------
 
+#' Coerce and Standardize One Benchmark Source for Result Combination
+#' @keywords internal
+#' @noRd
+.coerce_benchmark_source <- function(item, i, dataset_names, filter_gold_standard) {
+  if (is.character(item) && length(item) == 1L && file.exists(item)) {
+    ext <- tolower(tools::file_ext(item))
+    if (ext == "rds") item <- readRDS(item)
+    else if (ext == "csv") item <- utils::read.csv(item, stringsAsFactors = FALSE)
+  }
+  df <- if (inherits(item, "scSimEval_multidataset_benchmark") || inherits(item, "scSimEval_consolidated")) {
+    item$granular_benchmark_table %||% item$benchmark_summary_table %||% item$consolidated_summary_table
+  } else if (is.list(item) && !is.data.frame(item)) {
+    item$benchmark_df %||% item$granular_benchmark_table %||% item$benchmark_summary_table %||% item$summary_table %||% item$metrics_summary_table
+  } else if (is.data.frame(item)) item else NULL
+
+  if (is.null(df) || !is.data.frame(df) || nrow(df) == 0L) {
+    warning(sprintf("Item %d could not be parsed as a valid benchmark table; skipping.", i))
+    return(NULL)
+  }
+  if (!"Method" %in% colnames(df)) df$Method <- df$Simulator %||% df$Data_Name %||% "Simulation"
+  if (!"Score_Raw" %in% colnames(df)) df$Score_Raw <- df$Score %||% df$Value %||% NA_real_
+  if (!"Score" %in% colnames(df)) df$Score <- df$Score_Raw
+  if (!"Category" %in% colnames(df)) df$Category <- "Uncategorized"
+
+  if (!is.null(dataset_names) && length(dataset_names) >= i && nzchar(trimws(dataset_names[i]))) {
+    df$Dataset <- trimws(dataset_names[i])
+  } else if (!("Dataset" %in% colnames(df) && any(nzchar(trimws(as.character(df$Dataset[!is.na(df$Dataset)])))))) {
+    df$Dataset <- sprintf("Dataset %d", i)
+  }
+  if (filter_gold_standard) df <- filter_gold_standard_metrics(df)
+  standardize_benchmark_categories(df)
+}
+
 #' Combine and Append Multiple Single-Cell Benchmark Results
 #'
 #' Harmonizes, standardizes, and consolidates multiple single-cell simulator evaluation datasets
@@ -5658,130 +4840,35 @@ combine_benchmark_results <- function(
   filter_gold_standard = TRUE,
   recompute_normalized = TRUE
 ) {
-  # Gather all benchmark inputs
   dots <- list(...)
   if (!is.null(list_of_benchmarks)) {
-    if (is.list(list_of_benchmarks) && !is.data.frame(list_of_benchmarks)) {
-      dots <- c(dots, list_of_benchmarks)
-    } else {
-      dots <- c(dots, list(list_of_benchmarks))
-    }
+    dots <- c(dots, if (is.list(list_of_benchmarks) && !is.data.frame(list_of_benchmarks)) list_of_benchmarks else list(list_of_benchmarks))
   }
+  if (length(dots) == 0L) stop("No benchmark results provided to combine.")
 
-  if (length(dots) == 0) {
-    stop("No benchmark results provided to combine.")
-  }
+  ingested_dfs <- Filter(Negate(is.null), lapply(seq_along(dots), function(i) {
+    .coerce_benchmark_source(dots[[i]], i, dataset_names, filter_gold_standard)
+  }))
+  if (length(ingested_dfs) == 0L) stop("None of the supplied inputs contained valid benchmark data.")
 
-  ingested_dfs <- list()
-  dataset_labels <- character(0)
-
-  for (i in seq_along(dots)) {
-    item <- dots[[i]]
-
-    # If file path, read it
-    if (is.character(item) && length(item) == 1 && file.exists(item)) {
-      file_ext <- tolower(tools::file_ext(item))
-      if (file_ext == "rds") {
-        item <- readRDS(item)
-      } else if (file_ext == "csv") {
-        item <- utils::read.csv(item, stringsAsFactors = FALSE)
-      }
-    }
-
-    # Ingest from session or object
-    df <- NULL
-    if (inherits(item, "scSimEval_multidataset_benchmark") || inherits(item, "scSimEval_consolidated")) {
-      df <- item$granular_benchmark_table %||% item$benchmark_summary_table %||% item$consolidated_summary_table
-    } else if (is.list(item) && !is.data.frame(item)) {
-      df <- item$benchmark_df %||% item$granular_benchmark_table %||% item$benchmark_summary_table %||% item$summary_table %||%
-        item$metrics_summary_table
-    } else if (is.data.frame(item)) {
-      df <- item
-    }
-
-    if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) {
-      warning(sprintf("Item %d could not be parsed as a valid benchmark table; skipping.", i))
-      next
-    }
-
-    # Harmonize column names
-    if (!"Method" %in% colnames(df)) {
-      if ("Simulator" %in% colnames(df)) df$Method <- df$Simulator
-      else if ("Data_Name" %in% colnames(df)) df$Method <- df$Data_Name
-      else df$Method <- "Simulation"
-    }
-    if (!"Score_Raw" %in% colnames(df)) {
-      if ("Score" %in% colnames(df)) df$Score_Raw <- df$Score
-      else if ("Value" %in% colnames(df)) df$Score_Raw <- df$Value
-      else df$Score_Raw <- NA_real_
-    }
-    if (!"Score" %in% colnames(df)) df$Score <- df$Score_Raw
-    if (!"Category" %in% colnames(df)) df$Category <- "Uncategorized"
-
-    # Determine dataset name
-    d_label <- NULL
-    if (!is.null(dataset_names) && length(dataset_names) >= i && nzchar(trimws(dataset_names[i]))) {
-      d_label <- trimws(dataset_names[i])
-      df$Dataset <- d_label
-    } else if ("Dataset" %in% colnames(df) && any(nzchar(trimws(as.character(df$Dataset[!is.na(df$Dataset)]))))) {
-      d_label <- unique(as.character(df$Dataset[!is.na(df$Dataset) & nzchar(trimws(df$Dataset))]))[1]
-    } else {
-      d_label <- sprintf("Dataset %d", i)
-      df$Dataset <- d_label
-    }
-
-    # Apply 48 gold standard metrics filtering
-    if (filter_gold_standard) {
-      df <- filter_gold_standard_metrics(df)
-    }
-
-    # Standardize categories
-    df <- standardize_benchmark_categories(df)
-
-    ingested_dfs[[length(ingested_dfs) + 1]] <- df
-    dataset_labels <- c(dataset_labels, d_label)
-  }
-
-  if (length(ingested_dfs) == 0) {
-    stop("None of the supplied inputs contained valid benchmark data.")
-  }
-
-  # Disambiguate dataset labels if duplicate generic names exist
   unique_dsets <- character(0)
   for (k in seq_along(ingested_dfs)) {
     orig_d <- unique(as.character(ingested_dfs[[k]]$Dataset))
-    if (length(orig_d) == 1) {
-      if (orig_d %in% unique_dsets) {
-        new_d <- sprintf("%s (%d)", orig_d, sum(unique_dsets == orig_d) + 1)
-        ingested_dfs[[k]]$Dataset <- new_d
-        unique_dsets <- c(unique_dsets, new_d)
-      } else {
-        unique_dsets <- c(unique_dsets, orig_d)
-      }
-    } else {
-      unique_dsets <- c(unique_dsets, orig_d)
+    if (length(orig_d) == 1L && orig_d %in% unique_dsets) {
+      orig_d <- sprintf("%s (%d)", orig_d, sum(unique_dsets == orig_d) + 1L)
+      ingested_dfs[[k]]$Dataset <- orig_d
     }
+    unique_dsets <- c(unique_dsets, orig_d)
   }
-
-  # Preserve optional Sim_Cores across partially-annotated inputs
   if (any(vapply(ingested_dfs, function(x) "Sim_Cores" %in% colnames(x), logical(1)))) {
-    ingested_dfs <- lapply(ingested_dfs, function(x) {
-      if (!"Sim_Cores" %in% colnames(x)) x$Sim_Cores <- NA_integer_
-      x
-    })
+    ingested_dfs <- lapply(ingested_dfs, function(x) { if (!"Sim_Cores" %in% colnames(x)) x$Sim_Cores <- NA_integer_; x })
   }
 
-  # Find common columns to rbind
   common_cols <- Reduce(intersect, lapply(ingested_dfs, colnames))
-  required_core <- c("Dataset", "Method", "Category", "Metric", "Score_Raw")
-  missing_core <- setdiff(required_core, common_cols)
-  if (length(missing_core) > 0) {
-    stop(paste("Cannot combine benchmark datasets; missing required columns:", paste(missing_core, collapse = ", ")))
-  }
+  missing_core <- setdiff(c("Dataset", "Method", "Category", "Metric", "Score_Raw"), common_cols)
+  if (length(missing_core) > 0L) stop(paste("Cannot combine benchmark datasets; missing required columns:", paste(missing_core, collapse = ", ")))
 
   combined_granular <- do.call(rbind, lapply(ingested_dfs, function(x) x[, common_cols, drop = FALSE]))
-
-  # Direction-aware score normalization across all combined simulators and datasets
   if (recompute_normalized) {
     combined_granular <- normalize_bubble_scores(combined_granular)
     combined_granular$Score <- combined_granular$Score_Norm
@@ -5789,101 +4876,44 @@ combine_benchmark_results <- function(
 
   all_methods <- sort(unique(as.character(combined_granular$Method)))
   all_datasets <- unique(as.character(combined_granular$Dataset))
-
-  # Cross-Dataset Averaged Summary Table
-  has_norm <- "Score_Norm" %in% colnames(combined_granular)
-  agg_raw <- stats::aggregate(
-    combined_granular$Score_Raw,
-    by = list(Method = combined_granular$Method, Category = combined_granular$Category, Metric = combined_granular$Metric),
-    FUN = mean, na.rm = TRUE
-  )
+  grp_by <- list(Method = combined_granular$Method, Category = combined_granular$Category, Metric = combined_granular$Metric)
+  agg_raw <- stats::aggregate(combined_granular$Score_Raw, by = grp_by, FUN = mean, na.rm = TRUE)
   colnames(agg_raw)[4] <- "Score_Raw"
-
-  if (has_norm) {
-    agg_norm <- stats::aggregate(
-      combined_granular$Score_Norm,
-      by = list(Method = combined_granular$Method, Category = combined_granular$Category, Metric = combined_granular$Metric),
-      FUN = mean, na.rm = TRUE
-    )
-    agg_raw$Score_Norm <- agg_norm[[4]]
+  if ("Score_Norm" %in% colnames(combined_granular)) {
+    agg_raw$Score_Norm <- stats::aggregate(combined_granular$Score_Norm, by = grp_by, FUN = mean, na.rm = TRUE)[[4]]
     agg_raw$Score <- agg_raw$Score_Norm
-  } else {
-    agg_raw$Score <- agg_raw$Score_Raw
+  } else agg_raw$Score <- agg_raw$Score_Raw
+
+  for (extra_c in intersect(c("Property", "Modality"), colnames(combined_granular))) {
+    cmap <- stats::aggregate(stats::as.formula(paste(extra_c, "~ Method + Category + Metric")), data = combined_granular, FUN = function(x) x[1])
+    agg_raw <- merge(agg_raw, cmap, by = c("Method", "Category", "Metric"), all.x = TRUE)
   }
 
-  # Attach Property and Modality if available
-  if ("Property" %in% colnames(combined_granular)) {
-    prop_map <- stats::aggregate(
-      Property ~ Method + Category + Metric,
-      data = combined_granular,
-      FUN = function(x) x[1]
-    )
-    agg_raw <- merge(agg_raw, prop_map, by = c("Method", "Category", "Metric"), all.x = TRUE)
-  }
-  if ("Modality" %in% colnames(combined_granular)) {
-    mod_map <- stats::aggregate(
-      Modality ~ Method + Category + Metric,
-      data = combined_granular,
-      FUN = function(x) x[1]
-    )
-    agg_raw <- merge(agg_raw, mod_map, by = c("Method", "Category", "Metric"), all.x = TRUE)
-  }
-
-  # Cross-dataset statistics (mean, SD, SE, N)
-  calc_stats <- function(v) {
-    v_clean <- v[!is.na(v) & is.finite(v)]
-    n <- length(v_clean)
-    m <- if (n > 0) mean(v_clean) else NA_real_
-    s <- if (n > 1) stats::sd(v_clean) else 0.0
-    se <- if (n > 1) s / sqrt(n) else 0.0
-    c(Mean = m, SD = s, SE = se, N_Datasets = n)
-  }
-
-  stats_list <- stats::aggregate(
-    combined_granular$Score_Raw,
-    by = list(Method = combined_granular$Method, Category = combined_granular$Category, Metric = combined_granular$Metric),
-    FUN = calc_stats
-  )
-  stats_mat <- stats_list[[4]]
-  cross_stats_df <- data.frame(
-    Method      = stats_list$Method,
-    Category    = stats_list$Category,
-    Metric      = stats_list$Metric,
-    Mean_Raw    = stats_mat[, "Mean"],
-    SD_Raw      = stats_mat[, "SD"],
-    SE_Raw      = stats_mat[, "SE"],
-    N_Datasets  = stats_mat[, "N_Datasets"],
-    stringsAsFactors = FALSE
-  )
-
-  # Dataset summary table
-  dset_summary_rows <- lapply(all_datasets, function(ds) {
-    sub_ds <- combined_granular[combined_granular$Dataset == ds, , drop = FALSE]
-    data.frame(
-      Dataset           = ds,
-      Simulators_Count  = length(unique(sub_ds$Method)),
-      Simulators        = paste(unique(sub_ds$Method), collapse = ", "),
-      Metrics_Evaluated = length(unique(sub_ds$Metric)),
-      Records           = nrow(sub_ds),
-      stringsAsFactors  = FALSE
-    )
+  s_list <- stats::aggregate(combined_granular$Score_Raw, by = grp_by, FUN = function(v) {
+    vc <- v[!is.na(v) & is.finite(v)]; n <- length(vc)
+    s <- if (n > 1) stats::sd(vc) else 0
+    c(Mean = if (n > 0) mean(vc) else NA_real_, SD = s, SE = if (n > 1) s / sqrt(n) else 0, N_Datasets = n)
   })
-  dataset_summary_df <- do.call(rbind, dset_summary_rows)
+  s_mat <- s_list[[4]]
+  cross_stats_df <- data.frame(Method = s_list$Method, Category = s_list$Category, Metric = s_list$Metric,
+                               Mean_Raw = s_mat[, "Mean"], SD_Raw = s_mat[, "SD"], SE_Raw = s_mat[, "SE"],
+                               N_Datasets = s_mat[, "N_Datasets"], stringsAsFactors = FALSE)
+
+  dset_summary_df <- do.call(rbind, lapply(all_datasets, function(ds) {
+    sub_ds <- combined_granular[combined_granular$Dataset == ds, , drop = FALSE]
+    data.frame(Dataset = ds, Simulators_Count = length(unique(sub_ds$Method)),
+               Simulators = paste(unique(sub_ds$Method), collapse = ", "),
+               Metrics_Evaluated = length(unique(sub_ds$Metric)), Records = nrow(sub_ds), stringsAsFactors = FALSE)
+  }))
 
   res <- list(
-    benchmark_df            = combined_granular,
-    benchmark_summary_table = agg_raw,
-    granular_benchmark_table = combined_granular,
-    dataset_summary_table   = dataset_summary_df,
-    dataset_summary_df      = dataset_summary_df,
-    cross_dataset_stats     = cross_stats_df,
-    methods                 = all_methods,
-    datasets                = all_datasets,
-    is_multidataset         = length(all_datasets) > 1,
-    n_datasets              = length(all_datasets),
-    n_simulators            = length(all_methods)
+    benchmark_df = combined_granular, benchmark_summary_table = agg_raw,
+    granular_benchmark_table = combined_granular, dataset_summary_table = dset_summary_df,
+    dataset_summary_df = dset_summary_df, cross_dataset_stats = cross_stats_df,
+    methods = all_methods, datasets = all_datasets,
+    is_multidataset = length(all_datasets) > 1L,
+    n_datasets = length(all_datasets), n_simulators = length(all_methods)
   )
-
   class(res) <- c("scSimEval_multidataset_benchmark", "scSimEval_consolidated", "list")
   res
 }

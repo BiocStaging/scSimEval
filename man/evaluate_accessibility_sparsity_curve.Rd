@@ -14,7 +14,13 @@ evaluate_accessibility_sparsity_curve(ref_data, sim_data, poly_degree = 2)
 \item{poly_degree}{Degree of polynomial (default: 2).}
 }
 \value{
-A list containing \code{curve_rmse} and \code{r2_discrepancy} (along with fitted reference and simulated curve parameters).
+A named list quantifying concordance between reference and simulated accessibility-sparsity curves:
+  \describe{
+    \item{\code{curve_rmse}}{Root mean squared error between predicted NZP curves over a 100-point grid spanning the reference mean range.}
+    \item{\code{r2_discrepancy}}{Absolute difference between simulated and reference polynomial \eqn{R^2} values.}
+    \item{\code{ref_r_squared}}{Polynomial \eqn{R^2} of the reference dataset.}
+    \item{\code{sim_r_squared}}{Polynomial \eqn{R^2} of the simulated dataset.}
+  }
 }
 \description{
 Compares the non-linear relationship between peak mean accessibility and non-zero

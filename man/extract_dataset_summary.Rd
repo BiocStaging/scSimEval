@@ -27,7 +27,21 @@ extract_dataset_summary(
 \item{batch_info}{Optional factor or character vector of batch annotations.}
 }
 \value{
-A data.frame with 1 row summarizing the dataset properties.
+A 1-row \code{data.frame} (with \code{check.names = FALSE}) summarizing
+  the dataset with columns:
+  \describe{
+    \item{\code{Dataset / Simulator}}{Character label from \code{method_name}.}
+    \item{\code{Role}}{Dataset role label from \code{role}.}
+    \item{\code{Modality}}{Molecular modality label from \code{modality}.}
+    \item{\code{Cells (N)}}{Formatted total number of cells.}
+    \item{\code{Features (P)}}{Formatted total number of features.}
+    \item{\code{Sparsity}}{Percentage of zero entries formatted to two decimal places.}
+    \item{\code{Cell Types (Groups)}}{Formatted count of unique non-missing cell types, or \code{"Not specified"}.}
+    \item{\code{Batches}}{Formatted count of unique non-missing batches (defaults to \code{"1"}).}
+    \item{\code{Median Lib Size}}{Formatted median total counts per cell.}
+    \item{\code{Median Detected Features}}{Formatted median number of detected (non-zero) features per cell.}
+    \item{\code{Mean Expression}}{Formatted overall mean count across all matrix entries.}
+  }
 }
 \description{
 Computes key dimensional and biological properties from single-cell or multiomics count matrices,
