@@ -394,9 +394,25 @@ if (!exists("normalize_bubble_scores", mode = "function")) {
 # Helper Functions: Robust Matrix and Label Reading
 # ==============================================================================
 .app_get_seurat_counts <- function(obj) {
+  if (inherits(obj, "Seurat")) {
+    obj <- tryCatch(scSimEval:::.sanitize_signac_assays(obj), error = function(e) obj)
+  }
+  cts <- tryCatch(scSimEval:::.get_seurat_counts(obj), error = function(e) NULL)
+  if (!is.null(cts)) return(cts)
   tryCatch(
     Seurat::GetAssayData(obj, layer = "counts"),
-    error = function(e) Seurat::GetAssayData(obj, slot = "counts")
+    error = function(e) {
+      if (length(obj@assays) > 0) {
+        def_a <- tryCatch(Seurat::DefaultAssay(obj), error = function(e2) names(obj@assays)[1])
+        a_obj <- obj[[def_a]]
+        if (inherits(a_obj, "Assay5")) {
+          return(tryCatch(SeuratObject::LayerData(a_obj, layer = "counts"), error = function(e3) a_obj$counts))
+        } else if (methods::.hasSlot(a_obj, "counts")) {
+          return(methods::slot(a_obj, "counts"))
+        }
+      }
+      NULL
+    }
   )
 }
 
@@ -6150,7 +6166,7 @@ server <- function(input, output, session) {
       "    if (inherits(m, 'SingleCellExperiment')) {",
       "      m <- SummarizedExperiment::assay(m, 'counts')",
       "    } else if (inherits(m, 'Seurat')) {",
-      "      m <- tryCatch(Seurat::GetAssayData(m, layer = 'counts'), error = function(e) tryCatch(Seurat::GetAssayData(m, slot = 'counts'), error = function(e2) m))",
+      "      m <- tryCatch(scSimEval:::.get_seurat_counts(m), error = function(e) tryCatch(Seurat::GetAssayData(m, layer = 'counts'), error = function(e2) m))",
       "    } else if (is.list(m) && !is.data.frame(m) && !inherits(m, 'Matrix')) {",
       "      candidate_names <- c('new_count', 'counts', 'sim_counts', 'simulated', 'sim_rna', 'sim_atac', 'mat')",
       "      found <- intersect(candidate_names, names(m))",
@@ -11050,7 +11066,7 @@ server <- function(input, output, session) {
       "  if (endsWith(tolower(path), '.rds')) {",
       "    m <- readRDS(path)",
       "    if (inherits(m, 'SingleCellExperiment')) m <- SummarizedExperiment::assay(m, 'counts')",
-      "    else if (inherits(m, 'Seurat')) m <- tryCatch(Seurat::GetAssayData(m, layer = 'counts'), error = function(e) tryCatch(Seurat::GetAssayData(m, slot = 'counts'), error = function(e2) m))",
+      "    else if (inherits(m, 'Seurat')) m <- tryCatch(scSimEval:::.get_seurat_counts(m), error = function(e) tryCatch(Seurat::GetAssayData(m, layer = 'counts'), error = function(e2) m))",
       "    else if (is.list(m) && !is.matrix(m) && !inherits(m, 'Matrix')) {",
       "      for (item in m) if (is.matrix(item) || inherits(item, 'Matrix')) { m <- item; break }",
       "    }",
@@ -11153,7 +11169,7 @@ server <- function(input, output, session) {
       "  if (endsWith(tolower(path), '.rds')) {",
       "    m <- readRDS(path)",
       "    if (inherits(m, 'SingleCellExperiment')) m <- SummarizedExperiment::assay(m, 'counts')",
-      "    else if (inherits(m, 'Seurat')) m <- tryCatch(Seurat::GetAssayData(m, layer = 'counts'), error = function(e) tryCatch(Seurat::GetAssayData(m, slot = 'counts'), error = function(e2) m))",
+      "    else if (inherits(m, 'Seurat')) m <- tryCatch(scSimEval:::.get_seurat_counts(m), error = function(e) tryCatch(Seurat::GetAssayData(m, layer = 'counts'), error = function(e2) m))",
       "    else if (is.list(m) && !is.matrix(m) && !inherits(m, 'Matrix')) {",
       "      for (item in m) if (is.matrix(item) || inherits(item, 'Matrix')) { m <- item; break }",
       "    }",

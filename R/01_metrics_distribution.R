@@ -28,8 +28,23 @@ extract_cell_properties <- function(data, max_cells_cor = 1000, n_top_hvgs = 500
     data <- SummarizedExperiment::assay(data, "counts")
   } else if (inherits(data, "Seurat")) {
     data <- tryCatch(
-      Seurat::GetAssayData(data, slot = "counts"),
-      error = function(e) Seurat::GetAssayData(data, layer = "counts")
+      .get_seurat_counts(data),
+      error = function(e) {
+        tryCatch(
+          Seurat::GetAssayData(data, layer = "counts"),
+          error = function(e2) {
+            def_a <- tryCatch(Seurat::DefaultAssay(data), error = function(e3) names(data@assays)[1])
+            a_obj <- data[[def_a]]
+            if (inherits(a_obj, "Assay5")) {
+              tryCatch(SeuratObject::LayerData(a_obj, layer = "counts"), error = function(e4) a_obj$counts)
+            } else if (methods::.hasSlot(a_obj, "counts")) {
+              methods::slot(a_obj, "counts")
+            } else {
+              data
+            }
+          }
+        )
+      }
     )
   }
   
@@ -165,8 +180,23 @@ extract_feature_properties <- function(data, n_top_cor = 500, modality = NULL, v
     data <- SummarizedExperiment::assay(data, "counts")
   } else if (inherits(data, "Seurat")) {
     data <- tryCatch(
-      Seurat::GetAssayData(data, slot = "counts"),
-      error = function(e) Seurat::GetAssayData(data, layer = "counts")
+      .get_seurat_counts(data),
+      error = function(e) {
+        tryCatch(
+          Seurat::GetAssayData(data, layer = "counts"),
+          error = function(e2) {
+            def_a <- tryCatch(Seurat::DefaultAssay(data), error = function(e3) names(data@assays)[1])
+            a_obj <- data[[def_a]]
+            if (inherits(a_obj, "Assay5")) {
+              tryCatch(SeuratObject::LayerData(a_obj, layer = "counts"), error = function(e4) a_obj$counts)
+            } else if (methods::.hasSlot(a_obj, "counts")) {
+              methods::slot(a_obj, "counts")
+            } else {
+              data
+            }
+          }
+        )
+      }
     )
   }
   

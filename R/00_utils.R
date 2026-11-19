@@ -436,21 +436,16 @@ tfidf_transform <- function(mat, scale_factor = 1e4) {
   tryCatch(
     Seurat::GetAssayData(obj, layer = "counts"),
     error = function(e) {
-      tryCatch(
-        Seurat::GetAssayData(obj, slot = "counts"),
-        error = function(e2) {
-          if (!inherits(obj, "Seurat") || length(obj@assays) == 0L) return(NULL)
-          assay_name <- names(obj@assays)[1]
-          assay_obj <- obj[[assay_name]]
-          if (inherits(assay_obj, "Assay5")) {
-            return(assay_obj$counts)
-          }
-          if (inherits(assay_obj, "Assay")) {
-            return(assay_obj@counts)
-          }
-          NULL
-        }
-      )
+      if (!inherits(obj, "Seurat") || length(obj@assays) == 0L) return(NULL)
+      assay_name <- tryCatch(Seurat::DefaultAssay(obj), error = function(e2) names(obj@assays)[1])
+      assay_obj <- obj[[assay_name]]
+      if (inherits(assay_obj, "Assay5")) {
+        return(tryCatch(SeuratObject::LayerData(assay_obj, layer = "counts"), error = function(e3) assay_obj$counts))
+      }
+      if (methods::.hasSlot(assay_obj, "counts")) {
+        return(methods::slot(assay_obj, "counts"))
+      }
+      NULL
     }
   )
 }
@@ -639,10 +634,15 @@ extract_dataset_summary <- function(mat, role = "Reference", method_name = "Data
     tryCatch(
       Seurat::GetAssayData(obj, assay = assay_name, layer = "counts"),
       error = function(e2) {
-        tryCatch(
-          Seurat::GetAssayData(obj, assay = assay_name, slot = "counts"),
-          error = function(e3) NULL
-        )
+        if (!inherits(obj, "Seurat") || length(obj@assays) == 0L) return(NULL)
+        assay_obj <- obj[[assay_name]]
+        if (inherits(assay_obj, "Assay5")) {
+          return(tryCatch(SeuratObject::LayerData(assay_obj, layer = "counts"), error = function(e3) assay_obj$counts))
+        }
+        if (methods::.hasSlot(assay_obj, "counts")) {
+          return(methods::slot(assay_obj, "counts"))
+        }
+        NULL
       }
     )
   })
@@ -777,15 +777,13 @@ validate_sc_object <- function(obj, arg_name = "data", reduction_name = NULL, mo
     counts_mat <- tryCatch(
       .seurat_assay_counts(obj, target_assay),
       error = function(e0) tryCatch(
-        Seurat::GetAssayData(obj, assay = target_assay, slot = "counts"),
+        Seurat::GetAssayData(obj, assay = target_assay, layer = "counts"),
         error = function(e) {
           tryCatch(
-            Seurat::GetAssayData(obj, assay = target_assay, layer = "counts"),
+            obj[[target_assay]]$counts,
             error = function(e2) {
-              tryCatch(
-                obj[[target_assay]]$counts,
-                error = function(e3) NULL
-              )
+              a_obj <- obj[[target_assay]]
+              if (methods::.hasSlot(a_obj, "counts")) methods::slot(a_obj, "counts") else NULL
             }
           )
         }

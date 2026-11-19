@@ -106,14 +106,14 @@
     return(counts)
   }
 
-  # Object-level layer/slot fallbacks
+  # Object-level layer fallback
   counts <- tryCatch(
     Seurat::GetAssayData(obj, assay = assay_name, layer = "counts"),
     error = function(e) {
-      tryCatch(
-        Seurat::GetAssayData(obj, assay = assay_name, slot = "counts"),
-        error = function(e2) NULL
-      )
+      if (methods::.hasSlot(assay_obj, "counts")) {
+        return(methods::slot(assay_obj, "counts"))
+      }
+      NULL
     }
   )
   if (!is.null(counts) && length(dim(counts)) == 2L && nrow(counts) > 0L) {

@@ -1552,10 +1552,35 @@ plot_distribution_qc <- function(
     }
   }
   as_matrix_safe <- function(x) {
+    if (is.null(x)) return(NULL)
     if (inherits(x, "SingleCellExperiment")) {
-      as.matrix(SummarizedExperiment::assay(x, "counts"))
+      cnts <- tryCatch(SummarizedExperiment::assay(x, "counts"), error = function(e) NULL)
+      if (is.null(cnts)) cnts <- tryCatch(SummarizedExperiment::assay(x, 1), error = function(e) NULL)
+      return(as.matrix(cnts %||% x))
     } else if (inherits(x, "Seurat")) {
-      as.matrix(tryCatch(x[["RNA"]]$counts, error = function(e) Seurat::GetAssayData(x, slot = "counts")))
+      x <- .sanitize_signac_assays(x)
+      cts <- tryCatch(.get_seurat_counts(x), error = function(e) NULL)
+      if (is.null(cts)) {
+        cts <- tryCatch(
+          Seurat::GetAssayData(x, layer = "counts"),
+          error = function(e) {
+            def_a <- tryCatch(Seurat::DefaultAssay(x), error = function(e2) names(x@assays)[1])
+            a_obj <- tryCatch(x[[def_a]], error = function(e2) NULL)
+            if (!is.null(a_obj)) {
+              if (inherits(a_obj, "Assay5")) {
+                tryCatch(SeuratObject::LayerData(a_obj, layer = "counts"), error = function(e3) a_obj$counts)
+              } else if (methods::.hasSlot(a_obj, "counts")) {
+                methods::slot(a_obj, "counts")
+              } else {
+                NULL
+              }
+            } else {
+              NULL
+            }
+          }
+        )
+      }
+      return(as.matrix(cts %||% x))
     } else {
       as.matrix(x)
     }

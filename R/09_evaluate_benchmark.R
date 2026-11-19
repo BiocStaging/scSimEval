@@ -1892,7 +1892,9 @@ benchmark_simulation_suite <- function(
     cnts_ref <- if (inherits(ref_m, "SingleCellExperiment")) {
       SingleCellExperiment::counts(ref_m)
     } else if (inherits(ref_m, "Seurat")) {
-      tryCatch(ref_m[["RNA"]]$counts, error = function(e) Seurat::GetAssayData(ref_m, slot = "counts"))
+      tryCatch(.get_seurat_counts(ref_m), error = function(e) {
+        tryCatch(Seurat::GetAssayData(ref_m, layer = "counts"), error = function(e2) ref_m)
+      })
     } else {
       ref_m
     }
