@@ -12,7 +12,7 @@ calc_ks(ref, sim)
 \item{sim}{Numeric vector of simulated values.}
 }
 \value{
-Maximum vertical distance between empirical CDFs (between 0 and 1).
+Numeric scalar in \code{[0, 1]} giving the maximum vertical distance between empirical CDFs.
 }
 \description{
 Calculate Kolmogorov-Smirnov Distance (1D KS)

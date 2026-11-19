@@ -27,8 +27,9 @@ across standard benchmarking metrics (Duo et al., Genome Biology 2024 / Simpipe)
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-demonstrations" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Demonstrations</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-demonstrations"><li><a class="dropdown-item" href="../articles/demo-scrna.html">1. scRNA-seq Simulation Evaluation</a></li>
     <li><a class="dropdown-item" href="../articles/demo-scatac.html">2. scATAC-seq Simulation Evaluation</a></li>
-    <li><a class="dropdown-item" href="../articles/demo-multiomics.html">3. Multiomics (RNA + ATAC) Evaluation</a></li>
-    <li><a class="dropdown-item" href="../articles/demo-saved-rds.html">4. Analyzing Pre-Saved Benchmark (.rds)</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-multiomics.html">3. Paired Multiomics (RNA + ATAC) Evaluation</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-unpaired-multiomics.html">4. Unpaired Multiomics (RNA + ATAC) Evaluation</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-saved-rds.html">5. Analyzing Pre-Saved Benchmark (.rds)</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../articles/metrics-catalog.html">Metric Catalog (56 Metrics)</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -177,14 +178,97 @@ requires genuine biological replicates to prevent pseudoreplication bias.</p>
 <span class="r-in"><span>  batch_ref <span class="op">=</span> <span class="va">rep_id</span>,</span></span>
 <span class="r-in"><span>  batch_sim <span class="op">=</span> <span class="va">rep_id</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Zero sample variances detected, have been offset away from zero</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>procv: no points with non-zero weight</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Zero sample variances detected, have been offset away from zero</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Zero sample variances detected, have been offset away from zero</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Zero sample variances detected, have been offset away from zero</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Zero sample variances detected, have been offset away from zero</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Zero sample variances detected, have been offset away from zero</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
 <span class="r-in"><span><span class="va">res</span><span class="op">$</span><span class="va">da_summary_table</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                             SubCategory          Metric      Value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 scATAC-seq Differential Accessibility pval_dist_score 0.85633794</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 scATAC-seq Differential Accessibility        accuracy 0.81666667</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 scATAC-seq Differential Accessibility       precision 0.50000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 scATAC-seq Differential Accessibility          recall 0.09090909</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 scATAC-seq Differential Accessibility        f1_score 0.15384615</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 scATAC-seq Differential Accessibility             auc 0.83673469</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                             SubCategory          Metric     Value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 scATAC-seq Differential Accessibility pval_dist_score 0.7915991</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 scATAC-seq Differential Accessibility        accuracy 0.9489286</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 scATAC-seq Differential Accessibility       precision 0.4340659</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 scATAC-seq Differential Accessibility          recall 0.4365079</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 scATAC-seq Differential Accessibility        f1_score 0.4350649</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 scATAC-seq Differential Accessibility             auc 0.8362706</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                         Direction</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1    Higher is better (1.0 = uniform null p-values, no inflation)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2             Higher is better (1.0 = perfect DAR classification)</span>

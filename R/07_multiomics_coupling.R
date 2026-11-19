@@ -266,6 +266,22 @@ calc_graph_connectivity <- function(embed, cell_type, k = 15) {
 }
 
 
+#' Safe K-Means Clustering Guarding Unique Row Count
+#' @keywords internal
+#' @noRd
+.safe_kmeans_labels <- function(embed, n_clusters, n_types) {
+  k_clust <- if (!is.null(n_clusters)) as.integer(n_clusters) else as.integer(n_types)
+  n_uniq <- nrow(unique(embed))
+  if (is.na(n_uniq) || n_uniq < 2L) return(NULL)
+  k_clust <- max(2L, min(k_clust, n_uniq - 1L))
+  km <- tryCatch(
+    stats::kmeans(embed, centers = k_clust, nstart = 10L, iter.max = 100L, algorithm = "MacQueen"),
+    error = function(e) NULL
+  )
+  if (is.null(km)) return(NULL)
+  km$cluster
+}
+
 #' Calculate Integration Adjusted Rand Index (ARI)
 #'
 #' Computes the Adjusted Rand Index (ARI) evaluating the concordance between
@@ -300,16 +316,9 @@ calc_integration_ari <- function(embed, cell_type, n_clusters = NULL) {
   }
   n_types <- length(unique(cell_type))
   if (n_types <= 1) return(1.0)
-  
-  k_clust <- if (!is.null(n_clusters)) n_clusters else n_types
-  k_clust <- max(2, min(k_clust, nrow(embed) - 1))
-  
-  km <- tryCatch(
-    suppressWarnings(stats::kmeans(embed, centers = k_clust, nstart = 10, iter.max = 50)),
-    error = function(e) NULL
-  )
-  if (is.null(km)) return(NA_real_)
-  pred_cl <- km$cluster
+
+  pred_cl <- .safe_kmeans_labels(embed, n_clusters, n_types)
+  if (is.null(pred_cl)) return(NA_real_)
   
   if (requireNamespace("mclust", quietly = TRUE)) {
     ari <- mclust::adjustedRandIndex(pred_cl, cell_type)
@@ -362,16 +371,9 @@ calc_integration_nmi <- function(embed, cell_type, n_clusters = NULL) {
   }
   n_types <- length(unique(cell_type))
   if (n_types <= 1) return(1.0)
-  
-  k_clust <- if (!is.null(n_clusters)) n_clusters else n_types
-  k_clust <- max(2, min(k_clust, nrow(embed) - 1))
-  
-  km <- tryCatch(
-    suppressWarnings(stats::kmeans(embed, centers = k_clust, nstart = 10, iter.max = 50)),
-    error = function(e) NULL
-  )
-  if (is.null(km)) return(NA_real_)
-  pred_cl <- km$cluster
+
+  pred_cl <- .safe_kmeans_labels(embed, n_clusters, n_types)
+  if (is.null(pred_cl)) return(NA_real_)
   
   tab <- table(pred_cl, cell_type)
   total <- sum(tab)
@@ -426,7 +428,7 @@ calc_integration_nmi <- function(embed, cell_type, n_clusters = NULL) {
 #' @param cell_types Optional cell-type vector or list/data.frame of annotations for each cell.
 #' @param batch_info Optional batch/donor/replicate vector or list/data.frame of annotations for each cell.
 #' @param embed Optional precomputed joint embedding matrix (cells x dimensions). If NULL, computed automatically from \code{sim_multi}.
-#' @param reduction_name Optional name of the precomputed dimensional reduction to extract from Seurat/SCE objects.
+#' @param reduction_name Optional name of the precomputed dimensional reduction to extract from \code{SingleCellExperiment} objects.
 #' @param n_pcs Number of principal components per modality to retain for joint embedding (default 15).
 #' @param k Number of nearest neighbors for graph-based metrics (default 30).
 #' @param threads Number of CPU threads for parallel processing (default 1).
@@ -454,7 +456,7 @@ evaluate_multiomics_integration <- function(
   verbose = TRUE
 ) {
   threads <- .set_parallel_threads(threads)
-  # Strict standardization check (Seurat / SingleCellExperiment)
+  # Enforce SingleCellExperiment input convention
   val_sim <- validate_multiomics_input(sim_multi, "sim_multi", reduction_name = reduction_name)
   sim_multi <- list(val_sim$m1, val_sim$m2)
   if (!is.null(ref_multi)) {

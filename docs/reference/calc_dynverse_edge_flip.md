@@ -1,8 +1,7 @@
 # Compute dynverse Edge Flip Trajectory Topology Similarity
 
 Quantifies topological similarity between reference and simulated
-milestone graphs via minimum edge flip edit distance
-([`dyneval::calculate_edge_flip`](https://rdrr.io/pkg/dyneval/man/calculate_edge_flip.html)).
+milestone graphs via normalized edge agreement.
 
 ## Usage
 

@@ -118,7 +118,7 @@ separate jobs with distinct CPU core allocations and memory footprints.
 <code>scSimEval</code> natively supports both combined and
 modality-separated resource tracking.</p>
 <p><strong><code>scSimEval</code></strong> handles unpaired designs
-automatically when <code>is_paired = FALSE</code> in
+automatically when <code>pairing = "unpaired"</code> in
 <code><a href="../reference/evaluate_multiomics_accuracy.html">evaluate_multiomics_accuracy()</a></code>, evaluating all <strong>8
 active categories</strong>: 1. <strong>Category I: Distributional
 Properties</strong> — Independent univariate distributional distances
@@ -152,13 +152,13 @@ logs.</p>
 <h2 id="input-data-requirements-case-study-setup">1. Input Data Requirements &amp; Case Study Setup<a class="anchor" aria-label="anchor" href="#input-data-requirements-case-study-setup"></a>
 </h2>
 <p>For unpaired evaluation, <code>scSimEval</code> accepts
-modality-indexed lists for count objects, cell-type labels, and batch
-identifiers: *
-<code>ref_multi = list(RNA = ref_rna_obj, ATAC = ref_atac_obj)</code>
+modality-indexed lists of <code>SingleCellExperiment</code> objects
+(with <code>cell_type</code> and <code>batch</code> in
+<code>colData</code> of each SCE, or a stacked multi-modal SCE annotated
+with <code>colData$modality</code>): *
+<code>ref_multi = list(RNA = ref_rna_sce, ATAC = ref_atac_sce)</code>
 (independent cell barcodes and counts) *
-<code>sim_multi = list(RNA = sim_rna_obj, ATAC = sim_atac_obj)</code> *
-<code>cell_types = list(RNA = ct_rna, ATAC = ct_atac)</code> and
-<code>batch_info = list(RNA = bt_rna, ATAC = bt_atac)</code></p>
+<code>sim_multi = list(RNA = sim_rna_sce, ATAC = sim_atac_sce)</code></p>
 <div class="section level4">
 <h4 id="case-study-soybean-hypocotyl-unpaired-multiomics-3-simulators">Case Study: Soybean Hypocotyl Unpaired Multiomics (3
 Simulators)<a class="anchor" aria-label="anchor" href="#case-study-soybean-hypocotyl-unpaired-multiomics-3-simulators"></a>
@@ -218,7 +218,7 @@ summarized below:</p>
 <div class="section level2">
 <h2 id="running-the-unpaired-multiomics-benchmarking-pipeline">2. Running the Unpaired Multiomics Benchmarking Pipeline<a class="anchor" aria-label="anchor" href="#running-the-unpaired-multiomics-benchmarking-pipeline"></a>
 </h2>
-<p>Setting <code>is_paired = FALSE</code> in
+<p>Setting <code>pairing = "unpaired"</code> in
 <code><a href="../reference/evaluate_multiomics_accuracy.html">evaluate_multiomics_accuracy()</a></code> activates independent
 modality evaluation and unpaired joint-embedding integration scoring.
 Below is the exact workflow demonstrating both combined
@@ -227,22 +227,17 @@ Below is the exact workflow demonstrating both combined
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval/">scSimEval</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Validate empirical reference (extracts independent RNA and ATAC assays + metadata)</span></span>
+<span><span class="co"># Validate empirical reference (extracts independent RNA and ATAC SCE layers + colData)</span></span>
 <span><span class="va">ref_val</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/validate_multiomics_input.html">validate_multiomics_input</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"soy_hypocotyl_reference_integrated_combined.rds"</span><span class="op">)</span>,</span>
 <span>  <span class="st">"Soybean Hypocotyl (Unpaired)"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">eval_ct</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>RNA <span class="op">=</span> <span class="va">ref_val</span><span class="op">$</span><span class="va">cell_types</span><span class="op">$</span><span class="va">RNA</span>, ATAC <span class="op">=</span> <span class="va">ref_val</span><span class="op">$</span><span class="va">cell_types</span><span class="op">$</span><span class="va">ATAC</span><span class="op">)</span></span>
-<span><span class="va">eval_bt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>RNA <span class="op">=</span> <span class="va">ref_val</span><span class="op">$</span><span class="va">batch_info</span><span class="op">$</span><span class="va">RNA</span>, ATAC <span class="op">=</span> <span class="va">ref_val</span><span class="op">$</span><span class="va">batch_info</span><span class="op">$</span><span class="va">ATAC</span><span class="op">)</span></span>
-<span></span>
 <span><span class="co"># Example A: Combined resource tracking (scMultiSim / scCross)</span></span>
 <span><span class="va">eval_scmultisim</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/evaluate_multiomics_accuracy.html">evaluate_multiomics_accuracy</a></span><span class="op">(</span></span>
 <span>  ref_multi         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>RNA <span class="op">=</span> <span class="va">ref_val</span><span class="op">$</span><span class="va">m1_obj</span>, ATAC <span class="op">=</span> <span class="va">ref_val</span><span class="op">$</span><span class="va">m2_obj</span><span class="op">)</span>,</span>
 <span>  sim_multi         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>RNA <span class="op">=</span> <span class="va">sim_val</span><span class="op">$</span><span class="va">m1_obj</span>, ATAC <span class="op">=</span> <span class="va">sim_val</span><span class="op">$</span><span class="va">m2_obj</span><span class="op">)</span>,</span>
-<span>  is_paired         <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  cell_types        <span class="op">=</span> <span class="va">eval_ct</span>,</span>
-<span>  batch_info        <span class="op">=</span> <span class="va">eval_bt</span>,</span>
+<span>  pairing           <span class="op">=</span> <span class="st">"unpaired"</span>,</span>
 <span>  elapsed_time      <span class="op">=</span> <span class="fl">216.804</span>,</span>
 <span>  time_unit         <span class="op">=</span> <span class="st">"seconds"</span>,</span>
 <span>  memory_mb         <span class="op">=</span> <span class="fl">2774.70</span>,</span>
@@ -257,14 +252,11 @@ Below is the exact workflow demonstrating both combined
 <span><span class="va">eval_scdesign3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/evaluate_multiomics_accuracy.html">evaluate_multiomics_accuracy</a></span><span class="op">(</span></span>
 <span>  ref_multi         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>RNA <span class="op">=</span> <span class="va">ref_val</span><span class="op">$</span><span class="va">m1_obj</span>, ATAC <span class="op">=</span> <span class="va">ref_val</span><span class="op">$</span><span class="va">m2_obj</span><span class="op">)</span>,</span>
 <span>  sim_multi         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>RNA <span class="op">=</span> <span class="va">sim_d3</span><span class="op">$</span><span class="va">m1_obj</span>,  ATAC <span class="op">=</span> <span class="va">sim_d3</span><span class="op">$</span><span class="va">m2_obj</span><span class="op">)</span>,</span>
-<span>  is_paired         <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  cell_types        <span class="op">=</span> <span class="va">eval_ct</span>,</span>
-<span>  batch_info        <span class="op">=</span> <span class="va">eval_bt</span>,</span>
-<span>  elapsed_time_rna  <span class="op">=</span> <span class="fl">89.19</span>,   elapsed_time_atac <span class="op">=</span> <span class="fl">268.28</span>,</span>
-<span>  memory_mb_rna     <span class="op">=</span> <span class="fl">2190.40</span>, memory_mb_atac    <span class="op">=</span> <span class="fl">9334.00</span>,</span>
-<span>  time_unit_rna     <span class="op">=</span> <span class="st">"seconds"</span>, time_unit_atac  <span class="op">=</span> <span class="st">"seconds"</span>,</span>
-<span>  memory_unit_rna   <span class="op">=</span> <span class="st">"MiB"</span>,     memory_unit_atac <span class="op">=</span> <span class="st">"MiB"</span>,</span>
-<span>  sim_cores_rna     <span class="op">=</span> <span class="fl">16L</span>,       sim_cores_atac  <span class="op">=</span> <span class="fl">4L</span>,</span>
+<span>  pairing           <span class="op">=</span> <span class="st">"unpaired"</span>,</span>
+<span>  separate_resources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    rna  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>elapsed_time <span class="op">=</span> <span class="fl">89.19</span>,  memory_mb <span class="op">=</span> <span class="fl">2190.40</span>, time_unit <span class="op">=</span> <span class="st">"seconds"</span>, memory_unit <span class="op">=</span> <span class="st">"MiB"</span>, sim_cores <span class="op">=</span> <span class="fl">16L</span><span class="op">)</span>,</span>
+<span>    atac <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>elapsed_time <span class="op">=</span> <span class="fl">268.28</span>, memory_mb <span class="op">=</span> <span class="fl">9334.00</span>, time_unit <span class="op">=</span> <span class="st">"seconds"</span>, memory_unit <span class="op">=</span> <span class="st">"MiB"</span>, sim_cores <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
 <span>  compute_bivariate <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  threads           <span class="op">=</span> <span class="fl">16L</span>,</span>
 <span>  verbose           <span class="op">=</span> <span class="cn">FALSE</span></span>
@@ -281,7 +273,7 @@ Below is the exact workflow demonstrating both combined
 categories ranks the 3 candidate simulators on Soybean Hypocotyl
 unpaired multiomics:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df_norm</span> <span class="op">&lt;-</span> <span class="fu">scSimEval</span><span class="fu">:::</span><span class="fu"><a href="../reference/normalize_bubble_scores.html">.normalize_bubble_scores</a></span><span class="op">(</span><span class="va">final_benchmark_df</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">df_norm</span> <span class="op">&lt;-</span> <span class="fu">scSimEval</span><span class="fu">::</span><span class="fu"><a href="../reference/normalize_bubble_scores.html">normalize_bubble_scores</a></span><span class="op">(</span><span class="va">final_benchmark_df</span><span class="op">)</span></span>
 <span><span class="va">agg</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span><span class="va">Score_Norm</span> <span class="op">~</span> <span class="va">Method</span> <span class="op">+</span> <span class="va">Category</span>, data <span class="op">=</span> <span class="va">df_norm</span>, FUN <span class="op">=</span> <span class="va">mean</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">leaderboard</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span><span class="va">Score_Norm</span> <span class="op">~</span> <span class="va">Method</span>, data <span class="op">=</span> <span class="va">agg</span>, FUN <span class="op">=</span> <span class="va">mean</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">leaderboard</span> <span class="op">&lt;-</span> <span class="va">leaderboard</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">leaderboard</span><span class="op">$</span><span class="va">Score_Norm</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="op">]</span></span>

@@ -1,11 +1,9 @@
 # Benchmark Simulation Methods Across Multiple Single-Cell Datasets
 
-A unified, high-performance, and beginner-friendly benchmarking runner
-designed for multi-dataset and multi-simulator studies (e.g., 16
-datasets x 6 simulators). Automatically manages memory allocation with
-sparse matrix coercions, parallel execution across datasets, progress
-tracking, and produces both granular and cross-dataset aggregated
-benchmark tables ready for visualization.
+Unified benchmarking runner for multi-dataset and multi-simulator
+studies. Manages sparse matrix coercion, `SingleCellExperiment`
+conversion, parallel metric computation, and produces both granular and
+cross-dataset aggregated summary tables ready for visualization.
 
 ## Usage
 
@@ -14,7 +12,7 @@ benchmark_simulation_suite(
   datasets,
   simulators,
   compute_bivariate = FALSE,
-  threads = 1,
+  threads = 1L,
   auto_sparse = TRUE,
   run_gc = TRUE,
   save_path = NULL,
@@ -26,68 +24,86 @@ benchmark_simulation_suite(
 
 - datasets:
 
-  A named list of empirical reference datasets. Each item can be a
-  single-cell count matrix (features x cells), a path to an RDS/CSV
-  matrix file, or a list with `ref`, optional `cell_types`, and optional
-  `batch_info`.
+  Named list of empirical reference datasets (`SingleCellExperiment`,
+  count matrix, file path, or list containing `ref`, `cell_types`,
+  `batch_info`).
 
 - simulators:
 
-  A named list of simulation methods. Each element must be a named list
-  of simulated count matrices (or matrix file paths) corresponding to
-  the datasets in `datasets`. Example:
-  `list(Splatter = list(D1 = sim_splat_d1, D2 = sim_splat_d2), scDesign3 = ...)`.
+  Named list of simulator outputs corresponding to `datasets`.
 
 - compute_bivariate:
 
-  Logical. Whether to compute 2D bivariate tests. Default `FALSE` for
-  fast high-throughput execution.
+  Logical; compute 2D bivariate tests. Default `FALSE`.
 
 - threads:
 
-  Number of threads / parallel workers. Default is `1`.
+  Integer number of parallel workers. Default `1L`.
 
 - auto_sparse:
 
-  Logical. Automatically coerce dense count matrices to `dgCMatrix` to
-  minimize RAM usage. Default `TRUE`.
+  Logical; coerce dense matrices to `dgCMatrix`. Default `TRUE`.
 
 - run_gc:
 
-  Logical. Run garbage collection
-  ([`gc()`](https://rdrr.io/r/base/gc.html)) after each dataset
-  evaluation to prevent memory accumulation on HPC nodes. Default
-  `TRUE`.
+  Logical; run [`gc()`](https://rdrr.io/r/base/gc.html) between
+  datasets. Default `TRUE`.
 
 - save_path:
 
-  Optional file path (ending in `.rds`) to directly persist the
-  consolidated benchmark bundle for loading into Shiny Studio.
+  Optional `.rds` path to save the output bundle.
 
 - verbose:
 
-  Logical. Print informative progress logging. Default `TRUE`.
+  Logical; print progress logging. Default `TRUE`.
 
 ## Value
 
-An object of class `scSimEval_multidataset_benchmark` containing:
+An S3 object of class
+`c("scSimEval_multidataset_benchmark", "scSimEval_consolidated", "list")`
+containing:
 
-- `granular_benchmark_table`: Tidy data.frame containing all evaluated
-  metrics across every dataset and simulator.
+- granular_benchmark_table:
 
-- `benchmark_summary_table`: Tidy data.frame containing cross-dataset
-  averaged fidelity scores for each simulator (ready for
-  [`plot_benchmark_bubble_matrix()`](https://kabilanbio.github.io/scSimEval/reference/plot_benchmark_bubble_matrix.md)).
+  Tidy data.frame across all dataset-simulator evaluations.
 
-- `dataset_summary_table`: Summary of reference dataset dimensions,
-  sparsity, and library properties.
+- benchmark_summary_table:
 
-- `methods`: Vector of evaluated simulator names.
+  Cross-dataset averaged fidelity scores formatted for
+  [`plot_benchmark_bubble_matrix`](https://kabilanbio.github.io/scSimEval/reference/plot_benchmark_bubble_matrix.md).
 
-- `datasets`: Vector of evaluated dataset names.
+- cross_dataset_stats:
 
-- `cross_dataset_stats`: Summary statistics (mean, SD, SE) for each
-  metric across datasets.
+  Mean, SD, SE, Min, Max, and `N_Datasets` for each simulator and
+  metric.
+
+- dataset_summary:
+
+  Summary table of reference dimensions, sparsity, and cell-type counts.
+
+- dataset_summary_df:
+
+  Alias of `dataset_summary`.
+
+- methods:
+
+  Character vector of evaluated simulator names.
+
+- datasets:
+
+  Character vector of evaluated dataset names.
+
+- is_multidataset:
+
+  Logical `TRUE`.
+
+- n_datasets:
+
+  Integer count of datasets.
+
+- n_simulators:
+
+  Integer count of simulators.
 
 ## Examples
 
@@ -98,6 +114,70 @@ refs <- list("CohortA" = example_scrna$ref)
 sims <- list("Splatter" = list("CohortA" = example_scrna$sim))
 res <- benchmark_simulation_suite(refs, sims, verbose = FALSE)
 #> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
 #> calcNormFactors has been renamed to normLibSizes
 print(res)
 #> =====================================================================
@@ -105,8 +185,8 @@ print(res)
 #> =====================================================================
 #> Datasets Evaluated     : 1 (CohortA)
 #> Simulators Evaluated   : 1 (Splatter)
-#> Total Evaluated Scores : 166 across all datasets & metrics
-#> Cross-Dataset Average  : 36 averaged metric entries in summary table
+#> Total Evaluated Scores : 168 across all datasets & metrics
+#> Cross-Dataset Average  : 38 averaged metric entries in summary table
 #> =====================================================================
 # }
 ```

@@ -28,7 +28,7 @@ evaluate_multiomics_integration(
 
 \item{embed}{Optional precomputed joint embedding matrix (cells x dimensions). If NULL, computed automatically from \code{sim_multi}.}
 
-\item{reduction_name}{Optional name of the precomputed dimensional reduction to extract from Seurat/SCE objects.}
+\item{reduction_name}{Optional name of the precomputed dimensional reduction to extract from \code{SingleCellExperiment} objects.}
 
 \item{n_pcs}{Number of principal components per modality to retain for joint embedding (default 15).}
 

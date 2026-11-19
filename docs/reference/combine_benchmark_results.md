@@ -97,37 +97,31 @@ diverse biological contexts.
 ## Examples
 
 ``` r
-# \donttest{
-data(example_scrna, package = "scSimEval")
-res1 <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
-#> [1/5] Extracting cell-level properties...
-#> [2/5] Extracting feature-level properties...
-#> [3/5] Computing univariate accuracy metrics...
-#> [4/5] Computing bivariate metrics (Fasano-Franceschini, KDE zstat, 2D EMD)...
-#> [5/5] Computing zero-probability and manifold distances...
-#> Evaluating batch integration & confounder mixing...
-#> Evaluating scRNA-seq biological signal fidelity (Libra Pseudobulk edgeR-QLF)...
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> [6/7] Evaluating trajectory and lineage topology (HVG + dynverse, scRNA-seq only)...
-#> Unimodal accuracy evaluation complete.
-res2 <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
-#> [1/5] Extracting cell-level properties...
-#> [2/5] Extracting feature-level properties...
-#> [3/5] Computing univariate accuracy metrics...
-#> [4/5] Computing bivariate metrics (Fasano-Franceschini, KDE zstat, 2D EMD)...
-#> [5/5] Computing zero-probability and manifold distances...
-#> Evaluating batch integration & confounder mixing...
-#> Evaluating scRNA-seq biological signal fidelity (Libra Pseudobulk edgeR-QLF)...
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> [6/7] Evaluating trajectory and lineage topology (HVG + dynverse, scRNA-seq only)...
-#> Unimodal accuracy evaluation complete.
-comb <- combine_benchmark_results(res1, res2, dataset_names = c("Cohort A", "Cohort B"))
-#> Warning: Item 1 could not be parsed as a valid benchmark table; skipping.
-#> Warning: Item 2 could not be parsed as a valid benchmark table; skipping.
-#> Error in combine_benchmark_results(res1, res2, dataset_names = c("Cohort A",     "Cohort B")): None of the supplied inputs contained valid benchmark data.
+res1 <- list(
+  metrics_summary_table = data.frame(
+    Category = "Distributional Properties",
+    Property = "library_size",
+    Metric = "Wasserstein",
+    Value = 0.22
+  )
+)
+
+res2 <- list(
+  metrics_summary_table = data.frame(
+    Category = "Distributional Properties",
+    Property = "library_size",
+    Metric = "Wasserstein",
+    Value = 0.18
+  )
+)
+
+comb <- combine_benchmark_results(
+  res1, res2,
+  dataset_names = c("Cohort A", "Cohort B"),
+  filter_gold_standard = FALSE,
+  recompute_normalized = FALSE
+)
+
 print(comb$datasets)
-#> Error: object 'comb' not found
-# }
+#> [1] "Cohort A" "Cohort B"
 ```

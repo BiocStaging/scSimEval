@@ -27,8 +27,9 @@ the cellular detection rate (DetRate: fraction of expressed genes per cell) as a
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-demonstrations" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Demonstrations</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-demonstrations"><li><a class="dropdown-item" href="../articles/demo-scrna.html">1. scRNA-seq Simulation Evaluation</a></li>
     <li><a class="dropdown-item" href="../articles/demo-scatac.html">2. scATAC-seq Simulation Evaluation</a></li>
-    <li><a class="dropdown-item" href="../articles/demo-multiomics.html">3. Multiomics (RNA + ATAC) Evaluation</a></li>
-    <li><a class="dropdown-item" href="../articles/demo-saved-rds.html">4. Analyzing Pre-Saved Benchmark (.rds)</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-multiomics.html">3. Paired Multiomics (RNA + ATAC) Evaluation</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-unpaired-multiomics.html">4. Unpaired Multiomics (RNA + ATAC) Evaluation</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-saved-rds.html">5. Analyzing Pre-Saved Benchmark (.rds)</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../articles/metrics-catalog.html">Metric Catalog (56 Metrics)</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -77,7 +78,7 @@ the cellular detection rate (DetRate: fraction of expressed genes per cell) as a
 
 
 <dl><dt id="arg-counts">counts<a class="anchor" aria-label="anchor" href="#arg-counts"></a></dt>
-<dd><p>Single-cell count matrix (genes x cells), or SingleCellExperiment / Seurat object.</p></dd>
+<dd><p>Single-cell count matrix (genes x cells), or <code>SingleCellExperiment</code> object.</p></dd>
 
 
 <dt id="arg-group">group<a class="anchor" aria-label="anchor" href="#arg-group"></a></dt>
@@ -132,14 +133,22 @@ the cellular detection rate (DetRate: fraction of expressed genes per cell) as a
 <span class="r-in"><span><span class="va">top2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">example_scrna</span><span class="op">$</span><span class="va">cell_types</span><span class="op">)</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span></span></span>
 <span class="r-in"><span><span class="va">idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="va">example_scrna</span><span class="op">$</span><span class="va">cell_types</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">top2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu">run_edger_qlf_detrate</span><span class="op">(</span><span class="va">example_scrna</span><span class="op">$</span><span class="va">ref</span><span class="op">[</span>, <span class="va">idx</span><span class="op">]</span>, <span class="va">example_scrna</span><span class="op">$</span><span class="va">cell_types</span><span class="op">[</span><span class="va">idx</span><span class="op">]</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            gene       logFC   logCPM     F_stat     PValue       FDR is_deg</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Gene_01 Gene_01  0.06639992 15.04487 0.04541237 0.83125697 0.9236189  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Gene_02 Gene_02  0.63252452 14.58323 3.77514999 0.05207991 0.3124794  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Gene_03 Gene_03  0.69780444 14.79379 4.75012284 0.02934654 0.3124794  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Gene_04 Gene_04  0.30634068 14.69534 0.89011764 0.34549476 0.6909895  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Gene_05 Gene_05  0.54739063 15.07996 2.95097305 0.08589288 0.3594412  FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Gene_06 Gene_06 -0.09283335 14.65058 0.08278491 0.77357118 0.8925821  FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                      gene      logFC   logCPM      F_stat       PValue</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Os04g0188433 Os04g0188433 -1.6973682 14.99692  0.93341220 3.417600e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Os04g0496300 Os04g0496300 -5.4762732 17.57997 21.01082531 4.433661e-05</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Os04g0659300 Os04g0659300 -0.6178729 15.19454  0.05069294 8.231181e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Os01g0756900 Os01g0756900 -7.0743346 17.54568 35.66166925 3.414173e-07</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Os01g0910900 Os01g0910900  0.4332316 14.93205  0.21850884 6.440717e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Os10g0377150 Os10g0377150 -5.1144155 17.05487 17.09207411 2.055816e-04</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                       FDR is_deg</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Os04g0188433 4.841600e-01  FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Os04g0496300 1.884306e-04   TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Os04g0659300 9.328672e-01  FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Os01g0756900 5.804095e-06   TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Os01g0910900 8.422476e-01  FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Os10g0377150 6.989775e-04   TRUE</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

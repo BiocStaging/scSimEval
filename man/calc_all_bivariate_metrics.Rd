@@ -16,7 +16,14 @@ calc_all_bivariate_metrics(ref_mat, sim_mat, metric_prefix = "", threads = 1)
 \item{threads}{CPU threads.}
 }
 \value{
-Named list of bivariate metrics.
+A named list of 4 numeric 2D bivariate distributional metrics
+  (names prefixed with \code{metric_prefix_} when provided):
+\describe{
+  \item{Fasano_Franceschini_2D_KS}{Fasano-Franceschini 2D Kolmogorov-Smirnov test statistic.}
+  \item{EMD_2D}{Normalized 2D Earth Mover's Distance between kernel density surfaces.}
+  \item{NN_Mismatch_2D}{Fraction of 2D k-NN neighborhoods with dataset composition mismatch.}
+  \item{Between_Dataset_Silh_2D_Global}{Global between-dataset silhouette width in standardized 2D space.}
+}
 }
 \description{
 Compute All Bivariate (2D) Distance & Accuracy Metrics for Joint Distributions

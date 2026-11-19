@@ -92,7 +92,7 @@ Lannelongue, L., et al. (2021). Green Algorithms: Quantifying the carbon
 footprint of computation. *Advanced Science*, 8(12), 2100707.
 
 Holtgrewe, M., et al. (2015). Methods for the detection and assembly of
-novel sequence. *Bioinformatics*, 31(12), 1904–1912.
+novel sequence. *Bioinformatics*, 31(12), 1904-1912.
 
 Boisvert, S., et al. (2012). Ray Meta: scalable de novo metagenome
 assembly. *Genome Biology*, 13(12), R122.
@@ -105,13 +105,76 @@ simulations. *Frontiers in Neuroinformatics*, 16, 883742.
 ``` r
 data(example_scrna, package = "scSimEval")
 res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
-#> [1/5] Extracting cell-level properties...
-#> [2/5] Extracting feature-level properties...
+#> [1/5] Extracting cell-level and feature-level properties...
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
 #> [3/5] Computing univariate accuracy metrics...
 #> [4/5] Computing bivariate metrics (Fasano-Franceschini, KDE zstat, 2D EMD)...
 #> [5/5] Computing zero-probability and manifold distances...
 #> Evaluating batch integration & confounder mixing...
 #> Evaluating scRNA-seq biological signal fidelity (Libra Pseudobulk edgeR-QLF)...
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
 #> calcNormFactors has been renamed to normLibSizes
 #> calcNormFactors has been renamed to normLibSizes
 #> [6/7] Evaluating trajectory and lineage topology (HVG + dynverse, scRNA-seq only)...

@@ -2,120 +2,103 @@
 % Please edit documentation in R/09_evaluate_benchmark.R
 \name{evaluate_simulation_accuracy}
 \alias{evaluate_simulation_accuracy}
-\title{Evaluate Comprehensive Simulation Accuracy (Unimodal Omics Layer)}
+\title{Evaluate Comprehensive Simulation Accuracy (Unimodal SingleCellExperiment)}
 \usage{
 evaluate_simulation_accuracy(
-  ref_data,
-  sim_data,
-  cell_types = NULL,
-  cell_types_ref = NULL,
-  cell_types_sim = NULL,
-  batch_info = NULL,
-  batch_ref = NULL,
-  batch_sim = NULL,
+  ref_sce,
+  sim_sce,
+  cell_type_col = "cell_type",
+  batch_col = "batch",
   modality = NULL,
   compute_bivariate = TRUE,
-  threads = 1,
+  threads = 1L,
   memory_mb = NULL,
   elapsed_time = NULL,
-  verbose = TRUE,
   time_unit = c("seconds", "minutes"),
   memory_unit = c("MiB", "MB"),
   sim_cores = NULL,
   trajectory_num_trees = 10000L,
   include_trajectory = TRUE,
-  include_downstream = TRUE
+  include_downstream = TRUE,
+  verbose = TRUE
 )
 }
 \arguments{
-\item{ref_data}{Reference count matrix (features x cells).}
+\item{ref_sce}{Reference \code{SingleCellExperiment} object.}
 
-\item{sim_data}{Simulated count matrix (features x cells).}
+\item{sim_sce}{Simulated \code{SingleCellExperiment} object.}
 
-\item{cell_types}{Cell type metadata details}
+\item{cell_type_col}{Column name in \code{colData} containing cell-type labels (default \code{"cell_type"}).}
 
-\item{cell_types_ref}{Cell type details of reference dataset}
+\item{batch_col}{Column name in \code{colData} containing batch/replicate labels (default \code{"batch"}).}
 
-\item{cell_types_sim}{Cell type details of simulated dataset}
+\item{modality}{Optional modality hint (\code{"scRNA-seq"} or \code{"scATAC-seq"}); auto-detected if \code{NULL}.}
 
-\item{batch_info}{Batch details}
+\item{compute_bivariate}{Logical, whether to compute 2D bivariate tests. Default is \code{TRUE}.}
 
-\item{batch_ref}{Batch details of reference dataset}
+\item{threads}{Integer number of parallel worker threads. Default is \code{1L}.}
 
-\item{batch_sim}{Batch details of simulated dataset}
+\item{memory_mb}{Optional numeric peak memory allocation (in \code{memory_unit}).}
 
-\item{modality}{Name of modality}
+\item{elapsed_time}{Optional numeric wall-clock elapsed runtime (in \code{time_unit}).}
 
-\item{compute_bivariate}{Logical, whether to compute 2D bivariate tests. Default is TRUE.}
+\item{time_unit}{Unit of \code{elapsed_time}: \code{"seconds"} (default) or \code{"minutes"}.}
 
-\item{threads}{Number of threads for parallel computation. Default is 1.}
+\item{memory_unit}{Unit of \code{memory_mb}: \code{"MiB"} (default) or \code{"MB"}.}
 
-\item{memory_mb}{Optional numeric value of peak memory allocation (in \code{memory_unit}).}
+\item{sim_cores}{Optional positive integer specifying CPU cores used by the simulator.}
 
-\item{elapsed_time}{Optional numeric value of wall-clock elapsed time (in \code{time_unit}).}
+\item{trajectory_num_trees}{Number of Random Forest trees for Category VII \code{wcor_features} (default \code{10000L}).}
 
-\item{verbose}{Logical, whether to print execution messages. Default is TRUE.}
+\item{include_trajectory}{Logical; whether to evaluate Category VII trajectory metrics for scRNA-seq. Default \code{TRUE}.}
 
-\item{time_unit}{Character string specifying the unit of \code{elapsed_time}:
-\code{"seconds"} (default, or \code{"s"}) or \code{"minutes"} (or \code{"min"}).}
+\item{include_downstream}{Logical; whether to evaluate Categories III, IV, and V downstream metrics. Default \code{TRUE}.}
 
-\item{memory_unit}{Character string specifying the unit of \code{memory_mb}:
-\code{"MiB"} (default, binary mebibytes) or \code{"MB"} (decimal megabytes, converted to MiB).}
-
-\item{sim_cores}{Optional positive integer specifying the number of CPU cores used
-by the simulator to generate \code{sim_data}. Default is NULL.}
-
-\item{trajectory_num_trees}{Number of Random Forest trees for Category VII \code{wcor_features}
-(default \code{10000L}, per Saelens et al. 2019).}
-
-\item{include_trajectory}{Logical; whether to evaluate Category VII trajectory & lineage topology
-metrics when \code{modality} is scRNA-seq (automatically skipped for \code{scATAC-seq}). Default is \code{TRUE}.}
-
-\item{include_downstream}{Logical; whether to evaluate Category III clustering, Category IV batch mixing,
-and Category V biological signal differential expression/accessibility metrics when metadata are available.
-Default is \code{TRUE}.}
+\item{verbose}{Logical, whether to print progress messages. Default is \code{TRUE}.}
 }
 \value{
-A list containing tidy summary tables and detailed metric lists.
+A named list containing tidy summaries and detailed category results:
+\describe{
+  \item{metrics_summary_table}{Data frame with columns \code{Category}, \code{Property}, \code{Metric}, \code{Value} (and \code{Sim_Cores} if provided).}
+  \item{cell_metrics}{Named list of per-property univariate metric lists at cell resolution.}
+  \item{feature_metrics}{Named list of per-property univariate metric lists at feature resolution.}
+  \item{bivariate_metrics}{Named list of 2D bivariate metric comparisons.}
+  \item{zero_probability_curve}{Category II scRNA-seq dropout curve results, or \code{NULL}.}
+  \item{accessibility_sparsity_curve}{Category II scATAC-seq sparsity curve results, or \code{NULL}.}
+  \item{excess_zero_weights}{List with \code{ref} and \code{sim} excess-zero probability weights.}
+  \item{generative_manifold}{List with \code{mmd} and \code{precision_recall} generative manifold scores.}
+  \item{ref_properties}{List containing \code{cell} and \code{feature} property vectors extracted from \code{ref_sce}.}
+  \item{sim_properties}{List containing \code{cell} and \code{feature} property vectors extracted from \code{sim_sce}.}
+  \item{batch_effects}{Category IV batch mixing metrics list, or \code{NULL}.}
+  \item{biological_signal}{Category V pseudobulk DE/DA fidelity results, or \code{NULL}.}
+  \item{trajectory}{Category VII \emph{dynverse} trajectory evaluation results, or \code{NULL}.}
+  \item{resource_usage}{Normalized Category VIII scalability list (\code{core_seconds}, \code{memory_per_core_mib}, \code{memory_mb}, \code{elapsed_time}, \code{sim_cores}).}
+}
 }
 \description{
 Computes distribution distances, cellular and feature-level properties,
-zero-inflation curves, and manifold distances between reference and simulated datasets.
+zero-inflation curves, clustering concordance, batch mixing, differential
+expression/accessibility fidelity, trajectory topology, and computational
+scalability between reference and simulated \code{SingleCellExperiment} objects.
+Users starting from \code{Seurat} objects should convert via
+\code{Seurat::as.SingleCellExperiment()}.
 }
 \details{
 \if{html}{\figure{workflow_diagram.png}{options: width="800" alt="scSimEval Unified Benchmarking Workflow Diagram"}}
 
 
 \strong{Metric Measurement Capacity across 4 Analysis Options (56 Evaluation Measures Suite):}
-Both \code{cell_type} and \code{batch} metadata annotations are strictly mandatory for benchmarking to enable complete evaluation across all biological and technical dimensions.
+Cell-type and batch annotations are retrieved directly from \code{colData(ref_sce)} and
+\code{colData(sim_sce)} using \code{cell_type_col} and \code{batch_col}.
 \itemize{
-  \item \strong{1. scRNA-seq (45 Metrics):} Evaluates 45 metrics across 7 categories:
-    Category I (Distributional Properties: 10 univariate + 4 bivariate metrics),
-    Category II (Sparsity & Zero-Inflation Dynamics: 5 metrics),
-    Category III (Cellular Manifold & Clustering Concordance: 8 metrics, including MMD, Precision/Recall, Silhouette, CDI, Purity, ARI, NMI),
-    Category IV (Technical Variation & Batch Mixing Dynamics: 5 metrics, including Batch Silhouette, PCR R2, CMS, ISI, Cross-Batch F1),
-    Category V (Biological Signal & Differential Expression Fidelity: 6 metrics via pseudobulk edgeR-QLF),
-    Category VII (Trajectory & Lineage Topology: 5 metrics via dynverse workflow), and
-    Category VIII (Computational Scalability & Efficiency: 2 metrics, core_seconds and memory_per_core_mib).
-  \item \strong{2. scATAC-seq (32 Metrics):} Evaluates 32 metrics across 6 categories:
-    Category I (Peak Accessibility Distribution Moments: 7 metrics),
-    Category II (Accessibility-Sparsity Dynamics: 4 metrics),
-    Category III (Epigenomic Manifold & Clustering Concordance: 8 metrics),
-    Category IV (Technical Variation & Batch Mixing Dynamics: 5 metrics),
-    Category V (Biological Signal & Differential Accessibility Fidelity: 6 metrics via pseudobulk edgeR-QLF), and
-    Category VIII (Computational Scalability & Efficiency: 2 metrics). Trajectory (Category VII) is skipped for ATAC.
-  \item \strong{3. Paired Multiomics (56 Metrics):} Evaluates all 56 metrics across all 8 canonical categories (I–VIII):
-    both unimodal layers (Cat I & II), dual clustering concordance (Cat III), dual batch mixing dynamics (Cat IV),
-    dual biological signal fidelity (Cat V: 6 for scRNA DE + 6 for scATAC DA), Multiomics Integration & Alignment (Cat VI:
-    Batch ASW, Cell-Type ASW, Graph Connectivity, Integration ARI/NMI, FOSCTTM, Match@1, Cross-modal Generation Fidelity,
-    Peak-to-Gene Coupling), scRNA Trajectory (Cat VII), and Scalability (Cat VIII).
-  \item \strong{4. Unpaired Multiomics (51 Metrics):} Evaluates 51 metrics across 7 categories:
-    evaluates both unimodal layers (Cat I & II), dual clustering (Cat III), dual batch mixing (Cat IV), dual differential signal (Cat V),
-    population-level multiomics integration & alignment (Cat VI), scRNA trajectory (Cat VII), and scalability (Cat VIII).
-    Omits 5 cell-level pairing measures (FOSCTTM, Match@1, cross-modal generation, and cell-matched coupling) due to separate cell identities (56 - 5 = 51).
+  \item \strong{1. scRNA-seq (45 Metrics):} Categories I, II, III, IV, V, VII, and VIII.
+  \item \strong{2. scATAC-seq (32 Metrics):} Categories I, II, III, IV, V, and VIII (trajectory skipped for ATAC).
+  \item \strong{3. Paired Multiomics (56 Metrics):} All 8 categories (I--VIII) via \code{\link{evaluate_multiomics_accuracy}}.
+  \item \strong{4. Unpaired Multiomics (51 Metrics):} All 8 categories omitting 5 cell-matched pairing metrics.
 }
 }
 \examples{
 data(example_scrna, package = "scSimEval")
-res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim,
+                                    include_trajectory = FALSE, verbose = FALSE)
 }

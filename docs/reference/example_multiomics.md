@@ -1,8 +1,10 @@
-# Synthetic Example Multiomics Benchmarking Dataset
+# Example Paired Multiomics Benchmarking Dataset (Rice Bud)
 
-A unified single-cell multiomics dataset pairing scRNA-seq and
-scATAC-seq profiles across the same 80 cells, accompanied by cell-type
-labels, batch annotations, and logged computational scalability metrics.
+A unified paired single-cell multiomics dataset combining
+`example_scrna` (100 HVGs) and `example_scatac` (100 HVPs) across the
+exact same 100 balanced rice bud cells, accompanied by shared cell-type
+labels, batch annotations, and empirical computational scalability
+metrics.
 
 ## Usage
 
@@ -16,32 +18,34 @@ A list with 5 elements:
 
 - ref_multi:
 
-  Named list of `SingleCellExperiment` objects: `rna` (60 x 80) and
-  `atac` (60 x 80), complete with precomputed PCA reductions in
-  `reducedDims`.
+  Named list of `SingleCellExperiment` objects: `rna` (100 HVGs x 100
+  cells) and `atac` (100 HVPs x 100 cells), complete with `colData` and
+  precomputed `PCA` in `reducedDims`.
 
 - sim_multi:
 
-  Named list of `SingleCellExperiment` objects: `rna` (60 x 80) and
-  `atac` (60 x 80), complete with precomputed PCA reductions in
-  `reducedDims`.
+  Named list of simulated `SingleCellExperiment` objects: `rna` (100
+  x 100) and `atac` (100 x 100).
 
 - cell_types:
 
-  A factor of cell-type identities ("TypeA", "TypeB") for the 80 cells.
+  A named factor of shared cell-type identities across 8 Rice Bud cell
+  types for the 100 paired cells.
 
 - batch_info:
 
-  A factor of batch annotations ("Batch1", "Batch2") for the 80 cells.
+  A named factor of batch annotations (`Bud_21`, `Bud_22`) for the 100
+  paired cells.
 
 - resource_stats:
 
-  A list of computational scalability metrics: `cpu_time`, `memory_mb`,
-  `system_time`, `elapsed_time`.
+  A list of empirical scalability metrics: `elapsed_time`, `memory_mb`,
+  `sim_cores`.
 
 ## Source
 
-Synthetic multiomics benchmark data generated for testing `scSimEval`.
+Derived from rice bud paired multiomics data (*Oryza sativa*, GEO
+accession GSE232863).
 
 ## Examples
 

@@ -3,16 +3,16 @@
 \docType{data}
 \name{example_soybean_root}
 \alias{example_soybean_root}
-\title{Real Unpaired Single-Cell Multiomics Benchmark Dataset (Soybean Root, Seurat v5)}
+\title{Real Unpaired Single-Cell Multiomics Benchmark Dataset (Soybean Root, SingleCellExperiment)}
 \format{
 A list with 4 elements:
 \describe{
   \item{metadata}{List containing dataset name, organism, tissue, pairing mode (\code{"unpaired"}), dimensions, and simulators.}
-  \item{reference}{List containing standardized \code{Seurat} v5 objects:
-    \code{combined} (multi-modal \code{Seurat} spanning 200 independent cells with \code{RNA} 100 x 100 and \code{ATAC} 100 x 100),
-    \code{rna} (unimodal \code{Seurat} object for scRNA-seq), and
-    \code{atac} (unimodal \code{Seurat} object for scATAC-seq).}
-  \item{simulated}{Named list of simulated outputs for 3 simulators: \code{scMultiSim}, \code{scDesign3}, and \code{scCross}. Each simulator entry contains \code{combined}, \code{rna}, and \code{atac} \code{Seurat} objects matching the reference structure.}
+  \item{reference}{List containing standardized \code{SingleCellExperiment} objects:
+    \code{combined} (multi-modal \code{SingleCellExperiment} with \code{colData$modality} distinguishing independent RNA and ATAC cells across \code{altExp(combined, "ATAC")}),
+    \code{rna} (unimodal \code{SingleCellExperiment} for scRNA-seq), and
+    \code{atac} (unimodal \code{SingleCellExperiment} for scATAC-seq).}
+  \item{simulated}{Named list of simulated outputs for 3 simulators: \code{scMultiSim}, \code{scDesign3}, and \code{scCross}. Each simulator entry contains \code{combined}, \code{rna}, and \code{atac} \code{SingleCellExperiment} objects matching the reference structure.}
   \item{scalability_benchmarks}{A data.frame with benchmarked runtime, peak RAM, and CPU cores for RNA, ATAC, and combined execution.}
 }
 }
@@ -24,7 +24,8 @@ data(example_soybean_root)
 }
 \description{
 A real, pre-processed unpaired single-cell RNA-seq and ATAC-seq benchmark dataset of
-soybean root tissue (\emph{Glycine max}), standardized using \code{Seurat} v5 objects.
+soybean root tissue (\emph{Glycine max}), standardized using Bioconductor
+\code{SingleCellExperiment} objects.
 Contains independent empirical reference profiles (top 100 HVGs x 100 balanced RNA cells
 and top 100 HVPs x 100 independently sampled balanced ATAC cells) covering all 8 biological
 cell types (\code{Cortex}, \code{Endodermis}, \code{Epidermis}, \code{Pericycle},
@@ -42,7 +43,7 @@ names(example_soybean_root$simulated)
 evaluate_multiomics_accuracy(
   ref_multi = list(RNA = example_soybean_root$reference$rna, ATAC = example_soybean_root$reference$atac),
   sim_multi = list(RNA = example_soybean_root$simulated$scMultiSim$rna, ATAC = example_soybean_root$simulated$scMultiSim$atac),
-  is_paired = FALSE
+  pairing = "unpaired"
 )
 }
 }

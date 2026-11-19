@@ -30,5 +30,5 @@ Named numeric vector of curve parameter differences (`slope_error`,
 data(example_scrna, package = "scSimEval")
 evaluate_zero_probability_curve(example_scrna$ref, example_scrna$sim)
 #>    slope_error midpoint_error r2_discrepancy 
-#>      0.2560909      0.2624144      0.1646825 
+#>     0.09929496     1.20225321     0.06566551 
 ```

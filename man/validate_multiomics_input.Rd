@@ -4,26 +4,43 @@
 \alias{validate_multiomics_input}
 \title{Validate and Standardize Multiomics Input Objects}
 \usage{
-validate_multiomics_input(obj, arg_name = "multi_data", reduction_name = NULL)
+validate_multiomics_input(
+  obj,
+  arg_name = "multi_data",
+  reduction_name = NULL,
+  cell_type_col = "cell_type",
+  batch_col = "batch"
+)
 }
 \arguments{
-\item{obj}{Multiomics dataset object or file path to validate.}
+\item{obj}{Multiomics \code{SingleCellExperiment} object, list of two \code{SingleCellExperiment} objects, or \code{.rds} path.}
 
 \item{arg_name}{Name of argument for diagnostic error messages.}
 
 \item{reduction_name}{Optional reduction name to extract.}
+
+\item{cell_type_col}{Column name in \code{colData} containing cell-type labels (default \code{"cell_type"}).}
+
+\item{batch_col}{Column name in \code{colData} containing batch labels (default \code{"batch"}).}
 }
 \value{
-A list with standardized components: \code{m1}, \code{m2}, \code{m1_obj}, \code{m2_obj}, \code{m1_name}, \code{m2_name}, \code{cell_types}, \code{batch_info}, \code{embedding}.
+A named list with 9 elements:
+\describe{
+  \item{m1}{Count matrix for modality 1 (typically RNA).}
+  \item{m2}{Count matrix for modality 2 (typically ATAC).}
+  \item{m1_obj}{\code{SingleCellExperiment} object for modality 1.}
+  \item{m2_obj}{\code{SingleCellExperiment} object for modality 2.}
+  \item{m1_name}{Character name of modality 1.}
+  \item{m2_name}{Character name of modality 2.}
+  \item{cell_types}{Character vector (paired) or named list (unpaired) of cell-type labels, or \code{NULL}.}
+  \item{batch_info}{Character vector (paired) or named list (unpaired) of batch labels, or \code{NULL}.}
+  \item{embedding}{Extracted dimensional reduction matrix (cells x dims), or \code{NULL}.}
+}
 }
 \description{
-Strictly enforces standard multiomics input compliance in \code{scSimEval}.
-Validates that multiomics inputs conform to \code{Seurat} or \code{SingleCellExperiment} structures.
-Accepts a single multi-modal object or a list of two modality objects:
-\itemize{
-  \item A single multi-modal \code{Seurat} object containing both RNA and ATAC assays (with metadata and reductions).
-  \item A single multi-modal \code{SingleCellExperiment} object with an \code{altExp} for the secondary modality.
-  \item A named list of 2 \code{Seurat} or \code{SingleCellExperiment} objects (e.g. \code{list(rna = ..., atac = ...)}).
-  \item A file path to an \code{.rds} file containing any of the above.
-}
+Validates that multiomics inputs conform to \code{SingleCellExperiment} structures.
+Accepts either a single multi-modal \code{SingleCellExperiment} object with an
+\code{altExp} for the secondary modality, a named list of two \code{SingleCellExperiment}
+objects (e.g. \code{list(RNA = rna_sce, ATAC = atac_sce)}), or a file path to an
+\code{.rds} file containing either structure.
 }

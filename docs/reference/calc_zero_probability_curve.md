@@ -27,15 +27,15 @@ R-squared.
 data(example_scrna, package = "scSimEval")
 calc_zero_probability_curve(example_scrna$ref)
 #> $intercept
-#> [1] 0.1664043
+#> [1] 1.349168
 #> 
 #> $slope
-#> [1] -1.259067
+#> [1] -0.7125713
 #> 
 #> $midpoint
-#> [1] 0.1321648
+#> [1] 1.893379
 #> 
 #> $r_squared
-#> [1] 0.7142614
+#> [1] 0.8012893
 #> 
 ```

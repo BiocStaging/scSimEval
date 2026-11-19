@@ -2,10 +2,7 @@
 
 Quantifies both local edge correspondence (Hamming) and global Laplacian
 spectral similarity (Ipsen-Mikhailov) between reference and simulated
-trajectory milestone networks. Uses
-[`dyneval::calculate_him`](https://rdrr.io/pkg/dyneval/man/calculate_him.html)
-when netdist is available and falls back to an exact pure-R
-implementation otherwise.
+trajectory milestone networks.
 
 ## Usage
 

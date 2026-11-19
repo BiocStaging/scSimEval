@@ -28,7 +28,16 @@ calc_runs_test(ref, sim, alternative = c("left.sided", "two.sided"))
 
 ## Value
 
-A named list with the runs test statistic and p-value.
+A named list with 2 numeric scalars:
+
+- runs_statistic:
+
+  Standardized Wald-Wolfowitz z-statistic comparing observed runs to
+  expected runs under mixing.
+
+- runs_pvalue:
+
+  Associated p-value under the selected `alternative` hypothesis.
 
 ## Examples
 
@@ -37,9 +46,9 @@ ref <- stats::rnorm(50)
 sim <- stats::rnorm(50)
 calc_runs_test(ref, sim)
 #> $runs_statistic
-#> [1] 1.608143
+#> [1] -0.6030535
 #> 
 #> $runs_pvalue
-#> [1] 0.946098
+#> [1] 0.2732366
 #> 
 ```

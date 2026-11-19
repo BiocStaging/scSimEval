@@ -395,7 +395,7 @@ evaluate_batch_metrics <- function(
   if (inherits(data, "SingleCellExperiment")) {
     data <- SummarizedExperiment::assay(data, "counts")
   } else if (inherits(data, "Seurat")) {
-    data <- .get_seurat_counts(data)
+    stop("Seurat objects are not directly supported; convert via Seurat::as.SingleCellExperiment().", call. = FALSE)
   }
   n_cells <- ncol(data)
   

@@ -6,7 +6,8 @@ Unified end-to-end evaluation pipelines executing the 56 curated
 evaluation metrics across unimodal and multiomics simulations.
 
 - [`evaluate_simulation_accuracy()`](https://kabilanbio.github.io/scSimEval/reference/evaluate_simulation_accuracy.md)
-  : Evaluate Comprehensive Simulation Accuracy (Unimodal Omics Layer)
+  : Evaluate Comprehensive Simulation Accuracy (Unimodal
+  SingleCellExperiment)
 - [`evaluate_multiomics_accuracy()`](https://kabilanbio.github.io/scSimEval/reference/evaluate_multiomics_accuracy.md)
   : Master Multiomics Simulation Benchmarking Pipeline
 - [`evaluate_multiple_datasets()`](https://kabilanbio.github.io/scSimEval/reference/evaluate_multiple_datasets.md)
@@ -62,15 +63,9 @@ cross-simulator benchmarking.
   : Compute Simulator Method Performance Leaderboard
 - [`zoom_plot()`](https://kabilanbio.github.io/scSimEval/reference/zoom_plot.md)
   : Interactive Step-by-Step Zoom In and Zoom Out for Plots
-
-## Interactive Graphical Interface (Shiny App Studio)
-
-Interactive Shiny web application providing point-and-click simulation
-benchmarking, UMAP/t-SNE embedding explorations, and dynamic data
-packaging.
-
-- [`launch_scSimEval_app()`](https://kabilanbio.github.io/scSimEval/reference/launch_scSimEval_app.md)
-  : Launch Interactive scSimEval Benchmarking Studio
+- [`normalize_bubble_scores()`](https://kabilanbio.github.io/scSimEval/reference/normalize_bubble_scores.md)
+  : Normalize Bubble Matrix Scores Across Benchmark Datasets and
+  Simulators
 
 ## Category-Specific Evaluation Suites
 
@@ -120,21 +115,21 @@ Pre-packaged synthetic and empirical single-cell multiomics benchmark
 datasets and metadata annotation templates.
 
 - [`example_scrna`](https://kabilanbio.github.io/scSimEval/reference/example_scrna.md)
-  : Synthetic Example scRNA-seq Benchmarking Dataset
+  : Example scRNA-seq Benchmarking Dataset (Rice Bud)
 - [`example_scatac`](https://kabilanbio.github.io/scSimEval/reference/example_scatac.md)
-  : Synthetic Example scATAC-seq Benchmarking Dataset
+  : Example scATAC-seq Benchmarking Dataset (Rice Bud)
 - [`example_multiomics`](https://kabilanbio.github.io/scSimEval/reference/example_multiomics.md)
-  : Synthetic Example Multiomics Benchmarking Dataset
+  : Example Paired Multiomics Benchmarking Dataset (Rice Bud)
 - [`example_rice_bud`](https://kabilanbio.github.io/scSimEval/reference/example_rice_bud.md)
   : Real Paired Single-Cell Multiomics Benchmark Dataset (Rice Bud,
-  Seurat v5 Option B)
+  SingleCellExperiment)
 - [`example_soybean_root`](https://kabilanbio.github.io/scSimEval/reference/example_soybean_root.md)
   : Real Unpaired Single-Cell Multiomics Benchmark Dataset (Soybean
-  Root, Seurat v5 Option B)
+  Root, SingleCellExperiment)
 - [`example_cell_types`](https://kabilanbio.github.io/scSimEval/reference/example_cell_types.md)
-  : Example Cell-Type Annotations Vector
+  : Example Cell-Type Annotations Vector (Rice Bud)
 - [`example_batch_info`](https://kabilanbio.github.io/scSimEval/reference/example_batch_info.md)
-  : Example Batch Annotations Vector
+  : Example Batch Annotations Vector (Rice Bud)
 
 ## Computational Utilities & Fast Kernels
 

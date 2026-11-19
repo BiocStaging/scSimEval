@@ -75,28 +75,28 @@ cl <- factor(rep(c("A", "B"), each = 5))
 dist_mat <- stats::dist(t(data))
 evaluate_clustering_metrics(data, cl)
 #> $silhouette_sim
-#> [1] 0.07265493
+#> [1] 0.007318134
 #> 
 #> $silhouette
-#> [1] 0.07265493
+#> [1] 0.007318134
 #> 
 #> $davies_bouldin
-#> [1] 2.682595
+#> [1] 2.734315
 #> 
 #> $davies_bouldin_sim
-#> [1] 2.682595
+#> [1] 2.734315
 #> 
 #> $neighborhood_purity
 #> [1] 0.46
 #> 
 #> $cdi
-#> [1] 4.292815
+#> [1] 4.358829
 #> 
 #> $CDI_AIC
-#> [1] 4.292815
+#> [1] 4.358829
 #> 
 #> $CDI_BIC
-#> [1] 4.413849
+#> [1] 4.479863
 #> 
 #> $ari
 #> [1] 0

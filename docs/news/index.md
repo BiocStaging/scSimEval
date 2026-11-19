@@ -2,21 +2,22 @@
 
 ## scSimEval 0.99.10
 
-- **Category VII Trajectory Standardization**: Upgraded Category VII to
-  the `dynverse` trajectory inference benchmarking protocol, introducing
-  5 standardized metrics (`him`, `edge_flip`, `geodesic_correlation`,
-  `F1_branches`, and `wcor_features`).
-- **Category VIII Scalability Normalization**: Standardized
-  computational efficiency to core-normalized metrics (`core_seconds`
-  and `memory_per_core_mib`).
-- **Unified Metric Suite**: Harmonized documentation and benchmark
-  specifications across 56 canonical evaluation measures in 8
-  categories.
-- **Package Size Optimization**: Streamlined demo data and vignettes to
-  keep source tarball under 5 MB for Bioconductor compliance.
+- Updated the data input option which align with Seurat and Single cell
+  experiment objects.
+- **Fasano-Franceschini 2D KS Min-Max Normalization**: Corrected
+  direction-aware score normalization in `.normalize_bubble_scores()` so
+  that `Fasano_Franceschini_2D_KS` (and other bounded
+  distance/divergence metrics) properly scale to `[0, 1]` across
+  benchmarked simulators rather than bypassing min-max scaling.
 
 ## scSimEval 0.99.9
 
+- **Category VII Trajectory Standardization**: Upgraded Category VII to
+  the `dynverse` trajectory inference protocol (`him`, `edge_flip`,
+  `geodesic_correlation`, `F1_branches`, and `wcor_features`).
+- **Category VIII Scalability Normalization**: Standardized
+  computational efficiency to core-normalized metrics (`core_seconds`
+  and `memory_per_core_mib`).
 - **S4 Object Standardization**: Standardized input handling to require
   `Seurat` or `SingleCellExperiment` objects with precomputed
   dimensional reductions.
@@ -56,7 +57,7 @@
   averages and individual datasets across all visualization panels.
 - **Memory Standardization**: Standardized computational memory
   reporting to binary MiB RAM
-  ($`1\text{ MiB} = 1,048,576\text{ bytes}`$).
+  ($1{\mspace{6mu}\text{MiB}} = 1,048,576{\mspace{6mu}\text{bytes}}$).
 
 ## scSimEval 0.99.5
 

@@ -10,7 +10,7 @@ near 0 indicate well-mixed batches. The per-cell-type score is \\1 -
 ## Usage
 
 ``` r
-calc_batch_asw(embed, batch, cell_type = NULL)
+calc_batch_asw(embed, batch, cell_type = NULL, threads = 1)
 ```
 
 ## Arguments
@@ -27,6 +27,10 @@ calc_batch_asw(embed, batch, cell_type = NULL)
 - cell_type:
 
   Optional vector or factor of cell-type labels for each cell.
+
+- threads:
+
+  Number of CPU threads (default 1).
 
 ## Value
 

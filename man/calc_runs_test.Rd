@@ -14,7 +14,11 @@ calc_runs_test(ref, sim, alternative = c("left.sided", "two.sided"))
 \item{alternative}{Alternative hypothesis: "left.sided" (default in countsimQC) or "two.sided".}
 }
 \value{
-A named list with the runs test statistic and p-value.
+A named list with 2 numeric scalars:
+\describe{
+  \item{runs_statistic}{Standardized Wald-Wolfowitz z-statistic comparing observed runs to expected runs under mixing.}
+  \item{runs_pvalue}{Associated p-value under the selected \code{alternative} hypothesis.}
+}
 }
 \description{
 Integrated from countsimQC (Soneson & Robinson). Tests whether values from

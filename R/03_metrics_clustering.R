@@ -61,45 +61,34 @@ calc_davies_bouldin <- function(data, cluster_labels) {
     X <- X[seq_len(n_common), , drop = FALSE]
   }
   if (length(unique(cluster_labels)) < 2 || length(cluster_labels) < 3) return(NA_real_)
-  val <- tryCatch({
-    if (requireNamespace("clusterSim", quietly = TRUE)) {
-      res <- clusterSim::index.DB(X, cluster_labels)
-      if (is.list(res) && "DB" %in% names(res)) as.numeric(res$DB) else as.numeric(res)
-    } else {
-      NA_real_
+  tryCatch({
+    u_cl <- unique(cluster_labels)
+    k <- length(u_cl)
+    if (k < 2) return(NA_real_)
+    centroids <- list()
+    s_i <- numeric(k)
+    for (idx_c in seq_len(k)) {
+      cl <- u_cl[idx_c]
+      idx <- which(cluster_labels == cl)
+      idx <- idx[idx <= nrow(X)]
+      if (length(idx) == 0) next
+      cl_mat <- X[idx, , drop = FALSE]
+      cent <- colMeans(cl_mat)
+      centroids[[idx_c]] <- cent
+      diffs <- sweep(cl_mat, 2, cent, "-")
+      s_i[idx_c] <- mean(sqrt(rowSums(diffs^2)))
     }
-  }, error = function(e) NA_real_)
-  if (is.na(val)) {
-    val <- tryCatch({
-      u_cl <- unique(cluster_labels)
-      k <- length(u_cl)
-      if (k < 2) return(NA_real_)
-      centroids <- list()
-      s_i <- numeric(k)
-      for (idx_c in seq_len(k)) {
-        cl <- u_cl[idx_c]
-        idx <- which(cluster_labels == cl)
-        idx <- idx[idx <= nrow(X)]
-        if (length(idx) == 0) next
-        cl_mat <- X[idx, , drop = FALSE]
-        cent <- colMeans(cl_mat)
-        centroids[[idx_c]] <- cent
-        diffs <- sweep(cl_mat, 2, cent, "-")
-        s_i[idx_c] <- mean(sqrt(rowSums(diffs^2)))
-      }
-      r_ij <- matrix(0, k, k)
-      for (i in seq_len(k)) {
-        for (j in seq_len(k)) {
-          if (i != j && length(centroids[[i]]) > 0 && length(centroids[[j]]) > 0) {
-            m_ij <- sqrt(sum((centroids[[i]] - centroids[[j]])^2))
-            r_ij[i, j] <- if (m_ij > 0) (s_i[i] + s_i[j]) / m_ij else 0
-          }
+    r_ij <- matrix(0, k, k)
+    for (i in seq_len(k)) {
+      for (j in seq_len(k)) {
+        if (i != j && length(centroids[[i]]) > 0 && length(centroids[[j]]) > 0) {
+          m_ij <- sqrt(sum((centroids[[i]] - centroids[[j]])^2))
+          r_ij[i, j] <- if (m_ij > 0) (s_i[i] + s_i[j]) / m_ij else 0
         }
       }
-      mean(apply(r_ij, 1, max))
-    }, error = function(e) NA_real_)
-  }
-  val
+    }
+    mean(apply(r_ij, 1, max))
+  }, error = function(e) NA_real_)
 }
 
 #' Calculate Adjusted Rand Index (ARI)
@@ -666,10 +655,16 @@ evaluate_clustering_metrics <- function(
     }
     if (inherits(d_norm_temp, "Matrix")) d_norm_temp <- as.matrix(d_norm_temp)
     pca_temp <- fast_pca(t(d_norm_temp), n_pcs = min(15, n_cells_sim - 1, nrow(d_norm_temp) - 1), n_hvg = 2000, scale = FALSE)
-    km_fallback <- tryCatch(
-      suppressWarnings(stats::kmeans(pca_temp, centers = k_fallback, iter.max = 50, nstart = 5)),
-      error = function(e) list(cluster = rep(seq_len(k_fallback), length.out = n_cells_sim))
-    )
+    n_uniq_pts <- nrow(unique(pca_temp))
+    k_use <- min(k_fallback, max(1L, n_uniq_pts - 1L))
+    km_fallback <- if (k_use >= 2L) {
+      tryCatch(
+        stats::kmeans(pca_temp, centers = k_use, iter.max = 100, nstart = 5),
+        error = function(e) list(cluster = rep(seq_len(k_fallback), length.out = n_cells_sim))
+      )
+    } else {
+      list(cluster = rep(seq_len(k_fallback), length.out = n_cells_sim))
+    }
     cluster_info <- factor(paste0("Cluster_", km_fallback$cluster))
     cluster_info <- as.factor(cluster_info)
     # SimBench standard: skip cell types with fewer than 10 cells
@@ -816,11 +811,14 @@ evaluate_clustering_metrics <- function(
   # If pred_clusters is not provided, run k-means with k = n_cl_lvls
   n_cl_lvls <- length(unique(stats::na.omit(cluster_info)))
   if (is.null(pred_clusters) && n_cl_lvls >= 2L) {
-    k_centers <- n_cl_lvls
     km_input <- if (!is.null(pca_coords)) pca_coords else t(as.matrix(d_use))
-    km_fit <- tryCatch(suppressWarnings(stats::kmeans(km_input, centers = k_centers, iter.max = 50, nstart = 5)), error = function(e) NULL)
-    if (!is.null(km_fit)) {
-      pred_clusters <- factor(km_fit$cluster)
+    n_uniq_km <- nrow(unique(km_input))
+    k_centers <- min(n_cl_lvls, max(1L, n_uniq_km - 1L))
+    if (k_centers >= 2L) {
+      km_fit <- tryCatch(stats::kmeans(km_input, centers = k_centers, iter.max = 100, nstart = 5), error = function(e) NULL)
+      if (!is.null(km_fit)) {
+        pred_clusters <- factor(km_fit$cluster)
+      }
     }
   }
   

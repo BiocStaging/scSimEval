@@ -72,10 +72,10 @@ peaks (HVPs) and the same 100 balanced paired cells as <code>example_scrna</code
     <div class="section level2">
     <h2 id="format">Format<a class="anchor" aria-label="anchor" href="#format"></a></h2>
     <p>A list with 4 elements:</p><dl><dt>ref</dt>
-<dd><p>A sparse count matrix (<code>dgCMatrix</code>) of reference peak accessibility counts (100 HVPs x 100 cells).</p></dd>
+<dd><p>A <code>SingleCellExperiment</code> object containing reference peak accessibility counts (100 HVPs x 100 cells), cell types and batch annotations in <code>colData</code>, and precomputed <code>PCA</code> in <code>reducedDims</code>.</p></dd>
 
   <dt>sim</dt>
-<dd><p>A sparse count matrix (<code>dgCMatrix</code>) of simulated peak accessibility counts (100 HVPs x 100 cells).</p></dd>
+<dd><p>A <code>SingleCellExperiment</code> object containing simulated peak accessibility counts (100 HVPs x 100 cells), cell types and batch annotations in <code>colData</code>, and precomputed <code>PCA</code> in <code>reducedDims</code>.</p></dd>
 
   <dt>cell_types</dt>
 <dd><p>A named factor of cell-type identities across 8 Rice Bud cell types for the 100 cells.</p></dd>
@@ -92,10 +92,16 @@ peaks (HVPs) and the same 100 balanced paired cells as <code>example_scrna</code
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_scatac</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">example_scatac</span><span class="op">$</span><span class="va">ref</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">example_scatac</span><span class="op">$</span><span class="va">sim</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">example_scatac</span><span class="op">$</span><span class="va">batch_info</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_scatac</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">example_scatac</span><span class="op">$</span><span class="va">ref</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 100 100</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">example_scatac</span><span class="op">$</span><span class="va">sim</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 100 100</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">example_scatac</span><span class="op">$</span><span class="va">batch_info</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Bud_21 Bud_22 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     61     39 </span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

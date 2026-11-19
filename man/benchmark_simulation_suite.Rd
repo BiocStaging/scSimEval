@@ -8,7 +8,7 @@ benchmark_simulation_suite(
   datasets,
   simulators,
   compute_bivariate = FALSE,
-  threads = 1,
+  threads = 1L,
   auto_sparse = TRUE,
   run_gc = TRUE,
   save_path = NULL,
@@ -16,48 +16,43 @@ benchmark_simulation_suite(
 )
 }
 \arguments{
-\item{datasets}{A named list of empirical reference datasets. Each item can be a
-single-cell count matrix (features x cells), a path to an RDS/CSV matrix file,
-or a list with \code{ref}, optional \code{cell_types}, and optional \code{batch_info}.}
+\item{datasets}{Named list of empirical reference datasets (\code{SingleCellExperiment},
+count matrix, file path, or list containing \code{ref}, \code{cell_types}, \code{batch_info}).}
 
-\item{simulators}{A named list of simulation methods. Each element must be a named
-list of simulated count matrices (or matrix file paths) corresponding to the
-datasets in \code{datasets}.
-Example: \code{list(Splatter = list(D1 = sim_splat_d1, D2 = sim_splat_d2), scDesign3 = ...)}.}
+\item{simulators}{Named list of simulator outputs corresponding to \code{datasets}.}
 
-\item{compute_bivariate}{Logical. Whether to compute 2D bivariate tests. Default \code{FALSE}
-for fast high-throughput execution.}
+\item{compute_bivariate}{Logical; compute 2D bivariate tests. Default \code{FALSE}.}
 
-\item{threads}{Number of threads / parallel workers. Default is \code{1}.}
+\item{threads}{Integer number of parallel workers. Default \code{1L}.}
 
-\item{auto_sparse}{Logical. Automatically coerce dense count matrices to \code{dgCMatrix}
-to minimize RAM usage. Default \code{TRUE}.}
+\item{auto_sparse}{Logical; coerce dense matrices to \code{dgCMatrix}. Default \code{TRUE}.}
 
-\item{run_gc}{Logical. Run garbage collection (\code{gc()}) after each dataset evaluation
-to prevent memory accumulation on HPC nodes. Default \code{TRUE}.}
+\item{run_gc}{Logical; run \code{gc()} between datasets. Default \code{TRUE}.}
 
-\item{save_path}{Optional file path (ending in \code{.rds}) to directly persist the
-consolidated benchmark bundle for loading into Shiny Studio.}
+\item{save_path}{Optional \code{.rds} path to save the output bundle.}
 
-\item{verbose}{Logical. Print informative progress logging. Default \code{TRUE}.}
+\item{verbose}{Logical; print progress logging. Default \code{TRUE}.}
 }
 \value{
-An object of class \code{scSimEval_multidataset_benchmark} containing:
-  \itemize{
-    \item \code{granular_benchmark_table}: Tidy data.frame containing all evaluated metrics across every dataset and simulator.
-    \item \code{benchmark_summary_table}: Tidy data.frame containing cross-dataset averaged fidelity scores for each simulator (ready for \code{plot_benchmark_bubble_matrix()}).
-    \item \code{dataset_summary_table}: Summary of reference dataset dimensions, sparsity, and library properties.
-    \item \code{methods}: Vector of evaluated simulator names.
-    \item \code{datasets}: Vector of evaluated dataset names.
-    \item \code{cross_dataset_stats}: Summary statistics (mean, SD, SE) for each metric across datasets.
-  }
+An S3 object of class \code{c("scSimEval_multidataset_benchmark", "scSimEval_consolidated", "list")} containing:
+\describe{
+  \item{granular_benchmark_table}{Tidy data.frame across all dataset-simulator evaluations.}
+  \item{benchmark_summary_table}{Cross-dataset averaged fidelity scores formatted for \code{\link{plot_benchmark_bubble_matrix}}.}
+  \item{cross_dataset_stats}{Mean, SD, SE, Min, Max, and \code{N_Datasets} for each simulator and metric.}
+  \item{dataset_summary}{Summary table of reference dimensions, sparsity, and cell-type counts.}
+  \item{dataset_summary_df}{Alias of \code{dataset_summary}.}
+  \item{methods}{Character vector of evaluated simulator names.}
+  \item{datasets}{Character vector of evaluated dataset names.}
+  \item{is_multidataset}{Logical \code{TRUE}.}
+  \item{n_datasets}{Integer count of datasets.}
+  \item{n_simulators}{Integer count of simulators.}
+}
 }
 \description{
-A unified, high-performance, and beginner-friendly benchmarking runner designed
-for multi-dataset and multi-simulator studies (e.g., 16 datasets x 6 simulators).
-Automatically manages memory allocation with sparse matrix coercions,
-parallel execution across datasets, progress tracking, and produces
-both granular and cross-dataset aggregated benchmark tables ready for visualization.
+Unified benchmarking runner for multi-dataset and multi-simulator studies.
+Manages sparse matrix coercion, \code{SingleCellExperiment} conversion,
+parallel metric computation, and produces both granular and cross-dataset
+aggregated summary tables ready for visualization.
 }
 \examples{
 \donttest{

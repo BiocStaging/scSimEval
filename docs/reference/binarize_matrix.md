@@ -16,7 +16,7 @@ binarize_matrix(mat)
 
 - mat:
 
-  Single-cell matrix, sparse dgCMatrix, SingleCellExperiment, or Seurat
+  Single-cell matrix, sparse `dgCMatrix`, or `SingleCellExperiment`
   object.
 
 ## Value

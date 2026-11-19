@@ -32,7 +32,7 @@ Simulating and evaluating unpaired multiomics introduces distinct methodological
 * **Shared-Manifold Alignment Without Cell Pairing:** Cross-modality coherence (Category VI) is assessed at the shared biological population and integrated latent embedding level (joint cell-type alignment, batch mixing, and graph connectivity) rather than direct cell-to-cell feature pairing.
 * **Modality-Specific Scalability Accounting:** Some simulators (`scMultiSim`, `scCross`) simulate both modalities in a single unified run, whereas modular frameworks (`scDesign3`) fit and simulate scRNA-seq and scATAC-seq in separate jobs with distinct CPU core allocations and memory footprints. `scSimEval` natively supports both combined and modality-separated resource tracking.
 
-**`scSimEval`** handles unpaired designs automatically when `is_paired = FALSE` in `evaluate_multiomics_accuracy()`, evaluating all **8 active categories**:
+**`scSimEval`** handles unpaired designs automatically when `pairing = "unpaired"` in `evaluate_multiomics_accuracy()`, evaluating all **8 active categories**:
 1. **Category I: Distributional Properties** — Independent univariate distributional distances across RNA genes and ATAC peaks.
 2. **Category II: Sparsity & Zero-Inflation Dynamics** — Logistic dropout modeling for RNA and quadratic accessibility-sparsity curve fitting for ATAC.
 3. **Category III: Cellular Manifold & Clustering Concordance** — Modality-specific manifold geometry, MMD, Generative Precision & Recall, ASW, ARI, and NMI.
@@ -46,10 +46,9 @@ Simulating and evaluating unpaired multiomics introduces distinct methodological
 
 # 1. Input Data Requirements & Case Study Setup
 
-For unpaired evaluation, `scSimEval` accepts modality-indexed lists for count objects, cell-type labels, and batch identifiers:
-* `ref_multi = list(RNA = ref_rna_obj, ATAC = ref_atac_obj)` (independent cell barcodes and counts)
-* `sim_multi = list(RNA = sim_rna_obj, ATAC = sim_atac_obj)`
-* `cell_types = list(RNA = ct_rna, ATAC = ct_atac)` and `batch_info = list(RNA = bt_rna, ATAC = bt_atac)`
+For unpaired evaluation, `scSimEval` accepts modality-indexed lists of `SingleCellExperiment` objects (with `cell_type` and `batch` in `colData` of each SCE, or a stacked multi-modal SCE annotated with `colData$modality`):
+* `ref_multi = list(RNA = ref_rna_sce, ATAC = ref_atac_sce)` (independent cell barcodes and counts)
+* `sim_multi = list(RNA = sim_rna_sce, ATAC = sim_atac_sce)`
 
 ### Case Study: Soybean Hypocotyl Unpaired Multiomics (3 Simulators)
 
@@ -69,27 +68,22 @@ The 3 evaluated simulators and their empirical HPC resource logs are summarized 
 
 # 2. Running the Unpaired Multiomics Benchmarking Pipeline
 
-Setting `is_paired = FALSE` in `evaluate_multiomics_accuracy()` activates independent modality evaluation and unpaired joint-embedding integration scoring. Below is the exact workflow demonstrating both combined (`scMultiSim`, `scCross`) and modality-separated (`scDesign3`) resource logging:
+Setting `pairing = "unpaired"` in `evaluate_multiomics_accuracy()` activates independent modality evaluation and unpaired joint-embedding integration scoring. Below is the exact workflow demonstrating both combined (`scMultiSim`, `scCross`) and modality-separated (`scDesign3`) resource logging:
 
 ```r
 library(scSimEval)
 
-# Validate empirical reference (extracts independent RNA and ATAC assays + metadata)
+# Validate empirical reference (extracts independent RNA and ATAC SCE layers + colData)
 ref_val <- validate_multiomics_input(
   readRDS("soy_hypocotyl_reference_integrated_combined.rds"),
   "Soybean Hypocotyl (Unpaired)"
 )
 
-eval_ct <- list(RNA = ref_val$cell_types$RNA, ATAC = ref_val$cell_types$ATAC)
-eval_bt <- list(RNA = ref_val$batch_info$RNA, ATAC = ref_val$batch_info$ATAC)
-
 # Example A: Combined resource tracking (scMultiSim / scCross)
 eval_scmultisim <- evaluate_multiomics_accuracy(
   ref_multi         = list(RNA = ref_val$m1_obj, ATAC = ref_val$m2_obj),
   sim_multi         = list(RNA = sim_val$m1_obj, ATAC = sim_val$m2_obj),
-  is_paired         = FALSE,
-  cell_types        = eval_ct,
-  batch_info        = eval_bt,
+  pairing           = "unpaired",
   elapsed_time      = 216.804,
   time_unit         = "seconds",
   memory_mb         = 2774.70,
@@ -104,14 +98,11 @@ eval_scmultisim <- evaluate_multiomics_accuracy(
 eval_scdesign3 <- evaluate_multiomics_accuracy(
   ref_multi         = list(RNA = ref_val$m1_obj, ATAC = ref_val$m2_obj),
   sim_multi         = list(RNA = sim_d3$m1_obj,  ATAC = sim_d3$m2_obj),
-  is_paired         = FALSE,
-  cell_types        = eval_ct,
-  batch_info        = eval_bt,
-  elapsed_time_rna  = 89.19,   elapsed_time_atac = 268.28,
-  memory_mb_rna     = 2190.40, memory_mb_atac    = 9334.00,
-  time_unit_rna     = "seconds", time_unit_atac  = "seconds",
-  memory_unit_rna   = "MiB",     memory_unit_atac = "MiB",
-  sim_cores_rna     = 16L,       sim_cores_atac  = 4L,
+  pairing           = "unpaired",
+  separate_resources = list(
+    rna  = list(elapsed_time = 89.19,  memory_mb = 2190.40, time_unit = "seconds", memory_unit = "MiB", sim_cores = 16L),
+    atac = list(elapsed_time = 268.28, memory_mb = 9334.00, time_unit = "seconds", memory_unit = "MiB", sim_cores = 4L)
+  ),
   compute_bivariate = FALSE,
   threads           = 16L,
   verbose           = FALSE
@@ -135,7 +126,7 @@ final_benchmark_df <- readRDS(res_file)
 Aggregating direction-aware normalized scores across all 8 evaluation categories ranks the 3 candidate simulators on Soybean Hypocotyl unpaired multiomics:
 
 ```{r leaderboard}
-df_norm <- scSimEval:::.normalize_bubble_scores(final_benchmark_df)
+df_norm <- scSimEval::normalize_bubble_scores(final_benchmark_df)
 agg <- stats::aggregate(Score_Norm ~ Method + Category, data = df_norm, FUN = mean, na.rm = TRUE)
 leaderboard <- stats::aggregate(Score_Norm ~ Method, data = agg, FUN = mean, na.rm = TRUE)
 leaderboard <- leaderboard[order(leaderboard$Score_Norm, decreasing = TRUE), ]

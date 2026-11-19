@@ -20,7 +20,8 @@ evaluate_deg_fidelity(
   logfc_cutoff = 0,
   classifier = c("svm", "knn", "rf"),
   min_cells = 3,
-  min_reps = 2
+  min_reps = 2,
+  threads = 1
 )
 
 evaluate_rna_de_fidelity(
@@ -34,7 +35,8 @@ evaluate_rna_de_fidelity(
   logfc_cutoff = 0,
   classifier = c("svm", "knn", "rf"),
   min_cells = 3,
-  min_reps = 2
+  min_reps = 2,
+  threads = 1
 )
 ```
 
@@ -86,6 +88,11 @@ evaluate_rna_de_fidelity(
 - min_reps:
 
   Minimum number of replicates per group (default 2).
+
+- threads:
+
+  Number of CPU threads for parallel pairwise contrast evaluation
+  (default 1).
 
 ## Value
 

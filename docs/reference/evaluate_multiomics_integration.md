@@ -71,7 +71,7 @@ evaluate_multiomics_integration(
 - reduction_name:
 
   Optional name of the precomputed dimensional reduction to extract from
-  Seurat/SCE objects.
+  `SingleCellExperiment` objects.
 
 - n_pcs:
 

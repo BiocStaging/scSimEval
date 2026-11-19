@@ -8,7 +8,13 @@ macro F1 score of predictions on all other remaining batches.
 ## Usage
 
 ``` r
-evaluate_cross_batch_prediction(coords, cell_types, batch_info, k = 5)
+evaluate_cross_batch_prediction(
+  coords,
+  cell_types,
+  batch_info,
+  k = 5,
+  threads = 1
+)
 ```
 
 ## Arguments
@@ -30,6 +36,10 @@ evaluate_cross_batch_prediction(coords, cell_types, batch_info, k = 5)
   Integer number of nearest neighbors for the k-NN classifier (default
   5).
 
+- threads:
+
+  Number of CPU threads (default 1).
+
 ## Value
 
 A list containing:
@@ -46,6 +56,6 @@ batch <- factor(rep(c("B1", "B2"), length.out = 50))
 ct <- factor(rep(c("TypeA", "TypeB"), length.out = 50))
 evaluate_cross_batch_prediction(coords, ct, batch)
 #> $mean_cross_batch_F1
-#> [1] NaN
+#> [1] NA
 #> 
 ```

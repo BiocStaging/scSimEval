@@ -7,7 +7,7 @@
 binarize_matrix(mat)
 }
 \arguments{
-\item{mat}{Single-cell matrix, sparse dgCMatrix, SingleCellExperiment, or Seurat object.}
+\item{mat}{Single-cell matrix, sparse \code{dgCMatrix}, or \code{SingleCellExperiment} object.}
 }
 \value{
 A matrix of the same class with all positive entries set to 1.

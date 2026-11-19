@@ -25,8 +25,9 @@ canonical evaluation categories (I-VIII) displayed as colored header strips at t
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-demonstrations" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Demonstrations</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-demonstrations"><li><a class="dropdown-item" href="../articles/demo-scrna.html">1. scRNA-seq Simulation Evaluation</a></li>
     <li><a class="dropdown-item" href="../articles/demo-scatac.html">2. scATAC-seq Simulation Evaluation</a></li>
-    <li><a class="dropdown-item" href="../articles/demo-multiomics.html">3. Multiomics (RNA + ATAC) Evaluation</a></li>
-    <li><a class="dropdown-item" href="../articles/demo-saved-rds.html">4. Analyzing Pre-Saved Benchmark (.rds)</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-multiomics.html">3. Paired Multiomics (RNA + ATAC) Evaluation</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-unpaired-multiomics.html">4. Unpaired Multiomics (RNA + ATAC) Evaluation</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-saved-rds.html">5. Analyzing Pre-Saved Benchmark (.rds)</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../articles/metrics-catalog.html">Metric Catalog (56 Metrics)</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -117,8 +118,7 @@ differential prefix ("DE/DA ", "DE ", or "DA "). If <code>NULL</code>, auto-dete
 
 
 <dt id="arg-method-classes">method_classes<a class="anchor" aria-label="anchor" href="#arg-method-classes"></a></dt>
-<dd><p>Optional named list mapping method names to row group labels.
-E.g. <code>list("scRNA-seq" = c("Splatter", "SymSim"), "Multiomics" = c("scDesign3", "dyngen"))</code>.</p></dd>
+<dd><p>Optional named list mapping method names to row group labels.</p></dd>
 
 
 <dt id="arg-category-colors">category_colors<a class="anchor" aria-label="anchor" href="#arg-category-colors"></a></dt>
@@ -193,8 +193,7 @@ directly (higher = better).</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Tidy benchmark data frame of standardized scores</span></span></span>
-<span class="r-in"><span><span class="va">bm_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">bm_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  Method   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Splat"</span>, <span class="st">"scDesign3"</span>, <span class="st">"SymSim"</span>, <span class="st">"dyngen"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  Category <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Accuracy"</span>, <span class="st">"Accuracy"</span>, <span class="st">"Cellular Structure"</span>, <span class="st">"Scalability"</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  Metric   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"KS Distance"</span>, <span class="st">"Wasserstein"</span>, <span class="st">"Silhouette ASW"</span>, <span class="st">"CPU Time"</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>,</span></span>
@@ -203,24 +202,6 @@ directly (higher = better).</p>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">plot_benchmark_bubble_matrix</span><span class="op">(</span><span class="va">bm_df</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">p</span></span></span>
 <span class="r-plt img"><img src="plot_benchmark_bubble_matrix-1.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span><span class="co"># \donttest{</span></span></span>
-<span class="r-in"><span><span class="co"># Load benchmark summary across simulators</span></span></span>
-<span class="r-in"><span><span class="va">demo_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"shiny/scSimEvalApp/data/demo_benchmark_data.rds"</span>, package <span class="op">=</span> <span class="st">"scSimEval"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">demo_file</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="va">demo</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">demo_file</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">plot_benchmark_bubble_matrix</span><span class="op">(</span></span></span>
-<span class="r-in"><span>    data <span class="op">=</span> <span class="va">demo</span><span class="op">$</span><span class="va">benchmark_summary_table</span>,</span></span>
-<span class="r-in"><span>    title <span class="op">=</span> <span class="st">"Single-Cell Multiomics Simulation Benchmark"</span>,</span></span>
-<span class="r-in"><span>    method_classes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>      <span class="st">"scRNA-seq"</span>  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Splatter"</span>, <span class="st">"SymSim"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>      <span class="st">"scATAC-seq"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"simATAC"</span>, <span class="st">"SCRIP"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>      <span class="st">"Multiomics"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"scDesign3"</span>, <span class="st">"dyngen"</span><span class="op">)</span></span></span>
-<span class="r-in"><span>    <span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-plt img"><img src="plot_benchmark_bubble_matrix-2.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

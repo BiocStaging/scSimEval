@@ -205,18 +205,13 @@ datasets:</p>
 <strong>Empirical Biological Reference
 (<code>ref_multi</code>):</strong>
 <ul>
-<li>A list containing two modalities: <code>RNA</code> (a gene-by-cell
-matrix or pure RNA <code>Seurat</code> object) and <code>ATAC</code> (a
-peak-by-cell matrix or pure ATAC <code>Seurat</code> object) profiled
-from the <strong>same single cells</strong>.</li>
-<li>
-<strong>Cell-Type Annotations (<code>cell_types</code> —
-Mandatory):</strong> Factor or character vector specifying biological
-cell identities.</li>
-<li>
-<strong>Batch Identifiers (<code>batch_info</code> —
-Mandatory):</strong> Factor or character vector specifying technical
-batches or donor replicates.</li>
+<li>A multi-modal <code>SingleCellExperiment</code> (with
+<code>altExp(sce, "ATAC")</code>) or a named list
+<code>list(RNA = rna_sce, ATAC = atac_sce)</code> profiled from the
+<strong>same single cells</strong>, storing <code>cell_type</code> and
+<code>batch</code> in <code>colData</code>. Users starting from Seurat
+objects can convert via
+<code><a href="https://satijalab.org/seurat/reference/as.SingleCellExperiment.html" class="external-link">Seurat::as.SingleCellExperiment()</a></code>.</li>
 </ul>
 </li>
 <li>
@@ -342,7 +337,7 @@ allocations (16 CPU cores) are summarized below:</p>
 </h2>
 <p>The master evaluation entrypoint for multiomics in
 <code>scSimEval</code> is <code><a href="../reference/evaluate_multiomics_accuracy.html">evaluate_multiomics_accuracy()</a></code>.
-Specifying <code>is_paired = TRUE</code> triggers joint cross-modality
+Specifying <code>pairing = "paired"</code> triggers joint cross-modality
 pairing checks, dual unimodal evaluations, and Category VI integration
 analyses:</p>
 <div class="section level4">
@@ -353,11 +348,9 @@ analyses:</p>
 <span></span>
 <span><span class="co"># Run full evaluation across all 8 paired multiomics categories</span></span>
 <span><span class="va">eval_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/evaluate_multiomics_accuracy.html">evaluate_multiomics_accuracy</a></span><span class="op">(</span></span>
-<span>  ref_multi         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>RNA <span class="op">=</span> <span class="va">ref_rna_obj</span>, ATAC <span class="op">=</span> <span class="va">ref_atac_obj</span><span class="op">)</span>,</span>
-<span>  sim_multi         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>RNA <span class="op">=</span> <span class="va">sim_rna_obj</span>, ATAC <span class="op">=</span> <span class="va">sim_atac_obj</span><span class="op">)</span>,</span>
-<span>  is_paired         <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  cell_types        <span class="op">=</span> <span class="va">ref_cell_types</span>,</span>
-<span>  batch_info        <span class="op">=</span> <span class="va">ref_batch_info</span>,</span>
+<span>  ref_multi         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>RNA <span class="op">=</span> <span class="va">ref_rna_sce</span>, ATAC <span class="op">=</span> <span class="va">ref_atac_sce</span><span class="op">)</span>,</span>
+<span>  sim_multi         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>RNA <span class="op">=</span> <span class="va">sim_rna_sce</span>, ATAC <span class="op">=</span> <span class="va">sim_atac_sce</span><span class="op">)</span>,</span>
+<span>  pairing           <span class="op">=</span> <span class="st">"paired"</span>,</span>
 <span>  elapsed_time      <span class="op">=</span> <span class="fl">48.30</span>,               <span class="co"># Simulation runtime in seconds</span></span>
 <span>  time_unit         <span class="op">=</span> <span class="st">"seconds"</span>,</span>
 <span>  memory_mb         <span class="op">=</span> <span class="fl">3398.40</span>,             <span class="co"># Simulation peak RAM</span></span>
@@ -378,12 +371,12 @@ analyses:</p>
 study:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim_configs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  scMultiSim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"scMultiSim_rice_Seed_seurat.rds"</span>, time <span class="op">=</span> <span class="fl">143.71</span>, mem <span class="op">=</span> <span class="fl">2465.20</span>, munit <span class="op">=</span> <span class="st">"MiB"</span>, cores <span class="op">=</span> <span class="fl">16L</span><span class="op">)</span>,</span>
-<span>  scDesign3  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"scDesign3_rice_Seed_seurat.rds"</span>,  time <span class="op">=</span>  <span class="fl">48.30</span>, mem <span class="op">=</span> <span class="fl">3398.40</span>, munit <span class="op">=</span> <span class="st">"MiB"</span>, cores <span class="op">=</span> <span class="fl">16L</span><span class="op">)</span>,</span>
-<span>  MOSim      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"mosim_rice_Seed_seurat.rds"</span>,      time <span class="op">=</span>  <span class="fl">93.68</span>, mem <span class="op">=</span> <span class="fl">1095.70</span>, munit <span class="op">=</span> <span class="st">"MiB"</span>, cores <span class="op">=</span> <span class="fl">16L</span><span class="op">)</span>,</span>
-<span>  scCross    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"scCross_rice_Seed_seurat.rds"</span>,    time <span class="op">=</span> <span class="fl">426.83</span>, mem <span class="op">=</span> <span class="fl">1157.56</span>, munit <span class="op">=</span> <span class="st">"MB"</span>,  cores <span class="op">=</span> <span class="fl">16L</span><span class="op">)</span>,</span>
-<span>  scMoMtF    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"scMoMtF_rice_Seed_seurat.rds"</span>,    time <span class="op">=</span>   <span class="fl">7.54</span>, mem <span class="op">=</span>  <span class="fl">160.02</span>, munit <span class="op">=</span> <span class="st">"MB"</span>,  cores <span class="op">=</span> <span class="fl">16L</span><span class="op">)</span>,</span>
-<span>  Matilda    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"matilda_rice_Seed_seurat.rds"</span>,    time <span class="op">=</span>  <span class="fl">31.83</span>, mem <span class="op">=</span>  <span class="fl">167.32</span>, munit <span class="op">=</span> <span class="st">"MB"</span>,  cores <span class="op">=</span> <span class="fl">16L</span><span class="op">)</span></span>
+<span>  scMultiSim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"scMultiSim_rice_Seed_sce.rds"</span>, time <span class="op">=</span> <span class="fl">143.71</span>, mem <span class="op">=</span> <span class="fl">2465.20</span>, munit <span class="op">=</span> <span class="st">"MiB"</span>, cores <span class="op">=</span> <span class="fl">16L</span><span class="op">)</span>,</span>
+<span>  scDesign3  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"scDesign3_rice_Seed_sce.rds"</span>,  time <span class="op">=</span>  <span class="fl">48.30</span>, mem <span class="op">=</span> <span class="fl">3398.40</span>, munit <span class="op">=</span> <span class="st">"MiB"</span>, cores <span class="op">=</span> <span class="fl">16L</span><span class="op">)</span>,</span>
+<span>  MOSim      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"mosim_rice_Seed_sce.rds"</span>,      time <span class="op">=</span>  <span class="fl">93.68</span>, mem <span class="op">=</span> <span class="fl">1095.70</span>, munit <span class="op">=</span> <span class="st">"MiB"</span>, cores <span class="op">=</span> <span class="fl">16L</span><span class="op">)</span>,</span>
+<span>  scCross    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"scCross_rice_Seed_sce.rds"</span>,    time <span class="op">=</span> <span class="fl">426.83</span>, mem <span class="op">=</span> <span class="fl">1157.56</span>, munit <span class="op">=</span> <span class="st">"MB"</span>,  cores <span class="op">=</span> <span class="fl">16L</span><span class="op">)</span>,</span>
+<span>  scMoMtF    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"scMoMtF_rice_Seed_sce.rds"</span>,    time <span class="op">=</span>   <span class="fl">7.54</span>, mem <span class="op">=</span>  <span class="fl">160.02</span>, munit <span class="op">=</span> <span class="st">"MB"</span>,  cores <span class="op">=</span> <span class="fl">16L</span><span class="op">)</span>,</span>
+<span>  Matilda    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"matilda_rice_Seed_sce.rds"</span>,    time <span class="op">=</span>  <span class="fl">31.83</span>, mem <span class="op">=</span>  <span class="fl">167.32</span>, munit <span class="op">=</span> <span class="st">"MB"</span>,  cores <span class="op">=</span> <span class="fl">16L</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">all_benchmark_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -395,11 +388,9 @@ study:</p>
 <span>  <span class="va">sim_val</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/validate_multiomics_input.html">validate_multiomics_input</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">cfg</span><span class="op">$</span><span class="va">file</span><span class="op">)</span>, <span class="va">sim_name</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="va">eval_out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/evaluate_multiomics_accuracy.html">evaluate_multiomics_accuracy</a></span><span class="op">(</span></span>
-<span>    ref_multi         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>RNA <span class="op">=</span> <span class="va">ref_rna_obj</span>, ATAC <span class="op">=</span> <span class="va">ref_atac_obj</span><span class="op">)</span>,</span>
+<span>    ref_multi         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>RNA <span class="op">=</span> <span class="va">ref_rna_sce</span>, ATAC <span class="op">=</span> <span class="va">ref_atac_sce</span><span class="op">)</span>,</span>
 <span>    sim_multi         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>RNA <span class="op">=</span> <span class="va">sim_val</span><span class="op">$</span><span class="va">m1_obj</span>, ATAC <span class="op">=</span> <span class="va">sim_val</span><span class="op">$</span><span class="va">m2_obj</span><span class="op">)</span>,</span>
-<span>    is_paired         <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>    cell_types        <span class="op">=</span> <span class="va">ref_cell_types</span>,</span>
-<span>    batch_info        <span class="op">=</span> <span class="va">ref_batch_info</span>,</span>
+<span>    pairing           <span class="op">=</span> <span class="st">"paired"</span>,</span>
 <span>    elapsed_time      <span class="op">=</span> <span class="va">cfg</span><span class="op">$</span><span class="va">time</span>,</span>
 <span>    time_unit         <span class="op">=</span> <span class="st">"seconds"</span>,</span>
 <span>    memory_mb         <span class="op">=</span> <span class="va">cfg</span><span class="op">$</span><span class="va">mem</span>,</span>
@@ -445,7 +436,7 @@ direction-aware fidelity score normalized to
 overall simulator ranking for the Rice Seed paired multiomics
 benchmark:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">df_norm</span> <span class="op">&lt;-</span> <span class="fu">scSimEval</span><span class="fu">:::</span><span class="fu"><a href="../reference/normalize_bubble_scores.html">.normalize_bubble_scores</a></span><span class="op">(</span><span class="va">final_benchmark_df</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">df_norm</span> <span class="op">&lt;-</span> <span class="fu">scSimEval</span><span class="fu">::</span><span class="fu"><a href="../reference/normalize_bubble_scores.html">normalize_bubble_scores</a></span><span class="op">(</span><span class="va">final_benchmark_df</span><span class="op">)</span></span>
 <span><span class="va">agg</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span><span class="va">Score_Norm</span> <span class="op">~</span> <span class="va">Method</span> <span class="op">+</span> <span class="va">Category</span>, data <span class="op">=</span> <span class="va">df_norm</span>, FUN <span class="op">=</span> <span class="va">mean</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">leaderboard</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span><span class="va">Score_Norm</span> <span class="op">~</span> <span class="va">Method</span>, data <span class="op">=</span> <span class="va">agg</span>, FUN <span class="op">=</span> <span class="va">mean</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">leaderboard</span> <span class="op">&lt;-</span> <span class="va">leaderboard</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">leaderboard</span><span class="op">$</span><span class="va">Score_Norm</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="op">]</span></span>

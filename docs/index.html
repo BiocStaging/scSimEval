@@ -117,32 +117,34 @@
 <h2 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
 <div class="section level3">
-<h3 id="id_1-interactive-shiny-studio">1. Interactive Shiny Studio<a class="anchor" aria-label="anchor" href="#id_1-interactive-shiny-studio"></a>
+<h3 id="id_1-reproducible-r-workflow-singlecellexperiment">1. Reproducible R Workflow (SingleCellExperiment)<a class="anchor" aria-label="anchor" href="#id_1-reproducible-r-workflow-singlecellexperiment"></a>
 </h3>
-<p>Launch the built-in, interactive graphical studio directly from R:</p>
+<p>Run benchmarking directly on <code>SingleCellExperiment</code> objects with cell-type and batch annotations stored in <code>colData</code>:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval/">scSimEval</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/launch_scSimEval_app.html">launch_scSimEval_app</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>The Shiny app provides automated dataset validation, real-time metric calculation, interactive diagnostic plots with zoom/scroll, and summary report exports.</p>
-</div>
-<div class="section level3">
-<h3 id="id_2-command-line-r-workflow">2. Command-Line R Workflow<a class="anchor" aria-label="anchor" href="#id_2-command-line-r-workflow"></a>
-</h3>
-<p>Run benchmarking directly in reproducible R scripts or HPC pipelines:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval/">scSimEval</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Run benchmark evaluation</span></span>
+<span><span class="co"># Users starting from Seurat objects should convert first:</span></span>
+<span><span class="co"># ref_sce &lt;- Seurat::as.SingleCellExperiment(ref_seurat)</span></span>
+<span></span>
+<span><span class="co"># Run benchmark evaluation (cell_type &amp; batch read from colData)</span></span>
 <span><span class="va">benchmark_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy</a></span><span class="op">(</span></span>
-<span>  ref_data   <span class="op">=</span> <span class="va">reference_counts</span>,</span>
-<span>  sim_data   <span class="op">=</span> <span class="va">simulated_counts</span>,</span>
-<span>  cell_types <span class="op">=</span> <span class="va">cell_type_annotations</span>,</span>
-<span>  batch_info <span class="op">=</span> <span class="va">batch_annotations</span>,</span>
-<span>  threads    <span class="op">=</span> <span class="fl">4</span></span>
+<span>  ref_sce       <span class="op">=</span> <span class="va">ref_sce</span>,</span>
+<span>  sim_sce       <span class="op">=</span> <span class="va">sim_sce</span>,</span>
+<span>  cell_type_col <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>  batch_col     <span class="op">=</span> <span class="st">"batch"</span>,</span>
+<span>  threads       <span class="op">=</span> <span class="fl">4</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Visualize summary</span></span>
 <span><span class="fu"><a href="reference/plot_evaluation_summary.html">plot_evaluation_summary</a></span><span class="op">(</span><span class="va">benchmark_results</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="id_2-interactive-shiny-studio">2. Interactive Shiny Studio<a class="anchor" aria-label="anchor" href="#id_2-interactive-shiny-studio"></a>
+</h3>
+<p>Interactive exploration, point-and-click benchmarking, and report export are available through the companion <strong><code>scSimEvalGUI</code></strong> package:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">scSimEvalGUI</span><span class="op">)</span></span>
+<span><span class="fu">launch_scSimEval_app</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
 </div>

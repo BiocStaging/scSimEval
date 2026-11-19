@@ -170,8 +170,16 @@ calc_accessibility_sparsity_curve <- function(data, poly_degree = 2) {
   c2 <- ifelse(length(coefs) >= 3, unname(coefs[3]), 0)
   
   r2 <- s_fit$r.squared
-  spearman_cor <- suppressWarnings(stats::cor(means, nzp, method = "spearman"))
-  pearson_cor <- suppressWarnings(stats::cor(means, nzp, method = "pearson"))
+  spearman_cor <- if (stats::sd(means, na.rm = TRUE) > 0 && stats::sd(nzp, na.rm = TRUE) > 0) {
+    stats::cor(means, nzp, method = "spearman")
+  } else {
+    NA_real_
+  }
+  pearson_cor <- if (stats::sd(means, na.rm = TRUE) > 0 && stats::sd(nzp, na.rm = TRUE) > 0) {
+    stats::cor(means, nzp, method = "pearson")
+  } else {
+    NA_real_
+  }
   
   list(
     c0 = c0,

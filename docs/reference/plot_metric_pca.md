@@ -9,10 +9,12 @@ simulation benchmark metrics and methods.
 plot_metric_pca(
   benchmark_data,
   panel = c("both", "methods", "loadings"),
+  assay_modality = c("auto", "scRNA-seq", "scATAC-seq", "multiomics"),
+  group_by = c("category", "summary_type"),
   by_category = FALSE,
   as_list = FALSE,
   category = NULL,
-  exclude_categories = NULL,
+  exclude_categories = "(VIII) Computational Scalability & Efficiency",
   metrics = NULL,
   palette = NULL,
   top_n_loadings = 14,
@@ -31,6 +33,21 @@ plot_metric_pca(
   Character. Which panel(s) to render: `"both"` (default; 2-panel
   stacked layout), `"methods"` (panel a only), or `"loadings"` (panel b
   only).
+
+- assay_modality:
+
+  Character string specifying the molecular modality: `"auto"` (default;
+  automatically detects from data attributes or metrics), `"scRNA-seq"`,
+  `"scATAC-seq"`, or `"multiomics"`. When `"scATAC-seq"`, feature-level
+  metrics are labeled `"peak"`. When `"scRNA-seq"`, feature-level
+  metrics are labeled `"gene"`. When `"multiomics"`, feature-level
+  metrics are labeled `"features"`.
+
+- group_by:
+
+  Character. Grouping variable for loading vectors in panel b:
+  `"category"` (default) groups vectors by evaluation category (I–VIII);
+  `"summary_type"` groups by feature/cell/global level.
 
 - by_category:
 
@@ -94,13 +111,76 @@ decomposition. Panel `"both"` displays:
 ``` r
 data(example_scrna, package = "scSimEval")
 res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
-#> [1/5] Extracting cell-level properties...
-#> [2/5] Extracting feature-level properties...
+#> [1/5] Extracting cell-level and feature-level properties...
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
 #> [3/5] Computing univariate accuracy metrics...
 #> [4/5] Computing bivariate metrics (Fasano-Franceschini, KDE zstat, 2D EMD)...
 #> [5/5] Computing zero-probability and manifold distances...
 #> Evaluating batch integration & confounder mixing...
 #> Evaluating scRNA-seq biological signal fidelity (Libra Pseudobulk edgeR-QLF)...
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
 #> calcNormFactors has been renamed to normLibSizes
 #> calcNormFactors has been renamed to normLibSizes
 #> [6/7] Evaluating trajectory and lineage topology (HVG + dynverse, scRNA-seq only)...

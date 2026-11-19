@@ -73,7 +73,6 @@
 #' data(example_multiomics)
 #' names(example_multiomics$ref_multi)
 #' names(example_multiomics$sim_multi)
-#' @export
 "example_multiomics"
 
 #' Example Cell-Type Annotations Vector (Rice Bud)
@@ -93,7 +92,6 @@
 #' data(example_cell_types)
 #' head(example_cell_types)
 #' table(example_cell_types)
-#' @export
 "example_cell_types"
 
 #' Example Batch Annotations Vector (Rice Bud)
@@ -111,14 +109,13 @@
 #' data(example_batch_info)
 #' head(example_batch_info)
 #' table(example_batch_info)
-#' @export
 "example_batch_info"
 
-#' Real Paired Single-Cell Multiomics Benchmark Dataset (Rice Bud, Seurat v5)
+#' Real Paired Single-Cell Multiomics Benchmark Dataset (Rice Bud, SingleCellExperiment)
 #'
 #' A real, pre-processed paired single-cell RNA-seq and ATAC-seq benchmark dataset of
 #' rice bud tissue (\emph{Oryza sativa}, GEO accession GSE232863), standardized
-#' using \code{Seurat} v5 objects.
+#' using Bioconductor \code{SingleCellExperiment} objects.
 #' Contains paired empirical reference profiles (top 100 HVGs x 100 balanced cells for RNA,
 #' top 100 HVPs x 100 identical paired cells for ATAC) covering all 8 biological cell types
 #' equally (12--13 cells per type) and 2 biological batches (\code{Bud_21}, \code{Bud_22}),
@@ -132,11 +129,11 @@
 #' @format A list with 4 elements:
 #' \describe{
 #'   \item{metadata}{List containing dataset name, organism, tissue, pairing mode (\code{"paired"}), dimensions, and simulators.}
-#'   \item{reference}{List containing standardized \code{Seurat} v5 objects:
-#'     \code{combined} (multi-modal \code{Seurat} with \code{RNA} 100 x 100 and \code{ATAC} 100 x 100 sharing identical paired cells and cell types),
-#'     \code{rna} (unimodal \code{Seurat} object for scRNA-seq, Data Mode 1), and
-#'     \code{atac} (unimodal \code{Seurat} object for scATAC-seq, Data Mode 2).}
-#'   \item{simulated}{Named list of simulated outputs for 6 simulators: \code{scMultiSim}, \code{scDesign3}, \code{MOSim}, \code{scCross}, \code{scMoMtF}, and \code{Matilda}. Each simulator entry contains \code{combined}, \code{rna}, and \code{atac} \code{Seurat} objects matching the reference structure.}
+#'   \item{reference}{List containing standardized \code{SingleCellExperiment} objects:
+#'     \code{combined} (multi-modal \code{SingleCellExperiment} with RNA counts and \code{altExp(combined, "ATAC")} sharing identical paired cells and \code{colData}),
+#'     \code{rna} (unimodal \code{SingleCellExperiment} for scRNA-seq), and
+#'     \code{atac} (unimodal \code{SingleCellExperiment} for scATAC-seq).}
+#'   \item{simulated}{Named list of simulated outputs for 6 simulators: \code{scMultiSim}, \code{scDesign3}, \code{MOSim}, \code{scCross}, \code{scMoMtF}, and \code{Matilda}. Each simulator entry contains \code{combined}, \code{rna}, and \code{atac} \code{SingleCellExperiment} objects matching the reference structure.}
 #'   \item{scalability_benchmarks}{A data.frame with benchmarked \code{Method}, \code{Runtime_Seconds}, \code{PeakRAM_MiB}, and \code{Sim_Cores}.}
 #' }
 #' @source Gene Expression Omnibus (GEO) GSE232863. Preprocessed via standard rice tissue pipeline.
@@ -150,15 +147,16 @@
 #' evaluate_multiomics_accuracy(
 #'   ref_multi = list(RNA = example_rice_bud$reference$rna, ATAC = example_rice_bud$reference$atac),
 #'   sim_multi = list(RNA = example_rice_bud$simulated$scDesign3$rna, ATAC = example_rice_bud$simulated$scDesign3$atac),
-#'   is_paired = TRUE
+#'   pairing = "paired"
 #' )
 #' }
 "example_rice_bud"
 
-#' Real Unpaired Single-Cell Multiomics Benchmark Dataset (Soybean Root, Seurat v5)
+#' Real Unpaired Single-Cell Multiomics Benchmark Dataset (Soybean Root, SingleCellExperiment)
 #'
 #' A real, pre-processed unpaired single-cell RNA-seq and ATAC-seq benchmark dataset of
-#' soybean root tissue (\emph{Glycine max}), standardized using \code{Seurat} v5 objects.
+#' soybean root tissue (\emph{Glycine max}), standardized using Bioconductor
+#' \code{SingleCellExperiment} objects.
 #' Contains independent empirical reference profiles (top 100 HVGs x 100 balanced RNA cells
 #' and top 100 HVPs x 100 independently sampled balanced ATAC cells) covering all 8 biological
 #' cell types (\code{Cortex}, \code{Endodermis}, \code{Epidermis}, \code{Pericycle},
@@ -172,11 +170,11 @@
 #' @format A list with 4 elements:
 #' \describe{
 #'   \item{metadata}{List containing dataset name, organism, tissue, pairing mode (\code{"unpaired"}), dimensions, and simulators.}
-#'   \item{reference}{List containing standardized \code{Seurat} v5 objects:
-#'     \code{combined} (multi-modal \code{Seurat} spanning 200 independent cells with \code{RNA} 100 x 100 and \code{ATAC} 100 x 100),
-#'     \code{rna} (unimodal \code{Seurat} object for scRNA-seq), and
-#'     \code{atac} (unimodal \code{Seurat} object for scATAC-seq).}
-#'   \item{simulated}{Named list of simulated outputs for 3 simulators: \code{scMultiSim}, \code{scDesign3}, and \code{scCross}. Each simulator entry contains \code{combined}, \code{rna}, and \code{atac} \code{Seurat} objects matching the reference structure.}
+#'   \item{reference}{List containing standardized \code{SingleCellExperiment} objects:
+#'     \code{combined} (multi-modal \code{SingleCellExperiment} with \code{colData$modality} distinguishing independent RNA and ATAC cells across \code{altExp(combined, "ATAC")}),
+#'     \code{rna} (unimodal \code{SingleCellExperiment} for scRNA-seq), and
+#'     \code{atac} (unimodal \code{SingleCellExperiment} for scATAC-seq).}
+#'   \item{simulated}{Named list of simulated outputs for 3 simulators: \code{scMultiSim}, \code{scDesign3}, and \code{scCross}. Each simulator entry contains \code{combined}, \code{rna}, and \code{atac} \code{SingleCellExperiment} objects matching the reference structure.}
 #'   \item{scalability_benchmarks}{A data.frame with benchmarked runtime, peak RAM, and CPU cores for RNA, ATAC, and combined execution.}
 #' }
 #' @source Preprocessed from soybean root single-cell atlas datasets.
@@ -190,7 +188,7 @@
 #' evaluate_multiomics_accuracy(
 #'   ref_multi = list(RNA = example_soybean_root$reference$rna, ATAC = example_soybean_root$reference$atac),
 #'   sim_multi = list(RNA = example_soybean_root$simulated$scMultiSim$rna, ATAC = example_soybean_root$simulated$scMultiSim$atac),
-#'   is_paired = FALSE
+#'   pairing = "unpaired"
 #' )
 #' }
 "example_soybean_root"

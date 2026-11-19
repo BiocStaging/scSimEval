@@ -27,8 +27,9 @@ component analysis, and optional unsupervised clustering."><meta property="og:im
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-demonstrations" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Demonstrations</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-demonstrations"><li><a class="dropdown-item" href="../articles/demo-scrna.html">1. scRNA-seq Simulation Evaluation</a></li>
     <li><a class="dropdown-item" href="../articles/demo-scatac.html">2. scATAC-seq Simulation Evaluation</a></li>
-    <li><a class="dropdown-item" href="../articles/demo-multiomics.html">3. Multiomics (RNA + ATAC) Evaluation</a></li>
-    <li><a class="dropdown-item" href="../articles/demo-saved-rds.html">4. Analyzing Pre-Saved Benchmark (.rds)</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-multiomics.html">3. Paired Multiomics (RNA + ATAC) Evaluation</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-unpaired-multiomics.html">4. Unpaired Multiomics (RNA + ATAC) Evaluation</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-saved-rds.html">5. Analyzing Pre-Saved Benchmark (.rds)</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../articles/metrics-catalog.html">Metric Catalog (56 Metrics)</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -136,23 +137,21 @@ component analysis, and optional unsupervised clustering.</p>
 <span class="r-in"><span>  reduction <span class="op">=</span> <span class="st">"umap"</span>,</span></span>
 <span class="r-in"><span>  cell_types <span class="op">=</span> <span class="va">example_scrna</span><span class="op">$</span><span class="va">cell_types</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>You're computing too large a percentage of total singular values, use a standard svd instead.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>You're computing too large a percentage of total singular values, use a standard svd instead.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">emb</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Cell_ID       Dim1       Dim2   Dataset      Role Dataset_Type Cell_Type</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 Cell_01  2.2737270 -0.1247193 Reference Reference    Reference     TypeA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Cell_02  0.2246273 -2.2486097 Reference Reference    Reference     TypeA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Cell_03  1.7465820  0.5088332 Reference Reference    Reference     TypeA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 Cell_04 -1.7433826  1.3540610 Reference Reference    Reference     TypeA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 Cell_05 -0.2343473 -1.0803935 Reference Reference    Reference     TypeA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 Cell_06 -1.4772093 -0.2432210 Reference Reference    Reference     TypeA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Cluster Library_Size Detected_Features   Batch</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 Cluster_2          225                47 Batch 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Cluster_2          208                49 Batch 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Cluster_1          262                48 Batch 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 Cluster_2          227                47 Batch 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 Cluster_1          255                51 Batch 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 Cluster_1          256                46 Batch 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>              Cell_ID       Dim1       Dim2   Dataset      Role Dataset_Type</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 AAACCGGCAAGTGTTT-1  1.5914843  1.4215237 Reference Reference    Reference</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 AAACGGATCGATCAGT-1  1.4820130  0.1709445 Reference Reference    Reference</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 AACAGCAAGGTTAGAG-1  0.4982631 -1.8602255 Reference Reference    Reference</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 AACCTAATCAAGTGAG-1 -2.4570603 -0.5679842 Reference Reference    Reference</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 AAGGTGCAGGGTCCAC-1 -0.7598619  3.5520495 Reference Reference    Reference</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 AAGTTTGTCCACCTGT-1  0.1700575 -1.1177501 Reference Reference    Reference</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           Cell_Type   Cluster Library_Size Detected_Features   Batch</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1   Parenchyma_cell Cluster_3            6                 5 Batch 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   Parenchyma_cell Cluster_4            2                 2 Batch 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3         Epidermis Cluster_8           18                11 Batch 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4    Bud_primordium Cluster_4           17                11 Batch 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 Vascular_cylinder Cluster_5          271                14 Batch 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6     Root_meristem Cluster_3           10                 8 Batch 1</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -13,7 +13,7 @@ extract_cell_properties(
 )
 }
 \arguments{
-\item{data}{Count matrix (features x cells), SingleCellExperiment, or Seurat object.}
+\item{data}{Count matrix (features x cells) or \code{SingleCellExperiment} object.}
 
 \item{max_cells_cor}{Maximum number of cells for computing pairwise correlation (default 1000).}
 
@@ -26,7 +26,19 @@ instead of \code{log2(CPM + 1)}.}
 \item{verbose}{Logical, whether to print progress messages.}
 }
 \value{
-A named list of cell-level summary vectors.
+A named list of 10 cell-level property summaries:
+\describe{
+  \item{library_size}{Numeric vector of total counts per cell.}
+  \item{log_library_size}{Numeric vector of \code{log(library_size + 1)}.}
+  \item{tmm_factor}{Numeric vector of TMM normalization factors per cell.}
+  \item{effective_library_size}{Numeric vector of \code{library_size * tmm_factor}.}
+  \item{zero_fraction_cell}{Numeric vector of per-cell zero count proportions.}
+  \item{detection_freq_cell}{Numeric vector of per-cell non-zero feature proportions (\code{1 - zero_fraction_cell}).}
+  \item{cell_cor}{Numeric vector of upper-triangle pairwise Spearman correlations across cells.}
+  \item{pca_dist}{Numeric vector of pairwise Euclidean distances between cells in top PCA space.}
+  \item{knn_hubness}{Numeric vector giving how often each cell appears among other cells' 5\% nearest neighbors.}
+  \item{prop_outliers_cell}{Numeric scalar proportion of cells flagged as library-size outliers via Tukey IQR.}
+}
 }
 \description{
 Computes library size, log-library size, zero fraction / detection frequency,

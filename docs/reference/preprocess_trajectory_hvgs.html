@@ -3,7 +3,7 @@
 from the dynverse benchmarking study (Saelens et al., Nature Biotechnology, 2019):
 Harsh cell outlier filtering (3 MADs from median on library size, detected genes, and mitochondrial percentage).
 Low-expression gene filtering (expressed in \(\ge 5\%\) of cells and average expression \(&amp;gt; 0.02\)).
-HVG selection via mean-variance decomposition (scran::modelGeneVar with FDR &amp;lt; 0.05
+HVG selection via mean-variance decomposition (loess trend decomposition with FDR &amp;lt; 0.05
         and biological variance &amp;gt; 0.5, with adaptive top-HVG fallback for sparse/small benchmark sets).
 Iterative removal of all-zero cells and uninformative zero features until convergence.
 
@@ -11,7 +11,7 @@ Iterative removal of all-zero cells and uninformative zero features until conver
 from the dynverse benchmarking study (Saelens et al., Nature Biotechnology, 2019):
 Harsh cell outlier filtering (3 MADs from median on library size, detected genes, and mitochondrial percentage).
 Low-expression gene filtering (expressed in \(\ge 5\%\) of cells and average expression \(&amp;gt; 0.02\)).
-HVG selection via mean-variance decomposition (scran::modelGeneVar with FDR &amp;lt; 0.05
+HVG selection via mean-variance decomposition (loess trend decomposition with FDR &amp;lt; 0.05
         and biological variance &amp;gt; 0.5, with adaptive top-HVG fallback for sparse/small benchmark sets).
 Iterative removal of all-zero cells and uninformative zero features until convergence.
 
@@ -37,8 +37,9 @@ Iterative removal of all-zero cells and uninformative zero features until conver
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-demonstrations" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Demonstrations</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-demonstrations"><li><a class="dropdown-item" href="../articles/demo-scrna.html">1. scRNA-seq Simulation Evaluation</a></li>
     <li><a class="dropdown-item" href="../articles/demo-scatac.html">2. scATAC-seq Simulation Evaluation</a></li>
-    <li><a class="dropdown-item" href="../articles/demo-multiomics.html">3. Multiomics (RNA + ATAC) Evaluation</a></li>
-    <li><a class="dropdown-item" href="../articles/demo-saved-rds.html">4. Analyzing Pre-Saved Benchmark (.rds)</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-multiomics.html">3. Paired Multiomics (RNA + ATAC) Evaluation</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-unpaired-multiomics.html">4. Unpaired Multiomics (RNA + ATAC) Evaluation</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-saved-rds.html">5. Analyzing Pre-Saved Benchmark (.rds)</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../articles/metrics-catalog.html">Metric Catalog (56 Metrics)</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -67,7 +68,7 @@ Iterative removal of all-zero cells and uninformative zero features until conver
     <p>Implements the standardized scRNA-seq quality control and HVG selection workflow
 from the <em>dynverse</em> benchmarking study (<em>Saelens et al., Nature Biotechnology, 2019</em>):</p><ol><li><p>Harsh cell outlier filtering (3 MADs from median on library size, detected genes, and mitochondrial percentage).</p></li>
 <li><p>Low-expression gene filtering (expressed in \(\ge 5\%\) of cells and average expression \(&gt; 0.02\)).</p></li>
-<li><p>HVG selection via mean-variance decomposition (<code><a href="https://rdrr.io/pkg/scran/man/modelGeneVar.html" class="external-link">scran::modelGeneVar</a></code> with <code>FDR &lt; 0.05</code>
+<li><p>HVG selection via mean-variance decomposition (loess trend decomposition with <code>FDR &lt; 0.05</code>
         and biological variance <code>&gt; 0.5</code>, with adaptive top-HVG fallback for sparse/small benchmark sets).</p></li>
 <li><p>Iterative removal of all-zero cells and uninformative zero features until convergence.</p></li>
 </ol></div>
@@ -94,11 +95,11 @@ from the <em>dynverse</em> benchmarking study (<em>Saelens et al., Nature Biotec
 
 
 <dl><dt id="arg-ref-data">ref_data<a class="anchor" aria-label="anchor" href="#arg-ref-data"></a></dt>
-<dd><p>Reference count matrix, <code>SingleCellExperiment</code>, or <code>Seurat</code> object.</p></dd>
+<dd><p>Reference count matrix or <code>SingleCellExperiment</code> object.</p></dd>
 
 
 <dt id="arg-sim-data">sim_data<a class="anchor" aria-label="anchor" href="#arg-sim-data"></a></dt>
-<dd><p>Optional simulated count matrix, <code>SingleCellExperiment</code>, or <code>Seurat</code> object.</p></dd>
+<dd><p>Optional simulated count matrix or <code>SingleCellExperiment</code> object.</p></dd>
 
 
 <dt id="arg-cell-types-ref">cell_types_ref<a class="anchor" aria-label="anchor" href="#arg-cell-types-ref"></a></dt>
@@ -150,7 +151,7 @@ from the <em>dynverse</em> benchmarking study (<em>Saelens et al., Nature Biotec
 <span class="r-in"><span><span class="va">prep</span> <span class="op">&lt;-</span> <span class="fu">preprocess_trajectory_hvgs</span><span class="op">(</span><span class="va">example_scrna</span><span class="op">$</span><span class="va">ref</span>, <span class="va">example_scrna</span><span class="op">$</span><span class="va">sim</span>,</span></span>
 <span class="r-in"><span>  cell_types_ref <span class="op">=</span> <span class="va">example_scrna</span><span class="op">$</span><span class="va">cell_types</span>, cell_types_sim <span class="op">=</span> <span class="va">example_scrna</span><span class="op">$</span><span class="va">cell_types</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">prep</span><span class="op">$</span><span class="va">hvgs</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 60</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 47</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

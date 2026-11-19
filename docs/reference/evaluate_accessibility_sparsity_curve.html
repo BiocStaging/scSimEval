@@ -23,8 +23,9 @@ proportion (NZP) between reference and simulated scATAC-seq datasets."><meta pro
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-demonstrations" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Demonstrations</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-demonstrations"><li><a class="dropdown-item" href="../articles/demo-scrna.html">1. scRNA-seq Simulation Evaluation</a></li>
     <li><a class="dropdown-item" href="../articles/demo-scatac.html">2. scATAC-seq Simulation Evaluation</a></li>
-    <li><a class="dropdown-item" href="../articles/demo-multiomics.html">3. Multiomics (RNA + ATAC) Evaluation</a></li>
-    <li><a class="dropdown-item" href="../articles/demo-saved-rds.html">4. Analyzing Pre-Saved Benchmark (.rds)</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-multiomics.html">3. Paired Multiomics (RNA + ATAC) Evaluation</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-unpaired-multiomics.html">4. Unpaired Multiomics (RNA + ATAC) Evaluation</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-saved-rds.html">5. Analyzing Pre-Saved Benchmark (.rds)</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../articles/metrics-catalog.html">Metric Catalog (56 Metrics)</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -85,16 +86,16 @@ proportion (NZP) between reference and simulated scATAC-seq datasets.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_scatac</span>, package <span class="op">=</span> <span class="st">"scSimEval"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">evaluate_accessibility_sparsity_curve</span><span class="op">(</span><span class="va">example_scatac</span><span class="op">$</span><span class="va">ref</span>, <span class="va">example_scatac</span><span class="op">$</span><span class="va">sim</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $curve_rmse</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.01233884</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.03827511</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $r2_discrepancy</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.0008535249</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.2758995</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $ref_r_squared</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.9692997</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.9101528</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $sim_r_squared</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.9684462</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.6342533</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>
     </div>

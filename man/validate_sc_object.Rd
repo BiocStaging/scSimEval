@@ -8,29 +8,38 @@ validate_sc_object(
   obj,
   arg_name = "data",
   reduction_name = NULL,
-  modality = NULL
+  modality = NULL,
+  cell_type_col = "cell_type",
+  batch_col = "batch"
 )
 }
 \arguments{
-\item{obj}{An object to validate, strictly required to be a \code{SingleCellExperiment} or \code{Seurat} object.}
+\item{obj}{A \code{SingleCellExperiment} object to validate.}
 
 \item{arg_name}{Name of the argument being validated (for clear error messages).}
 
 \item{reduction_name}{Optional name of precomputed dimensional reduction (e.g. \code{"PCA"}, \code{"integrated"}).}
 
-\item{modality}{Optional character string specifying the modality (e.g. \code{"scRNA-seq"} or \code{"scATAC-seq"}) to guide assay selection.}
+\item{modality}{Optional character string specifying the modality (e.g. \code{"scRNA-seq"} or \code{"scATAC-seq"}) to guide assay/\code{altExp} selection.}
+
+\item{cell_type_col}{Column name in \code{colData(obj)} containing cell-type labels (default \code{"cell_type"}).}
+
+\item{batch_col}{Column name in \code{colData(obj)} containing batch/replicate labels (default \code{"batch"}).}
 }
 \value{
-A list with standardized components:
-  \item{object}{The original \code{SingleCellExperiment} or \code{Seurat} object.}
-  \item{counts}{Extracted raw count matrix (features x cells).}
-  \item{cell_types}{Extracted or parsed cell-type factor/vector, or NULL if absent.}
-  \item{batch_info}{Extracted or parsed batch factor/vector, or NULL if absent.}
-  \item{embedding}{Extracted dimensional reduction matrix (cells x dims), or NULL if absent.}
+A named list with 5 elements:
+\describe{
+  \item{object}{The validated \code{SingleCellExperiment} object.}
+  \item{counts}{Extracted raw count matrix (\code{dgCMatrix} or numeric matrix, features x cells).}
+  \item{cell_types}{Character vector of extracted cell-type annotations, or \code{NULL} if absent.}
+  \item{batch_info}{Character vector of extracted batch annotations, or \code{NULL} if absent.}
+  \item{embedding}{Extracted dimensional reduction numeric matrix (cells x dims), or \code{NULL}.}
+}
 }
 \description{
-Strictly enforces standard input object compliance in \code{scSimEval} (Seurat / SingleCellExperiment).
-Validates that input datasets are either \code{SingleCellExperiment} or
-\code{Seurat} objects, extracting underlying count matrices, cell annotations,
-batch labels, and dimensional reductions.
+Strictly enforces \code{SingleCellExperiment} compliance in \code{scSimEval}.
+Validates that input datasets are \code{SingleCellExperiment} objects,
+extracting underlying count matrices, cell annotations, batch labels, and
+dimensional reductions. Users starting from \code{Seurat} objects should first
+convert via \code{Seurat::as.SingleCellExperiment()}.
 }

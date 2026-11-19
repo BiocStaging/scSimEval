@@ -2,9 +2,7 @@
 
 Evaluates recovery and relevance of cellular MST branch assignments
 between reference and simulated trajectories via bidirectional Jaccard
-overlap and harmonic mean F1 (matching
-[`dyneval::calculate_mapping`](https://rdrr.io/pkg/dyneval/man/calculate_mapping.html)
-`F1_branches`).
+overlap and harmonic mean F1.
 
 ## Usage
 

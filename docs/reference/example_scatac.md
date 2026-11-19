@@ -1,10 +1,11 @@
-# Synthetic Example scATAC-seq Benchmarking Dataset
+# Example scATAC-seq Benchmarking Dataset (Rice Bud)
 
-A synthetic single-cell ATAC sequencing peak accessibility dataset
-designed for testing, benchmarking, and demonstrating evaluation metrics
-in `scSimEval`. Contains paired empirical reference accessibility counts
-and simulated accessibility counts across 60 peaks and 80 cells matching
-the cells in `example_scrna`.
+A real, subsampled single-cell ATAC sequencing peak accessibility
+dataset from rice bud tissue (*Oryza sativa*) designed for testing,
+benchmarking, and demonstrating evaluation metrics in `scSimEval`.
+Contains empirical reference peak counts and `scDesign3`-simulated
+counts across the top 100 highly variable peaks (HVPs) and the same 100
+balanced paired cells as `example_scrna`.
 
 ## Usage
 
@@ -19,40 +20,40 @@ A list with 4 elements:
 - ref:
 
   A `SingleCellExperiment` object containing reference peak
-  accessibility counts (60 peaks x 80 cells), cell types and batch
-  annotations in `colData`, and precomputed PCA reductions in
-  `reducedDims`.
+  accessibility counts (100 HVPs x 100 cells), cell types and batch
+  annotations in `colData`, and precomputed `PCA` in `reducedDims`.
 
 - sim:
 
   A `SingleCellExperiment` object containing simulated peak
-  accessibility counts (60 peaks x 80 cells), cell types and batch
-  annotations in `colData`, and precomputed PCA reductions in
-  `reducedDims`.
+  accessibility counts (100 HVPs x 100 cells), cell types and batch
+  annotations in `colData`, and precomputed `PCA` in `reducedDims`.
 
 - cell_types:
 
-  A factor of cell-type identities ("TypeA", "TypeB") for the 80 cells.
+  A named factor of cell-type identities across 8 Rice Bud cell types
+  for the 100 cells.
 
 - batch_info:
 
-  A factor of batch annotations ("Batch1", "Batch2") for the 80 cells.
+  A named factor of batch annotations (`Bud_21`, `Bud_22`) for the 100
+  cells.
 
 ## Source
 
-Synthetic benchmark data generated via binomial sampling with cell-type
-specific accessibility shifts.
+Derived from rice bud paired multiomics data (*Oryza sativa*, GEO
+accession GSE232863).
 
 ## Examples
 
 ``` r
 data(example_scatac)
 dim(example_scatac$ref)
-#> [1] 60 80
+#> [1] 100 100
 dim(example_scatac$sim)
-#> [1] 60 80
+#> [1] 100 100
 table(example_scatac$batch_info)
 #> 
-#> Batch1 Batch2 
-#>     40     40 
+#> Bud_21 Bud_22 
+#>     61     39 
 ```

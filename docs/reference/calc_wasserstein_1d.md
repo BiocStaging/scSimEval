@@ -25,7 +25,8 @@ calc_wasserstein_1d(ref, sim, p = 1)
 
 ## Value
 
-The 1D Wasserstein distance between the two empirical distributions.
+Non-negative numeric scalar giving the 1D \\L_p\\ Wasserstein distance
+between the two empirical distributions.
 
 ## Examples
 
@@ -33,5 +34,5 @@ The 1D Wasserstein distance between the two empirical distributions.
 ref <- stats::rnorm(50)
 sim <- stats::rnorm(50)
 calc_wasserstein_1d(ref, sim)
-#> [1] 0.40899
+#> [1] 0.2483659
 ```

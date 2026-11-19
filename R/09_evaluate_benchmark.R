@@ -1,3 +1,41 @@
+#' Append Rows from a Summary Data Frame with Category/Property Tagging
+#' @keywords internal
+#' @noRd
+.append_rows_from_df <- function(df, category, property, modality = NULL) {
+  if (is.null(df) || !is.data.frame(df) || nrow(df) == 0L) return(list())
+  out <- data.frame(
+    Category = category,
+    Property = property,
+    Metric = as.character(df$Metric),
+    Value = as.numeric(df$Value),
+    stringsAsFactors = FALSE
+  )
+  if (!is.null(modality)) out$Modality <- modality
+  list(out)
+}
+
+#' Append Scalar Metrics from a Named List or Vector
+#' @keywords internal
+#' @noRd
+.append_rows_from_fields <- function(obj, fields, category, property, modality = NULL) {
+  if (is.null(obj)) return(list())
+  rows <- list()
+  for (m in fields) {
+    val <- obj[[m]]
+    if (!is.null(val) && length(val) == 1L && is.finite(val)) {
+      df <- data.frame(
+        Category = category,
+        Property = property,
+        Metric = m,
+        Value = as.numeric(val),
+        stringsAsFactors = FALSE
+      )
+      if (!is.null(modality)) df$Modality <- modality
+      rows[[length(rows) + 1L]] <- df
+    }
+  }
+  rows
+}
 
 #' Append Category VII dynverse Trajectory Metrics to Summary Rows
 #' @keywords internal
@@ -29,583 +67,368 @@
   rows
 }
 
-#' Evaluate Comprehensive Simulation Accuracy (Unimodal Omics Layer)
-#'
-#' Computes distribution distances, cellular and feature-level properties,
-#' zero-inflation curves, and manifold distances between reference and simulated datasets.
-#'
-#' \if{html}{\figure{workflow_diagram.png}{options: width="800" alt="scSimEval Unified Benchmarking Workflow Diagram"}}
-#'
-#' @details
-#' \strong{Metric Measurement Capacity across 4 Analysis Options (56 Evaluation Measures Suite):}
-#' Both \code{cell_type} and \code{batch} metadata annotations are strictly mandatory for benchmarking to enable complete evaluation across all biological and technical dimensions.
-#' \itemize{
-#'   \item \strong{1. scRNA-seq (45 Metrics):} Evaluates 45 metrics across 7 categories:
-#'     Category I (Distributional Properties: 10 univariate + 4 bivariate metrics),
-#'     Category II (Sparsity & Zero-Inflation Dynamics: 5 metrics),
-#'     Category III (Cellular Manifold & Clustering Concordance: 8 metrics, including MMD, Precision/Recall, Silhouette, CDI, Purity, ARI, NMI),
-#'     Category IV (Technical Variation & Batch Mixing Dynamics: 5 metrics, including Batch Silhouette, PCR R2, CMS, ISI, Cross-Batch F1),
-#'     Category V (Biological Signal & Differential Expression Fidelity: 6 metrics via pseudobulk edgeR-QLF),
-#'     Category VII (Trajectory & Lineage Topology: 5 metrics via dynverse workflow), and
-#'     Category VIII (Computational Scalability & Efficiency: 2 metrics, core_seconds and memory_per_core_mib).
-#'   \item \strong{2. scATAC-seq (32 Metrics):} Evaluates 32 metrics across 6 categories:
-#'     Category I (Peak Accessibility Distribution Moments: 7 metrics),
-#'     Category II (Accessibility-Sparsity Dynamics: 4 metrics),
-#'     Category III (Epigenomic Manifold & Clustering Concordance: 8 metrics),
-#'     Category IV (Technical Variation & Batch Mixing Dynamics: 5 metrics),
-#'     Category V (Biological Signal & Differential Accessibility Fidelity: 6 metrics via pseudobulk edgeR-QLF), and
-#'     Category VIII (Computational Scalability & Efficiency: 2 metrics). Trajectory (Category VII) is skipped for ATAC.
-#'   \item \strong{3. Paired Multiomics (56 Metrics):} Evaluates all 56 metrics across all 8 canonical categories (I–VIII):
-#'     both unimodal layers (Cat I & II), dual clustering concordance (Cat III), dual batch mixing dynamics (Cat IV),
-#'     dual biological signal fidelity (Cat V: 6 for scRNA DE + 6 for scATAC DA), Multiomics Integration & Alignment (Cat VI:
-#'     Batch ASW, Cell-Type ASW, Graph Connectivity, Integration ARI/NMI, FOSCTTM, Match@1, Cross-modal Generation Fidelity,
-#'     Peak-to-Gene Coupling), scRNA Trajectory (Cat VII), and Scalability (Cat VIII).
-#'   \item \strong{4. Unpaired Multiomics (51 Metrics):} Evaluates 51 metrics across 7 categories:
-#'     evaluates both unimodal layers (Cat I & II), dual clustering (Cat III), dual batch mixing (Cat IV), dual differential signal (Cat V),
-#'     population-level multiomics integration & alignment (Cat VI), scRNA trajectory (Cat VII), and scalability (Cat VIII).
-#'     Omits 5 cell-level pairing measures (FOSCTTM, Match@1, cross-modal generation, and cell-matched coupling) due to separate cell identities (56 - 5 = 51).
-#' }
-#'
-#' @param ref_data Reference count matrix (features x cells).
-#' @param sim_data Simulated count matrix (features x cells).
-#' @param compute_bivariate Logical, whether to compute 2D bivariate tests. Default is TRUE.
-#' @param cell_types Cell type metadata details
-#' @param cell_types_ref Cell type details of reference dataset
-#' @param cell_types_sim Cell type details of simulated dataset
-#' @param batch_info Batch details
-#' @param batch_ref Batch details of reference dataset
-#' @param batch_sim Batch details of simulated dataset
-#' @param modality Name of modality
-#' @param threads Number of threads for parallel computation. Default is 1.
-#' @param memory_mb Optional numeric value of peak memory allocation (in \code{memory_unit}).
-#' @param elapsed_time Optional numeric value of wall-clock elapsed time (in \code{time_unit}).
-#' @param verbose Logical, whether to print execution messages. Default is TRUE.
-#' @param time_unit Character string specifying the unit of \code{elapsed_time}:
-#'   \code{"seconds"} (default, or \code{"s"}) or \code{"minutes"} (or \code{"min"}).
-#' @param memory_unit Character string specifying the unit of \code{memory_mb}:
-#'   \code{"MiB"} (default, binary mebibytes) or \code{"MB"} (decimal megabytes, converted to MiB).
-#' @param sim_cores Optional positive integer specifying the number of CPU cores used
-#'   by the simulator to generate \code{sim_data}. Default is NULL.
-#' @param trajectory_num_trees Number of Random Forest trees for Category VII \code{wcor_features}
-#'   (default \code{10000L}, per Saelens et al. 2019).
-#' @param include_trajectory Logical; whether to evaluate Category VII trajectory & lineage topology
-#'   metrics when \code{modality} is scRNA-seq (automatically skipped for \code{scATAC-seq}). Default is \code{TRUE}.
-#' @param include_downstream Logical; whether to evaluate Category III clustering, Category IV batch mixing,
-#'   and Category V biological signal differential expression/accessibility metrics when metadata are available.
-#'   Default is \code{TRUE}.
-#'
-#' @return A list containing tidy summary tables and detailed metric lists.
-#' @examples
-#' data(example_scrna, package = "scSimEval")
-#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
-#' @export
-evaluate_simulation_accuracy <- function(
-  ref_data,
-  sim_data,
-  cell_types = NULL,
-  cell_types_ref = NULL,
-  cell_types_sim = NULL,
-  batch_info = NULL,
-  batch_ref = NULL,
-  batch_sim = NULL,
-  modality = NULL,
-  compute_bivariate = TRUE,
-  threads = 1,
-  memory_mb = NULL,
-  elapsed_time = NULL,
-  verbose = TRUE,
-  time_unit = c("seconds", "minutes"),
-  memory_unit = c("MiB", "MB"),
-  sim_cores = NULL,
-  trajectory_num_trees = 10000L,
-  include_trajectory = TRUE,
-  include_downstream = TRUE
-) {
-  # Strict standardization check (Seurat / SingleCellExperiment)
-  val_ref <- validate_sc_object(ref_data, "ref_data", modality = modality)
-  val_sim <- validate_sc_object(sim_data, "sim_data", modality = modality)
-  
-  ref_data <- val_ref$counts
-  sim_data <- val_sim$counts
-  
-  if (is.null(cell_types_ref) && !is.null(cell_types)) cell_types_ref <- cell_types
-  if (is.null(cell_types_sim) && !is.null(cell_types)) cell_types_sim <- cell_types
-  if (is.null(cell_types_ref) && !is.null(val_ref$cell_types)) cell_types_ref <- val_ref$cell_types
-  if (is.null(cell_types_sim) && !is.null(val_sim$cell_types)) cell_types_sim <- val_sim$cell_types
-  
-  if (is.null(batch_ref) && !is.null(batch_info)) batch_ref <- batch_info
-  if (is.null(batch_sim) && !is.null(batch_info)) batch_sim <- batch_info
-  if (is.null(batch_ref) && !is.null(val_ref$batch_info)) batch_ref <- val_ref$batch_info
-  if (is.null(batch_sim) && !is.null(val_sim$batch_info)) batch_sim <- val_sim$batch_info
-  
-  # SimBench standard: filter out rare cell types with < 10 cells if cell types are provided
-  if (!is.null(cell_types_ref) && length(cell_types_ref) == ncol(ref_data)) {
-    tab_ref <- table(cell_types_ref)
-    rare_types_ref <- names(tab_ref)[tab_ref < 10]
-    if (length(rare_types_ref) > 0 && length(tab_ref) > length(rare_types_ref)) {
-      if (verbose) message(sprintf("SimBench standard: skipping cell type(s) with < 10 cells in reference: %s", paste(rare_types_ref, collapse = ", ")))
-      keep_ref <- which(!cell_types_ref %in% rare_types_ref)
-      if (length(keep_ref) >= 10) {
-        ref_data <- ref_data[, keep_ref, drop = FALSE]
-        cell_types_ref <- cell_types_ref[keep_ref]
-        if (!is.null(batch_ref) && length(batch_ref) > length(keep_ref)) {
-          batch_ref <- batch_ref[keep_ref]
-        }
+#' Filter Rare Cell Types (< 10 Cells) for SimBench Compliance
+#' @keywords internal
+#' @noRd
+.filter_rare_cell_types <- function(counts, cell_types, batch_info, label = "reference", verbose = TRUE) {
+  if (is.null(cell_types) || length(cell_types) != ncol(counts)) {
+    return(list(counts = counts, cell_types = cell_types, batch_info = batch_info))
+  }
+  tab <- table(cell_types)
+  rare <- names(tab)[tab < 10L]
+  if (length(rare) > 0L && length(tab) > length(rare)) {
+    keep <- which(!cell_types %in% rare)
+    if (length(keep) >= 10L) {
+      if (verbose) {
+        message(sprintf(
+          "SimBench standard: skipping cell type(s) with < 10 cells in %s: %s",
+          label, paste(rare, collapse = ", ")
+        ))
+      }
+      counts <- counts[, keep, drop = FALSE]
+      cell_types <- cell_types[keep]
+      if (!is.null(batch_info) && length(batch_info) >= max(keep)) {
+        batch_info <- batch_info[keep]
       }
     }
   }
-  if (!is.null(cell_types_sim) && length(cell_types_sim) == ncol(sim_data)) {
-    tab_sim <- table(cell_types_sim)
-    rare_types_sim <- names(tab_sim)[tab_sim < 10]
-    if (length(rare_types_sim) > 0 && length(tab_sim) > length(rare_types_sim)) {
-      if (verbose) message(sprintf("SimBench standard: skipping cell type(s) with < 10 cells in simulation: %s", paste(rare_types_sim, collapse = ", ")))
-      keep_sim <- which(!cell_types_sim %in% rare_types_sim)
-      if (length(keep_sim) >= 10) {
-        sim_data <- sim_data[, keep_sim, drop = FALSE]
-        cell_types_sim <- cell_types_sim[keep_sim]
-        if (!is.null(batch_sim) && length(batch_sim) > length(keep_sim)) {
-          batch_sim <- batch_sim[keep_sim]
-        }
-      }
-    }
-  }
-  
-  threads <- .set_parallel_threads(threads)
+  list(counts = counts, cell_types = cell_types, batch_info = batch_info)
+}
 
-  # Resolve modality early so ATAC uses TF-IDF transformation (simPIC/Signac standard)
-  is_atac <- .is_atac_modality(val_ref$object, modality) || .is_atac_modality(val_sim$object, modality)
-  modality_resolved <- if (is_atac) "scATAC-seq" else "scRNA-seq"
-
-  # Step 1 & 2: Extract cell-level & feature-level properties (in parallel on Unix when threads >= 2)
-  if (verbose) message("[1/5] Extracting cell-level properties...")
-  if (verbose) message("[2/5] Extracting feature-level properties...")
-  prop_ext <- NULL
+#' Extract Cell- and Feature-Level Properties for Reference and Simulation
+#' @keywords internal
+#' @noRd
+.compute_unimodal_properties <- function(ref_counts, sim_counts, modality_resolved, threads) {
   if (threads >= 2L && .Platform$OS.type != "windows") {
-    inner_ext_th <- max(1L, as.integer(floor(threads / 4L)))
+    inner_th <- max(1L, as.integer(floor(threads / 4L)))
     prop_ext <- tryCatch(
       .sc_parallel_lapply(seq_len(4L), function(task_i) {
         if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
-          try(RhpcBLASctl::blas_set_num_threads(inner_ext_th), silent = TRUE)
-          try(RhpcBLASctl::omp_set_num_threads(inner_ext_th), silent = TRUE)
+          try(RhpcBLASctl::blas_set_num_threads(inner_th), silent = TRUE)
+          try(RhpcBLASctl::omp_set_num_threads(inner_th), silent = TRUE)
         }
         switch(
           task_i,
-          extract_cell_properties(ref_data, modality = modality_resolved, verbose = FALSE),
-          extract_cell_properties(sim_data, modality = modality_resolved, verbose = FALSE),
-          extract_feature_properties(ref_data, modality = modality_resolved, verbose = FALSE),
-          extract_feature_properties(sim_data, modality = modality_resolved, verbose = FALSE)
+          extract_cell_properties(ref_counts, modality = modality_resolved, verbose = FALSE),
+          extract_cell_properties(sim_counts, modality = modality_resolved, verbose = FALSE),
+          extract_feature_properties(ref_counts, modality = modality_resolved, verbose = FALSE),
+          extract_feature_properties(sim_counts, modality = modality_resolved, verbose = FALSE)
         )
       }, threads = min(threads, 4L)),
       error = function(e) NULL
     )
     .set_parallel_threads(threads)
+    if (!is.null(prop_ext) && length(prop_ext) == 4L &&
+        !any(vapply(prop_ext, is.null, logical(1)))) {
+      return(list(
+        ref_cell = prop_ext[[1L]],
+        sim_cell = prop_ext[[2L]],
+        ref_feat = prop_ext[[3L]],
+        sim_feat = prop_ext[[4L]]
+      ))
+    }
   }
-  if (!is.null(prop_ext) && length(prop_ext) == 4L && !any(vapply(prop_ext, is.null, logical(1)))) {
-    ref_cell <- prop_ext[[1L]]
-    sim_cell <- prop_ext[[2L]]
-    ref_feat <- prop_ext[[3L]]
-    sim_feat <- prop_ext[[4L]]
-  } else {
-    ref_cell <- extract_cell_properties(ref_data, modality = modality_resolved, verbose = FALSE)
-    sim_cell <- extract_cell_properties(sim_data, modality = modality_resolved, verbose = FALSE)
-    ref_feat <- extract_feature_properties(ref_data, modality = modality_resolved, verbose = FALSE)
-    sim_feat <- extract_feature_properties(sim_data, modality = modality_resolved, verbose = FALSE)
-  }
-  
-  # Step 2: Compute Univariate Accuracy Metrics (Cell & Feature Level) in Parallel
-  if (verbose) message("[3/5] Computing univariate accuracy metrics...")
-  
-  # For scRNA-seq, include tmm_factor if available (skip for ATAC or if tmm is empty)
-  has_tmm <- !is_atac && !is.null(ref_cell$tmm_factor) && length(ref_cell$tmm_factor) > 0 &&
-             !all(is.na(ref_cell$tmm_factor))
-  
-  cell_props_to_eval <- if (has_tmm) {
-    c("library_size", "log_library_size", "tmm_factor", "zero_fraction_cell", "detection_freq_cell", "cell_cor", "pca_dist")
-  } else {
-    c("library_size", "log_library_size", "zero_fraction_cell", "detection_freq_cell", "cell_cor", "pca_dist")
-  }
-  feat_props_to_eval <- c("mean_expression", "variance", "scaled_variance", "cv", "zero_fraction_feature", "dispersion", "gene_cor")
-  cell_results <- list()
-  feat_results <- list()
-  
-  all_props <- c(
-    lapply(cell_props_to_eval, function(p) list(type = "cell", name = p, r = ref_cell[[p]], s = sim_cell[[p]])),
-    lapply(feat_props_to_eval, function(p) list(type = "feat", name = p, r = ref_feat[[p]], s = sim_feat[[p]]))
+  list(
+    ref_cell = extract_cell_properties(ref_counts, modality = modality_resolved, verbose = FALSE),
+    sim_cell = extract_cell_properties(sim_counts, modality = modality_resolved, verbose = FALSE),
+    ref_feat = extract_feature_properties(ref_counts, modality = modality_resolved, verbose = FALSE),
+    sim_feat = extract_feature_properties(sim_counts, modality = modality_resolved, verbose = FALSE)
   )
-  all_props <- all_props[vapply(all_props, function(x) !is.null(x$r) && !is.null(x$s) && length(x$r) > 0, logical(1))]
+}
 
-  prop_results <- tryCatch(
-    .sc_parallel_lapply(all_props, function(item) {
-      calc_all_univariate_metrics(item$r, item$s, item$name)
-    }, threads = threads),
+#' Run Univariate Cell and Feature Metric Evaluations
+#' @keywords internal
+#' @noRd
+.run_univariate_eval <- function(ref_cell, sim_cell, ref_feat, sim_feat, is_atac, threads) {
+  has_tmm <- !is_atac && !is.null(ref_cell$tmm_factor) &&
+             length(ref_cell$tmm_factor) > 0L && !all(is.na(ref_cell$tmm_factor))
+  cell_props <- if (has_tmm) {
+    c("library_size", "log_library_size", "tmm_factor",
+      "zero_fraction_cell", "detection_freq_cell", "cell_cor", "pca_dist")
+  } else {
+    c("library_size", "log_library_size",
+      "zero_fraction_cell", "detection_freq_cell", "cell_cor", "pca_dist")
+  }
+  feat_props <- c("mean_expression", "variance", "scaled_variance", "cv",
+                  "zero_fraction_feature", "dispersion", "gene_cor")
+
+  all_props <- c(
+    lapply(cell_props, function(p) list(type = "cell", name = p, r = ref_cell[[p]], s = sim_cell[[p]])),
+    lapply(feat_props, function(p) list(type = "feat", name = p, r = ref_feat[[p]], s = sim_feat[[p]]))
+  )
+  all_props <- all_props[vapply(all_props, function(x) !is.null(x$r) && !is.null(x$s) && length(x$r) > 0L, logical(1))]
+
+  prop_res <- tryCatch(
+    .sc_parallel_lapply(all_props, function(item) calc_all_univariate_metrics(item$r, item$s, item$name), threads = threads),
     error = function(e) NULL
   )
-  if (!is.null(prop_results) && length(prop_results) == length(all_props)) {
-    for (idx in seq_along(all_props)) {
-      item <- all_props[[idx]]
-      if (item$type == "cell") cell_results[[item$name]] <- prop_results[[idx]]
-      else feat_results[[item$name]] <- prop_results[[idx]]
-    }
-  } else {
-    for (item in all_props) {
-      if (item$type == "cell") cell_results[[item$name]] <- calc_all_univariate_metrics(item$r, item$s, item$name)
-      else feat_results[[item$name]] <- calc_all_univariate_metrics(item$r, item$s, item$name)
-    }
+  if (is.null(prop_res) || length(prop_res) != length(all_props)) {
+    prop_res <- lapply(all_props, function(item) calc_all_univariate_metrics(item$r, item$s, item$name))
   }
-  
-  # Step 4: Compute Bivariate Accuracy Metrics in Parallel
-  bivariate_results <- list()
-  if (compute_bivariate) {
-    if (verbose) message("[4/5] Computing bivariate metrics (Fasano-Franceschini, KDE zstat, 2D EMD)...")
-    
-    biv_configs <- list(
-      lib_vs_cellzero = list(ref = cbind(log10(ref_cell$library_size + 1), ref_cell$zero_fraction_cell),
-                             sim = cbind(log10(sim_cell$library_size + 1), sim_cell$zero_fraction_cell),
-                             prefix = "lib_vs_cellzero"),
-      mean_vs_sd = list(ref = cbind(ref_feat$mean_expression, ref_feat$sd),
-                        sim = cbind(sim_feat$mean_expression, sim_feat$sd),
-                        prefix = "mean_vs_sd"),
-      mean_vs_featzero = list(ref = cbind(ref_feat$mean_expression, ref_feat$zero_fraction_feature),
-                              sim = cbind(sim_feat$mean_expression, sim_feat$zero_fraction_feature),
-                              prefix = "mean_vs_featzero"),
-      mean_vs_dispersion = list(ref = cbind(ref_feat$mean_expression, ref_feat$dispersion),
-                                sim = cbind(sim_feat$mean_expression, sim_feat$dispersion),
-                                prefix = "mean_vs_dispersion")
-    )
 
-    n_biv_workers <- min(threads, length(biv_configs))
-    inner_biv_threads <- max(1L, as.integer(floor(threads / max(1L, n_biv_workers))))
-    biv_list <- if (threads > 1L && length(biv_configs) > 1L) {
-      tryCatch(
-        .sc_parallel_lapply(biv_configs, function(cfg) {
-          .set_parallel_threads(inner_biv_threads)
-          calc_all_bivariate_metrics(cfg$ref, cfg$sim, cfg$prefix, threads = inner_biv_threads)
-        }, threads = n_biv_workers),
-        error = function(e) NULL
-      )
-    } else {
-      NULL
-    }
+  cell_results <- list()
+  feat_results <- list()
+  for (idx in seq_along(all_props)) {
+    item <- all_props[[idx]]
+    if (item$type == "cell") cell_results[[item$name]] <- prop_res[[idx]]
+    else feat_results[[item$name]] <- prop_res[[idx]]
+  }
+  list(cell_results = cell_results, feat_results = feat_results)
+}
+
+#' Run Bivariate Metric Evaluations
+#' @keywords internal
+#' @noRd
+.run_bivariate_eval <- function(ref_cell, sim_cell, ref_feat, sim_feat, threads) {
+  biv_configs <- list(
+    lib_vs_cellzero = list(
+      ref = cbind(log10(ref_cell$library_size + 1), ref_cell$zero_fraction_cell),
+      sim = cbind(log10(sim_cell$library_size + 1), sim_cell$zero_fraction_cell),
+      prefix = "lib_vs_cellzero"
+    ),
+    mean_vs_sd = list(
+      ref = cbind(ref_feat$mean_expression, ref_feat$sd),
+      sim = cbind(sim_feat$mean_expression, sim_feat$sd),
+      prefix = "mean_vs_sd"
+    ),
+    mean_vs_featzero = list(
+      ref = cbind(ref_feat$mean_expression, ref_feat$zero_fraction_feature),
+      sim = cbind(sim_feat$mean_expression, sim_feat$zero_fraction_feature),
+      prefix = "mean_vs_featzero"
+    ),
+    mean_vs_dispersion = list(
+      ref = cbind(ref_feat$mean_expression, ref_feat$dispersion),
+      sim = cbind(sim_feat$mean_expression, sim_feat$dispersion),
+      prefix = "mean_vs_dispersion"
+    )
+  )
+
+  if (threads > 1L) {
+    n_workers <- min(threads, length(biv_configs))
+    inner_th <- max(1L, as.integer(floor(threads / n_workers)))
+    biv_list <- tryCatch(
+      .sc_parallel_lapply(biv_configs, function(cfg) {
+        .set_parallel_threads(inner_th)
+        calc_all_bivariate_metrics(cfg$ref, cfg$sim, cfg$prefix, threads = inner_th)
+      }, threads = n_workers),
+      error = function(e) NULL
+    )
     .set_parallel_threads(threads)
     if (!is.null(biv_list) && length(biv_list) == length(biv_configs)) {
-      bivariate_results <- stats::setNames(biv_list, names(biv_configs))
-    } else {
-      for (nm in names(biv_configs)) {
-        cfg <- biv_configs[[nm]]
-        bivariate_results[[nm]] <- calc_all_bivariate_metrics(cfg$ref, cfg$sim, cfg$prefix, threads = threads)
-      }
+      return(stats::setNames(biv_list, names(biv_configs)))
     }
   }
-  
-  # Step 5: Dropout, Zero-Inflation, & Generative Manifold
-  if (verbose) message("[5/5] Computing zero-probability and manifold distances...")
+
+  stats::setNames(
+    lapply(biv_configs, function(cfg) calc_all_bivariate_metrics(cfg$ref, cfg$sim, cfg$prefix, threads = threads)),
+    names(biv_configs)
+  )
+}
+
+#' Evaluate Category II Sparsity Curves and Category III Manifold Distances
+#' @keywords internal
+#' @noRd
+.run_sparsity_manifold_eval <- function(ref_counts, sim_counts, is_atac, threads) {
+  run_curve <- function() {
+    if (!is_atac) evaluate_zero_probability_curve(ref_counts, sim_counts)
+    else evaluate_accessibility_sparsity_curve(ref_counts, sim_counts)
+  }
+
   sp_res <- NULL
   if (threads >= 2L && .Platform$OS.type != "windows") {
     sp_res <- tryCatch(
       .sc_parallel_lapply(seq_len(5L), function(task_i) {
         switch(
           task_i,
-          if (!is_atac) evaluate_zero_probability_curve(ref_data, sim_data) else evaluate_accessibility_sparsity_curve(ref_data, sim_data),
-          calc_excess_zero_weights(ref_data),
-          calc_excess_zero_weights(sim_data),
-          calc_generative_precision_recall(ref_data, sim_data),
-          calc_mmd(ref_data, sim_data)
+          run_curve(),
+          calc_excess_zero_weights(ref_counts),
+          calc_excess_zero_weights(sim_counts),
+          calc_generative_precision_recall(ref_counts, sim_counts),
+          calc_mmd(ref_counts, sim_counts)
         )
       }, threads = min(threads, 5L)),
       error = function(e) NULL
     )
   }
+
   if (!is.null(sp_res) && length(sp_res) == 5L) {
-    zero_prob_eval <- if (!is_atac) sp_res[[1L]] else NULL
-    acc_sparsity_eval <- if (is_atac) sp_res[[1L]] else NULL
-    ref_excess_w <- sp_res[[2L]]
-    sim_excess_w <- sp_res[[3L]]
+    curve_obj <- sp_res[[1L]]
+    ref_ex <- sp_res[[2L]]
+    sim_ex <- sp_res[[3L]]
     gen_pr <- sp_res[[4L]]
-    mmd_eval <- sp_res[[5L]]
+    mmd_val <- sp_res[[5L]]
   } else {
-    zero_prob_eval <- if (!is_atac) evaluate_zero_probability_curve(ref_data, sim_data) else NULL
-    acc_sparsity_eval <- if (is_atac) evaluate_accessibility_sparsity_curve(ref_data, sim_data) else NULL
-    ref_excess_w <- calc_excess_zero_weights(ref_data)
-    sim_excess_w <- calc_excess_zero_weights(sim_data)
-    gen_pr <- calc_generative_precision_recall(ref_data, sim_data)
-    mmd_eval <- calc_mmd(ref_data, sim_data)
+    curve_obj <- run_curve()
+    ref_ex <- calc_excess_zero_weights(ref_counts)
+    sim_ex <- calc_excess_zero_weights(sim_counts)
+    gen_pr <- calc_generative_precision_recall(ref_counts, sim_counts)
+    mmd_val <- calc_mmd(ref_counts, sim_counts)
   }
-  
-  # Build tidy summary table
-  summary_rows <- list()
-  all_univ_metric_names <- c(
-    "Wasserstein", "KS", "MAD", "Bhattacharyya", "Runs_Statistic",
-    "NN_Mismatch", "Between_Dataset_Silh_Global",
-    "MAE", "RMSE", "KDE_ISE"
+
+  list(
+    zero_prob_eval = if (!is_atac) curve_obj else NULL,
+    acc_sparsity_eval = if (is_atac) curve_obj else NULL,
+    ref_excess_w = ref_ex,
+    sim_excess_w = sim_ex,
+    gen_pr = gen_pr,
+    mmd_eval = mmd_val
   )
-  
-  for (prop in names(cell_results)) {
-    for (m in all_univ_metric_names) {
-      key <- paste0(prop, "_", m)
-      if (!is.null(cell_results[[prop]][[key]])) {
-        summary_rows[[length(summary_rows) + 1]] <- data.frame(
-          Category = "Distributional Properties",
-          Property = prop,
-          Metric = m,
-          Value = as.numeric(cell_results[[prop]][[key]]),
-          stringsAsFactors = FALSE
-        )
-      }
-    }
-  }
-  
-  for (prop in names(feat_results)) {
-    for (m in all_univ_metric_names) {
-      key <- paste0(prop, "_", m)
-      if (!is.null(feat_results[[prop]][[key]])) {
-        summary_rows[[length(summary_rows) + 1]] <- data.frame(
-          Category = "Distributional Properties",
-          Property = prop,
-          Metric = m,
-          Value = as.numeric(feat_results[[prop]][[key]]),
-          stringsAsFactors = FALSE
-        )
-      }
-    }
-  }
-  
-  if (compute_bivariate) {
-    all_biv_metric_names <- c(
-      "Fasano_Franceschini_2D_KS",
-      "EMD_2D", "NN_Mismatch_2D",
-      "Between_Dataset_Silh_2D_Global"
-    )
-    for (b_name in names(bivariate_results)) {
-      for (m in all_biv_metric_names) {
-        key <- paste0(b_name, "_", m)
-        if (!is.null(bivariate_results[[b_name]][[key]])) {
-          summary_rows[[length(summary_rows) + 1]] <- data.frame(
+}
+
+#' Convert Core Distributional, Sparsity, and Manifold Results into Tidy Summary Rows
+#' @keywords internal
+#' @noRd
+.build_unimodal_summary_rows <- function(cell_results, feat_results, bivariate_results, sp_m) {
+  univ_metrics <- c("Wasserstein", "KS", "MAD", "Bhattacharyya", "Runs_Statistic",
+                    "NN_Mismatch", "Between_Dataset_Silh_Global", "MAE", "RMSE", "KDE_ISE")
+
+  append_prop_block <- function(res_list, metric_names) {
+    out <- list()
+    for (prop in names(res_list)) {
+      for (m in metric_names) {
+        val <- res_list[[prop]][[paste0(prop, "_", m)]]
+        if (!is.null(val)) {
+          out[[length(out) + 1L]] <- data.frame(
             Category = "Distributional Properties",
-            Property = b_name,
+            Property = prop,
             Metric = m,
-            Value = as.numeric(bivariate_results[[b_name]][[key]]),
+            Value = as.numeric(val),
             stringsAsFactors = FALSE
           )
         }
       }
     }
+    out
   }
-  
-  if (!is.null(zero_prob_eval)) {
-    for (m in names(zero_prob_eval)) {
-      summary_rows[[length(summary_rows) + 1]] <- data.frame(
-        Category = "Sparsity & Zero-Inflation Dynamics",
-        Property = "dropout_curve",
-        Metric = m,
-        Value = as.numeric(zero_prob_eval[[m]]),
-        stringsAsFactors = FALSE
-      )
-    }
+
+  rows <- c(
+    append_prop_block(cell_results, univ_metrics),
+    append_prop_block(feat_results, univ_metrics)
+  )
+  if (length(bivariate_results) > 0L) {
+    rows <- c(rows, append_prop_block(bivariate_results, c(
+      "Fasano_Franceschini_2D_KS", "EMD_2D", "NN_Mismatch_2D", "Between_Dataset_Silh_2D_Global"
+    )))
   }
-  
-  if (!is.null(acc_sparsity_eval)) {
-    atac_cat2_metrics <- c(
-      curve_rmse     = acc_sparsity_eval$curve_rmse,
-      r2_discrepancy = acc_sparsity_eval$r2_discrepancy
-    )
-    for (m in names(atac_cat2_metrics)) {
-      summary_rows[[length(summary_rows) + 1]] <- data.frame(
-        Category = "Sparsity & Zero-Inflation Dynamics",
-        Property = "accessibility_sparsity_curve",
-        Metric = m,
-        Value = as.numeric(atac_cat2_metrics[[m]]),
-        stringsAsFactors = FALSE
-      )
-    }
+
+  if (!is.null(sp_m$zero_prob_eval)) {
+    rows <- c(rows, .append_rows_from_fields(
+      sp_m$zero_prob_eval, names(sp_m$zero_prob_eval),
+      "Sparsity & Zero-Inflation Dynamics", "dropout_curve"
+    ))
   }
-  
-  summary_rows[[length(summary_rows) + 1]] <- data.frame(
+  if (!is.null(sp_m$acc_sparsity_eval)) {
+    rows <- c(rows, .append_rows_from_fields(
+      sp_m$acc_sparsity_eval, c("curve_rmse", "r2_discrepancy"),
+      "Sparsity & Zero-Inflation Dynamics", "accessibility_sparsity_curve"
+    ))
+  }
+  rows[[length(rows) + 1L]] <- data.frame(
     Category = "Sparsity & Zero-Inflation Dynamics",
     Property = "excess_zero_weights",
     Metric = "excess_zero_weight_discrepancy",
-    Value = abs(ref_excess_w$mean_excess_zero_weight - sim_excess_w$mean_excess_zero_weight),
+    Value = abs(sp_m$ref_excess_w$mean_excess_zero_weight - sp_m$sim_excess_w$mean_excess_zero_weight),
     stringsAsFactors = FALSE
   )
-  
-  summary_rows[[length(summary_rows) + 1]] <- data.frame(
-    Category = "Cellular Manifold & Clustering Concordance",
-    Property = "manifold",
-    Metric = "MMD",
-    Value = as.numeric(mmd_eval),
-    stringsAsFactors = FALSE
-  )
-  summary_rows[[length(summary_rows) + 1]] <- data.frame(
-    Category = "Cellular Manifold & Clustering Concordance",
-    Property = "manifold",
-    Metric = "Generative_Precision",
-    Value = as.numeric(gen_pr$generative_precision),
-    stringsAsFactors = FALSE
-  )
-  summary_rows[[length(summary_rows) + 1]] <- data.frame(
-    Category = "Cellular Manifold & Clustering Concordance",
-    Property = "manifold",
-    Metric = "Generative_Recall",
-    Value = as.numeric(gen_pr$generative_recall),
-    stringsAsFactors = FALSE
-  )
-  
-  clu_eval_uni <- NULL
-  b_eval_uni <- NULL
-  signal_eval_uni <- NULL
-  if (isTRUE(include_downstream)) {
-    clu_eval_uni <- tryCatch({
-      evaluate_clustering_metrics(
-        data = sim_data,
-        cell_types = cell_types_sim,
-        ref_data = ref_data,
-        ref_cell_types = cell_types_ref,
-        batch_info = batch_sim,
-        threads = threads
-      )
-    }, error = function(e) NULL)
-    
-    if (!is.null(clu_eval_uni)) {
-      clu_uni_metrics <- c(
-        "silhouette_sim", "cdi",
-        "neighborhood_purity", "ari", "nmi"
-      )
-      for (cm in clu_uni_metrics) {
-        if (!is.null(clu_eval_uni[[cm]]) && !is.na(clu_eval_uni[[cm]])) {
-          summary_rows[[length(summary_rows) + 1]] <- data.frame(
-            Category = "Cellular Manifold & Clustering Concordance",
-            Property = "clustering",
-            Metric = cm,
-            Value = as.numeric(clu_eval_uni[[cm]]),
-            stringsAsFactors = FALSE
-          )
-        }
-      }
-    }
-    
-    # Step 5a: Technical Variation & Batch Mixing Dynamics (Category IV - if batch_sim / batch_info provided)
-    if (!is.null(batch_sim)) {
-      if (verbose) message("Evaluating batch integration & confounder mixing...")
-      b_eval_uni <- tryCatch({
-        evaluate_batch_metrics(
-          data = sim_data,
-          batch_info = batch_sim,
-          cell_types = cell_types_sim,
-          threads = threads,
-          verbose = FALSE
-        )
-      }, error = function(e) NULL)
-      
-      if (!is.null(b_eval_uni)) {
-        batch_metrics_to_record <- c(
-          "batch_silhouette", "pcr_r2", "cms", "isi", "cross_batch_F1"
-        )
-        for (bm in batch_metrics_to_record) {
-          if (!is.null(b_eval_uni[[bm]])) {
-            summary_rows[[length(summary_rows) + 1]] <- data.frame(
-              Category = "Technical Variation & Batch Mixing Dynamics",
-              Property = "batch_mixing",
-              Metric = bm,
-              Value = as.numeric(b_eval_uni[[bm]]),
-              stringsAsFactors = FALSE
-            )
-          }
-        }
-      }
-    }
-    
-    # Step 5b: Biological Signal Fidelity (Category V - Libra Pseudobulk edgeR-QLF)
-    # Strictly requires biological replicates (batch_ref and batch_sim / batch_info)
-    # for BOTH scRNA-seq and scATAC-seq (without batch_info, Category V cannot run)
-    if (!is.null(cell_types_ref) && !is.null(cell_types_sim)) {
-      if (!is.null(batch_ref) && !is.null(batch_sim)) {
-        if (is_atac) {
-          if (verbose) message("Evaluating scATAC-seq biological signal fidelity (Libra Pseudobulk edgeR-QLF)...")
-          signal_eval_uni <- tryCatch({
-            evaluate_atac_da_fidelity(
-              ref_data = ref_data,
-              sim_data = sim_data,
-              ref_celltypes = cell_types_ref,
-              sim_celltypes = cell_types_sim,
-              batch_ref = batch_ref,
-              batch_sim = batch_sim,
-              threads = threads
-            )
-          }, error = function(e) {
-            if (verbose) message("scATAC-seq DA evaluation note: ", conditionMessage(e))
-            NULL
-          })
-          
-          if (!is.null(signal_eval_uni) && nrow(signal_eval_uni$da_summary_table) > 0) {
-            for (row_i in seq_len(nrow(signal_eval_uni$da_summary_table))) {
-              summary_rows[[length(summary_rows) + 1]] <- data.frame(
-                Category = "Biological Signal & Differential Fidelity",
-                Property = "scATAC_differential_accessibility",
-                Metric = signal_eval_uni$da_summary_table$Metric[row_i],
-                Value = as.numeric(signal_eval_uni$da_summary_table$Value[row_i]),
-                stringsAsFactors = FALSE
-              )
-            }
-          }
-        } else {
-          if (verbose) message("Evaluating scRNA-seq biological signal fidelity (Libra Pseudobulk edgeR-QLF)...")
-          signal_eval_uni <- tryCatch({
-            evaluate_deg_fidelity(
-              ref_data = ref_data,
-              sim_data = sim_data,
-              ref_celltypes = cell_types_ref,
-              sim_celltypes = cell_types_sim,
-              batch_ref = batch_ref,
-              batch_sim = batch_sim,
-              threads = threads
-            )
-          }, error = function(e) {
-            if (verbose) message("scRNA-seq pseudobulk DE evaluation note: ", conditionMessage(e))
-            NULL
-          })
-          
-          if (!is.null(signal_eval_uni) && nrow(signal_eval_uni$deg_summary_table) > 0) {
-            for (row_i in seq_len(nrow(signal_eval_uni$deg_summary_table))) {
-              summary_rows[[length(summary_rows) + 1]] <- data.frame(
-                Category = "Biological Signal & Differential Fidelity",
-                Property = "scRNA_differential_expression",
-                Metric = signal_eval_uni$deg_summary_table$Metric[row_i],
-                Value = as.numeric(signal_eval_uni$deg_summary_table$Value[row_i]),
-                stringsAsFactors = FALSE
-              )
-            }
-          }
-        }
-      } else {
-        if (verbose) {
-          mod_name_str <- if (is_atac) "scATAC-seq" else "scRNA-seq"
-          message(sprintf("Biological replicate annotations ('batch_info') not provided: skipping Category V pseudobulk analysis for %s.", mod_name_str))
-        }
-      }
-    }
-  }
-  
-  # Step 6: Trajectory & Lineage Topology (Category VII - dynverse workflow, scRNA-seq only)
-  traj_res <- NULL
-  if (!is_atac && isTRUE(include_trajectory)) {
-    if (verbose) message("[6/7] Evaluating trajectory and lineage topology (HVG + dynverse, scRNA-seq only)...")
-    traj_res <- tryCatch({
-      evaluate_trajectory_metrics(
-        ref_data = ref_data,
-        sim_data = sim_data,
-        cell_types_ref = cell_types_ref,
-        cell_types_sim = cell_types_sim,
-        num_trees = trajectory_num_trees,
-        threads = threads,
-        verbose = FALSE
-      )
-    }, error = function(e) NULL)
+  rows <- c(rows, .append_rows_from_fields(
+    list(MMD = sp_m$mmd_eval,
+         Generative_Precision = sp_m$gen_pr$generative_precision,
+         Generative_Recall = sp_m$gen_pr$generative_recall),
+    c("MMD", "Generative_Precision", "Generative_Recall"),
+    "Cellular Manifold & Clustering Concordance", "manifold"
+  ))
+  rows
+}
 
-    summary_rows <- c(summary_rows, .append_trajectory_rows(traj_res, modality = NULL))
-  } else if (is_atac && verbose) {
-    message("[6/7] Category VII (Trajectory & Lineage Topology) requires scRNA-seq data: skipping for scATAC-seq.")
+#' Evaluate Category III Clustering, Category IV Batch Mixing, and Category V Biological Signal
+#' @keywords internal
+#' @noRd
+.evaluate_unimodal_downstream <- function(ref_counts, sim_counts,
+                                          cell_types_ref, cell_types_sim,
+                                          batch_ref, batch_sim,
+                                          is_atac, threads, verbose) {
+  rows <- list()
+  clu_eval <- tryCatch(
+    evaluate_clustering_metrics(
+      data = sim_counts, cell_types = cell_types_sim,
+      ref_data = ref_counts, ref_cell_types = cell_types_ref,
+      batch_info = batch_sim, threads = threads
+    ),
+    error = function(e) NULL
+  )
+  rows <- c(rows, .append_rows_from_fields(
+    clu_eval, c("silhouette_sim", "cdi", "neighborhood_purity", "ari", "nmi"),
+    "Cellular Manifold & Clustering Concordance", "clustering"
+  ))
+
+  b_eval <- NULL
+  if (!is.null(batch_sim)) {
+    if (verbose) message("Evaluating batch integration & confounder mixing...")
+    b_eval <- tryCatch(
+      evaluate_batch_metrics(data = sim_counts, batch_info = batch_sim,
+                             cell_types = cell_types_sim, threads = threads, verbose = FALSE),
+      error = function(e) NULL
+    )
+    rows <- c(rows, .append_rows_from_fields(
+      b_eval, c("batch_silhouette", "pcr_r2", "cms", "isi", "cross_batch_F1"),
+      "Technical Variation & Batch Mixing Dynamics", "batch_mixing"
+    ))
   }
-  
-  # Step 7: Computational Scalability & Efficiency (Category VIII)
+
+  signal_eval <- NULL
+  if (!is.null(cell_types_ref) && !is.null(cell_types_sim) &&
+      !is.null(batch_ref) && !is.null(batch_sim)) {
+    if (is_atac) {
+      if (verbose) message("Evaluating scATAC-seq biological signal fidelity (Libra Pseudobulk edgeR-QLF)...")
+      signal_eval <- tryCatch(
+        evaluate_atac_da_fidelity(
+          ref_data = ref_counts, sim_data = sim_counts,
+          ref_celltypes = cell_types_ref, sim_celltypes = cell_types_sim,
+          batch_ref = batch_ref, batch_sim = batch_sim, threads = threads
+        ),
+        error = function(e) {
+          if (verbose) message("scATAC-seq DA evaluation note: ", conditionMessage(e))
+          NULL
+        }
+      )
+      if (!is.null(signal_eval)) {
+        rows <- c(rows, .append_rows_from_df(
+          signal_eval$da_summary_table,
+          "Biological Signal & Differential Fidelity", "scATAC_differential_accessibility"
+        ))
+      }
+    } else {
+      if (verbose) message("Evaluating scRNA-seq biological signal fidelity (Libra Pseudobulk edgeR-QLF)...")
+      signal_eval <- tryCatch(
+        evaluate_deg_fidelity(
+          ref_data = ref_counts, sim_data = sim_counts,
+          ref_celltypes = cell_types_ref, sim_celltypes = cell_types_sim,
+          batch_ref = batch_ref, batch_sim = batch_sim, threads = threads
+        ),
+        error = function(e) {
+          if (verbose) message("scRNA-seq pseudobulk DE evaluation note: ", conditionMessage(e))
+          NULL
+        }
+      )
+      if (!is.null(signal_eval)) {
+        rows <- c(rows, .append_rows_from_df(
+          signal_eval$deg_summary_table,
+          "Biological Signal & Differential Fidelity", "scRNA_differential_expression"
+        ))
+      }
+    }
+  } else if (!is.null(cell_types_ref) && !is.null(cell_types_sim) && verbose) {
+    mod_str <- if (is_atac) "scATAC-seq" else "scRNA-seq"
+    message(sprintf("Biological replicate annotations ('%s') not provided: skipping Category V pseudobulk analysis for %s.", "batch", mod_str))
+  }
+
+  list(rows = rows, clustering = clu_eval, batch_effects = b_eval, biological_signal = signal_eval)
+}
+
+#' Compute Unimodal Computational Scalability Metrics (Category VIII)
+#' @keywords internal
+#' @noRd
+.compute_unimodal_scalability <- function(elapsed_time, memory_mb, time_unit, memory_unit, sim_cores, verbose) {
   time_unit_norm <- .normalize_time_unit(time_unit)
   memory_unit_norm <- .normalize_memory_unit(memory_unit)
   elapsed_seconds <- .convert_time_to_seconds(elapsed_time, time_unit_norm)
@@ -615,51 +438,19 @@ evaluate_simulation_accuracy <- function(
   core_sec_val <- if (!is.null(elapsed_seconds) && !is.na(elapsed_seconds)) as.numeric(elapsed_seconds * cores_mult) else NULL
   mem_core_val <- if (!is.null(memory_mib) && !is.na(memory_mib)) as.numeric(memory_mib / cores_mult) else NULL
 
+  rows <- list()
   if (!is.null(core_sec_val) || !is.null(mem_core_val)) {
     if (verbose) message("[7/7] Logging computational scalability & efficiency metrics...")
-    if (!is.null(core_sec_val)) {
-      summary_rows[[length(summary_rows) + 1]] <- data.frame(
-        Category = "(VIII) Computational Scalability & Efficiency",
-        Property = "resource_usage",
-        Metric = "core_seconds",
-        Value = as.numeric(core_sec_val),
-        stringsAsFactors = FALSE
-      )
-    }
-    if (!is.null(mem_core_val)) {
-      summary_rows[[length(summary_rows) + 1]] <- data.frame(
-        Category = "(VIII) Computational Scalability & Efficiency",
-        Property = "resource_usage",
-        Metric = "memory_per_core_mib",
-        Value = as.numeric(mem_core_val),
-        stringsAsFactors = FALSE
-      )
-    }
+    rows <- .append_rows_from_fields(
+      list(core_seconds = core_sec_val, memory_per_core_mib = mem_core_val),
+      c("core_seconds", "memory_per_core_mib"),
+      "(VIII) Computational Scalability & Efficiency", "resource_usage"
+    )
   }
 
-  summary_table <- do.call(rbind, summary_rows)
-  if (!is.null(sim_cores_val) && !is.null(summary_table) && nrow(summary_table) > 0) {
-    summary_table$Sim_Cores <- sim_cores_val
-  }
-  if (verbose) message("Unimodal accuracy evaluation complete.")
-  
   list(
-    metrics_summary_table = summary_table,
-    cell_metrics = cell_results,
-    feature_metrics = feat_results,
-    bivariate_metrics = bivariate_results,
-    zero_probability_curve = zero_prob_eval,
-    accessibility_sparsity_curve = acc_sparsity_eval,
-    excess_zero_weights = list(ref = ref_excess_w, sim = sim_excess_w),
-    generative_manifold = list(
-      mmd = mmd_eval,
-      precision_recall = gen_pr
-    ),
-    ref_properties = list(cell = ref_cell, feature = ref_feat),
-    sim_properties = list(cell = sim_cell, feature = sim_feat),
-    batch_effects = b_eval_uni,
-    biological_signal = signal_eval_uni,
-    trajectory = traj_res,
+    rows = rows,
+    sim_cores_val = sim_cores_val,
     resource_usage = list(
       core_seconds = core_sec_val,
       memory_per_core_mib = mem_core_val,
@@ -675,1025 +466,901 @@ evaluate_simulation_accuracy <- function(
   )
 }
 
-#' Master Multiomics Simulation Benchmarking Pipeline
+#' Evaluate Comprehensive Simulation Accuracy (Unimodal SingleCellExperiment)
 #'
-#' Orchestrates comprehensive benchmarking across all 8 evaluation categories
-#' using strictly the user's provided inputs:
-#' \itemize{
-#'   \item \code{ref_multi}: List of reference omics objects/matrices (e.g. \code{list(RNA = ..., ATAC = ...)}).
-#'   \item \code{sim_multi}: List of simulated omics objects/matrices (e.g. \code{list(RNA = ..., ATAC = ...)}).
-#'   \item \code{cell_types}: Vector/factor of cell-type identities.
-#'   \item \code{batch_info}: Vector/factor of batch or biological replicate annotations.
-#'   \item Computational resource usage: \code{elapsed_time}, \code{memory_mb}.
-#'   \item Trajectory features inferred directly from scRNA-seq counts.
-#' }
+#' Computes distribution distances, cellular and feature-level properties,
+#' zero-inflation curves, clustering concordance, batch mixing, differential
+#' expression/accessibility fidelity, trajectory topology, and computational
+#' scalability between reference and simulated \code{SingleCellExperiment} objects.
+#' Users starting from \code{Seurat} objects should convert via
+#' \code{Seurat::as.SingleCellExperiment()}.
 #'
 #' \if{html}{\figure{workflow_diagram.png}{options: width="800" alt="scSimEval Unified Benchmarking Workflow Diagram"}}
 #'
 #' @details
-#' \strong{Multiomics Metric Measurement Capacity across 4 Analysis Options (56 Evaluation Measures Suite):}
-#' Both \code{cell_type} and \code{batch} metadata annotations are strictly mandatory for benchmarking to enable complete evaluation across all biological and technical dimensions.
+#' \strong{Metric Measurement Capacity across 4 Analysis Options (56 Evaluation Measures Suite):}
+#' Cell-type and batch annotations are retrieved directly from \code{colData(ref_sce)} and
+#' \code{colData(sim_sce)} using \code{cell_type_col} and \code{batch_col}.
 #' \itemize{
-#'   \item \strong{1. scRNA-seq (45 Metrics):} Evaluates 45 metrics across 7 categories (I, II, III, IV, V, VII, VIII).
-#'   \item \strong{2. scATAC-seq (32 Metrics):} Evaluates 32 metrics across 6 categories (I, II, III, IV, V, VIII; trajectory skipped).
-#'   \item \strong{3. Paired Multiomics (56 Metrics):} Evaluates all 56 metrics across all 8 canonical categories (I–VIII):
-#'     simultaneous unimodal layers (Cat I & II), dual clustering concordance (Cat III), dual batch mixing dynamics (Cat IV),
-#'     dual biological signal fidelity (Cat V: 12 metrics), Multiomics Integration & Alignment (Cat VI: 7 metrics including FOSCTTM,
-#'     Match@1, cross-modal generation fidelity, peak-to-gene coupling), scRNA Trajectory (Cat VII), and Scalability (Cat VIII).
-#'   \item \strong{4. Unpaired Multiomics (51 Metrics):} Evaluates 51 metrics across 7 categories:
-#'     evaluates both unimodal layers (Cat I & II), dual clustering (Cat III), dual batch mixing (Cat IV), dual differential signal (Cat V),
-#'     population-level multiomics integration & alignment (Cat VI), scRNA trajectory (Cat VII), and scalability (Cat VIII).
-#'     Omits 5 cell-level pairing measures (FOSCTTM, Match@1, cross-modal generation, and cell-matched coupling) due to separate cell identities (56 - 5 = 51).
+#'   \item \strong{1. scRNA-seq (45 Metrics):} Categories I, II, III, IV, V, VII, and VIII.
+#'   \item \strong{2. scATAC-seq (32 Metrics):} Categories I, II, III, IV, V, and VIII (trajectory skipped for ATAC).
+#'   \item \strong{3. Paired Multiomics (56 Metrics):} All 8 categories (I--VIII) via \code{\link{evaluate_multiomics_accuracy}}.
+#'   \item \strong{4. Unpaired Multiomics (51 Metrics):} All 8 categories omitting 5 cell-matched pairing metrics.
 #' }
 #'
-#' @param ref_multi Named list of reference matrices for Modality 1 and 2.
-#' @param sim_multi Named list of simulated matrices for Modality 1 and 2.
-#' @param cell_types Optional factor or vector of cell type labels for cells.
-#' @param batch_info Optional factor or vector of batch labels for cells.
-#' @param memory_mb Optional numeric value of peak memory allocation (in \code{memory_unit}).
-#' @param elapsed_time Optional numeric value of wall-clock elapsed time (in \code{time_unit}).
-#' @param feature_pairs Optional 2-column data.frame of linked feature pairs.
-#' @param pairing Character string specifying whether the multiomics dataset is
-#'   \code{"paired"} (simultaneous co-assay from the same individual cells, e.g.,
-#'   10x Chromium Multiome, SHARE-seq, SNARE-seq) or \code{"unpaired"} (independent
-#'   profiling of modalities from separate cells of the same biological tissue).
-#'   Default is \code{"paired"}. In \code{"unpaired"} mode, cell-level pairing
-#'   metrics (FOSCTTM, Match@1, cross-modal generation, and direct peak-to-gene
-#'   coupling) are skipped, while population-level cross-modal metrics (cross-modal
-#'   label transfer, co-expression module fidelity, peak co-accessibility, and
-#'   accessibility profile concordance) are computed alongside all unimodal metrics.
-#' @param is_paired Optional logical alias for \code{pairing}. If provided,
-#'   \code{TRUE} corresponds to \code{"paired"} and \code{FALSE} to \code{"unpaired"}.
-#' @param compute_bivariate Logical, whether to compute 2D bivariate tests. Default FALSE for speed.
-#' @param threads Number of CPU threads. Default is 1.
-#' @param verbose Logical, whether to print execution progress. Default is TRUE.
-#' @param time_unit Character string specifying the unit of \code{elapsed_time}:
-#'   \code{"seconds"} (default, or \code{"s"}) or \code{"minutes"} (or \code{"min"}).
-#' @param memory_unit Character string specifying the unit of \code{memory_mb}:
-#'   \code{"MiB"} (default, binary mebibytes) or \code{"MB"} (decimal megabytes, converted to MiB).
-#' @param sim_cores Optional positive integer specifying the number of CPU cores used
-#'   by the simulator to generate \code{sim_multi}. Default is NULL.
-#' @param elapsed_time_rna,elapsed_time_atac Optional separate wall-clock runtimes for RNA and ATAC layers
-#'   when modalities are simulated independently (used if combined \code{elapsed_time} is NULL).
-#' @param memory_mb_rna,memory_mb_atac Optional separate peak RAM allocations for RNA and ATAC layers
-#'   when modalities are simulated independently (used if combined \code{memory_mb} is NULL).
-#' @param time_unit_rna,time_unit_atac Optional time units (\code{"seconds"} or \code{"minutes"}) for
-#'   \code{elapsed_time_rna} and \code{elapsed_time_atac}; defaults to \code{time_unit}.
-#' @param memory_unit_rna,memory_unit_atac Optional memory units (\code{"MiB"} or \code{"MB"}) for
-#'   \code{memory_mb_rna} and \code{memory_mb_atac}; defaults to \code{memory_unit}.
-#' @param sim_cores_rna,sim_cores_atac Optional positive integers specifying simulation CPU cores for
-#'   separate RNA and ATAC runs (used if combined \code{sim_cores} is NULL).
-#' @param trajectory_num_trees Number of Random Forest trees for Category VII \code{wcor_features}
-#'   (default \code{10000L}, per Saelens et al. 2019).
+#' @param ref_sce Reference \code{SingleCellExperiment} object.
+#' @param sim_sce Simulated \code{SingleCellExperiment} object.
+#' @param cell_type_col Column name in \code{colData} containing cell-type labels (default \code{"cell_type"}).
+#' @param batch_col Column name in \code{colData} containing batch/replicate labels (default \code{"batch"}).
+#' @param modality Optional modality hint (\code{"scRNA-seq"} or \code{"scATAC-seq"}); auto-detected if \code{NULL}.
+#' @param compute_bivariate Logical, whether to compute 2D bivariate tests. Default is \code{TRUE}.
+#' @param threads Integer number of parallel worker threads. Default is \code{1L}.
+#' @param memory_mb Optional numeric peak memory allocation (in \code{memory_unit}).
+#' @param elapsed_time Optional numeric wall-clock elapsed runtime (in \code{time_unit}).
+#' @param time_unit Unit of \code{elapsed_time}: \code{"seconds"} (default) or \code{"minutes"}.
+#' @param memory_unit Unit of \code{memory_mb}: \code{"MiB"} (default) or \code{"MB"}.
+#' @param sim_cores Optional positive integer specifying CPU cores used by the simulator.
+#' @param trajectory_num_trees Number of Random Forest trees for Category VII \code{wcor_features} (default \code{10000L}).
+#' @param include_trajectory Logical; whether to evaluate Category VII trajectory metrics for scRNA-seq. Default \code{TRUE}.
+#' @param include_downstream Logical; whether to evaluate Categories III, IV, and V downstream metrics. Default \code{TRUE}.
+#' @param verbose Logical, whether to print progress messages. Default is \code{TRUE}.
 #'
-#' @return A list containing detailed results and a unified tidy master summary table.
+#' @return A named list containing tidy summaries and detailed category results:
+#' \describe{
+#'   \item{metrics_summary_table}{Data frame with columns \code{Category}, \code{Property}, \code{Metric}, \code{Value} (and \code{Sim_Cores} if provided).}
+#'   \item{cell_metrics}{Named list of per-property univariate metric lists at cell resolution.}
+#'   \item{feature_metrics}{Named list of per-property univariate metric lists at feature resolution.}
+#'   \item{bivariate_metrics}{Named list of 2D bivariate metric comparisons.}
+#'   \item{zero_probability_curve}{Category II scRNA-seq dropout curve results, or \code{NULL}.}
+#'   \item{accessibility_sparsity_curve}{Category II scATAC-seq sparsity curve results, or \code{NULL}.}
+#'   \item{excess_zero_weights}{List with \code{ref} and \code{sim} excess-zero probability weights.}
+#'   \item{generative_manifold}{List with \code{mmd} and \code{precision_recall} generative manifold scores.}
+#'   \item{ref_properties}{List containing \code{cell} and \code{feature} property vectors extracted from \code{ref_sce}.}
+#'   \item{sim_properties}{List containing \code{cell} and \code{feature} property vectors extracted from \code{sim_sce}.}
+#'   \item{batch_effects}{Category IV batch mixing metrics list, or \code{NULL}.}
+#'   \item{biological_signal}{Category V pseudobulk DE/DA fidelity results, or \code{NULL}.}
+#'   \item{trajectory}{Category VII \emph{dynverse} trajectory evaluation results, or \code{NULL}.}
+#'   \item{resource_usage}{Normalized Category VIII scalability list (\code{core_seconds}, \code{memory_per_core_mib}, \code{memory_mb}, \code{elapsed_time}, \code{sim_cores}).}
+#' }
 #' @examples
-#' data(example_multiomics, package = "scSimEval")
-#' evaluate_multiomics_accuracy(example_multiomics$ref_multi, example_multiomics$sim_multi)
+#' data(example_scrna, package = "scSimEval")
+#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim,
+#'                                     include_trajectory = FALSE, verbose = FALSE)
 #' @export
-evaluate_multiomics_accuracy <- function(
-  ref_multi,
-  sim_multi,
-  cell_types = NULL,
-  batch_info = NULL,
-  pairing = c("paired", "unpaired"),
-  is_paired = NULL,
+evaluate_simulation_accuracy <- function(
+  ref_sce,
+  sim_sce,
+  cell_type_col = "cell_type",
+  batch_col = "batch",
+  modality = NULL,
+  compute_bivariate = TRUE,
+  threads = 1L,
   memory_mb = NULL,
   elapsed_time = NULL,
-  feature_pairs = NULL,
-  compute_bivariate = FALSE,
-  threads = 1,
-  verbose = TRUE,
   time_unit = c("seconds", "minutes"),
   memory_unit = c("MiB", "MB"),
   sim_cores = NULL,
-  elapsed_time_rna = NULL,
-  elapsed_time_atac = NULL,
-  memory_mb_rna = NULL,
-  memory_mb_atac = NULL,
-  time_unit_rna = NULL,
-  time_unit_atac = NULL,
-  memory_unit_rna = NULL,
-  memory_unit_atac = NULL,
-  sim_cores_rna = NULL,
-  sim_cores_atac = NULL,
-  trajectory_num_trees = 10000L
+  trajectory_num_trees = 10000L,
+  include_trajectory = TRUE,
+  include_downstream = TRUE,
+  verbose = TRUE
 ) {
-  # Strict standardization check (Seurat / SingleCellExperiment)
-  val_ref <- validate_multiomics_input(ref_multi, "ref_multi")
-  val_sim <- validate_multiomics_input(sim_multi, "sim_multi")
-  
-  if (is.null(cell_types)) {
-    if (!is.null(val_ref$cell_types)) cell_types <- val_ref$cell_types
-    else if (!is.null(val_sim$cell_types)) cell_types <- val_sim$cell_types
-  }
-  if (is.null(batch_info)) {
-    if (!is.null(val_ref$batch_info)) batch_info <- val_ref$batch_info
-    else if (!is.null(val_sim$batch_info)) batch_info <- val_sim$batch_info
-  }
-  
-  ref_multi_orig <- ref_multi
-  sim_multi_orig <- sim_multi
+  val_ref <- validate_sc_object(ref_sce, "ref_sce", modality = modality,
+                                cell_type_col = cell_type_col, batch_col = batch_col)
+  val_sim <- validate_sc_object(sim_sce, "sim_sce", modality = modality,
+                                cell_type_col = cell_type_col, batch_col = batch_col)
 
-  mod_names <- names(ref_multi_orig)
-  if (is.null(mod_names) || length(mod_names) < 2 || any(mod_names == "")) {
-    if (!is.null(val_ref$m1_name) && !is.null(val_ref$m2_name)) {
-      mod_names <- c(val_ref$m1_name, val_ref$m2_name)
-    } else {
-      mod_names <- c("Modality_1", "Modality_2")
-    }
-  }
-  m1_name <- mod_names[1]
-  m2_name <- mod_names[2]
+  f_ref <- .filter_rare_cell_types(val_ref$counts, val_ref$cell_types, val_ref$batch_info, "reference", verbose)
+  f_sim <- .filter_rare_cell_types(val_sim$counts, val_sim$cell_types, val_sim$batch_info, "simulation", verbose)
+  ref_counts <- f_ref$counts
+  sim_counts <- f_sim$counts
+  cell_types_ref <- f_ref$cell_types
+  cell_types_sim <- f_sim$cell_types
+  batch_ref <- f_ref$batch_info
+  batch_sim <- f_sim$batch_info
 
-  ref_multi <- stats::setNames(list(val_ref$m1_obj, val_ref$m2_obj), c(m1_name, m2_name))
-  sim_multi <- stats::setNames(list(val_sim$m1_obj, val_sim$m2_obj), c(m1_name, m2_name))
-  
-  if (!is.null(is_paired)) {
-    pairing <- if (isTRUE(is_paired)) "paired" else "unpaired"
-  } else {
-    pairing <- match.arg(pairing)
-  }
-  
-  c1_cells <- colnames(ref_multi[[1]])
-  c2_cells <- colnames(ref_multi[[2]])
-  if (pairing == "paired" && (!is.null(c1_cells) && !is.null(c2_cells) && (length(c1_cells) != length(c2_cells) || !identical(c1_cells, c2_cells)))) {
-    if (verbose) message(sprintf("scSimEval Note: Modality cell counts/barcodes differ (%s: %d cells vs %s: %d cells). Automatically enforcing unpaired multiomics mode.", m1_name, length(c1_cells), m2_name, length(c2_cells)))
-    pairing <- "unpaired"
-    is_paired <- FALSE
-  }
-  
   threads <- .set_parallel_threads(threads)
-  
-  # Modality names already resolved and assigned to ref_multi / sim_multi
-  
-  master_rows <- list()
-  
-  # ============================================================================
-  # 1. Unimodal Evaluation for Modality 1 and Modality 2 (Categories 1 & 2)
-  # ============================================================================
-  if (verbose) message(sprintf("=== [Step 1] Evaluating %s Layer Accuracy ===", m1_name))
-  m1_eval <- evaluate_simulation_accuracy(
-    ref_data = ref_multi[[1]],
-    sim_data = sim_multi[[1]],
-    modality = m1_name,
-    compute_bivariate = compute_bivariate,
-    threads = threads,
-    verbose = verbose,
-    include_trajectory = FALSE,
-    include_downstream = FALSE
-  )
-  t1 <- m1_eval$metrics_summary_table
-  t1 <- t1[t1$Property != "clustering" & !grepl("Trajectory", t1$Category, ignore.case = TRUE), , drop = FALSE]
-  t1$Modality <- m1_name
-  master_rows[[length(master_rows) + 1]] <- t1
-  
-  if (verbose) message(sprintf("=== [Step 2] Evaluating %s Layer Accuracy ===", m2_name))
-  m2_eval <- evaluate_simulation_accuracy(
-    ref_data = ref_multi[[2]],
-    sim_data = sim_multi[[2]],
-    modality = m2_name,
-    compute_bivariate = compute_bivariate,
-    threads = threads,
-    verbose = verbose,
-    include_trajectory = FALSE,
-    include_downstream = FALSE
-  )
-  t2 <- m2_eval$metrics_summary_table
-  t2 <- t2[t2$Property != "clustering" & !grepl("Trajectory", t2$Category, ignore.case = TRUE), , drop = FALSE]
-  t2$Modality <- m2_name
-  master_rows[[length(master_rows) + 1]] <- t2
-  
-  # ============================================================================
-  # 2. Cellular Structure & Clustering Accuracy (Category 3)
-  # ============================================================================
-  # Extract modality specific cell types and batches (handles vector, factor, data.frame, and named list inputs)
-  extract_label_vector <- function(x, n_expected, mod_name, fallback_idx = 1) {
-    if (is.null(x)) return(NULL)
-    if (is.data.frame(x)) {
-      v <- if (!is.null(x$CellType)) x$CellType else if (!is.null(x$Batch)) x$Batch else if (ncol(x) >= 2) x[[2]] else x[[1]]
-      if (length(v) == n_expected) return(as.character(v))
-    }
-    if (is.list(x) && !is.data.frame(x) && !is.factor(x)) {
-      if (!is.null(x[[mod_name]])) return(extract_label_vector(x[[mod_name]], n_expected, mod_name, fallback_idx))
-      alias_names <- if (grepl("atac|peak|chromatin", tolower(mod_name))) c("atac", "peaks", "chromatin") else c("rna", "gene")
-      for (anm in alias_names) {
-        m_idx <- match(anm, tolower(names(x)))
-        if (!is.na(m_idx)) return(extract_label_vector(x[[m_idx]], n_expected, mod_name, fallback_idx))
-      }
-      m_idx <- match(tolower(mod_name), tolower(names(x)))
-      if (!is.na(m_idx)) return(extract_label_vector(x[[m_idx]], n_expected, mod_name, fallback_idx))
-      if (length(x) >= fallback_idx) return(extract_label_vector(x[[fallback_idx]], n_expected, mod_name, fallback_idx))
-      return(extract_label_vector(x[[1]], n_expected, mod_name, fallback_idx))
-    }
-    if (length(x) == n_expected) return(as.character(x))
-    return(NULL)
-  }
-  ct_m1 <- extract_label_vector(cell_types, ncol(ref_multi[[1]]), m1_name, fallback_idx = 1)
-  ct_m2 <- extract_label_vector(cell_types, ncol(ref_multi[[2]]), m2_name, fallback_idx = 2)
-  bt_m1 <- extract_label_vector(batch_info, ncol(ref_multi[[1]]), m1_name, fallback_idx = 1)
-  bt_m2 <- extract_label_vector(batch_info, ncol(ref_multi[[2]]), m2_name, fallback_idx = 2)
+  is_atac <- .is_atac_modality(val_ref$object, modality) || .is_atac_modality(val_sim$object, modality)
+  modality_resolved <- if (is_atac) "scATAC-seq" else "scRNA-seq"
 
-  if (verbose) message(sprintf("=== [Step 3] Evaluating Cellular Structure & Clustering Preservation (%s & %s) ===", m1_name, m2_name))
-  clu_eval_m1 <- tryCatch({
-    evaluate_clustering_metrics(
-      data = sim_multi[[1]],
-      cell_types = ct_m1,
-      ref_data = ref_multi[[1]],
-      ref_cell_types = ct_m1,
-      batch_info = bt_m1,
-      threads = threads
+  if (verbose) message("[1/5] Extracting cell-level and feature-level properties...")
+  props <- .compute_unimodal_properties(ref_counts, sim_counts, modality_resolved, threads)
+
+  if (verbose) message("[3/5] Computing univariate accuracy metrics...")
+  univ <- .run_univariate_eval(props$ref_cell, props$sim_cell, props$ref_feat, props$sim_feat, is_atac, threads)
+
+  bivariate_results <- list()
+  if (compute_bivariate) {
+    if (verbose) message("[4/5] Computing bivariate metrics (Fasano-Franceschini, KDE zstat, 2D EMD)...")
+    bivariate_results <- .run_bivariate_eval(props$ref_cell, props$sim_cell, props$ref_feat, props$sim_feat, threads)
+  }
+
+  if (verbose) message("[5/5] Computing zero-probability and manifold distances...")
+  sp_m <- .run_sparsity_manifold_eval(ref_counts, sim_counts, is_atac, threads)
+  summary_rows <- .build_unimodal_summary_rows(univ$cell_results, univ$feat_results, bivariate_results, sp_m)
+
+  downstream <- list(rows = list(), batch_effects = NULL, biological_signal = NULL)
+  if (isTRUE(include_downstream)) {
+    downstream <- .evaluate_unimodal_downstream(
+      ref_counts, sim_counts, cell_types_ref, cell_types_sim, batch_ref, batch_sim,
+      is_atac, threads, verbose
     )
-  }, error = function(e) {
-    if (verbose) message("Clustering evaluation note (M1): ", conditionMessage(e))
-    NULL
-  })
-  clu_eval_m2 <- tryCatch({
-    evaluate_clustering_metrics(
-      data = sim_multi[[2]],
-      cell_types = ct_m2,
-      ref_data = ref_multi[[2]],
-      ref_cell_types = ct_m2,
-      batch_info = bt_m2,
-      threads = threads
+    summary_rows <- c(summary_rows, downstream$rows)
+  }
+
+  traj_res <- NULL
+  if (!is_atac && isTRUE(include_trajectory)) {
+    if (verbose) message("[6/7] Evaluating trajectory and lineage topology (HVG + dynverse, scRNA-seq only)...")
+    traj_res <- tryCatch(
+      evaluate_trajectory_metrics(
+        ref_data = ref_counts, sim_data = sim_counts,
+        cell_types_ref = cell_types_ref, cell_types_sim = cell_types_sim,
+        num_trees = trajectory_num_trees, threads = threads, verbose = FALSE
+      ),
+      error = function(e) NULL
     )
-  }, error = function(e) {
-    if (verbose) message("Clustering evaluation note (M2): ", conditionMessage(e))
-    NULL
-  })
-  clustering_res <- list(m1 = clu_eval_m1, m2 = clu_eval_m2)
-  
-  clu_metrics_to_record <- c(
-    "silhouette_sim", "cdi",
-    "neighborhood_purity", "ari", "nmi"
+    summary_rows <- c(summary_rows, .append_trajectory_rows(traj_res, modality = NULL))
+  } else if (is_atac && verbose) {
+    message("[6/7] Category VII (Trajectory & Lineage Topology) requires scRNA-seq data: skipping for scATAC-seq.")
+  }
+
+  scal <- .compute_unimodal_scalability(elapsed_time, memory_mb, time_unit, memory_unit, sim_cores, verbose)
+  summary_rows <- c(summary_rows, scal$rows)
+
+  summary_table <- do.call(rbind, summary_rows)
+  if (!is.null(scal$sim_cores_val) && !is.null(summary_table) && nrow(summary_table) > 0L) {
+    summary_table$Sim_Cores <- scal$sim_cores_val
+  }
+  if (verbose) message("Unimodal accuracy evaluation complete.")
+
+  list(
+    metrics_summary_table = summary_table,
+    cell_metrics = univ$cell_results,
+    feature_metrics = univ$feat_results,
+    bivariate_metrics = bivariate_results,
+    zero_probability_curve = sp_m$zero_prob_eval,
+    accessibility_sparsity_curve = sp_m$acc_sparsity_eval,
+    excess_zero_weights = list(ref = sp_m$ref_excess_w, sim = sp_m$sim_excess_w),
+    generative_manifold = list(mmd = sp_m$mmd_eval, precision_recall = sp_m$gen_pr),
+    ref_properties = list(cell = props$ref_cell, feature = props$ref_feat),
+    sim_properties = list(cell = props$sim_cell, feature = props$sim_feat),
+    batch_effects = downstream$batch_effects,
+    biological_signal = downstream$biological_signal,
+    trajectory = traj_res,
+    resource_usage = scal$resource_usage
   )
-  for (cm in clu_metrics_to_record) {
-    if (!is.null(clu_eval_m1[[cm]]) && !is.na(clu_eval_m1[[cm]])) {
-      master_rows[[length(master_rows) + 1]] <- data.frame(
-        Category = "Cellular Manifold & Clustering Concordance",
-        Property = "clustering",
-        Metric = cm,
-        Value = as.numeric(clu_eval_m1[[cm]]),
-        Modality = m1_name,
-        stringsAsFactors = FALSE
-      )
-    }
-    if (!is.null(clu_eval_m2[[cm]]) && !is.na(clu_eval_m2[[cm]])) {
-      master_rows[[length(master_rows) + 1]] <- data.frame(
-        Category = "Cellular Manifold & Clustering Concordance",
-        Property = "clustering",
-        Metric = cm,
-        Value = as.numeric(clu_eval_m2[[cm]]),
-        Modality = m2_name,
-        stringsAsFactors = FALSE
-      )
-    }
+}
+
+#' Extract Layer-Specific Metadata Vectors from Multiomics Input
+#' @keywords internal
+#' @noRd
+.extract_modality_label <- function(x, n_expected, mod_name, fallback_idx = 1L) {
+  if (is.null(x)) return(NULL)
+  if (is.data.frame(x)) {
+    v <- if (!is.null(x$CellType)) x$CellType else if (!is.null(x$Batch)) x$Batch else if (ncol(x) >= 2L) x[[2L]] else x[[1L]]
+    if (length(v) == n_expected) return(as.character(v))
   }
-  
-  # ============================================================================
-  # 3. Batch Effect & Technical Confounder Mixing (Category 4)
-  # ============================================================================
+  if (is.list(x) && !is.data.frame(x) && !is.factor(x)) {
+    if (!is.null(x[[mod_name]])) return(.extract_modality_label(x[[mod_name]], n_expected, mod_name, fallback_idx))
+    alias_names <- if (grepl("atac|peak|chromatin", tolower(mod_name))) c("atac", "peaks", "chromatin") else c("rna", "gene")
+    for (anm in alias_names) {
+      m_idx <- match(anm, tolower(names(x)))
+      if (!is.na(m_idx)) return(.extract_modality_label(x[[m_idx]], n_expected, mod_name, fallback_idx))
+    }
+    if (length(x) >= fallback_idx) return(.extract_modality_label(x[[fallback_idx]], n_expected, mod_name, fallback_idx))
+    return(.extract_modality_label(x[[1L]], n_expected, mod_name, fallback_idx))
+  }
+  if (length(x) == n_expected) return(as.character(x))
+  NULL
+}
+
+#' Compute Category III Clustering Concordance across Both Modalities
+#' @keywords internal
+#' @noRd
+.evaluate_multiomics_clustering <- function(ref_multi, sim_multi, ct_m1, ct_m2, bt_m1, bt_m2,
+                                            m1_name, m2_name, threads, verbose) {
+  if (verbose) message(sprintf("=== [Step 3] Evaluating Clustering Preservation (%s & %s) ===", m1_name, m2_name))
+  run_one <- function(sim_o, ref_o, ct, bt, tag) {
+    tryCatch(
+      evaluate_clustering_metrics(
+        data = sim_o, cell_types = ct, ref_data = ref_o,
+        ref_cell_types = ct, batch_info = bt, threads = threads
+      ),
+      error = function(e) {
+        if (verbose) message(sprintf("Clustering evaluation note (%s): %s", tag, conditionMessage(e)))
+        NULL
+      }
+    )
+  }
+  clu_m1 <- run_one(sim_multi[[1L]], ref_multi[[1L]], ct_m1, bt_m1, "M1")
+  clu_m2 <- run_one(sim_multi[[2L]], ref_multi[[2L]], ct_m2, bt_m2, "M2")
+  fields <- c("silhouette_sim", "cdi", "neighborhood_purity", "ari", "nmi")
+  rows <- c(
+    .append_rows_from_fields(clu_m1, fields, "Cellular Manifold & Clustering Concordance", "clustering", m1_name),
+    .append_rows_from_fields(clu_m2, fields, "Cellular Manifold & Clustering Concordance", "clustering", m2_name)
+  )
+  list(clustering = list(m1 = clu_m1, m2 = clu_m2), rows = rows)
+}
+
+#' Compute Category IV Batch Mixing across Both Modalities
+#' @keywords internal
+#' @noRd
+.evaluate_multiomics_batch <- function(sim_multi, ct_m1, ct_m2, bt_m1, bt_m2,
+                                       m1_name, m2_name, threads, verbose) {
   batch_res <- list()
-  if (!is.null(bt_m1) && length(unique(bt_m1[!is.na(bt_m1)])) >= 2) {
-    if (verbose) message(sprintf("=== [Step 4] Evaluating Batch Integration & Technical Confounder Mixing (%s) ===", m1_name))
-    b_eval <- tryCatch({
-      evaluate_batch_metrics(
-        data = sim_multi[[1]],
-        batch_info = bt_m1,
-        cell_types = ct_m1,
-        threads = threads,
-        verbose = verbose
-      )
-    }, error = function(e) NULL)
-    if (!is.null(b_eval)) {
-      batch_res[[m1_name]] <- b_eval
-      
-      batch_metrics_to_record <- c(
-        "batch_silhouette", "pcr_r2", "cms", "isi",
-        "cross_batch_F1"
-      )
-      for (bm in batch_metrics_to_record) {
-        if (!is.null(b_eval[[bm]])) {
-          master_rows[[length(master_rows) + 1]] <- data.frame(
-            Category = "Technical Variation & Batch Mixing Dynamics",
-            Property = "batch_mixing",
-            Metric = bm,
-            Value = as.numeric(b_eval[[bm]]),
-            Modality = m1_name,
-            stringsAsFactors = FALSE
-          )
-        }
-      }
-    }
+  rows <- list()
+  fields <- c("batch_silhouette", "pcr_r2", "cms", "isi", "cross_batch_F1")
+
+  eval_layer <- function(sim_o, bt, ct, mod_nm) {
+    if (is.null(bt) || length(unique(bt[!is.na(bt)])) < 2L) return(NULL)
+    if (verbose) message(sprintf("=== [Step 4] Evaluating Batch Mixing (%s) ===", mod_nm))
+    tryCatch(
+      evaluate_batch_metrics(data = sim_o, batch_info = bt, cell_types = ct, threads = threads, verbose = verbose),
+      error = function(e) NULL
+    )
   }
-  if (!is.null(bt_m2) && length(unique(bt_m2[!is.na(bt_m2)])) >= 2) {
-    if (verbose) message(sprintf("=== [Step 4] Evaluating Batch Integration & Technical Confounder Mixing (%s) ===", m2_name))
-    b_eval_m2 <- tryCatch({
-      evaluate_batch_metrics(
-        data = sim_multi[[2]],
-        batch_info = bt_m2,
-        cell_types = ct_m2,
-        threads = threads,
-        verbose = verbose
-      )
-    }, error = function(e) NULL)
-    if (!is.null(b_eval_m2)) {
-      batch_res[[m2_name]] <- b_eval_m2
-      batch_metrics_to_record <- c(
-        "batch_silhouette", "pcr_r2", "cms", "isi",
-        "cross_batch_F1"
-      )
-      for (bm in batch_metrics_to_record) {
-        if (!is.null(b_eval_m2[[bm]])) {
-          master_rows[[length(master_rows) + 1]] <- data.frame(
-            Category = "Technical Variation & Batch Mixing Dynamics",
-            Property = "batch_mixing",
-            Metric = bm,
-            Value = as.numeric(b_eval_m2[[bm]]),
-            Modality = m2_name,
-            stringsAsFactors = FALSE
-          )
-        }
-      }
-    }
+
+  res1 <- eval_layer(sim_multi[[1L]], bt_m1, ct_m1, m1_name)
+  if (!is.null(res1)) {
+    batch_res[[m1_name]] <- res1
+    rows <- c(rows, .append_rows_from_fields(res1, fields, "Technical Variation & Batch Mixing Dynamics", "batch_mixing", m1_name))
   }
-  
-  # ============================================================================
-  # 4. Biological Signal & Downstream Performance (Category 5)
-  #    - scRNA-seq (Modality 1): Libra Pseudobulk edgeR-QLF (Requires batch_info)
-  #    - scATAC-seq (Modality 2): Libra Pseudobulk edgeR-QLF (Requires batch_info)
-  # ============================================================================
+  res2 <- eval_layer(sim_multi[[2L]], bt_m2, ct_m2, m2_name)
+  if (!is.null(res2)) {
+    batch_res[[m2_name]] <- res2
+    rows <- c(rows, .append_rows_from_fields(res2, fields, "Technical Variation & Batch Mixing Dynamics", "batch_mixing", m2_name))
+  }
+  list(batch_res = batch_res, rows = rows)
+}
+
+#' Compute Category V Differential Signal Fidelity across RNA and ATAC Modalities
+#' @keywords internal
+#' @noRd
+.evaluate_multiomics_signal <- function(ref_multi, sim_multi, ct_m1, ct_m2, bt_m1, bt_m2,
+                                        m1_name, m2_name, threads, verbose) {
   signal_res <- list()
-  if (!is.null(ct_m1)) {
-    if (!is.null(bt_m1)) {
-      if (verbose) message(sprintf("=== [Step 5] Evaluating %s Biological Signal Fidelity (Libra Pseudobulk edgeR-QLF) ===", m1_name))
-      sim_ct_m1 <- if (length(ct_m1) == ncol(sim_multi[[1]])) ct_m1 else rep(ct_m1, length.out = ncol(sim_multi[[1]]))
-      sim_bt_m1 <- if (length(bt_m1) == ncol(sim_multi[[1]])) bt_m1 else rep(bt_m1, length.out = ncol(sim_multi[[1]]))
-      
-      deg_eval <- tryCatch({
-        evaluate_deg_fidelity(
-          ref_data = ref_multi[[1]],
-          sim_data = sim_multi[[1]],
-          ref_celltypes = ct_m1,
-          sim_celltypes = sim_ct_m1,
-          batch_ref = bt_m1,
-          batch_sim = sim_bt_m1,
-          threads = threads
-        )
-      }, error = function(e) {
+  rows <- list()
+
+  if (!is.null(ct_m1) && !is.null(bt_m1)) {
+    if (verbose) message(sprintf("=== [Step 5] Evaluating %s Biological Signal Fidelity ===", m1_name))
+    sim_ct_m1 <- if (length(ct_m1) == ncol(sim_multi[[1L]])) ct_m1 else rep(ct_m1, length.out = ncol(sim_multi[[1L]]))
+    sim_bt_m1 <- if (length(bt_m1) == ncol(sim_multi[[1L]])) bt_m1 else rep(bt_m1, length.out = ncol(sim_multi[[1L]]))
+    deg_eval <- tryCatch(
+      evaluate_deg_fidelity(
+        ref_data = ref_multi[[1L]], sim_data = sim_multi[[1L]],
+        ref_celltypes = ct_m1, sim_celltypes = sim_ct_m1,
+        batch_ref = bt_m1, batch_sim = sim_bt_m1, threads = threads
+      ),
+      error = function(e) {
         if (verbose) message("scRNA-seq pseudobulk DE evaluation note: ", conditionMessage(e))
         NULL
-      })
-      
-      if (!is.null(deg_eval) && nrow(deg_eval$deg_summary_table) > 0) {
-        signal_res[[m1_name]] <- deg_eval
-        for (row_i in seq_len(nrow(deg_eval$deg_summary_table))) {
-          master_rows[[length(master_rows) + 1]] <- data.frame(
-            Category = "Biological Signal & Differential Fidelity",
-            Property = "scRNA_differential_expression",
-            Metric = deg_eval$deg_summary_table$Metric[row_i],
-            Value = as.numeric(deg_eval$deg_summary_table$Value[row_i]),
-            Modality = m1_name,
-            stringsAsFactors = FALSE
-          )
-        }
       }
-    } else {
-      if (verbose) message(sprintf("Biological replicate annotations ('batch_info') not provided: skipping Category V pseudobulk analysis for %s.", m1_name))
+    )
+    if (!is.null(deg_eval) && nrow(deg_eval$deg_summary_table) > 0L) {
+      signal_res[[m1_name]] <- deg_eval
+      rows <- c(rows, .append_rows_from_df(
+        deg_eval$deg_summary_table, "Biological Signal & Differential Fidelity",
+        "scRNA_differential_expression", m1_name
+      ))
     }
+  } else if (!is.null(ct_m1) && verbose) {
+    message(sprintf("Batch annotations not provided: skipping Category V pseudobulk analysis for %s.", m1_name))
   }
 
-  # Modality 2 (scATAC-seq) Biological Signal Fidelity via Libra Pseudobulk edgeR-QLF
-  # Strictly requires biological replicates (bt_m2 or batch_info)
-  is_atac_m2 <- grepl("atac|peak|chromatin", tolower(m2_name)) ||
-    (!is.null(rownames(ref_multi[[2]])) && length(rownames(ref_multi[[2]])) > 0 &&
-     mean(grepl("^(peak|chr[0-9xyXYM]+[:-])", rownames(ref_multi[[2]]), ignore.case = TRUE)) > 0.5)
-
+  is_atac_m2 <- .is_atac_modality(ref_multi[[2L]], m2_name)
   if (is_atac_m2) {
     if (!is.null(ct_m2) && !is.null(bt_m2)) {
-      if (verbose) message(sprintf("=== [Step 5] Evaluating %s Biological Signal Fidelity (Libra Pseudobulk edgeR-QLF) ===", m2_name))
-      sim_ct_m2 <- if (length(ct_m2) == ncol(sim_multi[[2]])) ct_m2 else rep(ct_m2, length.out = ncol(sim_multi[[2]]))
-      sim_bt_m2 <- if (length(bt_m2) == ncol(sim_multi[[2]])) bt_m2 else rep(bt_m2, length.out = ncol(sim_multi[[2]]))
-      
-      da_eval_m2 <- tryCatch({
+      if (verbose) message(sprintf("=== [Step 5] Evaluating %s Biological Signal Fidelity ===", m2_name))
+      sim_ct_m2 <- if (length(ct_m2) == ncol(sim_multi[[2L]])) ct_m2 else rep(ct_m2, length.out = ncol(sim_multi[[2L]]))
+      sim_bt_m2 <- if (length(bt_m2) == ncol(sim_multi[[2L]])) bt_m2 else rep(bt_m2, length.out = ncol(sim_multi[[2L]]))
+      da_eval <- tryCatch(
         evaluate_atac_da_fidelity(
-          ref_data = ref_multi[[2]],
-          sim_data = sim_multi[[2]],
-          ref_celltypes = ct_m2,
-          sim_celltypes = sim_ct_m2,
-          batch_ref = bt_m2,
-          batch_sim = sim_bt_m2,
-          threads = threads
-        )
-      }, error = function(e) {
-        if (verbose) message("scATAC-seq DA evaluation note in multiomics: ", conditionMessage(e))
-        NULL
-      })
-      
-      if (!is.null(da_eval_m2)) {
-        signal_res[[m2_name]] <- da_eval_m2
-        if (nrow(da_eval_m2$da_summary_table) > 0) {
-          for (row_i in seq_len(nrow(da_eval_m2$da_summary_table))) {
-            master_rows[[length(master_rows) + 1]] <- data.frame(
-              Category = "Biological Signal & Differential Fidelity",
-              Property = "scATAC_differential_accessibility",
-              Metric = da_eval_m2$da_summary_table$Metric[row_i],
-              Value = as.numeric(da_eval_m2$da_summary_table$Value[row_i]),
-              Modality = m2_name,
-              stringsAsFactors = FALSE
-            )
-          }
+          ref_data = ref_multi[[2L]], sim_data = sim_multi[[2L]],
+          ref_celltypes = ct_m2, sim_celltypes = sim_ct_m2,
+          batch_ref = bt_m2, batch_sim = sim_bt_m2, threads = threads
+        ),
+        error = function(e) {
+          if (verbose) message("scATAC-seq DA evaluation note in multiomics: ", conditionMessage(e))
+          NULL
         }
+      )
+      if (!is.null(da_eval) && nrow(da_eval$da_summary_table) > 0L) {
+        signal_res[[m2_name]] <- da_eval
+        rows <- c(rows, .append_rows_from_df(
+          da_eval$da_summary_table, "Biological Signal & Differential Fidelity",
+          "scATAC_differential_accessibility", m2_name
+        ))
       }
-    } else {
-      if (verbose) message("Biological replicate annotations ('batch_info') not provided: skipping Category V pseudobulk DA analysis for scATAC-seq modality.")
+    } else if (verbose) {
+      message("Batch annotations not provided: skipping Category V pseudobulk DA analysis for scATAC-seq.")
     }
   }
 
-  if (!is.null(batch_res[[m1_name]])) m1_eval$batch_effects <- batch_res[[m1_name]]
-  if (!is.null(batch_res[[m2_name]])) m2_eval$batch_effects <- batch_res[[m2_name]]
-  if (!is.null(signal_res[[m1_name]])) m1_eval$biological_signal <- signal_res[[m1_name]]
-  if (!is.null(signal_res[[m2_name]])) m2_eval$biological_signal <- signal_res[[m2_name]]
-  
-  # ============================================================================
-  # 5. Trajectory & Lineage Topology (Category VII - dynverse workflow; scRNA-seq only)
-  # ============================================================================
-  m1_is_atac <- .is_atac_modality(ref_multi[[1]], m1_name) || .is_atac_modality(sim_multi[[1]], m1_name)
-  m2_is_atac <- .is_atac_modality(ref_multi[[2]], m2_name) || .is_atac_modality(sim_multi[[2]], m2_name)
-  rna_idx <- if (!m1_is_atac) 1L else if (!m2_is_atac) 2L else NA_integer_
+  list(signal_res = signal_res, rows = rows)
+}
 
-  traj_eval <- NULL
-  if (!is.na(rna_idx)) {
-    rna_mod_name <- if (rna_idx == 1L) m1_name else m2_name
-    rna_ct <- if (rna_idx == 1L) ct_m1 else ct_m2
-    if (verbose) message(sprintf("=== [Step 6] Evaluating Trajectory & Lineage Topology Inferred from %s (HVG + dynverse) ===", rna_mod_name))
-    sim_ct_traj <- if (!is.null(rna_ct)) (if (length(rna_ct) == ncol(sim_multi[[rna_idx]])) rna_ct else rep(rna_ct, length.out = ncol(sim_multi[[rna_idx]]))) else NULL
-    traj_eval <- tryCatch({
-      evaluate_trajectory_metrics(
-        ref_data = ref_multi[[rna_idx]],
-        sim_data = sim_multi[[rna_idx]],
-        cell_types_ref = rna_ct,
-        cell_types_sim = sim_ct_traj,
-        num_trees = trajectory_num_trees,
-        threads = threads,
-        verbose = FALSE
-      )
-    }, error = function(e) NULL)
-    master_rows <- c(master_rows, .append_trajectory_rows(traj_eval, modality = rna_mod_name))
-  } else if (verbose) {
-    message("=== [Step 6] Skipping Category VII Trajectory & Lineage Topology (requires scRNA-seq modality, not scATAC-seq) ===")
-  }
-  
-  # ============================================================================
-  # 6. Multiomics Integration & Alignment (Category 6)
-  #    Multiomics Integration & Cross-Modal Alignment Fidelity
-  #    (scib, scMultiSim, scCross, Matilda, scMoMtF)
-  # ============================================================================
-  if (verbose) message("=== [Step 7] Evaluating Multiomics Integration & Alignment (Category VI) ===")
-  int_eval <- tryCatch({
-    evaluate_multiomics_integration(
-      ref_multi = ref_multi_orig,
-      sim_multi = sim_multi_orig,
-      cell_types = if (is.list(cell_types)) cell_types else if (!is.null(ct_m1) && !is.null(ct_m2)) list(ct_m1, ct_m2) else ct_m1,
-      batch_info = if (is.list(batch_info)) batch_info else if (!is.null(bt_m1) && !is.null(bt_m2)) list(bt_m1, bt_m2) else bt_m1,
-      n_pcs = 15,
-      threads = threads,
-      verbose = verbose
+#' Compute Combined and Separate Multiomics Scalability Metrics (Category VIII)
+#' @keywords internal
+#' @noRd
+.compute_multiomics_scalability <- function(elapsed_time, memory_mb, time_unit, memory_unit,
+                                            sim_cores, separate_resources, verbose) {
+  t_norm <- .normalize_time_unit(time_unit)
+  m_norm <- .normalize_memory_unit(memory_unit)
+
+  parse_sep <- function(spec) {
+    if (is.null(spec) || !is.list(spec)) {
+      return(list(el_sec = NULL, mem_mib = NULL, cores = NULL, tu = t_norm, mu = m_norm,
+                  el_in = NULL, mem_in = NULL))
+    }
+    tu <- if (!is.null(spec$time_unit)) .normalize_time_unit(spec$time_unit) else t_norm
+    mu <- if (!is.null(spec$memory_unit)) .normalize_memory_unit(spec$memory_unit) else m_norm
+    list(
+      el_sec = .convert_time_to_seconds(spec$elapsed_time, tu),
+      mem_mib = .convert_memory_to_mib(spec$memory_mb, mu),
+      cores = .normalize_sim_cores(spec$sim_cores),
+      tu = tu, mu = mu,
+      el_in = spec$elapsed_time, mem_in = spec$memory_mb
     )
-  }, error = function(e) {
-    if (verbose) message("Cross-modal integration evaluation note: ", conditionMessage(e))
-    NULL
-  })
-  
-  if (!is.null(int_eval) && !is.null(int_eval$integration_summary_table) && nrow(int_eval$integration_summary_table) > 0) {
-    for (row_i in seq_len(nrow(int_eval$integration_summary_table))) {
-      master_rows[[length(master_rows) + 1]] <- data.frame(
-        Category = "(VI) Multiomics Integration & Alignment",
-        Property = "multiomics_integration",
-        Metric = int_eval$integration_summary_table$Metric[row_i],
-        Value = as.numeric(int_eval$integration_summary_table$Value[row_i]),
-        Modality = "Joint (Cross-Modal)",
-        stringsAsFactors = FALSE
-      )
-    }
-  }
-  cross_cor_res <- int_eval
-  fos_res <- NULL
-  gen_fid <- NULL
-  coupling_res <- NULL
-  peak_coacc <- NULL
-  coexpr_fid <- NULL
-  acc_prof <- NULL
-  
-  # ============================================================================
-  # 7. Computational Scalability & Efficiency (Category VIII)
-  # ============================================================================
-  time_unit_norm <- .normalize_time_unit(time_unit)
-  memory_unit_norm <- .normalize_memory_unit(memory_unit)
-  t_u_rna <- if (!is.null(time_unit_rna)) .normalize_time_unit(time_unit_rna) else time_unit_norm
-  t_u_atac <- if (!is.null(time_unit_atac)) .normalize_time_unit(time_unit_atac) else time_unit_norm
-  m_u_rna <- if (!is.null(memory_unit_rna)) .normalize_memory_unit(memory_unit_rna) else memory_unit_norm
-  m_u_atac <- if (!is.null(memory_unit_atac)) .normalize_memory_unit(memory_unit_atac) else memory_unit_norm
-
-  elapsed_rna_sec  <- .convert_time_to_seconds(elapsed_time_rna, t_u_rna)
-  elapsed_atac_sec <- .convert_time_to_seconds(elapsed_time_atac, t_u_atac)
-  mem_rna_mib      <- .convert_memory_to_mib(memory_mb_rna, m_u_rna)
-  mem_atac_mib     <- .convert_memory_to_mib(memory_mb_atac, m_u_atac)
-  cores_rna_val    <- .normalize_sim_cores(sim_cores_rna)
-  cores_atac_val   <- .normalize_sim_cores(sim_cores_atac)
-
-  has_sep_time <- (!is.null(elapsed_rna_sec) && !is.na(elapsed_rna_sec)) ||
-                  (!is.null(elapsed_atac_sec) && !is.na(elapsed_atac_sec))
-  has_sep_mem  <- (!is.null(mem_rna_mib) && !is.na(mem_rna_mib)) ||
-                  (!is.null(mem_atac_mib) && !is.na(mem_atac_mib))
-
-  elapsed_seconds <- .convert_time_to_seconds(elapsed_time, time_unit_norm)
-  if ((is.null(elapsed_seconds) || is.na(elapsed_seconds)) && has_sep_time) {
-    t_parts <- c(if (!is.null(elapsed_rna_sec)) elapsed_rna_sec else 0,
-                 if (!is.null(elapsed_atac_sec)) elapsed_atac_sec else 0)
-    t_parts <- t_parts[!is.na(t_parts)]
-    if (length(t_parts) > 0) elapsed_seconds <- sum(t_parts)
   }
 
-  memory_mib <- .convert_memory_to_mib(memory_mb, memory_unit_norm)
-  if ((is.null(memory_mib) || is.na(memory_mib)) && has_sep_mem) {
-    m_parts <- c(if (!is.null(mem_rna_mib)) mem_rna_mib else NA_real_,
-                 if (!is.null(mem_atac_mib)) mem_atac_mib else NA_real_)
-    m_parts <- m_parts[!is.na(m_parts)]
-    if (length(m_parts) > 0) memory_mib <- max(m_parts)
+  r_sep <- parse_sep(if (is.list(separate_resources)) separate_resources$rna else NULL)
+  a_sep <- parse_sep(if (is.list(separate_resources)) separate_resources$atac else NULL)
+
+  has_sep_time <- (!is.null(r_sep$el_sec) && !is.na(r_sep$el_sec)) || (!is.null(a_sep$el_sec) && !is.na(a_sep$el_sec))
+  has_sep_mem  <- (!is.null(r_sep$mem_mib) && !is.na(r_sep$mem_mib)) || (!is.null(a_sep$mem_mib) && !is.na(a_sep$mem_mib))
+
+  el_sec <- .convert_time_to_seconds(elapsed_time, t_norm)
+  if ((is.null(el_sec) || is.na(el_sec)) && has_sep_time) {
+    tp <- stats::na.omit(c(r_sep$el_sec %||% NA_real_, a_sep$el_sec %||% NA_real_))
+    if (length(tp) > 0L) el_sec <- sum(tp)
+  }
+
+  mem_mib <- .convert_memory_to_mib(memory_mb, m_norm)
+  if ((is.null(mem_mib) || is.na(mem_mib)) && has_sep_mem) {
+    mp <- stats::na.omit(c(r_sep$mem_mib %||% NA_real_, a_sep$mem_mib %||% NA_real_))
+    if (length(mp) > 0L) mem_mib <- max(mp)
   }
 
   sim_cores_val <- .normalize_sim_cores(sim_cores)
-  if (is.null(sim_cores_val) && (!is.null(cores_rna_val) || !is.null(cores_atac_val))) {
-    c_parts <- c(cores_rna_val, cores_atac_val)
-    c_parts <- c_parts[!is.na(c_parts)]
-    if (length(c_parts) > 0) sim_cores_val <- max(c_parts)
+  if (is.null(sim_cores_val) && (!is.null(r_sep$cores) || !is.null(a_sep$cores))) {
+    cp <- stats::na.omit(c(r_sep$cores %||% NA_integer_, a_sep$cores %||% NA_integer_))
+    if (length(cp) > 0L) sim_cores_val <- max(cp)
   }
-  scal_input_mode <- if (has_sep_time || has_sep_mem) "separate" else "combined"
 
-  # Core-Seconds and Peak RAM per Core calculations
-  cores_comb_mult <- if (!is.null(sim_cores_val)) sim_cores_val else 1L
-  c_rna <- if (!is.null(cores_rna_val)) cores_rna_val else cores_comb_mult
-  c_atac <- if (!is.null(cores_atac_val)) cores_atac_val else cores_comb_mult
+  comb_c <- if (!is.null(sim_cores_val)) sim_cores_val else 1L
+  c_rna <- if (!is.null(r_sep$cores)) r_sep$cores else comb_c
+  c_atac <- if (!is.null(a_sep$cores)) a_sep$cores else comb_c
 
-  if (has_sep_time) {
-    cs_rna <- if (!is.null(elapsed_rna_sec) && !is.na(elapsed_rna_sec)) elapsed_rna_sec * c_rna else 0
-    cs_atac <- if (!is.null(elapsed_atac_sec) && !is.na(elapsed_atac_sec)) elapsed_atac_sec * c_atac else 0
-    core_sec_total <- cs_rna + cs_atac
-  } else if (!is.null(elapsed_seconds) && !is.na(elapsed_seconds)) {
-    core_sec_total <- elapsed_seconds * cores_comb_mult
-    cs_rna <- if (!is.null(elapsed_rna_sec)) elapsed_rna_sec * c_rna else NULL
-    cs_atac <- if (!is.null(elapsed_atac_sec)) elapsed_atac_sec * c_atac else NULL
+  cs_rna <- if (!is.null(r_sep$el_sec) && !is.na(r_sep$el_sec)) r_sep$el_sec * c_rna else NULL
+  cs_atac <- if (!is.null(a_sep$el_sec) && !is.na(a_sep$el_sec)) a_sep$el_sec * c_atac else NULL
+  core_sec_total <- if (has_sep_time) sum(c(cs_rna %||% 0, cs_atac %||% 0))
+  else if (!is.null(el_sec) && !is.na(el_sec)) el_sec * comb_c
+  else NULL
+
+  mpc_rna <- if (!is.null(r_sep$mem_mib) && !is.na(r_sep$mem_mib)) r_sep$mem_mib / c_rna else NULL
+  mpc_atac <- if (!is.null(a_sep$mem_mib) && !is.na(a_sep$mem_mib)) a_sep$mem_mib / c_atac else NULL
+  mem_core_total <- if (has_sep_mem) {
+    parts <- stats::na.omit(c(mpc_rna %||% NA_real_, mpc_atac %||% NA_real_))
+    if (length(parts) > 0L) max(parts) else NULL
+  } else if (!is.null(mem_mib) && !is.na(mem_mib)) {
+    mem_mib / comb_c
   } else {
-    core_sec_total <- NULL
-    cs_rna <- NULL
-    cs_atac <- NULL
+    NULL
   }
 
-  if (has_sep_mem) {
-    mpc_rna <- if (!is.null(mem_rna_mib) && !is.na(mem_rna_mib)) mem_rna_mib / c_rna else NA_real_
-    mpc_atac <- if (!is.null(mem_atac_mib) && !is.na(mem_atac_mib)) mem_atac_mib / c_atac else NA_real_
-    mpc_parts <- c(mpc_rna, mpc_atac)
-    mpc_parts <- mpc_parts[!is.na(mpc_parts)]
-    mem_core_total <- if (length(mpc_parts) > 0) max(mpc_parts) else NA_real_
-  } else if (!is.null(memory_mib) && !is.na(memory_mib)) {
-    mem_core_total <- memory_mib / cores_comb_mult
-    mpc_rna <- if (!is.null(mem_rna_mib)) mem_rna_mib / c_rna else NULL
-    mpc_atac <- if (!is.null(mem_atac_mib)) mem_atac_mib / c_atac else NULL
-  } else {
-    mem_core_total <- NULL
-    mpc_rna <- NULL
-    mpc_atac <- NULL
-  }
-
+  rows <- list()
   if (!is.null(core_sec_total) || !is.null(mem_core_total)) {
     if (verbose) message("=== [Step 8] Logging Computational Scalability & Efficiency ===")
-    if (!is.null(core_sec_total)) {
-      master_rows[[length(master_rows) + 1]] <- data.frame(
-        Category = "(VIII) Computational Scalability & Efficiency",
-        Property = "resource_usage",
-        Metric = "core_seconds",
-        Value = as.numeric(core_sec_total),
-        Modality = "Computation",
-        stringsAsFactors = FALSE
-      )
-    }
-    if (!is.null(mem_core_total)) {
-      master_rows[[length(master_rows) + 1]] <- data.frame(
-        Category = "(VIII) Computational Scalability & Efficiency",
-        Property = "resource_usage",
-        Metric = "memory_per_core_mib",
-        Value = as.numeric(mem_core_total),
-        Modality = "Computation",
-        stringsAsFactors = FALSE
-      )
-    }
+    rows <- .append_rows_from_fields(
+      list(core_seconds = core_sec_total, memory_per_core_mib = mem_core_total),
+      c("core_seconds", "memory_per_core_mib"),
+      "(VIII) Computational Scalability & Efficiency", "resource_usage", "Computation"
+    )
   }
-  
-  master_table <- do.call(rbind, master_rows)
-  if (!is.null(sim_cores_val) && !is.null(master_table) && nrow(master_table) > 0) {
-    master_table$Sim_Cores <- sim_cores_val
-  }
-  if (verbose) message("Master multiomics benchmarking complete.")
-  
+
   list(
-    benchmark_summary_table = master_table,
-    metrics_summary_table   = master_table,
-    summary_table           = master_table,
-    pairing = pairing,
-    mod1_unimodal = m1_eval,
-    mod2_unimodal = m2_eval,
-    clustering = clustering_res,
-    batch = batch_res,
-    signal = signal_res,
-    trajectory = traj_eval,
-    cross_modality = list(
-      correlation = cross_cor_res,
-      foscttm = fos_res,
-      generation = gen_fid,
-      coupling = coupling_res,
-      coaccessibility = peak_coacc,
-      coexpression = coexpr_fid,
-      profile = acc_prof
-    ),
+    rows = rows,
+    sim_cores_val = sim_cores_val,
     resource_usage = list(
-      mode = scal_input_mode,
+      mode = if (has_sep_time || has_sep_mem) "separate" else "combined",
       core_seconds = core_sec_total,
       memory_per_core_mib = mem_core_total,
       memory_per_core_gib = if (!is.null(mem_core_total)) mem_core_total / 1024 else NULL,
-      memory_mb = memory_mib,
-      memory_input = memory_mb,
-      memory_unit = memory_unit_norm,
-      elapsed_time = elapsed_seconds,
-      elapsed_time_input = elapsed_time,
-      time_unit = time_unit_norm,
+      memory_mb = mem_mib, memory_input = memory_mb, memory_unit = m_norm,
+      elapsed_time = el_sec, elapsed_time_input = elapsed_time, time_unit = t_norm,
       sim_cores = sim_cores_val,
-      rna = list(
-        core_seconds = cs_rna,
-        memory_per_core_mib = mpc_rna,
-        elapsed_time = elapsed_rna_sec,
-        elapsed_time_input = elapsed_time_rna,
-        time_unit = t_u_rna,
-        memory_mb = mem_rna_mib,
-        memory_input = memory_mb_rna,
-        memory_unit = m_u_rna,
-        sim_cores = cores_rna_val
-      ),
-      atac = list(
-        core_seconds = cs_atac,
-        memory_per_core_mib = mpc_atac,
-        elapsed_time = elapsed_atac_sec,
-        elapsed_time_input = elapsed_time_atac,
-        time_unit = t_u_atac,
-        memory_mb = mem_atac_mib,
-        memory_input = memory_mb_atac,
-        memory_unit = m_u_atac,
-        sim_cores = cores_atac_val
-      )
+      rna = list(core_seconds = cs_rna, memory_per_core_mib = mpc_rna,
+                 elapsed_time = r_sep$el_sec, elapsed_time_input = r_sep$el_in, time_unit = r_sep$tu,
+                 memory_mb = r_sep$mem_mib, memory_input = r_sep$mem_in, memory_unit = r_sep$mu,
+                 sim_cores = r_sep$cores),
+      atac = list(core_seconds = cs_atac, memory_per_core_mib = mpc_atac,
+                  elapsed_time = a_sep$el_sec, elapsed_time_input = a_sep$el_in, time_unit = a_sep$tu,
+                  memory_mb = a_sep$mem_mib, memory_input = a_sep$mem_in, memory_unit = a_sep$mu,
+                  sim_cores = a_sep$cores)
     )
   )
 }
 
+#' Master Multiomics Simulation Benchmarking Pipeline
+#'
+#' Orchestrates comprehensive benchmarking across all 8 evaluation categories
+#' using \code{SingleCellExperiment} inputs (either a multi-modal SCE containing
+#' an \code{altExp} for chromatin accessibility, or a named list of two SCE
+#' objects such as \code{list(RNA = rna_sce, ATAC = atac_sce)}). Cell-type and
+#' batch labels are read directly from \code{colData} via \code{cell_type_col}
+#' and \code{batch_col}. Users starting from \code{Seurat} objects should
+#' convert via \code{Seurat::as.SingleCellExperiment()}.
+#'
+#' \if{html}{\figure{workflow_diagram.png}{options: width="800" alt="scSimEval Unified Benchmarking Workflow Diagram"}}
+#'
+#' @details
+#' \strong{Multiomics Metric Measurement Capacity (56 Evaluation Measures Suite):}
+#' \itemize{
+#'   \item \strong{Paired Multiomics (56 Metrics):} Dual unimodal properties (Cat I--II),
+#'     dual clustering (Cat III), dual batch mixing (Cat IV), dual biological signal (Cat V),
+#'     cross-modal integration & pairing (Cat VI), scRNA trajectory (Cat VII), and scalability (Cat VIII).
+#'   \item \strong{Unpaired Multiomics (51 Metrics):} Evaluates both modalities independently
+#'     with population-level integration & alignment, omitting cell-matched pairing metrics.
+#' }
+#'
+#' @param ref_multi Reference multiomics \code{SingleCellExperiment} (with \code{altExp}) or named list of two SCE objects.
+#' @param sim_multi Simulated multiomics \code{SingleCellExperiment} (with \code{altExp}) or named list of two SCE objects.
+#' @param cell_type_col Column name in \code{colData} containing cell-type labels (default \code{"cell_type"}).
+#' @param batch_col Column name in \code{colData} containing batch/replicate labels (default \code{"batch"}).
+#' @param pairing Character string specifying \code{"paired"} (default) or \code{"unpaired"} assay structure.
+#' @param memory_mb Optional numeric peak memory allocation (in \code{memory_unit}).
+#' @param elapsed_time Optional numeric wall-clock runtime (in \code{time_unit}).
+#' @param time_unit Unit of \code{elapsed_time}: \code{"seconds"} (default) or \code{"minutes"}.
+#' @param memory_unit Unit of \code{memory_mb}: \code{"MiB"} (default) or \code{"MB"}.
+#' @param sim_cores Optional positive integer specifying CPU cores used by the simulator.
+#' @param separate_resources Optional named list (e.g., \code{list(rna = list(...), atac = list(...))})
+#'   giving per-modality \code{elapsed_time}, \code{memory_mb}, \code{time_unit}, \code{memory_unit},
+#'   and \code{sim_cores} when RNA and ATAC layers are simulated separately.
+#' @param feature_pairs Optional 2-column data.frame of linked feature pairs.
+#' @param compute_bivariate Logical, whether to compute 2D bivariate tests. Default \code{FALSE}.
+#' @param threads Integer number of CPU threads. Default is \code{1L}.
+#' @param trajectory_num_trees Number of Random Forest trees for Category VII \code{wcor_features} (default \code{10000L}).
+#' @param verbose Logical, whether to print progress messages. Default is \code{TRUE}.
+#'
+#' @return A named list containing:
+#' \describe{
+#'   \item{benchmark_summary_table}{Master tidy data frame with columns \code{Category}, \code{Property}, \code{Metric}, \code{Value}, \code{Modality} (and \code{Sim_Cores} if provided).}
+#'   \item{metrics_summary_table}{Alias of \code{benchmark_summary_table}.}
+#'   \item{summary_table}{Alias of \code{benchmark_summary_table}.}
+#'   \item{pairing}{Resolved pairing mode (\code{"paired"} or \code{"unpaired"}).}
+#'   \item{mod1_unimodal}{Full unimodal evaluation output for modality 1.}
+#'   \item{mod2_unimodal}{Full unimodal evaluation output for modality 2.}
+#'   \item{clustering}{List with elements \code{m1} and \code{m2} containing Category III results.}
+#'   \item{batch}{Named list of Category IV batch mixing results per modality.}
+#'   \item{signal}{Named list of Category V differential fidelity results per modality.}
+#'   \item{trajectory}{Category VII \emph{dynverse} trajectory results inferred from the scRNA-seq layer.}
+#'   \item{cross_modality}{List storing Category VI integration output under \code{correlation}.}
+#'   \item{resource_usage}{Normalized Category VIII scalability list supporting both \code{"combined"} and \code{"separate"} modes.}
+#' }
+#' @examples
+#' data(example_multiomics, package = "scSimEval")
+#' res <- evaluate_multiomics_accuracy(
+#'   example_multiomics$ref_multi,
+#'   example_multiomics$sim_multi,
+#'   verbose = FALSE
+#' )
+#' @export
+evaluate_multiomics_accuracy <- function(
+  ref_multi,
+  sim_multi,
+  cell_type_col = "cell_type",
+  batch_col = "batch",
+  pairing = c("paired", "unpaired"),
+  memory_mb = NULL,
+  elapsed_time = NULL,
+  time_unit = c("seconds", "minutes"),
+  memory_unit = c("MiB", "MB"),
+  sim_cores = NULL,
+  separate_resources = NULL,
+  feature_pairs = NULL,
+  compute_bivariate = FALSE,
+  threads = 1L,
+  trajectory_num_trees = 10000L,
+  verbose = TRUE
+) {
+  pairing <- match.arg(pairing)
+  val_ref <- validate_multiomics_input(ref_multi, "ref_multi",
+                                       cell_type_col = cell_type_col, batch_col = batch_col)
+  val_sim <- validate_multiomics_input(sim_multi, "sim_multi",
+                                       cell_type_col = cell_type_col, batch_col = batch_col)
+
+  cell_types <- val_ref$cell_types %||% val_sim$cell_types
+  batch_info <- val_ref$batch_info %||% val_sim$batch_info
+  m1_name <- val_ref$m1_name %||% "RNA"
+  m2_name <- val_ref$m2_name %||% "ATAC"
+
+  ref_list <- stats::setNames(list(val_ref$m1_obj, val_ref$m2_obj), c(m1_name, m2_name))
+  sim_list <- stats::setNames(list(val_sim$m1_obj, val_sim$m2_obj), c(m1_name, m2_name))
+
+  c1 <- colnames(ref_list[[1L]])
+  c2 <- colnames(ref_list[[2L]])
+  if (pairing == "paired" && !is.null(c1) && !is.null(c2) &&
+      (length(c1) != length(c2) || !identical(c1, c2))) {
+    if (verbose) {
+      message(sprintf(
+        "scSimEval Note: Modality barcodes differ (%s: %d vs %s: %d). Enforcing unpaired mode.",
+        m1_name, length(c1), m2_name, length(c2)
+      ))
+    }
+    pairing <- "unpaired"
+  }
+
+  threads <- .set_parallel_threads(threads)
+  run_unimodal_layer <- function(idx, mod_nm, step_lbl) {
+    if (verbose) message(sprintf("=== [Step %s] Evaluating %s Layer Accuracy ===", step_lbl, mod_nm))
+    ev <- evaluate_simulation_accuracy(
+      ref_sce = ref_list[[idx]], sim_sce = sim_list[[idx]],
+      cell_type_col = cell_type_col, batch_col = batch_col,
+      modality = mod_nm, compute_bivariate = compute_bivariate,
+      threads = threads, verbose = verbose,
+      include_trajectory = FALSE, include_downstream = FALSE
+    )
+    tbl <- ev$metrics_summary_table
+    tbl <- tbl[tbl$Property != "clustering" & !grepl("Trajectory", tbl$Category, ignore.case = TRUE), , drop = FALSE]
+    tbl$Modality <- mod_nm
+    list(ev = ev, tbl = tbl)
+  }
+
+  u1 <- run_unimodal_layer(1L, m1_name, "1")
+  u2 <- run_unimodal_layer(2L, m2_name, "2")
+  m1_eval <- u1$ev
+  m2_eval <- u2$ev
+  master_rows <- list(u1$tbl, u2$tbl)
+
+  ct_m1 <- .extract_modality_label(cell_types, ncol(ref_list[[1L]]), m1_name, 1L)
+  ct_m2 <- .extract_modality_label(cell_types, ncol(ref_list[[2L]]), m2_name, 2L)
+  bt_m1 <- .extract_modality_label(batch_info, ncol(ref_list[[1L]]), m1_name, 1L)
+  bt_m2 <- .extract_modality_label(batch_info, ncol(ref_list[[2L]]), m2_name, 2L)
+
+  clu_out <- .evaluate_multiomics_clustering(ref_list, sim_list, ct_m1, ct_m2, bt_m1, bt_m2, m1_name, m2_name, threads, verbose)
+  bat_out <- .evaluate_multiomics_batch(sim_list, ct_m1, ct_m2, bt_m1, bt_m2, m1_name, m2_name, threads, verbose)
+  sig_out <- .evaluate_multiomics_signal(ref_list, sim_list, ct_m1, ct_m2, bt_m1, bt_m2, m1_name, m2_name, threads, verbose)
+  master_rows <- c(master_rows, clu_out$rows, bat_out$rows, sig_out$rows)
+
+  if (!is.null(bat_out$batch_res[[m1_name]])) m1_eval$batch_effects <- bat_out$batch_res[[m1_name]]
+  if (!is.null(bat_out$batch_res[[m2_name]])) m2_eval$batch_effects <- bat_out$batch_res[[m2_name]]
+  if (!is.null(sig_out$signal_res[[m1_name]])) m1_eval$biological_signal <- sig_out$signal_res[[m1_name]]
+  if (!is.null(sig_out$signal_res[[m2_name]])) m2_eval$biological_signal <- sig_out$signal_res[[m2_name]]
+
+  # Category VII: Trajectory & Lineage Topology (scRNA-seq layer)
+  m1_is_atac <- .is_atac_modality(ref_list[[1L]], m1_name) || .is_atac_modality(sim_list[[1L]], m1_name)
+  m2_is_atac <- .is_atac_modality(ref_list[[2L]], m2_name) || .is_atac_modality(sim_list[[2L]], m2_name)
+  rna_idx <- if (!m1_is_atac) 1L else if (!m2_is_atac) 2L else NA_integer_
+
+  traj_eval <- NULL
+  if (!is.na(rna_idx)) {
+    rna_nm <- if (rna_idx == 1L) m1_name else m2_name
+    rna_ct <- if (rna_idx == 1L) ct_m1 else ct_m2
+    if (verbose) message(sprintf("=== [Step 6] Evaluating Trajectory & Lineage Topology Inferred from %s ===", rna_nm))
+    sim_ct_traj <- if (!is.null(rna_ct)) rep(rna_ct, length.out = ncol(sim_list[[rna_idx]])) else NULL
+    traj_eval <- tryCatch(
+      evaluate_trajectory_metrics(
+        ref_data = ref_list[[rna_idx]], sim_data = sim_list[[rna_idx]],
+        cell_types_ref = rna_ct, cell_types_sim = sim_ct_traj,
+        num_trees = trajectory_num_trees, threads = threads, verbose = FALSE
+      ),
+      error = function(e) NULL
+    )
+    master_rows <- c(master_rows, .append_trajectory_rows(traj_eval, modality = rna_nm))
+  }
+
+  # Category VI: Multiomics Integration & Alignment
+  if (verbose) message("=== [Step 7] Evaluating Multiomics Integration & Alignment (Category VI) ===")
+  int_eval <- tryCatch(
+    evaluate_multiomics_integration(
+      ref_multi = ref_multi, sim_multi = sim_multi,
+      cell_types = if (!is.null(ct_m1) && !is.null(ct_m2)) list(ct_m1, ct_m2) else ct_m1,
+      batch_info = if (!is.null(bt_m1) && !is.null(bt_m2)) list(bt_m1, bt_m2) else bt_m1,
+      n_pcs = 15L, threads = threads, verbose = verbose
+    ),
+    error = function(e) {
+      if (verbose) message("Cross-modal integration evaluation note: ", conditionMessage(e))
+      NULL
+    }
+  )
+  if (!is.null(int_eval)) {
+    master_rows <- c(master_rows, .append_rows_from_df(
+      int_eval$integration_summary_table,
+      "(VI) Multiomics Integration & Alignment", "multiomics_integration", "Joint (Cross-Modal)"
+    ))
+  }
+
+  # Category VIII: Scalability & Efficiency
+  scal <- .compute_multiomics_scalability(elapsed_time, memory_mb, time_unit, memory_unit,
+                                          sim_cores, separate_resources, verbose)
+  master_rows <- c(master_rows, scal$rows)
+
+  master_table <- do.call(rbind, master_rows)
+  if (!is.null(scal$sim_cores_val) && !is.null(master_table) && nrow(master_table) > 0L) {
+    master_table$Sim_Cores <- scal$sim_cores_val
+  }
+  if (verbose) message("Master multiomics benchmarking complete.")
+
+  list(
+    benchmark_summary_table = master_table,
+    metrics_summary_table = master_table,
+    summary_table = master_table,
+    pairing = pairing,
+    mod1_unimodal = m1_eval,
+    mod2_unimodal = m2_eval,
+    clustering = clu_out$clustering,
+    batch = bat_out$batch_res,
+    signal = sig_out$signal_res,
+    trajectory = traj_eval,
+    cross_modality = list(
+      correlation = int_eval, foscttm = NULL, generation = NULL,
+      coupling = NULL, coaccessibility = NULL, coexpression = NULL, profile = NULL
+    ),
+    resource_usage = scal$resource_usage
+  )
+}
+
+#' Attach Cell-Type and Batch Metadata to SingleCellExperiment colData When Missing
+#' @keywords internal
+#' @noRd
+.attach_sce_metadata <- function(sce, cell_types = NULL, batch_info = NULL,
+                                 cell_type_col = "cell_type", batch_col = "batch") {
+  if (!inherits(sce, "SingleCellExperiment")) return(sce)
+  cd <- SummarizedExperiment::colData(sce)
+  if (!is.null(cell_types) && !cell_type_col %in% colnames(cd) && length(cell_types) == ncol(sce)) {
+    cd[[cell_type_col]] <- as.character(cell_types)
+  }
+  if (!is.null(batch_info) && !batch_col %in% colnames(cd) && length(batch_info) == ncol(sce)) {
+    cd[[batch_col]] <- as.character(batch_info)
+  }
+  SummarizedExperiment::colData(sce) <- cd
+  sce
+}
+
+#' Coerce Matrix, Path, or SCE Input to SingleCellExperiment
+#' @keywords internal
+#' @noRd
+.ensure_sce <- function(m, auto_sparse = TRUE) {
+  if (is.character(m) && length(m) == 1L && file.exists(m)) {
+    ext <- tolower(tools::file_ext(m))
+    m <- if (ext == "rds") readRDS(m)
+    else if (ext == "csv") as.matrix(utils::read.csv(m, row.names = 1L, check.names = FALSE))
+    else as.matrix(utils::read.table(m, header = TRUE, row.names = 1L, check.names = FALSE))
+  }
+  if (inherits(m, "Seurat")) {
+    stop("Seurat objects are not directly supported; convert via Seurat::as.SingleCellExperiment().", call. = FALSE)
+  }
+  if (inherits(m, "SingleCellExperiment")) return(m)
+  if (is.data.frame(m)) m <- as.matrix(m)
+  if (auto_sparse && !inherits(m, "dgCMatrix") && (is.matrix(m) || inherits(m, "Matrix"))) {
+    m <- Matrix::Matrix(m, sparse = TRUE)
+  }
+  SingleCellExperiment::SingleCellExperiment(assays = list(counts = m))
+}
+
+#' Parse Multi-Dataset Input Specifications into Normalized Experiment Entries
+#' @keywords internal
+#' @noRd
+.parse_multi_dataset_spec <- function(datasets, pair_by_prefix) {
+  parsed <- list()
+  infer_mod <- function(nm, explicit = NULL) {
+    if (!is.null(explicit)) return(explicit)
+    if (grepl("ATAC", nm, ignore.case = TRUE)) "scATAC-seq"
+    else if (grepl("RNA", nm, ignore.case = TRUE)) "scRNA-seq"
+    else "Single-Cell"
+  }
+  build_uni <- function(item, nm, pfx) {
+    ref_m <- item$ref %||% item$ref_data
+    sim_m <- item$sim %||% item$sim_data
+    list(
+      type = "unimodal", name = pfx, data_name = nm, modality = infer_mod(nm, item$modality),
+      ref = ref_m, sim = sim_m, cell_types = item$cell_types, batch_info = item$batch_info,
+      memory_mb = item$memory_mb, elapsed_time = item$elapsed_time,
+      time_unit = item$time_unit %||% "seconds", memory_unit = item$memory_unit %||% "MiB",
+      sim_cores = item$sim_cores %||% item$cores %||% item$n_cores
+    )
+  }
+  build_multi_direct <- function(item, nm, ref_mat, sim_mat) {
+    dns <- if (!is.null(names(ref_mat))) paste0(nm, "-", names(ref_mat)) else paste0(nm, c("-Mod1", "-Mod2"))
+    sep_res <- if (!is.null(item$elapsed_time_rna) || !is.null(item$elapsed_time_atac) ||
+                   !is.null(item$memory_mb_rna) || !is.null(item$memory_mb_atac)) {
+      list(
+        rna = list(elapsed_time = item$elapsed_time_rna, memory_mb = item$memory_mb_rna,
+                   time_unit = item$time_unit_rna %||% "seconds",
+                   memory_unit = item$memory_unit_rna %||% "MiB", sim_cores = item$sim_cores_rna),
+        atac = list(elapsed_time = item$elapsed_time_atac, memory_mb = item$memory_mb_atac,
+                    time_unit = item$time_unit_atac %||% "seconds",
+                    memory_unit = item$memory_unit_atac %||% "MiB", sim_cores = item$sim_cores_atac)
+      )
+    } else {
+      item$separate_resources
+    }
+    list(
+      type = "multiomics", name = nm, data_names = dns, ref = ref_mat, sim = sim_mat,
+      cell_types = item$cell_types, batch_info = item$batch_info,
+      pairing = item$pairing %||% (if (!is.null(item$is_paired)) (if (isTRUE(item$is_paired)) "paired" else "unpaired") else "paired"),
+      memory_mb = item$memory_mb, elapsed_time = item$elapsed_time,
+      time_unit = item$time_unit %||% "seconds", memory_unit = item$memory_unit %||% "MiB",
+      sim_cores = item$sim_cores %||% item$cores %||% item$n_cores,
+      separate_resources = sep_res, feature_pairs = item$feature_pairs
+    )
+  }
+
+  if (!pair_by_prefix) {
+    for (d_nm in names(datasets)) {
+      item <- datasets[[d_nm]]
+      ref_mat <- item$ref %||% item$ref_multi %||% item$ref_data
+      sim_mat <- item$sim %||% item$sim_multi %||% item$sim_data
+      if (is.list(ref_mat) && length(ref_mat) >= 2L && !is.data.frame(ref_mat)) {
+        parsed[[d_nm]] <- build_multi_direct(item, d_nm, ref_mat, sim_mat)
+      } else {
+        parsed[[d_nm]] <- build_uni(item, d_nm, d_nm)
+      }
+    }
+    return(parsed)
+  }
+
+  mod_pat <- "[-_ ]*(scRNA[-_]?seq|scATAC[-_]?seq|scRNA|scATAC|RNA|ATAC|CITE[-_]?seq|CITE|Methyl)"
+  prefixes <- sub(paste0(mod_pat, ".*$"), "", names(datasets), ignore.case = TRUE)
+  prefixes <- sub("[-_ ]+$", "", prefixes)
+  prefixes[prefixes == ""] <- names(datasets)[prefixes == ""]
+
+  for (pfx in unique(prefixes)) {
+    m_idx <- which(prefixes == pfx)
+    if (length(m_idx) == 1L) {
+      item <- datasets[[m_idx]]
+      d_nm <- names(datasets)[m_idx]
+      ref_mat <- item$ref %||% item$ref_multi %||% item$ref_data
+      sim_mat <- item$sim %||% item$sim_multi %||% item$sim_data
+      if (is.list(ref_mat) && length(ref_mat) >= 2L && !is.data.frame(ref_mat)) {
+        parsed[[pfx]] <- build_multi_direct(item, pfx, ref_mat, sim_mat)
+      } else {
+        parsed[[d_nm]] <- build_uni(item, d_nm, pfx)
+      }
+    } else {
+      sub_items <- datasets[m_idx]
+      sub_names <- names(datasets)[m_idx]
+      is_atac <- grepl("ATAC", sub_names, ignore.case = TRUE)
+      is_rna <- grepl("RNA", sub_names, ignore.case = TRUE)
+      if (any(is_rna) && any(is_atac)) {
+        ri <- which(is_rna)[1L]
+        ai <- which(is_atac)[1L]
+        r_item <- sub_items[[ri]]
+        a_item <- sub_items[[ai]]
+        parsed[[pfx]] <- list(
+          type = "multiomics", name = pfx, data_names = c(sub_names[ri], sub_names[ai]),
+          ref = list("scRNA-seq" = r_item$ref %||% r_item$ref_data,
+                     "scATAC-seq" = a_item$ref %||% a_item$ref_data),
+          sim = list("scRNA-seq" = r_item$sim %||% r_item$sim_data,
+                     "scATAC-seq" = a_item$sim %||% a_item$sim_data),
+          cell_types = r_item$cell_types %||% a_item$cell_types,
+          batch_info = r_item$batch_info %||% a_item$batch_info,
+          pairing = r_item$pairing %||% (if (!is.null(r_item$is_paired)) (if (isTRUE(r_item$is_paired)) "paired" else "unpaired") else "paired"),
+          separate_resources = list(
+            rna = list(elapsed_time = r_item$elapsed_time, memory_mb = r_item$memory_mb,
+                       time_unit = r_item$time_unit %||% "seconds",
+                       memory_unit = r_item$memory_unit %||% "MiB",
+                       sim_cores = r_item$sim_cores %||% r_item$cores %||% r_item$n_cores),
+            atac = list(elapsed_time = a_item$elapsed_time, memory_mb = a_item$memory_mb,
+                        time_unit = a_item$time_unit %||% "seconds",
+                        memory_unit = a_item$memory_unit %||% "MiB",
+                        sim_cores = a_item$sim_cores %||% a_item$cores %||% a_item$n_cores)
+          ),
+          feature_pairs = r_item$feature_pairs
+        )
+      } else {
+        for (idx_k in m_idx) {
+          d_nm <- names(datasets)[idx_k]
+          parsed[[d_nm]] <- build_uni(datasets[[idx_k]], d_nm, pfx)
+        }
+      }
+    }
+  }
+  parsed
+}
 
 #' Evaluate Multiple Single-Cell Datasets Simultaneously
 #'
-#' Orchestrates simultaneous benchmarking across a collection of single-cell datasets,
-#' including paired multiomics (e.g., scRNA-seq and scATAC-seq from the same biological experiment)
-#' and unimodal datasets (e.g., standalone scRNA-seq or scATAC-seq). Produces a unified,
-#' consolidated summary table, comparative ranking matrix, and dataset overview.
+#' Orchestrates simultaneous benchmarking across a collection of single-cell
+#' \code{SingleCellExperiment} datasets, including paired/unpaired multiomics
+#' and unimodal scRNA-seq or scATAC-seq experiments.
 #'
-#' @param datasets A named list of datasets to evaluate. Can be provided in two formats:
-#'   \itemize{
-#'     \item \strong{Format A (Grouped Multiomics & Unimodal):} A list of dataset specifications, e.g.:
-#'       \code{list("Method 1" = list(ref = list(rna = ..., atac = ...), sim = list(rna = ..., atac = ...)), "Method 3" = list(ref = ..., sim = ..., modality = "scATAC-seq"))}
-#'     \item \strong{Format B (Flat Named Datasets):} A list with named modality datasets, e.g.:
-#'       \code{list("Method 1-scRNA-seq" = list(ref = ..., sim = ...), "Method 1-scATAC-seq" = list(ref = ..., sim = ...), "Method 3-scATAC-seq" = list(ref = ..., sim = ...), "Method 4-scRNA-seq" = list(ref = ..., sim = ...))}
-#'   }
-#' @param pair_by_prefix Logical; if \code{TRUE} (default), datasets sharing a common root prefix
-#'   (such as "Method 1-scRNA-seq" and "Method 1-scATAC-seq") are automatically paired as multiomics
-#'   for joint cross-modal evaluation. If \code{FALSE}, each dataset entry is evaluated independently.
-#' @param compute_bivariate Logical; whether to compute 2D bivariate tests (default FALSE for speed).
-#' @param threads Number of CPU threads for parallel metric computation. Default is 1.
-#' @param verbose Logical; whether to print progress messages. Default is TRUE.
+#' @param datasets A named list of dataset specifications (\code{Format A} grouped multiomics/unimodal lists,
+#'   or \code{Format B} flat modality-suffixed lists).
+#' @param pair_by_prefix Logical; if \code{TRUE} (default), datasets sharing a root prefix
+#'   across RNA and ATAC entries are paired for multiomics evaluation.
+#' @param compute_bivariate Logical; whether to compute 2D bivariate tests (default \code{FALSE}).
+#' @param threads Integer number of CPU threads. Default is \code{1L}.
+#' @param verbose Logical; whether to print progress messages. Default is \code{TRUE}.
 #'
-#' @return An S3 object of class \code{scSimEval_consolidated} containing:
-#'   \itemize{
-#'     \item \code{consolidated_summary_table}: Master tidy data.frame with columns \code{Dataset}, \code{Data_Name}, \code{Modality}, \code{Category}, \code{Property}, \code{Metric}, and \code{Value}.
-#'     \item \code{consolidated_score_matrix}: Wide comparison matrix comparing all datasets across metrics.
-#'     \item \code{dataset_overview}: Aggregate summary table with total metrics and mean scores per dataset.
-#'     \item \code{dataset_results}: Named list containing detailed evaluation results for each individual dataset.
-#'   }
+#' @return An S3 object of class \code{c("scSimEval_consolidated", "list")} containing:
+#' \describe{
+#'   \item{consolidated_summary_table}{Master tidy data.frame with columns \code{Dataset}, \code{Data_Name}, \code{Modality}, \code{Category}, \code{Property}, \code{Metric}, and \code{Value}.}
+#'   \item{consolidated_score_matrix}{Numeric matrix comparing datasets across all evaluated metric keys.}
+#'   \item{dataset_overview}{Data frame summarizing metric counts and mean KS, Wasserstein, and RMSE per dataset.}
+#'   \item{dataset_results}{Named list of detailed per-dataset evaluation outputs.}
+#' }
 #' @examples
 #' data(example_scrna, package = "scSimEval")
-#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+#' ds <- list("DemoCohort" = list(ref = example_scrna$ref, sim = example_scrna$sim))
+#' res <- evaluate_multiple_datasets(ds, verbose = FALSE)
 #' @export
 evaluate_multiple_datasets <- function(
   datasets,
   pair_by_prefix = TRUE,
   compute_bivariate = FALSE,
-  threads = 1,
+  threads = 1L,
   verbose = TRUE
 ) {
-  if (!is.list(datasets) || length(datasets) == 0) {
-    stop("`datasets` must be a non-empty named list of datasets.")
+  if (!is.list(datasets) || length(datasets) == 0L) {
+    stop("`datasets` must be a non-empty named list of datasets.", call. = FALSE)
   }
   if (is.null(names(datasets)) || any(names(datasets) == "")) {
     names(datasets) <- paste0("Dataset_", seq_along(datasets))
   }
 
-  parsed_experiments <- list()
-
-  if (pair_by_prefix) {
-    mod_pattern <- "[-_ ]*(scRNA[-_]?seq|scATAC[-_]?seq|scRNA|scATAC|RNA|ATAC|CITE[-_]?seq|CITE|Methyl)"
-    prefixes <- sub(paste0(mod_pattern, ".*$"), "", names(datasets), ignore.case = TRUE)
-    prefixes <- sub("[-_ ]+$", "", prefixes)
-    prefixes[prefixes == ""] <- names(datasets)[prefixes == ""]
-
-    unique_prefixes <- unique(prefixes)
-
-    for (pfx in unique_prefixes) {
-      matching_idx <- which(prefixes == pfx)
-      if (length(matching_idx) == 1) {
-        idx <- matching_idx[1]
-        item <- datasets[[idx]]
-        item_name <- names(datasets)[idx]
-
-        ref_mat <- if (!is.null(item$ref)) item$ref else if (!is.null(item$ref_multi)) item$ref_multi else item$ref_data
-        sim_mat <- if (!is.null(item$sim)) item$sim else if (!is.null(item$sim_multi)) item$sim_multi else item$sim_data
-
-        if (is.list(ref_mat) && length(ref_mat) >= 2 && !is.data.frame(ref_mat)) {
-          parsed_experiments[[pfx]] <- list(
-            type = "multiomics",
-            name = pfx,
-            data_names = if (!is.null(names(ref_mat))) paste0(pfx, "-", names(ref_mat)) else paste0(pfx, c("-Mod1", "-Mod2")),
-            ref = ref_mat,
-            sim = sim_mat,
-            cell_types = item$cell_types,
-            batch_info = item$batch_info,
-            memory_mb = item$memory_mb,
-            elapsed_time = item$elapsed_time,
-            time_unit = if (!is.null(item$time_unit)) item$time_unit else "seconds",
-            memory_unit = if (!is.null(item$memory_unit)) item$memory_unit else "MiB",
-            sim_cores = if (!is.null(item$sim_cores)) item$sim_cores else if (!is.null(item$cores)) item$cores else item$n_cores,
-            feature_pairs = item$feature_pairs
-          )
-        } else {
-          inferred_mod <- if (!is.null(item$modality)) item$modality else {
-            if (grepl("ATAC", item_name, ignore.case = TRUE)) "scATAC-seq"
-            else if (grepl("RNA", item_name, ignore.case = TRUE)) "scRNA-seq"
-            else "Single-Cell"
-          }
-          parsed_experiments[[item_name]] <- list(
-            type = "unimodal",
-            name = pfx,
-            data_name = item_name,
-            modality = inferred_mod,
-            ref = ref_mat,
-            sim = sim_mat,
-            cell_types = item$cell_types,
-            batch_info = item$batch_info,
-            memory_mb = item$memory_mb,
-            elapsed_time = item$elapsed_time,
-            time_unit = if (!is.null(item$time_unit)) item$time_unit else "seconds",
-            memory_unit = if (!is.null(item$memory_unit)) item$memory_unit else "MiB",
-            sim_cores = if (!is.null(item$sim_cores)) item$sim_cores else if (!is.null(item$cores)) item$cores else item$n_cores
-          )
-        }
-      } else {
-        sub_items <- datasets[matching_idx]
-        sub_names <- names(datasets)[matching_idx]
-
-        is_atac <- grepl("ATAC", sub_names, ignore.case = TRUE)
-        is_rna <- grepl("RNA", sub_names, ignore.case = TRUE)
-
-        if (any(is_rna) && any(is_atac)) {
-          rna_idx <- which(is_rna)[1]
-          atac_idx <- which(is_atac)[1]
-
-          rna_ref <- if (!is.null(sub_items[[rna_idx]]$ref)) sub_items[[rna_idx]]$ref else sub_items[[rna_idx]]$ref_data
-          rna_sim <- if (!is.null(sub_items[[rna_idx]]$sim)) sub_items[[rna_idx]]$sim else sub_items[[rna_idx]]$sim_data
-          atac_ref <- if (!is.null(sub_items[[atac_idx]]$ref)) sub_items[[atac_idx]]$ref else sub_items[[atac_idx]]$ref_data
-          atac_sim <- if (!is.null(sub_items[[atac_idx]]$sim)) sub_items[[atac_idx]]$sim else sub_items[[atac_idx]]$sim_data
-
-          ref_list <- list("scRNA-seq" = rna_ref, "scATAC-seq" = atac_ref)
-          sim_list <- list("scRNA-seq" = rna_sim, "scATAC-seq" = atac_sim)
-
-          ct <- if (!is.null(sub_items[[rna_idx]]$cell_types)) sub_items[[rna_idx]]$cell_types else sub_items[[atac_idx]]$cell_types
-          bi <- if (!is.null(sub_items[[rna_idx]]$batch_info)) sub_items[[rna_idx]]$batch_info else sub_items[[atac_idx]]$batch_info
-
-          parsed_experiments[[pfx]] <- list(
-            type = "multiomics",
-            name = pfx,
-            data_names = c(sub_names[rna_idx], sub_names[atac_idx]),
-            ref = ref_list,
-            sim = sim_list,
-            cell_types = ct,
-            batch_info = bi,
-            pairing = if (!is.null(sub_items[[rna_idx]]$pairing)) sub_items[[rna_idx]]$pairing else if (!is.null(sub_items[[rna_idx]]$is_paired)) (if (isTRUE(sub_items[[rna_idx]]$is_paired)) "paired" else "unpaired") else "paired",
-            memory_mb_rna = sub_items[[rna_idx]]$memory_mb,
-            elapsed_time_rna = sub_items[[rna_idx]]$elapsed_time,
-            time_unit_rna = if (!is.null(sub_items[[rna_idx]]$time_unit)) sub_items[[rna_idx]]$time_unit else "seconds",
-            memory_unit_rna = if (!is.null(sub_items[[rna_idx]]$memory_unit)) sub_items[[rna_idx]]$memory_unit else "MiB",
-            sim_cores_rna = if (!is.null(sub_items[[rna_idx]]$sim_cores)) sub_items[[rna_idx]]$sim_cores else if (!is.null(sub_items[[rna_idx]]$cores)) sub_items[[rna_idx]]$cores else sub_items[[rna_idx]]$n_cores,
-            memory_mb_atac = sub_items[[atac_idx]]$memory_mb,
-            elapsed_time_atac = sub_items[[atac_idx]]$elapsed_time,
-            time_unit_atac = if (!is.null(sub_items[[atac_idx]]$time_unit)) sub_items[[atac_idx]]$time_unit else "seconds",
-            memory_unit_atac = if (!is.null(sub_items[[atac_idx]]$memory_unit)) sub_items[[atac_idx]]$memory_unit else "MiB",
-            sim_cores_atac = if (!is.null(sub_items[[atac_idx]]$sim_cores)) sub_items[[atac_idx]]$sim_cores else if (!is.null(sub_items[[atac_idx]]$cores)) sub_items[[atac_idx]]$cores else sub_items[[atac_idx]]$n_cores,
-            feature_pairs = sub_items[[rna_idx]]$feature_pairs
-          )
-        } else {
-          for (k in seq_along(matching_idx)) {
-            idx_k <- matching_idx[k]
-            it_name <- names(datasets)[idx_k]
-            it <- datasets[[idx_k]]
-            ref_m <- if (!is.null(it$ref)) it$ref else it$ref_data
-            sim_m <- if (!is.null(it$sim)) it$sim else it$sim_data
-            inferred_m <- if (!is.null(it$modality)) it$modality else {
-              if (grepl("ATAC", it_name, ignore.case = TRUE)) "scATAC-seq"
-              else if (grepl("RNA", it_name, ignore.case = TRUE)) "scRNA-seq"
-              else "Single-Cell"
-            }
-            parsed_experiments[[it_name]] <- list(
-              type = "unimodal",
-              name = pfx,
-              data_name = it_name,
-              modality = inferred_m,
-              ref = ref_m,
-              sim = sim_m,
-              cell_types = it$cell_types,
-              batch_info = it$batch_info,
-              memory_mb = it$memory_mb,
-              elapsed_time = it$elapsed_time,
-              time_unit = if (!is.null(it$time_unit)) it$time_unit else "seconds",
-              memory_unit = if (!is.null(it$memory_unit)) it$memory_unit else "MiB",
-              sim_cores = if (!is.null(it$sim_cores)) it$sim_cores else if (!is.null(it$cores)) it$cores else it$n_cores
-            )
-          }
-        }
-      }
-    }
-  } else {
-    for (d_name in names(datasets)) {
-      item <- datasets[[d_name]]
-      ref_mat <- if (!is.null(item$ref)) item$ref else if (!is.null(item$ref_multi)) item$ref_multi else item$ref_data
-      sim_mat <- if (!is.null(item$sim)) item$sim else if (!is.null(item$sim_multi)) item$sim_multi else item$sim_data
-
-      if (is.list(ref_mat) && length(ref_mat) >= 2 && !is.data.frame(ref_mat)) {
-        parsed_experiments[[d_name]] <- list(
-          type = "multiomics",
-          name = d_name,
-          data_names = if (!is.null(names(ref_mat))) paste0(d_name, "-", names(ref_mat)) else paste0(d_name, c("-Mod1", "-Mod2")),
-          ref = ref_mat,
-          sim = sim_mat,
-          cell_types = item$cell_types,
-          batch_info = item$batch_info,
-          pairing = if (!is.null(item$pairing)) item$pairing else if (!is.null(item$is_paired)) (if (isTRUE(item$is_paired)) "paired" else "unpaired") else "paired",
-          memory_mb = item$memory_mb,
-          elapsed_time = item$elapsed_time,
-          time_unit = if (!is.null(item$time_unit)) item$time_unit else "seconds",
-          memory_unit = if (!is.null(item$memory_unit)) item$memory_unit else "MiB",
-          sim_cores = if (!is.null(item$sim_cores)) item$sim_cores else if (!is.null(item$cores)) item$cores else item$n_cores,
-          elapsed_time_rna = item$elapsed_time_rna,
-          elapsed_time_atac = item$elapsed_time_atac,
-          memory_mb_rna = item$memory_mb_rna,
-          memory_mb_atac = item$memory_mb_atac,
-          time_unit_rna = item$time_unit_rna,
-          time_unit_atac = item$time_unit_atac,
-          memory_unit_rna = item$memory_unit_rna,
-          memory_unit_atac = item$memory_unit_atac,
-          sim_cores_rna = item$sim_cores_rna,
-          sim_cores_atac = item$sim_cores_atac,
-          feature_pairs = item$feature_pairs
-        )
-      } else {
-        inferred_mod <- if (!is.null(item$modality)) item$modality else {
-          if (grepl("ATAC", d_name, ignore.case = TRUE)) "scATAC-seq"
-          else if (grepl("RNA", d_name, ignore.case = TRUE)) "scRNA-seq"
-          else "Single-Cell"
-        }
-        parsed_experiments[[d_name]] <- list(
-          type = "unimodal",
-          name = d_name,
-          data_name = d_name,
-          modality = inferred_mod,
-          ref = ref_mat,
-          sim = sim_mat,
-          cell_types = item$cell_types,
-          batch_info = item$batch_info,
-          memory_mb = item$memory_mb,
-          elapsed_time = item$elapsed_time,
-          time_unit = if (!is.null(item$time_unit)) item$time_unit else "seconds",
-          memory_unit = if (!is.null(item$memory_unit)) item$memory_unit else "MiB",
-          sim_cores = if (!is.null(item$sim_cores)) item$sim_cores else if (!is.null(item$cores)) item$cores else item$n_cores
-        )
-      }
-    }
-  }
-
+  parsed <- .parse_multi_dataset_spec(datasets, pair_by_prefix)
   all_master_rows <- list()
   dataset_results <- list()
-  n_exp <- length(parsed_experiments)
+  n_exp <- length(parsed)
 
-  if (verbose) {
-    message(sprintf(">>> Initializing scSimEval multi-dataset benchmarking for %d experiment(s)...", n_exp))
-  }
+  if (verbose) message(sprintf(">>> Initializing scSimEval benchmarking for %d experiment(s)...", n_exp))
 
-  for (i in seq_along(parsed_experiments)) {
-    exp <- parsed_experiments[[i]]
+  for (i in seq_along(parsed)) {
+    exp <- parsed[[i]]
     exp_name <- exp$name
-    if (verbose) {
-      message(sprintf("\n[%d/%d] Benchmarking dataset: '%s' (%s)...", i, n_exp, exp_name, exp$type))
-    }
+    if (verbose) message(sprintf("\n[%d/%d] Benchmarking dataset: '%s' (%s)...", i, n_exp, exp_name, exp$type))
 
     if (exp$type == "multiomics") {
+      if (is.list(exp$ref) && !inherits(exp$ref, "SingleCellExperiment")) {
+        exp$ref <- lapply(exp$ref, function(x) .attach_sce_metadata(x, exp$cell_types, exp$batch_info))
+        exp$sim <- lapply(exp$sim, function(x) .attach_sce_metadata(x, exp$cell_types, exp$batch_info))
+      }
       res <- evaluate_multiomics_accuracy(
-        ref_multi = exp$ref,
-        sim_multi = exp$sim,
-        cell_types = exp$cell_types,
-        batch_info = exp$batch_info,
-        pairing = if (!is.null(exp$pairing)) exp$pairing else "paired",
-        memory_mb = exp$memory_mb,
-        elapsed_time = exp$elapsed_time,
-        feature_pairs = exp$feature_pairs,
-        compute_bivariate = compute_bivariate,
-        threads = threads,
-        verbose = verbose,
-        time_unit = if (!is.null(exp$time_unit)) exp$time_unit else "seconds",
-        memory_unit = if (!is.null(exp$memory_unit)) exp$memory_unit else "MiB",
-        sim_cores = exp$sim_cores,
-        elapsed_time_rna = exp$elapsed_time_rna,
-        elapsed_time_atac = exp$elapsed_time_atac,
-        memory_mb_rna = exp$memory_mb_rna,
-        memory_mb_atac = exp$memory_mb_atac,
-        time_unit_rna = exp$time_unit_rna,
-        time_unit_atac = exp$time_unit_atac,
-        memory_unit_rna = exp$memory_unit_rna,
-        memory_unit_atac = exp$memory_unit_atac,
-        sim_cores_rna = exp$sim_cores_rna,
-        sim_cores_atac = exp$sim_cores_atac
+        ref_multi = exp$ref, sim_multi = exp$sim,
+        pairing = exp$pairing %||% "paired",
+        memory_mb = exp$memory_mb, elapsed_time = exp$elapsed_time,
+        time_unit = exp$time_unit %||% "seconds", memory_unit = exp$memory_unit %||% "MiB",
+        sim_cores = exp$sim_cores, separate_resources = exp$separate_resources,
+        feature_pairs = exp$feature_pairs, compute_bivariate = compute_bivariate,
+        threads = threads, verbose = verbose
       )
-
       df <- res$benchmark_summary_table
       df$Dataset <- exp_name
-
-      m1_tag <- names(exp$ref)[1]
-      m2_tag <- names(exp$ref)[2]
-      if (is.null(m1_tag)) m1_tag <- "scRNA-seq"
-      if (is.null(m2_tag)) m2_tag <- "scATAC-seq"
-
-      dn1 <- if (length(exp$data_names) >= 1) exp$data_names[1] else paste0(exp_name, "-", m1_tag)
-      dn2 <- if (length(exp$data_names) >= 2) exp$data_names[2] else paste0(exp_name, "-", m2_tag)
-
-      data_name_col <- rep("", nrow(df))
-      for (r in seq_len(nrow(df))) {
-        mod_r <- df$Modality[r]
-        if (mod_r == m1_tag || grepl("RNA", mod_r, ignore.case = TRUE)) {
-          data_name_col[r] <- dn1
-        } else if (mod_r == m2_tag || grepl("ATAC", mod_r, ignore.case = TRUE)) {
-          data_name_col[r] <- dn2
-        } else if (grepl("Cross|Joint", mod_r, ignore.case = TRUE)) {
-          data_name_col[r] <- paste0(exp_name, "-Joint")
-        } else {
-          data_name_col[r] <- paste0(exp_name, "-", mod_r)
-        }
-      }
-      df$Data_Name <- data_name_col
-      keep_cols <- c("Dataset", "Data_Name", "Modality", "Category", "Property", "Metric", "Value")
-      if ("Sim_Cores" %in% colnames(df)) keep_cols <- c(keep_cols, "Sim_Cores")
-      df <- df[, keep_cols, drop = FALSE]
-      all_master_rows[[length(all_master_rows) + 1]] <- df
-      dataset_results[[exp_name]] <- res
-
+      m1_tag <- names(exp$ref)[1L] %||% "scRNA-seq"
+      m2_tag <- names(exp$ref)[2L] %||% "scATAC-seq"
+      dn1 <- if (length(exp$data_names) >= 1L) exp$data_names[1L] else paste0(exp_name, "-", m1_tag)
+      dn2 <- if (length(exp$data_names) >= 2L) exp$data_names[2L] else paste0(exp_name, "-", m2_tag)
+      df$Data_Name <- vapply(df$Modality, function(mod_r) {
+        if (mod_r == m1_tag || grepl("RNA", mod_r, ignore.case = TRUE)) dn1
+        else if (mod_r == m2_tag || grepl("ATAC", mod_r, ignore.case = TRUE)) dn2
+        else if (grepl("Cross|Joint", mod_r, ignore.case = TRUE)) paste0(exp_name, "-Joint")
+        else paste0(exp_name, "-", mod_r)
+      }, character(1))
+      res_key <- exp_name
     } else {
+      ref_sce <- .attach_sce_metadata(exp$ref, exp$cell_types, exp$batch_info)
+      sim_sce <- .attach_sce_metadata(exp$sim, exp$cell_types, exp$batch_info)
       res <- evaluate_simulation_accuracy(
-        ref_data = exp$ref,
-        sim_data = exp$sim,
-        cell_types = exp$cell_types,
-        compute_bivariate = compute_bivariate,
-        threads = threads,
-        memory_mb = exp$memory_mb,
-        elapsed_time = exp$elapsed_time,
-        verbose = verbose,
-        time_unit = if (!is.null(exp$time_unit)) exp$time_unit else "seconds",
-        memory_unit = if (!is.null(exp$memory_unit)) exp$memory_unit else "MiB",
-        sim_cores = exp$sim_cores
+        ref_sce = ref_sce, sim_sce = sim_sce, modality = exp$modality,
+        compute_bivariate = compute_bivariate, threads = threads,
+        memory_mb = exp$memory_mb, elapsed_time = exp$elapsed_time,
+        time_unit = exp$time_unit %||% "seconds", memory_unit = exp$memory_unit %||% "MiB",
+        sim_cores = exp$sim_cores, verbose = verbose
       )
-
       df <- res$metrics_summary_table
       df$Dataset <- exp_name
       df$Data_Name <- exp$data_name
       df$Modality <- exp$modality
-      keep_cols <- c("Dataset", "Data_Name", "Modality", "Category", "Property", "Metric", "Value")
-      if ("Sim_Cores" %in% colnames(df)) keep_cols <- c(keep_cols, "Sim_Cores")
-      df <- df[, keep_cols, drop = FALSE]
-      all_master_rows[[length(all_master_rows) + 1]] <- df
-      dataset_results[[exp$data_name]] <- res
+      res_key <- exp$data_name
     }
+
+    keep_cols <- intersect(c("Dataset", "Data_Name", "Modality", "Category", "Property", "Metric", "Value", "Sim_Cores"), colnames(df))
+    all_master_rows[[length(all_master_rows) + 1L]] <- df[, keep_cols, drop = FALSE]
+    dataset_results[[res_key]] <- res
   }
 
-  has_any_cores <- any(vapply(all_master_rows, function(d) "Sim_Cores" %in% colnames(d), logical(1)))
-  if (has_any_cores) {
+  if (any(vapply(all_master_rows, function(d) "Sim_Cores" %in% colnames(d), logical(1)))) {
     all_master_rows <- lapply(all_master_rows, function(d) {
       if (!"Sim_Cores" %in% colnames(d)) d$Sim_Cores <- NA_integer_
       d
@@ -1702,39 +1369,28 @@ evaluate_multiple_datasets <- function(
   consolidated_table <- do.call(rbind, all_master_rows)
   rownames(consolidated_table) <- NULL
 
-  # Build consolidated score matrix (Metric x Data_Name)
   metric_keys <- paste0(consolidated_table$Category, " | ", consolidated_table$Property, " [", consolidated_table$Metric, "]")
-  unique_keys <- unique(metric_keys)
-  unique_data_names <- unique(consolidated_table$Data_Name)
-
-  score_mat <- matrix(NA_real_, nrow = length(unique_keys), ncol = length(unique_data_names),
-                      dimnames = list(unique_keys, unique_data_names))
+  u_keys <- unique(metric_keys)
+  u_dns <- unique(consolidated_table$Data_Name)
+  score_mat <- matrix(NA_real_, nrow = length(u_keys), ncol = length(u_dns), dimnames = list(u_keys, u_dns))
   for (r in seq_len(nrow(consolidated_table))) {
-    k <- metric_keys[r]
-    dn <- consolidated_table$Data_Name[r]
-    score_mat[k, dn] <- consolidated_table$Value[r]
+    score_mat[metric_keys[r], consolidated_table$Data_Name[r]] <- consolidated_table$Value[r]
   }
 
-  # Build dataset overview summary
-  overview_list <- list()
-  for (dn in unique_data_names) {
+  dataset_overview <- do.call(rbind, lapply(u_dns, function(dn) {
     sub_df <- consolidated_table[consolidated_table$Data_Name == dn, ]
     ks_vals <- sub_df$Value[sub_df$Metric == "KS"]
-    wass_vals <- sub_df$Value[sub_df$Metric == "Wasserstein"]
-    rmse_vals <- sub_df$Value[sub_df$Metric == "RMSE"]
-
-    overview_list[[length(overview_list) + 1]] <- data.frame(
-      Dataset = sub_df$Dataset[1],
-      Data_Name = dn,
-      Modality = sub_df$Modality[1],
+    w_vals <- sub_df$Value[sub_df$Metric == "Wasserstein"]
+    r_vals <- sub_df$Value[sub_df$Metric == "RMSE"]
+    data.frame(
+      Dataset = sub_df$Dataset[1L], Data_Name = dn, Modality = sub_df$Modality[1L],
       Total_Metrics = nrow(sub_df),
-      Mean_KS_Distance = if (length(ks_vals) > 0) round(mean(ks_vals, na.rm = TRUE), 4) else NA_real_,
-      Mean_Wasserstein = if (length(wass_vals) > 0) round(mean(wass_vals, na.rm = TRUE), 4) else NA_real_,
-      Mean_RMSE = if (length(rmse_vals) > 0) round(mean(rmse_vals, na.rm = TRUE), 4) else NA_real_,
+      Mean_KS_Distance = if (length(ks_vals) > 0L) round(mean(ks_vals, na.rm = TRUE), 4) else NA_real_,
+      Mean_Wasserstein = if (length(w_vals) > 0L) round(mean(w_vals, na.rm = TRUE), 4) else NA_real_,
+      Mean_RMSE = if (length(r_vals) > 0L) round(mean(r_vals, na.rm = TRUE), 4) else NA_real_,
       stringsAsFactors = FALSE
     )
-  }
-  dataset_overview <- do.call(rbind, overview_list)
+  }))
 
   out <- list(
     consolidated_summary_table = consolidated_table,
@@ -1743,12 +1399,6 @@ evaluate_multiple_datasets <- function(
     dataset_results = dataset_results
   )
   class(out) <- c("scSimEval_consolidated", "list")
-
-  if (verbose) {
-    message(sprintf("\n>>> Consolidated benchmark complete across %d dataset entries (%d total metric instances).",
-                    length(unique_data_names), nrow(consolidated_table)))
-  }
-
   out
 }
 
@@ -1768,41 +1418,79 @@ print.scSimEval_consolidated <- function(x, ...) {
   invisible(x)
 }
 
+#' Aggregate Suite Scores and Cross-Dataset Summary Statistics
+#' @keywords internal
+#' @noRd
+.aggregate_suite_stats <- function(granular_tbl) {
+  if ("Category" %in% colnames(granular_tbl)) {
+    mc_override <- .METRIC_CATEGORY_MAP[granular_tbl$Metric]
+    idx <- !is.na(mc_override)
+    granular_tbl$Category[idx] <- mc_override[idx]
+  }
+  if (nrow(granular_tbl) > 0L && "Score_Raw" %in% colnames(granular_tbl)) {
+    granular_tbl <- normalize_bubble_scores(granular_tbl)
+    granular_tbl$Score <- granular_tbl$Score_Norm
+  }
+  agg_norm <- stats::aggregate(Score_Norm ~ Method + Category + Metric, data = granular_tbl, FUN = mean, na.rm = TRUE)
+  agg_raw  <- stats::aggregate(Score_Raw ~ Method + Category + Metric, data = granular_tbl, FUN = mean, na.rm = TRUE)
+  summary_tbl <- merge(agg_norm, agg_raw, by = c("Method", "Category", "Metric"))
+  summary_tbl$Score <- round(summary_tbl$Score_Norm, 4)
+  summary_tbl$Score_Norm <- round(summary_tbl$Score_Norm, 4)
+  summary_tbl$Score_Raw <- round(summary_tbl$Score_Raw, 4)
+  summary_tbl$Simulator <- summary_tbl$Method
+
+  stats_agg <- stats::aggregate(
+    Score_Norm ~ Method + Category + Metric, data = granular_tbl,
+    FUN = function(x) c(
+      Mean = mean(x, na.rm = TRUE), SD = stats::sd(x, na.rm = TRUE),
+      SE = stats::sd(x, na.rm = TRUE) / sqrt(length(stats::na.omit(x))),
+      Min = min(x, na.rm = TRUE), Max = max(x, na.rm = TRUE),
+      N = length(stats::na.omit(x))
+    )
+  )
+  stats_df <- data.frame(
+    Method = stats_agg$Method, Category = stats_agg$Category, Metric = stats_agg$Metric,
+    Mean_Score = round(stats_agg$Score_Norm[, "Mean"], 4),
+    SD_Score = round(stats_agg$Score_Norm[, "SD"], 4),
+    SE_Score = round(stats_agg$Score_Norm[, "SE"], 4),
+    Min_Score = round(stats_agg$Score_Norm[, "Min"], 4),
+    Max_Score = round(stats_agg$Score_Norm[, "Max"], 4),
+    N_Datasets = as.integer(stats_agg$Score_Norm[, "N"]),
+    stringsAsFactors = FALSE
+  )
+  list(granular_tbl = granular_tbl, summary_tbl = summary_tbl, stats_df = stats_df)
+}
+
 #' Benchmark Simulation Methods Across Multiple Single-Cell Datasets
 #'
-#' A unified, high-performance, and beginner-friendly benchmarking runner designed
-#' for multi-dataset and multi-simulator studies (e.g., 16 datasets x 6 simulators).
-#' Automatically manages memory allocation with sparse matrix coercions,
-#' parallel execution across datasets, progress tracking, and produces
-#' both granular and cross-dataset aggregated benchmark tables ready for visualization.
+#' Unified benchmarking runner for multi-dataset and multi-simulator studies.
+#' Manages sparse matrix coercion, \code{SingleCellExperiment} conversion,
+#' parallel metric computation, and produces both granular and cross-dataset
+#' aggregated summary tables ready for visualization.
 #'
-#' @param datasets A named list of empirical reference datasets. Each item can be a
-#'   single-cell count matrix (features x cells), a path to an RDS/CSV matrix file,
-#'   or a list with \code{ref}, optional \code{cell_types}, and optional \code{batch_info}.
-#' @param simulators A named list of simulation methods. Each element must be a named
-#'   list of simulated count matrices (or matrix file paths) corresponding to the
-#'   datasets in \code{datasets}.
-#'   Example: \code{list(Splatter = list(D1 = sim_splat_d1, D2 = sim_splat_d2), scDesign3 = ...)}.
-#' @param compute_bivariate Logical. Whether to compute 2D bivariate tests. Default \code{FALSE}
-#'   for fast high-throughput execution.
-#' @param threads Number of threads / parallel workers. Default is \code{1}.
-#' @param auto_sparse Logical. Automatically coerce dense count matrices to \code{dgCMatrix}
-#'   to minimize RAM usage. Default \code{TRUE}.
-#' @param run_gc Logical. Run garbage collection (\code{gc()}) after each dataset evaluation
-#'   to prevent memory accumulation on HPC nodes. Default \code{TRUE}.
-#' @param save_path Optional file path (ending in \code{.rds}) to directly persist the
-#'   consolidated benchmark bundle for loading into Shiny Studio.
-#' @param verbose Logical. Print informative progress logging. Default \code{TRUE}.
+#' @param datasets Named list of empirical reference datasets (\code{SingleCellExperiment},
+#'   count matrix, file path, or list containing \code{ref}, \code{cell_types}, \code{batch_info}).
+#' @param simulators Named list of simulator outputs corresponding to \code{datasets}.
+#' @param compute_bivariate Logical; compute 2D bivariate tests. Default \code{FALSE}.
+#' @param threads Integer number of parallel workers. Default \code{1L}.
+#' @param auto_sparse Logical; coerce dense matrices to \code{dgCMatrix}. Default \code{TRUE}.
+#' @param run_gc Logical; run \code{gc()} between datasets. Default \code{TRUE}.
+#' @param save_path Optional \code{.rds} path to save the output bundle.
+#' @param verbose Logical; print progress logging. Default \code{TRUE}.
 #'
-#' @return An object of class \code{scSimEval_multidataset_benchmark} containing:
-#'   \itemize{
-#'     \item \code{granular_benchmark_table}: Tidy data.frame containing all evaluated metrics across every dataset and simulator.
-#'     \item \code{benchmark_summary_table}: Tidy data.frame containing cross-dataset averaged fidelity scores for each simulator (ready for \code{plot_benchmark_bubble_matrix()}).
-#'     \item \code{dataset_summary_table}: Summary of reference dataset dimensions, sparsity, and library properties.
-#'     \item \code{methods}: Vector of evaluated simulator names.
-#'     \item \code{datasets}: Vector of evaluated dataset names.
-#'     \item \code{cross_dataset_stats}: Summary statistics (mean, SD, SE) for each metric across datasets.
-#'   }
+#' @return An S3 object of class \code{c("scSimEval_multidataset_benchmark", "scSimEval_consolidated", "list")} containing:
+#' \describe{
+#'   \item{granular_benchmark_table}{Tidy data.frame across all dataset-simulator evaluations.}
+#'   \item{benchmark_summary_table}{Cross-dataset averaged fidelity scores formatted for \code{\link{plot_benchmark_bubble_matrix}}.}
+#'   \item{cross_dataset_stats}{Mean, SD, SE, Min, Max, and \code{N_Datasets} for each simulator and metric.}
+#'   \item{dataset_summary}{Summary table of reference dimensions, sparsity, and cell-type counts.}
+#'   \item{dataset_summary_df}{Alias of \code{dataset_summary}.}
+#'   \item{methods}{Character vector of evaluated simulator names.}
+#'   \item{datasets}{Character vector of evaluated dataset names.}
+#'   \item{is_multidataset}{Logical \code{TRUE}.}
+#'   \item{n_datasets}{Integer count of datasets.}
+#'   \item{n_simulators}{Integer count of simulators.}
+#' }
 #' @export
 #' @examples
 #' \donttest{
@@ -1816,277 +1504,104 @@ benchmark_simulation_suite <- function(
   datasets,
   simulators,
   compute_bivariate = FALSE,
-  threads           = 1,
+  threads           = 1L,
   auto_sparse       = TRUE,
   run_gc            = TRUE,
   save_path         = NULL,
   verbose           = TRUE
 ) {
-  if (!is.list(datasets) || length(datasets) == 0) {
-    stop("`datasets` must be a non-empty named list of empirical reference datasets.")
-  }
-  if (!is.list(simulators) || length(simulators) == 0) {
-    stop("`simulators` must be a non-empty named list of simulator outputs.")
-  }
-  if (is.null(names(datasets)) || any(names(datasets) == "")) {
-    names(datasets) <- paste0("Dataset_", seq_along(datasets))
-  }
-  if (is.null(names(simulators)) || any(names(simulators) == "")) {
-    names(simulators) <- paste0("Simulator_", seq_along(simulators))
-  }
+  if (!is.list(datasets) || length(datasets) == 0L) stop("`datasets` must be a non-empty named list.", call. = FALSE)
+  if (!is.list(simulators) || length(simulators) == 0L) stop("`simulators` must be a non-empty named list.", call. = FALSE)
+  if (is.null(names(datasets)) || any(names(datasets) == "")) names(datasets) <- paste0("Dataset_", seq_along(datasets))
+  if (is.null(names(simulators)) || any(names(simulators) == "")) names(simulators) <- paste0("Simulator_", seq_along(simulators))
 
   d_names <- names(datasets)
   s_names <- names(simulators)
-  n_datasets <- length(d_names)
-  n_sims <- length(s_names)
-  total_evals <- n_datasets * n_sims
-
+  total_evals <- length(d_names) * length(s_names)
   if (verbose) {
-    message("=====================================================================")
-    message(sprintf("  scSimEval Multi-Dataset Benchmarking Suite (HPC Optimized)"))
-    message(sprintf("  Datasets (%d)   : %s", n_datasets, paste(head(d_names, 4), collapse = ", ")))
-    message(sprintf("  Simulators (%d) : %s", n_sims, paste(s_names, collapse = ", ")))
-    message(sprintf("  Total Runs     : %d evaluations (%d datasets x %d simulators)", total_evals, n_datasets, n_sims))
-    message(sprintf("  Parallel Workers: %d", threads))
-    message("=====================================================================")
-  }
-
-  # Helper for sparse matrix coercion
-  .ensure_mat <- function(m) {
-    if (is.character(m) && length(m) == 1 && file.exists(m)) {
-      ext <- tolower(tools::file_ext(m))
-      if (ext == "rds") m <- readRDS(m)
-      else if (ext == "csv") m <- as.matrix(utils::read.csv(m, row.names = 1, check.names = FALSE))
-      else m <- as.matrix(utils::read.table(m, header = TRUE, row.names = 1, check.names = FALSE))
-    }
-    if (inherits(m, "SingleCellExperiment") || inherits(m, "Seurat")) {
-      return(m)
-    }
-    if (is.data.frame(m)) m <- as.matrix(m)
-    if (auto_sparse && !inherits(m, "dgCMatrix") && (is.matrix(m) || inherits(m, "Matrix"))) {
-      m <- Matrix::Matrix(m, sparse = TRUE)
-    }
-    SingleCellExperiment::SingleCellExperiment(assays = list(counts = m))
+    message(sprintf("scSimEval Multi-Dataset Suite: %d datasets x %d simulators (%d workers)",
+                    length(d_names), length(s_names), threads))
   }
 
   all_granular_rows <- list()
   dataset_summaries <- list()
-  eval_count <- 0
+  eval_count <- 0L
 
   for (i in seq_along(d_names)) {
     d_name <- d_names[i]
     d_item <- datasets[[d_name]]
-
-    ref_m <- if (is.list(d_item) && !inherits(d_item, "Matrix") && !is.data.frame(d_item) && !is.matrix(d_item)) {
-      if (!is.null(d_item$ref)) d_item$ref else d_item[[1]]
+    ref_raw <- if (is.list(d_item) && !inherits(d_item, "Matrix") && !is.data.frame(d_item) && !is.matrix(d_item)) {
+      d_item$ref %||% d_item[[1L]]
     } else {
       d_item
     }
-    ref_m <- .ensure_mat(ref_m)
+    ct_labels <- if (is.list(d_item)) d_item$cell_types else NULL
+    bt_labels <- if (is.list(d_item)) d_item$batch_info else NULL
+    ref_sce <- .attach_sce_metadata(.ensure_sce(ref_raw, auto_sparse), ct_labels, bt_labels)
 
-    ct_labels <- if (is.list(d_item) && !is.null(d_item$cell_types)) d_item$cell_types else NULL
-    batch_info <- if (is.list(d_item) && !is.null(d_item$batch_info)) d_item$batch_info else NULL
-
-    n_c <- ncol(ref_m)
-    n_f <- nrow(ref_m)
-    cnts_ref <- if (inherits(ref_m, "SingleCellExperiment")) {
-      SingleCellExperiment::counts(ref_m)
-    } else if (inherits(ref_m, "Seurat")) {
-      tryCatch(.get_seurat_counts(ref_m), error = function(e) {
-        tryCatch(Seurat::GetAssayData(ref_m, layer = "counts"), error = function(e2) ref_m)
-      })
-    } else {
-      ref_m
-    }
+    cnts_ref <- SingleCellExperiment::counts(ref_sce)
+    n_c <- ncol(cnts_ref)
+    n_f <- nrow(cnts_ref)
     sparsity_val <- round(1 - (as.numeric(Matrix::nnzero(cnts_ref)) / (as.numeric(n_c) * as.numeric(n_f))), 4)
-
     dataset_summaries[[d_name]] <- data.frame(
-      "Dataset / Simulator" = d_name,
-      "Role"                = "Biological Reference",
-      "Modality"            = "Single-Cell (Counts)",
-      "Cells (N)"           = n_c,
-      "Features (p)"        = n_f,
-      "Sparsity (%)"        = sprintf("%.1f%%", sparsity_val * 100),
-      "Cell Types"          = if (!is.null(ct_labels)) length(unique(ct_labels)) else NA_integer_,
-      check.names           = FALSE,
-      stringsAsFactors      = FALSE
+      "Dataset / Simulator" = d_name, "Role" = "Biological Reference",
+      "Modality" = "Single-Cell (Counts)", "Cells (N)" = n_c, "Features (p)" = n_f,
+      "Sparsity (%)" = sprintf("%.1f%%", sparsity_val * 100),
+      "Cell Types" = if (!is.null(ct_labels)) length(unique(ct_labels)) else NA_integer_,
+      check.names = FALSE, stringsAsFactors = FALSE
     )
 
-    if (verbose) {
-      message(sprintf("\n>>> [%d/%d] Ingesting Reference Dataset: '%s' (%d cells, %d features, %.1f%% sparsity)",
-                      i, n_datasets, d_name, n_c, n_f, sparsity_val * 100))
-    }
-
-    for (j in seq_along(s_names)) {
-      s_name <- s_names[j]
-      eval_count <- eval_count + 1
-      s_container <- simulators[[s_name]]
-
-      sim_m <- if (is.list(s_container) && d_name %in% names(s_container)) {
-        s_container[[d_name]]
-      } else if (is.list(s_container) && length(s_container) >= i) {
-        s_container[[i]]
-      } else if (is.character(s_container) && length(s_container) >= i) {
-        s_container[i]
-      } else {
-        s_container
-      }
-
-      if (is.null(sim_m)) {
-        warning(sprintf("Simulator '%s' has no simulation output for dataset '%s'. Skipping.", s_name, d_name))
+    for (s_name in s_names) {
+      eval_count <- eval_count + 1L
+      sc <- simulators[[s_name]]
+      sim_raw <- if (is.list(sc) && d_name %in% names(sc)) sc[[d_name]] else if (is.list(sc) && length(sc) >= i) sc[[i]] else if (is.character(sc) && length(sc) >= i) sc[i] else sc
+      if (is.null(sim_raw)) {
+        warning(sprintf("Simulator '%s' has no simulation output for '%s'. Skipping.", s_name, d_name))
         next
       }
+      sim_sce <- .attach_sce_metadata(.ensure_sce(sim_raw, auto_sparse), ct_labels, bt_labels)
+      if (verbose) message(sprintf("  [%d/%d] Evaluating '%s' on '%s'...", eval_count, total_evals, s_name, d_name))
 
-      sim_m <- .ensure_mat(sim_m)
-
-      if (verbose) {
-        message(sprintf("  --> [%d/%d] Evaluating Simulator '%s' on '%s'...",
-                        eval_count, total_evals, s_name, d_name))
-      }
-
-      t0 <- Sys.time()
-      res_ij <- tryCatch({
-        evaluate_simulation_accuracy(
-          ref_data          = ref_m,
-          sim_data          = sim_m,
-          cell_types        = ct_labels,
-          compute_bivariate = compute_bivariate,
-          threads           = threads,
-          verbose           = FALSE
-        )
-      }, error = function(e) {
-        warning(sprintf("Failed evaluating '%s' on '%s': %s", s_name, d_name, e$message))
-        NULL
-      })
-      t1 <- Sys.time()
-      elapsed_s <- round(as.numeric(difftime(t1, t0, units = "secs")), 2)
-
+      res_ij <- tryCatch(
+        evaluate_simulation_accuracy(ref_sce = ref_sce, sim_sce = sim_sce,
+                                     compute_bivariate = compute_bivariate, threads = threads, verbose = FALSE),
+        error = function(e) {
+          warning(sprintf("Failed evaluating '%s' on '%s': %s", s_name, d_name, conditionMessage(e)))
+          NULL
+        }
+      )
       if (!is.null(res_ij)) {
         tbl_ij <- res_ij$metrics_summary_table
         tbl_ij$Dataset <- d_name
         tbl_ij$Method <- s_name
         tbl_ij$Simulator <- s_name
-
-        if (!"Score_Raw" %in% colnames(tbl_ij) && "Value" %in% colnames(tbl_ij)) {
-          tbl_ij$Score_Raw <- tbl_ij$Value
-        }
-        if (!"Score" %in% colnames(tbl_ij)) {
-          tbl_ij$Score <- tbl_ij$Score_Raw
-        }
-
-        # Normalize score
-        if (!"Score_Norm" %in% colnames(tbl_ij)) {
-          tbl_ij <- .normalize_bubble_scores(tbl_ij)
-        }
-
-        all_granular_rows[[length(all_granular_rows) + 1]] <- tbl_ij
-        if (verbose) {
-          message(sprintf("      Completed: %d metrics evaluated in %.1fs.", nrow(tbl_ij), elapsed_s))
-        }
+        if (!"Score_Raw" %in% colnames(tbl_ij) && "Value" %in% colnames(tbl_ij)) tbl_ij$Score_Raw <- tbl_ij$Value
+        if (!"Score" %in% colnames(tbl_ij)) tbl_ij$Score <- tbl_ij$Score_Raw
+        if (!"Score_Norm" %in% colnames(tbl_ij)) tbl_ij <- normalize_bubble_scores(tbl_ij)
+        all_granular_rows[[length(all_granular_rows) + 1L]] <- tbl_ij
       }
     }
-
-    if (run_gc) {
-      gc(verbose = FALSE)
-    }
+    if (run_gc) gc(verbose = FALSE)
   }
 
-  if (length(all_granular_rows) == 0) {
-    stop("No evaluations succeeded across the multi-dataset benchmark suite.")
-  }
-
-  granular_tbl <- do.call(rbind, all_granular_rows)
-  rownames(granular_tbl) <- NULL
-
-  # Standardize categories
-  if ("Category" %in% colnames(granular_tbl)) {
-    mc_override <- .METRIC_CATEGORY_MAP[granular_tbl$Metric]
-    idx <- !is.na(mc_override)
-    granular_tbl$Category[idx] <- mc_override[idx]
-  }
-
-  # Re-normalize direction-aware scores across all evaluated simulators
-  if (nrow(granular_tbl) > 0 && "Score_Raw" %in% colnames(granular_tbl)) {
-    granular_tbl <- .normalize_bubble_scores(granular_tbl)
-    granular_tbl$Score <- granular_tbl$Score_Norm
-  }
-
-  # Build Cross-Dataset Summary Table (mean across datasets for each simulator)
-  agg_norm <- stats::aggregate(
-    Score_Norm ~ Method + Category + Metric,
-    data = granular_tbl,
-    FUN  = mean,
-    na.rm = TRUE
-  )
-  agg_raw <- stats::aggregate(
-    Score_Raw ~ Method + Category + Metric,
-    data = granular_tbl,
-    FUN  = mean,
-    na.rm = TRUE
-  )
-  summary_tbl <- merge(agg_norm, agg_raw, by = c("Method", "Category", "Metric"))
-  summary_tbl$Score <- round(summary_tbl$Score_Norm, 4)
-  summary_tbl$Score_Norm <- round(summary_tbl$Score_Norm, 4)
-  summary_tbl$Score_Raw  <- round(summary_tbl$Score_Raw, 4)
-  summary_tbl$Simulator  <- summary_tbl$Method
-
-  # Cross-dataset statistics (mean, SD, SE, min, max across datasets)
-  stats_agg <- stats::aggregate(
-    Score_Norm ~ Method + Category + Metric,
-    data = granular_tbl,
-    FUN = function(x) c(
-      Mean = mean(x, na.rm = TRUE),
-      SD = stats::sd(x, na.rm = TRUE),
-      SE = stats::sd(x, na.rm = TRUE) / sqrt(length(stats::na.omit(x))),
-      Min = min(x, na.rm = TRUE),
-      Max = max(x, na.rm = TRUE),
-      N = length(stats::na.omit(x))
-    )
-  )
-  stats_df <- data.frame(
-    Method     = stats_agg$Method,
-    Category   = stats_agg$Category,
-    Metric     = stats_agg$Metric,
-    Mean_Score = round(stats_agg$Score_Norm[, "Mean"], 4),
-    SD_Score   = round(stats_agg$Score_Norm[, "SD"], 4),
-    SE_Score   = round(stats_agg$Score_Norm[, "SE"], 4),
-    Min_Score  = round(stats_agg$Score_Norm[, "Min"], 4),
-    Max_Score  = round(stats_agg$Score_Norm[, "Max"], 4),
-    N_Datasets = as.integer(stats_agg$Score_Norm[, "N"]),
-    stringsAsFactors = FALSE
-  )
-
+  if (length(all_granular_rows) == 0L) stop("No evaluations succeeded across the suite.", call. = FALSE)
+  agg <- .aggregate_suite_stats(do.call(rbind, all_granular_rows))
   d_summary_df <- do.call(rbind, dataset_summaries)
 
   out <- list(
-    granular_benchmark_table = granular_tbl,
-    benchmark_summary_table  = summary_tbl,
-    cross_dataset_stats      = stats_df,
-    dataset_summary          = d_summary_df,
-    dataset_summary_df       = d_summary_df,
-    methods                  = unique(summary_tbl$Method),
-    datasets                 = d_names,
-    is_multidataset          = TRUE,
-    n_datasets               = n_datasets,
-    n_simulators             = n_sims
+    granular_benchmark_table = agg$granular_tbl,
+    benchmark_summary_table = agg$summary_tbl,
+    cross_dataset_stats = agg$stats_df,
+    dataset_summary = d_summary_df,
+    dataset_summary_df = d_summary_df,
+    methods = unique(agg$summary_tbl$Method),
+    datasets = d_names,
+    is_multidataset = TRUE,
+    n_datasets = length(d_names),
+    n_simulators = length(s_names)
   )
   class(out) <- c("scSimEval_multidataset_benchmark", "scSimEval_consolidated", "list")
-
-  if (!is.null(save_path)) {
-    saveRDS(out, save_path)
-    if (verbose) {
-      message(sprintf("\n>>> Benchmark results persisted successfully to: '%s'", save_path))
-    }
-  }
-
-  if (verbose) {
-    message("\n=====================================================================")
-    message(sprintf("  Benchmark Suite Completed! %d evaluations across %d datasets & %d simulators.",
-                    nrow(granular_tbl), n_datasets, n_sims))
-    message("  Cross-dataset averages computed and ready for plot_benchmark_bubble_matrix().")
-    message("=====================================================================")
-  }
-
+  if (!is.null(save_path)) saveRDS(out, save_path)
   out
 }
 
@@ -2095,11 +1610,10 @@ print.scSimEval_multidataset_benchmark <- function(x, ...) {
   cat("=====================================================================\n")
   cat("  scSimEval Multi-Dataset Benchmark Results\n")
   cat("=====================================================================\n")
-  cat(sprintf("Datasets Evaluated     : %d (%s)\n", length(x$datasets), paste(head(x$datasets, 4), collapse = ", ")))
+  cat(sprintf("Datasets Evaluated     : %d (%s)\n", length(x$datasets), paste(utils::head(x$datasets, 4), collapse = ", ")))
   cat(sprintf("Simulators Evaluated   : %d (%s)\n", length(x$methods), paste(x$methods, collapse = ", ")))
   cat(sprintf("Total Evaluated Scores : %d across all datasets & metrics\n", nrow(x$granular_benchmark_table)))
   cat(sprintf("Cross-Dataset Average  : %d averaged metric entries in summary table\n", nrow(x$benchmark_summary_table)))
   cat("=====================================================================\n")
   invisible(x)
 }
-

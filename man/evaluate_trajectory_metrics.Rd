@@ -21,9 +21,9 @@ evaluate_trajectory_metrics(
 )
 }
 \arguments{
-\item{ref_data}{Reference count matrix, \code{SingleCellExperiment}, or \code{Seurat} object.}
+\item{ref_data}{Reference count matrix or \code{SingleCellExperiment} object.}
 
-\item{sim_data}{Simulated count matrix, \code{SingleCellExperiment}, or \code{Seurat} object.}
+\item{sim_data}{Simulated count matrix or \code{SingleCellExperiment} object.}
 
 \item{cell_types_ref}{Optional vector of reference cell types.}
 
@@ -67,7 +67,7 @@ Evaluates trajectory and lineage preservation using the standardized \emph{dynve
 benchmarking framework (\emph{Saelens et al., Nature Biotechnology, 2019}):
 \enumerate{
   \item Standardized cell outlier QC (3 MADs), low-expression gene filtering
-        (\eqn{\ge 5\%} cells, mean \eqn{> 0.02}), and HVG selection (\code{scran::modelGeneVar}).
+        (\eqn{\ge 5\%} cells, mean \eqn{> 0.02}), and HVG selection (empirical mean-variance decomposition).
   \item Shared HVG PCA projection and Docker-free Minimum Spanning Tree (MST) milestone
         trajectory inference with continuous cell-to-milestone geodesic distances.
   \item Five complementary trajectory metrics: \code{him} (Hamming-Ipsen-Mikhailov similarity),

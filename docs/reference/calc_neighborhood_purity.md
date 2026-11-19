@@ -7,7 +7,13 @@ share the same cluster or cell-type identity.
 ## Usage
 
 ``` r
-calc_neighborhood_purity(data, cluster_labels, k = NULL, is_distance = FALSE)
+calc_neighborhood_purity(
+  data,
+  cluster_labels,
+  k = NULL,
+  is_distance = FALSE,
+  threads = 1L
+)
 ```
 
 ## Arguments
@@ -29,6 +35,10 @@ calc_neighborhood_purity(data, cluster_labels, k = NULL, is_distance = FALSE)
 
   Logical, whether data is already a distance matrix. Default FALSE.
 
+- threads:
+
+  Integer number of CPU threads (default 1L).
+
 ## Value
 
 A numeric vector of neighborhood purity scores (values from 0 to 1),
@@ -41,9 +51,9 @@ data <- matrix(stats::rnorm(200), 20, 10)
 cl <- factor(rep(c("A", "B"), each = 10))
 dist_mat <- stats::dist(data)
 calc_neighborhood_purity(data, cl)
-#>  [1] 1.0000000 0.4000000 0.5714286 0.6666667 1.0000000 0.5555556 0.6666667
-#>  [8] 0.6250000 0.5000000 0.5000000 0.5000000 0.4166667 1.0000000 0.4285714
-#> [15] 1.0000000 0.7500000 0.5000000 0.5000000 0.5000000 0.5000000
+#>  [1] 0.5000000 0.5000000 0.5000000 0.6666667 0.4666667 0.6000000 0.4000000
+#>  [8] 0.5000000 1.0000000 0.5000000 0.6000000 0.5000000 0.2500000 0.6666667
+#> [15] 0.5454545 0.5384615 0.6666667 0.3750000 0.6666667 1.0000000
 #> attr(,"mean_purity")
-#> [1] 0.6290278
+#> [1] 0.5721125
 ```

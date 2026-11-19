@@ -14,7 +14,7 @@ calc_rmse(ref, sim, align = TRUE)
 \item{align}{Logical, whether to sort and quantile-align vectors. Default TRUE.}
 }
 \value{
-Quadratic error penalizing large discrepancies.
+Non-negative numeric root mean squared difference.
 }
 \description{
 Calculate Root Mean Squared Error (RMSE)

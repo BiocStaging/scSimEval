@@ -55,46 +55,49 @@ test_that("example_multiomics dataset has paired modalities and resource stats",
   expect_true(is.numeric(example_multiomics$resource_stats$memory_mb))
 })
 
-test_that("example_rice_bud dataset has standardized Seurat paired multiomics structure and 6 simulators", {
+test_that("example_rice_bud dataset has standardized SingleCellExperiment paired multiomics structure and 6 simulators", {
   data("example_rice_bud", package = "scSimEval", envir = environment())
   expect_true(exists("example_rice_bud"))
   expect_type(example_rice_bud, "list")
   expect_named(example_rice_bud, c("metadata", "reference", "simulated", "scalability_benchmarks"), ignore.order = TRUE)
   
-  # Reference dimensions: standardized Seurat objects (100 HVGs x 100 cells, 100 HVPs x 100 cells)
-  expect_s4_class(example_rice_bud$reference$combined, "Seurat")
-  expect_s4_class(example_rice_bud$reference$rna, "Seurat")
-  expect_s4_class(example_rice_bud$reference$atac, "Seurat")
+  # Reference dimensions: standardized SingleCellExperiment objects (100 HVGs x 100 cells, 100 HVPs x 100 cells)
+  expect_s4_class(example_rice_bud$reference$combined, "SingleCellExperiment")
+  expect_s4_class(example_rice_bud$reference$rna, "SingleCellExperiment")
+  expect_s4_class(example_rice_bud$reference$atac, "SingleCellExperiment")
+  expect_true("ATAC" %in% SingleCellExperiment::altExpNames(example_rice_bud$reference$combined))
   expect_equal(dim(example_rice_bud$reference$rna), c(100, 100))
   expect_equal(dim(example_rice_bud$reference$atac), c(100, 100))
   expect_equal(ncol(example_rice_bud$reference$rna), ncol(example_rice_bud$reference$atac))
   
   # Embedded cell_type and batch (all 8 Rice Bud cell types covered equally)
-  expect_true("cell_type" %in% colnames(example_rice_bud$reference$combined@meta.data))
-  expect_true("batch" %in% colnames(example_rice_bud$reference$combined@meta.data))
-  expect_true(length(unique(example_rice_bud$reference$combined$cell_type)) == 8)
-  expect_true(length(unique(example_rice_bud$reference$combined$batch)) == 2)
+  cd_rb <- SummarizedExperiment::colData(example_rice_bud$reference$combined)
+  expect_true("cell_type" %in% colnames(cd_rb))
+  expect_true("batch" %in% colnames(cd_rb))
+  expect_equal(length(unique(cd_rb$cell_type)), 8)
+  expect_equal(length(unique(cd_rb$batch)), 2)
   
   # 6 Simulators
   sim_methods <- c("scMultiSim", "scDesign3", "MOSim", "scCross", "scMoMtF", "Matilda")
   expect_true(all(sim_methods %in% names(example_rice_bud$simulated)))
   for (m in sim_methods) {
-    expect_s4_class(example_rice_bud$simulated[[m]]$combined, "Seurat")
+    expect_s4_class(example_rice_bud$simulated[[m]]$combined, "SingleCellExperiment")
     expect_equal(dim(example_rice_bud$simulated[[m]]$rna), c(100, 100))
     expect_equal(dim(example_rice_bud$simulated[[m]]$atac), c(100, 100))
   }
 })
 
-test_that("example_soybean_root dataset has standardized Seurat unpaired multiomics structure and 3 simulators", {
+test_that("example_soybean_root dataset has standardized SingleCellExperiment unpaired multiomics structure and 3 simulators", {
   data("example_soybean_root", package = "scSimEval", envir = environment())
   expect_true(exists("example_soybean_root"))
   expect_type(example_soybean_root, "list")
   expect_named(example_soybean_root, c("metadata", "reference", "simulated", "scalability_benchmarks"), ignore.order = TRUE)
   
-  # Reference dimensions: standardized Seurat objects (100 HVGs x 100 RNA cells, 100 HVPs x 100 ATAC cells)
-  expect_s4_class(example_soybean_root$reference$combined, "Seurat")
-  expect_s4_class(example_soybean_root$reference$rna, "Seurat")
-  expect_s4_class(example_soybean_root$reference$atac, "Seurat")
+  # Reference dimensions: standardized SingleCellExperiment objects (100 HVGs x 100 RNA cells, 100 HVPs x 100 ATAC cells)
+  expect_s4_class(example_soybean_root$reference$combined, "SingleCellExperiment")
+  expect_s4_class(example_soybean_root$reference$rna, "SingleCellExperiment")
+  expect_s4_class(example_soybean_root$reference$atac, "SingleCellExperiment")
+  expect_true("ATAC" %in% SingleCellExperiment::altExpNames(example_soybean_root$reference$combined))
   expect_equal(dim(example_soybean_root$reference$rna), c(100, 100))
   expect_equal(dim(example_soybean_root$reference$atac), c(100, 100))
   
@@ -104,7 +107,7 @@ test_that("example_soybean_root dataset has standardized Seurat unpaired multiom
   expect_true(all(sim_methods %in% names(example_soybean_root$simulated)))
   expect_false("MOSim" %in% names(example_soybean_root$simulated))
   for (m in sim_methods) {
-    expect_s4_class(example_soybean_root$simulated[[m]]$combined, "Seurat")
+    expect_s4_class(example_soybean_root$simulated[[m]]$combined, "SingleCellExperiment")
     expect_equal(dim(example_soybean_root$simulated[[m]]$rna), c(100, 100))
     expect_equal(dim(example_soybean_root$simulated[[m]]$atac), c(100, 100))
   }

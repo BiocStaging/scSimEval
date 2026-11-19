@@ -15,6 +15,7 @@ evaluate_batch_metrics(
   k = NULL,
   n_pcs = 30,
   cell_types = NULL,
+  threads = 1,
   verbose = FALSE
 )
 ```
@@ -43,6 +44,10 @@ evaluate_batch_metrics(
 
   Optional factor or character vector of cell types for cross-batch
   evaluation.
+
+- threads:
+
+  Number of CPU threads (default 1).
 
 - verbose:
 
@@ -79,18 +84,18 @@ data(example_scrna, package = "scSimEval")
 evaluate_batch_metrics(example_scrna$ref, example_scrna$batch_info,
                        cell_types = example_scrna$cell_types)
 #> $batch_silhouette
-#> [1] -0.001626347
+#> [1] -0.00427682
 #> 
 #> $pcr_r2
-#> [1] 0.01058094
+#> [1] 0.00884218
 #> 
 #> $cms
-#> [1] 0
+#> [1] 0.5522989
 #> 
 #> $isi
-#> [1] 1.923783
+#> [1] 1.895012
 #> 
 #> $cross_batch_F1
-#> [1] 0.4460483
+#> [1] 0.3076671
 #> 
 ```

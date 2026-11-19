@@ -52,15 +52,15 @@ A list containing accuracy, precision, recall, and F1 score.
 data(example_scrna, package = "scSimEval")
 evaluate_predictive_de_model(example_scrna$ref, group = example_scrna$cell_types)
 #> $accuracy
-#> [1] 0.5625
+#> [1] 0.45
 #> 
 #> $precision
-#> [1] 0.5833333
+#> [1] 0.4375
 #> 
 #> $recall
-#> [1] 0.5793651
+#> [1] 0.46875
 #> 
 #> $F1
-#> [1] 0.5607843
+#> [1] 0.4508929
 #> 
 ```

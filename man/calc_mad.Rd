@@ -14,7 +14,7 @@ calc_mad(ref, sim, align = TRUE)
 \item{align}{Logical, whether to sort and quantile-align vectors. Default TRUE.}
 }
 \value{
-Numeric MAD value.
+Non-negative numeric MAD value.
 }
 \description{
 Calculate Median Absolute Deviation (MAD)

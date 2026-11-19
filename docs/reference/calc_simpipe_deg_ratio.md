@@ -110,8 +110,93 @@ res <- calc_simpipe_deg_ratio(
 )
 #> calcNormFactors has been renamed to normLibSizes
 #> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
 res$P
-#> [1] 0
+#> [1] 0.4975587
 res$deg_ratio
-#> [1] 0
+#> [1] 0.6956522
 ```

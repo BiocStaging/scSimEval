@@ -23,8 +23,8 @@ run_edger_qlf_detrate(
 
 - counts:
 
-  Single-cell count matrix (genes x cells), or SingleCellExperiment /
-  Seurat object.
+  Single-cell count matrix (genes x cells), or `SingleCellExperiment`
+  object.
 
 - group:
 
@@ -90,11 +90,18 @@ idx <- which(example_scrna$cell_types %in% top2)
 res <- run_edger_qlf_detrate(example_scrna$ref[, idx], example_scrna$cell_types[idx])
 #> calcNormFactors has been renamed to normLibSizes
 head(res)
-#>            gene       logFC   logCPM     F_stat     PValue       FDR is_deg
-#> Gene_01 Gene_01  0.06639992 15.04487 0.04541237 0.83125697 0.9236189  FALSE
-#> Gene_02 Gene_02  0.63252452 14.58323 3.77514999 0.05207991 0.3124794  FALSE
-#> Gene_03 Gene_03  0.69780444 14.79379 4.75012284 0.02934654 0.3124794  FALSE
-#> Gene_04 Gene_04  0.30634068 14.69534 0.89011764 0.34549476 0.6909895  FALSE
-#> Gene_05 Gene_05  0.54739063 15.07996 2.95097305 0.08589288 0.3594412  FALSE
-#> Gene_06 Gene_06 -0.09283335 14.65058 0.08278491 0.77357118 0.8925821  FALSE
+#>                      gene      logFC   logCPM      F_stat       PValue
+#> Os04g0188433 Os04g0188433 -1.6973682 14.99692  0.93341220 3.417600e-01
+#> Os04g0496300 Os04g0496300 -5.4762732 17.57997 21.01082531 4.433661e-05
+#> Os04g0659300 Os04g0659300 -0.6178729 15.19454  0.05069294 8.231181e-01
+#> Os01g0756900 Os01g0756900 -7.0743346 17.54568 35.66166925 3.414173e-07
+#> Os01g0910900 Os01g0910900  0.4332316 14.93205  0.21850884 6.440717e-01
+#> Os10g0377150 Os10g0377150 -5.1144155 17.05487 17.09207411 2.055816e-04
+#>                       FDR is_deg
+#> Os04g0188433 4.841600e-01  FALSE
+#> Os04g0496300 1.884306e-04   TRUE
+#> Os04g0659300 9.328672e-01  FALSE
+#> Os01g0756900 5.804095e-06   TRUE
+#> Os01g0910900 8.422476e-01  FALSE
+#> Os10g0377150 6.989775e-04   TRUE
 ```

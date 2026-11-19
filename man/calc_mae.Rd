@@ -14,7 +14,7 @@ calc_mae(ref, sim, align = TRUE)
 \item{align}{Logical, whether to sort and quantile-align vectors. Default TRUE.}
 }
 \value{
-Mean absolute difference.
+Non-negative numeric mean absolute difference.
 }
 \description{
 Calculate Mean Absolute Error (MAE)

@@ -1,12 +1,11 @@
-# Example Cell-Type Annotations Vector
+# Example Cell-Type Annotations Vector (Rice Bud)
 
-A named factor vector containing discrete cell-type labels ("TypeA",
-"TypeB") for 80 single cells, matching the column names of
+A named factor vector containing discrete cell-type labels across all 8
+Rice Bud cell types for 100 balanced single cells (12–13 cells per
+type), matching the column names of
 [`example_scrna`](https://kabilanbio.github.io/scSimEval/reference/example_scrna.md)
 and
 [`example_scatac`](https://kabilanbio.github.io/scSimEval/reference/example_scatac.md).
-Useful as a reference template for formatting cell-type metadata inputs
-in `scSimEval`.
 
 ## Usage
 
@@ -16,9 +15,9 @@ data(example_cell_types)
 
 ## Format
 
-A named factor with 80 elements across 2 levels: "TypeA" (40 cells) and
-"TypeB" (40 cells). Names correspond to individual cell barcodes
-(`"Cell_01"` to `"Cell_80"`).
+A named factor with 100 elements across 8 levels (`Bud-unknown`,
+`Bud_axis`, `Bud_primordium`, `Epidermis`, `Parenchyma_cell`,
+`Root_meristem`, `Shoot_apical_meristem`, `Vascular_cylinder`).
 
 ## Source
 
@@ -29,11 +28,17 @@ Derived from `example_scrna$cell_types`.
 ``` r
 data(example_cell_types)
 head(example_cell_types)
-#> Cell_01 Cell_02 Cell_03 Cell_04 Cell_05 Cell_06 
-#>   TypeA   TypeA   TypeA   TypeA   TypeA   TypeA 
-#> Levels: TypeA TypeB
+#> AAACCGGCAAGTGTTT-1 AAACGGATCGATCAGT-1 AACAGCAAGGTTAGAG-1 AACCTAATCAAGTGAG-1 
+#>    Parenchyma_cell    Parenchyma_cell          Epidermis     Bud_primordium 
+#> AAGGTGCAGGGTCCAC-1 AAGTTTGTCCACCTGT-1 
+#>  Vascular_cylinder      Root_meristem 
+#> 8 Levels: Bud_axis Bud_primordium Bud-unknown Epidermis ... Vascular_cylinder
 table(example_cell_types)
 #> example_cell_types
-#> TypeA TypeB 
-#>    40    40 
+#>              Bud_axis        Bud_primordium           Bud-unknown 
+#>                    13                    13                    13 
+#>             Epidermis       Parenchyma_cell         Root_meristem 
+#>                    13                    12                    12 
+#> Shoot_apical_meristem     Vascular_cylinder 
+#>                    12                    12 
 ```

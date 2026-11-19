@@ -16,7 +16,9 @@ calc_cms(
   n_pcs = 30,
   coords = NULL,
   cell_min = 4,
-  unbalanced = FALSE
+  unbalanced = FALSE,
+  threads = 1,
+  knn_res = NULL
 )
 ```
 
@@ -54,6 +56,15 @@ calc_cms(
 - unbalanced:
 
   Logical, whether to set pure neighborhoods to NA. Default is FALSE.
+
+- threads:
+
+  Number of CPU threads (default 1).
+
+- knn_res:
+
+  Optional precomputed k-NN list (\`idx\`, \`dists\`) from
+  \`.knn_coords\`.
 
 ## Value
 

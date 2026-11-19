@@ -179,27 +179,16 @@ hungarian_match <- function(pred, truth) {
 #' @return Numeric vector of row variances.
 #' @export
 fast_row_vars <- function(mat) {
-  if (inherits(mat, "dgCMatrix")) {
-    n_cols <- ncol(mat)
-    if (n_cols <= 1) return(rep(0, nrow(mat)))
+  n_cols <- ncol(mat)
+  if (n_cols <= 1L) return(rep(0, nrow(mat)))
+  if (inherits(mat, "Matrix")) {
     rm <- Matrix::rowMeans(mat)
-    mat_sq <- mat
-    mat_sq@x <- mat_sq@x^2
-    sq_rm <- Matrix::rowMeans(mat_sq)
-    v <- (sq_rm - rm^2) * (n_cols / (n_cols - 1))
-    v[v < 0] <- 0
-    return(as.numeric(v))
-  } else if (requireNamespace("matrixStats", quietly = TRUE)) {
-    return(as.numeric(matrixStats::rowVars(as.matrix(mat))))
-  } else {
-    n_cols <- ncol(mat)
-    if (n_cols <= 1) return(rep(0, nrow(mat)))
-    rm <- rowMeans(mat)
-    sq_rm <- rowMeans(mat^2)
+    sq_rm <- Matrix::rowMeans(mat^2)
     v <- (sq_rm - rm^2) * (n_cols / (n_cols - 1))
     v[v < 0] <- 0
     return(as.numeric(v))
   }
+  as.numeric(matrixStats::rowVars(as.matrix(mat)))
 }
 
 #' Fast Column-Wise Variances for Dense or Sparse Single-Cell Matrices
@@ -207,27 +196,16 @@ fast_row_vars <- function(mat) {
 #' @return Numeric vector of column variances.
 #' @export
 fast_col_vars <- function(mat) {
-  if (inherits(mat, "dgCMatrix")) {
-    n_rows <- nrow(mat)
-    if (n_rows <= 1) return(rep(0, ncol(mat)))
+  n_rows <- nrow(mat)
+  if (n_rows <= 1L) return(rep(0, ncol(mat)))
+  if (inherits(mat, "Matrix")) {
     cm <- Matrix::colMeans(mat)
-    mat_sq <- mat
-    mat_sq@x <- mat_sq@x^2
-    sq_cm <- Matrix::colMeans(mat_sq)
-    v <- (sq_cm - cm^2) * (n_rows / (n_rows - 1))
-    v[v < 0] <- 0
-    return(as.numeric(v))
-  } else if (requireNamespace("matrixStats", quietly = TRUE)) {
-    return(as.numeric(matrixStats::colVars(as.matrix(mat))))
-  } else {
-    n_rows <- nrow(mat)
-    if (n_rows <= 1) return(rep(0, ncol(mat)))
-    cm <- colMeans(mat)
-    sq_cm <- colMeans(mat^2)
+    sq_cm <- Matrix::colMeans(mat^2)
     v <- (sq_cm - cm^2) * (n_rows / (n_rows - 1))
     v[v < 0] <- 0
     return(as.numeric(v))
   }
+  as.numeric(matrixStats::colVars(as.matrix(mat)))
 }
 
 #' Fast Zero Fraction per Cell (Column-wise)
@@ -235,9 +213,9 @@ fast_col_vars <- function(mat) {
 #' @return Numeric vector of zero fraction per cell.
 #' @export
 fast_sparse_zero_fraction_cell <- function(mat) {
-  if (inherits(mat, "dgCMatrix")) {
-    nz_per_col <- diff(mat@p)
-    return(as.numeric((nrow(mat) - nz_per_col) / nrow(mat)))
+  if (inherits(mat, "Matrix")) {
+    nz_per_col <- as.numeric(Matrix::colSums(mat != 0))
+    return((nrow(mat) - nz_per_col) / nrow(mat))
   }
   as.numeric(colMeans(mat == 0))
 }
@@ -247,10 +225,9 @@ fast_sparse_zero_fraction_cell <- function(mat) {
 #' @return Numeric vector of zero fraction per feature.
 #' @export
 fast_sparse_zero_fraction_feature <- function(mat) {
-  if (inherits(mat, "dgCMatrix")) {
-    nz_idx <- which(mat@x != 0)
-    nz_per_row <- tabulate(mat@i[nz_idx] + 1, nbins = nrow(mat))
-    return(as.numeric((ncol(mat) - nz_per_row) / ncol(mat)))
+  if (inherits(mat, "Matrix")) {
+    nz_per_row <- as.numeric(Matrix::rowSums(mat != 0))
+    return((ncol(mat) - nz_per_row) / ncol(mat))
   }
   as.numeric(rowMeans(mat == 0))
 }
@@ -274,15 +251,11 @@ fast_cross_distance_sq <- function(X, Y) {
 
 .run_prcomp_irlba <- function(X, n, center = TRUE, scale. = FALSE) {
   if (!requireNamespace("irlba", quietly = TRUE)) return(NULL)
+  if (n >= 0.5 * min(dim(X))) return(NULL)
   v_init <- rep(1 / sqrt(max(1L, ncol(X))), ncol(X))
   tryCatch(
-    suppressWarnings(irlba::prcomp_irlba(X, n = n, center = center, scale. = scale., v = v_init)),
-    error = function(e) {
-      tryCatch(
-        suppressWarnings(irlba::prcomp_irlba(X, n = n, center = center, scale. = scale.)),
-        error = function(e2) NULL
-      )
-    }
+    irlba::prcomp_irlba(X, n = n, center = center, scale. = scale., v = v_init),
+    error = function(e) NULL
   )
 }
 
@@ -333,21 +306,12 @@ subsample_dist_vector <- function(x, max_n = 10000) {
   }
 }
 
-#' Normalize Single-Cell Count Matrix (Library Size + Log Transformation)
-#'
-#' Converts raw single-cell sequencing count matrices to library-size normalized,
-#' log-transformed values (e.g. log2(CPM + 1) or log(normalized counts + 1)),
-#' mitigating library size confounding across distance, correlation, and manifold metrics
-#' as established across benchmark literature (SimCH, scDesign3, SPsimSeq, GDSim, SymBench, cfDiffusion, scCross).
-#'
-#' @param mat Expression or count matrix (features x cells), dgCMatrix, SingleCellExperiment, or Seurat object.
 #' Detect Whether Single-Cell Input Represents Chromatin Accessibility (scATAC-seq)
 #'
-#' Checks explicit modality strings, Seurat default assay names, SingleCellExperiment
-#' experiment names, or peak coordinate feature names (e.g., \code{Peak_01},
-#' \code{chr1:100-200}).
+#' Checks explicit modality strings, \code{SingleCellExperiment} experiment names,
+#' or peak coordinate feature names (e.g., \code{Peak_01}, \code{chr1:100-200}).
 #'
-#' @param data Matrix, dgCMatrix, SingleCellExperiment, or Seurat object.
+#' @param data Matrix, \code{dgCMatrix}, or \code{SingleCellExperiment} object.
 #' @param modality Optional character modality hint.
 #' @return Logical scalar (\code{TRUE} for scATAC-seq, \code{FALSE} otherwise).
 #' @keywords internal
@@ -358,38 +322,33 @@ subsample_dist_vector <- function(x, max_n = 10000) {
     if (grepl("atac|peak|chromatin", m_low)) return(TRUE)
     if (grepl("rna|gene|transcript", m_low)) return(FALSE)
   }
-  
+
   if (is.null(data)) return(FALSE)
-  
-  if (inherits(data, "Seurat") && requireNamespace("SeuratObject", quietly = TRUE)) {
-    def_assay <- tryCatch(SeuratObject::DefaultAssay(data), error = function(e) NULL)
-    if (!is.null(def_assay) && grepl("atac|peak|chromatin", tolower(def_assay))) {
-      return(TRUE)
-    }
-  } else if (inherits(data, "SingleCellExperiment") && requireNamespace("SingleCellExperiment", quietly = TRUE)) {
+
+  if (inherits(data, "SingleCellExperiment")) {
     exp_nm <- tryCatch(SingleCellExperiment::mainExpName(data), error = function(e) NULL)
     if (!is.null(exp_nm) && grepl("atac|peak|chromatin", tolower(exp_nm))) {
       return(TRUE)
     }
   }
-  
+
   rn <- tryCatch(rownames(data), error = function(e) NULL)
   if (!is.null(rn) && length(rn) > 0) {
     is_peak_name <- grepl("^(peak|chr[0-9xyXYM]+[:-]|[A-Za-z0-9_.-]+[:-][0-9]+-[0-9]+)", rn, ignore.case = TRUE)
     if (mean(is_peak_name) > 0.5) return(TRUE)
   }
-  
+
   FALSE
 }
 
 #' Perform TF-IDF Normalization for scATAC-seq Peak Matrices
 #'
-#' Computes Term Frequency–Inverse Document Frequency (TF-IDF) normalization
+#' Computes Term Frequency-Inverse Document Frequency (TF-IDF) normalization
 #' following the Signac (\code{RunTFIDF(..., method = 1)}) and simPIC
 #' (Chugh et al., 2024) standard for scATAC-seq chromatin accessibility matrices:
 #' \deqn{\text{TF-IDF}_{i,j} = \log\left(1 + \frac{X_{i,j}}{N_j} \cdot \frac{N_{\text{cells}}}{\sum_k X_{i,k}} \cdot \text{scale\_factor}\right)}
 #'
-#' @param mat A peak-by-cell count matrix, sparse \code{dgCMatrix}, \code{SingleCellExperiment}, or \code{Seurat} object.
+#' @param mat A peak-by-cell count matrix, sparse \code{dgCMatrix}, or \code{SingleCellExperiment} object.
 #' @param scale_factor Numeric scaling factor applied prior to \code{log1p}. Default is \code{1e4} (10,000).
 #' @return TF-IDF transformed matrix (preserving \code{dgCMatrix} sparsity when sparse input is supplied).
 #' @examples
@@ -402,45 +361,28 @@ tfidf_transform <- function(mat, scale_factor = 1e4) {
   if (inherits(mat, "SingleCellExperiment")) {
     mat <- SummarizedExperiment::assay(mat, "counts")
   } else if (inherits(mat, "Seurat")) {
-    mat <- .get_seurat_counts(mat)
+    stop("Seurat objects are not directly supported; convert via Seurat::as.SingleCellExperiment().", call. = FALSE)
   }
-  
+
   libs <- as.numeric(Matrix::colSums(mat))
   libs[libs == 0] <- 1
-  
+
   rs <- as.numeric(Matrix::rowSums(mat))
   idf <- ifelse(rs > 0, ncol(mat) / rs, 0)
-  
-  if (inherits(mat, "dgCMatrix")) {
-    norm_mat <- mat
-    col_idx <- rep(seq_len(ncol(mat)), diff(mat@p))
-    row_idx <- mat@i + 1L
-    norm_mat@x <- log1p((norm_mat@x / libs[col_idx]) * idf[row_idx] * scale_factor)
-    return(norm_mat)
-  } else {
-    mat <- as.matrix(mat)
-    tf <- t(t(mat) / libs)
-    scaled <- sweep(tf, 1L, idf, `*`) * scale_factor
-    return(log1p(scaled))
-  }
-}
 
-.get_seurat_counts <- function(obj) {
-  tryCatch(
-    Seurat::GetAssayData(obj, layer = "counts"),
-    error = function(e) {
-      if (!inherits(obj, "Seurat") || length(obj@assays) == 0L) return(NULL)
-      assay_name <- tryCatch(Seurat::DefaultAssay(obj), error = function(e2) names(obj@assays)[1])
-      assay_obj <- obj[[assay_name]]
-      if (inherits(assay_obj, "Assay5")) {
-        return(tryCatch(SeuratObject::LayerData(assay_obj, layer = "counts"), error = function(e3) assay_obj$counts))
-      }
-      if (methods::.hasSlot(assay_obj, "counts")) {
-        return(methods::slot(assay_obj, "counts"))
-      }
-      NULL
-    }
-  )
+  if (inherits(mat, "Matrix")) {
+    trip <- Matrix::summary(mat)
+    if (nrow(trip) == 0L) return(mat)
+    vals <- log1p((trip$x / libs[trip$j]) * idf[trip$i] * scale_factor)
+    return(Matrix::sparseMatrix(
+      i = trip$i, j = trip$j, x = vals,
+      dims = dim(mat), dimnames = dimnames(mat)
+    ))
+  }
+  mat <- as.matrix(mat)
+  tf <- t(t(mat) / libs)
+  scaled <- sweep(tf, 1L, idf, `*`) * scale_factor
+  log1p(scaled)
 }
 
 #' Fast Count Normalization (Log2-CPM or TF-IDF)
@@ -449,7 +391,7 @@ tfidf_transform <- function(mat, scale_factor = 1e4) {
 #' for scRNA-seq or TF-IDF (\code{"tfidf"}) for scATAC-seq, preserving
 #' \code{dgCMatrix} sparsity.
 #'
-#' @param mat A count matrix (genes/features x cells), \code{dgCMatrix}, \code{SingleCellExperiment}, or \code{Seurat} object.
+#' @param mat A count matrix (genes/features x cells), \code{dgCMatrix}, or \code{SingleCellExperiment} object.
 #' @param scale_factor Numeric scaling factor for counts per cell. Default is 1e6 (CPM) for \code{"lognorm"}, or 1e4 for \code{"tfidf"}.
 #' @param log_base Numeric base for the logarithm in \code{"lognorm"} mode: 2 (default, for log2(CPM+1)) or natural log \code{exp(1)}.
 #' @param pseudo_count Numeric pseudo-count added before logarithm in \code{"lognorm"} mode. Default is 1.
@@ -470,33 +412,39 @@ normalize_counts <- function(mat, scale_factor = 1e6, log_base = 2, pseudo_count
   if (inherits(mat, "SingleCellExperiment")) {
     mat <- SummarizedExperiment::assay(mat, "counts")
   } else if (inherits(mat, "Seurat")) {
-    mat <- .get_seurat_counts(mat)
+    stop("Seurat objects are not directly supported; convert via Seurat::as.SingleCellExperiment().", call. = FALSE)
   }
-  
-  # Check if matrix is already log-normalized (max < 35 and has fractional values)
-  sample_vals <- if (inherits(mat, "dgCMatrix")) head(mat@x, 100) else as.numeric(mat[seq_len(min(10, nrow(mat))), seq_len(min(10, ncol(mat)))])
+
+  if (inherits(mat, "Matrix")) {
+    trip <- Matrix::summary(mat)
+    sample_vals <- head(trip$x, 100L)
+    sample_vals <- sample_vals[!is.na(sample_vals)]
+    if (length(sample_vals) > 0L && max(sample_vals) < 35 && any(sample_vals %% 1 != 0)) {
+      return(mat)
+    }
+    if (nrow(trip) == 0L) return(mat)
+    libs <- as.numeric(Matrix::colSums(mat))
+    libs[libs == 0] <- 1
+    cell_factors <- scale_factor / libs
+    scaled_x <- trip$x * cell_factors[trip$j] + pseudo_count
+    vals <- if (log_base == 2) log2(scaled_x) else log(scaled_x)
+    return(Matrix::sparseMatrix(
+      i = trip$i, j = trip$j, x = vals,
+      dims = dim(mat), dimnames = dimnames(mat)
+    ))
+  }
+
+  sample_vals <- as.numeric(mat[seq_len(min(10L, nrow(mat))), seq_len(min(10L, ncol(mat)))])
   sample_vals <- sample_vals[!is.na(sample_vals)]
-  is_already_lognorm <- length(sample_vals) > 0 && max(sample_vals) < 35 && any(sample_vals %% 1 != 0)
-  if (is_already_lognorm) {
+  if (length(sample_vals) > 0L && max(sample_vals) < 35 && any(sample_vals %% 1 != 0)) {
     return(mat)
   }
-  
-  libs <- as.numeric(Matrix::colSums(mat))
+
+  libs <- as.numeric(colSums(mat))
   libs[libs == 0] <- 1
-  
-  if (inherits(mat, "dgCMatrix")) {
-    norm_mat <- mat
-    cell_factors <- scale_factor / libs
-    col_idx <- rep(seq_len(ncol(mat)), diff(mat@p))
-    scaled_x <- norm_mat@x * cell_factors[col_idx] + pseudo_count
-    norm_mat@x <- if (log_base == 2) log2(scaled_x) else log(scaled_x)
-    return(norm_mat)
-  } else {
-    mat <- as.matrix(mat)
-    scaled <- t(t(mat) / libs) * scale_factor + pseudo_count
-    norm_mat <- if (log_base == 2) log2(scaled) else log(scaled)
-    return(norm_mat)
-  }
+  mat <- as.matrix(mat)
+  scaled <- t(t(mat) / libs) * scale_factor + pseudo_count
+  if (log_base == 2) log2(scaled) else log(scaled)
 }
 
 #' Extract Dataset Dimensional Properties and Summary Statistics
@@ -520,32 +468,31 @@ normalize_counts <- function(mat, scale_factor = 1e6, log_base = 2, pseudo_count
 extract_dataset_summary <- function(mat, role = "Reference", method_name = "Dataset",
                                      modality = "scRNA-seq", cell_types = NULL, batch_info = NULL) {
   if (is.null(mat)) return(NULL)
-  
+
   if (inherits(mat, "SingleCellExperiment")) {
-    if (is.null(cell_types) && "cell_type" %in% colnames(SummarizedExperiment::colData(mat))) {
-      cell_types <- SummarizedExperiment::colData(mat)$cell_type
+    cd <- SummarizedExperiment::colData(mat)
+    if (is.null(cell_types) && "cell_type" %in% colnames(cd)) {
+      cell_types <- cd$cell_type
     }
-    if (is.null(batch_info) && "batch" %in% colnames(SummarizedExperiment::colData(mat))) {
-      batch_info <- SummarizedExperiment::colData(mat)$batch
+    if (is.null(batch_info) && "batch" %in% colnames(cd)) {
+      batch_info <- cd$batch
     }
     mat <- SingleCellExperiment::counts(mat)
   } else if (inherits(mat, "Seurat")) {
-    if (is.null(cell_types)) cell_types <- Seurat::Idents(mat)
-    if (is.null(batch_info) && "batch" %in% colnames(mat@meta.data)) {
-      batch_info <- mat@meta.data$batch
-    }
-    mat <- .get_seurat_counts(mat)
+    stop("Seurat objects are not directly supported; convert via Seurat::as.SingleCellExperiment().", call. = FALSE)
   }
-  
+
   n_cells <- ncol(mat)
   n_features <- nrow(mat)
-  
-  if (inherits(mat, "dgCMatrix")) {
-    n_zeros <- (as.numeric(n_cells) * as.numeric(n_features)) - length(mat@x)
-    sparsity_pct <- round((n_zeros / (as.numeric(n_cells) * as.numeric(n_features))) * 100, 2)
+  total_entries <- as.numeric(n_cells) * as.numeric(n_features)
+
+  if (inherits(mat, "Matrix")) {
+    n_nz <- Matrix::nnzero(mat)
+    n_zeros <- total_entries - n_nz
+    sparsity_pct <- if (total_entries > 0) round((n_zeros / total_entries) * 100, 2) else 0
     lib_sizes <- Matrix::colSums(mat)
     det_feats <- Matrix::colSums(mat > 0)
-    mean_expr <- mean(mat@x) * (length(mat@x) / (as.numeric(n_cells) * as.numeric(n_features)))
+    mean_expr <- Matrix::mean(mat)
   } else {
     mat_num <- as.matrix(mat)
     sparsity_pct <- round(mean(mat_num == 0) * 100, 2)
@@ -599,227 +546,117 @@ extract_dataset_summary <- function(mat, role = "Reference", method_name = "Data
   "dataset", "protocol", "run", "experiment", "plate", "library", "gem_group"
 )
 
-.seurat_default_assay <- function(obj) {
-  if (requireNamespace("SeuratObject", quietly = TRUE)) {
-    tryCatch(as.character(SeuratObject::DefaultAssay(obj)), error = function(e) names(obj@assays)[1])
-  } else {
-    names(obj@assays)[1]
-  }
-}
-
-.seurat_assay_counts <- function(obj, assay_name = NULL) {
-  if (is.null(assay_name) || !nzchar(assay_name)) assay_name <- .seurat_default_assay(obj)
-  res <- tryCatch({
-    assay_obj <- obj[[assay_name]]
-    if (!is.null(assay_obj)) {
-      if (inherits(assay_obj, "Assay5")) {
-        try(SeuratObject::JoinLayers(assay_obj, layers = "counts"), silent = TRUE)
-        assay_obj$counts
-      } else if (inherits(assay_obj, "Assay")) {
-        assay_obj@counts
-      } else {
-        Seurat::GetAssayData(obj, assay = assay_name, layer = "counts")
-      }
-    } else {
-      NULL
-    }
-  }, error = function(e) {
-    tryCatch(
-      Seurat::GetAssayData(obj, assay = assay_name, layer = "counts"),
-      error = function(e2) {
-        if (!inherits(obj, "Seurat") || length(obj@assays) == 0L) return(NULL)
-        assay_obj <- obj[[assay_name]]
-        if (inherits(assay_obj, "Assay5")) {
-          return(tryCatch(SeuratObject::LayerData(assay_obj, layer = "counts"), error = function(e3) assay_obj$counts))
-        }
-        if (methods::.hasSlot(assay_obj, "counts")) {
-          return(methods::slot(assay_obj, "counts"))
-        }
-        NULL
-      }
-    )
-  })
-  if (is.null(res) || nrow(res) == 0) {
-    res <- .get_seurat_counts(obj)
-  }
-  res
-}
-
 #' Validate and Standardize Single-Cell Input Objects
 #'
-#' Strictly enforces standard input object compliance in \code{scSimEval} (Seurat / SingleCellExperiment).
-#' Validates that input datasets are either \code{SingleCellExperiment} or
-#' \code{Seurat} objects, extracting underlying count matrices, cell annotations,
-#' batch labels, and dimensional reductions.
+#' Strictly enforces \code{SingleCellExperiment} compliance in \code{scSimEval}.
+#' Validates that input datasets are \code{SingleCellExperiment} objects,
+#' extracting underlying count matrices, cell annotations, batch labels, and
+#' dimensional reductions. Users starting from \code{Seurat} objects should first
+#' convert via \code{Seurat::as.SingleCellExperiment()}.
 #'
-#' @param obj An object to validate, strictly required to be a \code{SingleCellExperiment} or \code{Seurat} object.
+#' @param obj A \code{SingleCellExperiment} object to validate.
 #' @param arg_name Name of the argument being validated (for clear error messages).
 #' @param reduction_name Optional name of precomputed dimensional reduction (e.g. \code{"PCA"}, \code{"integrated"}).
-#' @param modality Optional character string specifying the modality (e.g. \code{"scRNA-seq"} or \code{"scATAC-seq"}) to guide assay selection.
+#' @param modality Optional character string specifying the modality (e.g. \code{"scRNA-seq"} or \code{"scATAC-seq"}) to guide assay/\code{altExp} selection.
+#' @param cell_type_col Column name in \code{colData(obj)} containing cell-type labels (default \code{"cell_type"}).
+#' @param batch_col Column name in \code{colData(obj)} containing batch/replicate labels (default \code{"batch"}).
 #'
-#' @return A list with standardized components:
-#'   \item{object}{The original \code{SingleCellExperiment} or \code{Seurat} object.}
-#'   \item{counts}{Extracted raw count matrix (features x cells).}
-#'   \item{cell_types}{Extracted or parsed cell-type factor/vector, or NULL if absent.}
-#'   \item{batch_info}{Extracted or parsed batch factor/vector, or NULL if absent.}
-#'   \item{embedding}{Extracted dimensional reduction matrix (cells x dims), or NULL if absent.}
+#' @return A named list with 5 elements:
+#' \describe{
+#'   \item{object}{The validated \code{SingleCellExperiment} object.}
+#'   \item{counts}{Extracted raw count matrix (\code{dgCMatrix} or numeric matrix, features x cells).}
+#'   \item{cell_types}{Character vector of extracted cell-type annotations, or \code{NULL} if absent.}
+#'   \item{batch_info}{Character vector of extracted batch annotations, or \code{NULL} if absent.}
+#'   \item{embedding}{Extracted dimensional reduction numeric matrix (cells x dims), or \code{NULL}.}
+#' }
 #'
 #' @export
-validate_sc_object <- function(obj, arg_name = "data", reduction_name = NULL, modality = NULL) {
+validate_sc_object <- function(obj,
+                               arg_name = "data",
+                               reduction_name = NULL,
+                               modality = NULL,
+                               cell_type_col = "cell_type",
+                               batch_col = "batch") {
   if (is.null(obj)) return(NULL)
-  obj <- .sanitize_signac_assays(obj)
-  
-  is_sce <- inherits(obj, "SingleCellExperiment")
-  is_seurat <- inherits(obj, "Seurat")
-  
-  if (!is_sce && !is_seurat) {
+
+  if (inherits(obj, "Seurat")) {
     stop(sprintf(
-      "scSimEval strictly requires a 'Seurat' or 'SingleCellExperiment' object for '%s' (received '%s').\nTo benchmark your simulation and evaluate all categories (including Category VI Multiomics integration), please provide either object type.",
+      "scSimEval requires a 'SingleCellExperiment' object for '%s' (received 'Seurat').\nPlease convert your Seurat object using Seurat::as.SingleCellExperiment().",
+      arg_name
+    ), call. = FALSE)
+  }
+
+  if (!inherits(obj, "SingleCellExperiment")) {
+    stop(sprintf(
+      "scSimEval strictly requires a 'SingleCellExperiment' object for '%s' (received '%s').",
       arg_name, paste(class(obj), collapse = "/")
     ), call. = FALSE)
   }
-  
+
   counts_mat <- NULL
   ct_vec <- NULL
   bt_vec <- NULL
   embed_mat <- NULL
-  
-  if (is_sce) {
-    # 1. Counts
-    if (requireNamespace("SingleCellExperiment", quietly = TRUE)) {
-      assays_list <- SummarizedExperiment::assays(obj)
-      altexp_names <- tryCatch(SingleCellExperiment::altExpNames(obj), error = function(e) character(0))
-      target_exp <- NULL
-      if (!is.null(modality) && length(altexp_names) > 0) {
-        mod_check <- tolower(trimws(as.character(modality)[1L]))
-        if (grepl("atac|peak|chromatin", mod_check)) {
-          hit <- grep("atac|peak|chromatin|macs2|tile", altexp_names, ignore.case = TRUE, value = TRUE)
-          if (length(hit) > 0) target_exp <- SingleCellExperiment::altExp(obj, hit[1L])
-        } else if (grepl("rna|gene|transcr", mod_check)) {
-          hit <- grep("^rna$|gene|transcr", altexp_names, ignore.case = TRUE, value = TRUE)
-          if (length(hit) == 0) hit <- grep("rna", altexp_names, ignore.case = TRUE, value = TRUE)
-          if (length(hit) > 0) target_exp <- SingleCellExperiment::altExp(obj, hit[1L])
-        }
-      }
-      if (!is.null(target_exp)) {
-        exp_assays <- SummarizedExperiment::assays(target_exp)
-        if ("counts" %in% names(exp_assays)) {
-          counts_mat <- exp_assays[["counts"]]
-        } else if (length(exp_assays) > 0) {
-          counts_mat <- exp_assays[[1]]
-        }
-      } else {
-        if ("counts" %in% names(assays_list)) {
-          counts_mat <- assays_list[["counts"]]
-        } else if (length(assays_list) > 0) {
-          counts_mat <- assays_list[[1]]
-        }
-      }
-    }
-    # 2. Metadata (cell_type and batch)
-    cd <- SummarizedExperiment::colData(obj)
-    cd_cols <- tolower(colnames(cd))
-    ct_col <- which(cd_cols %in% tolower(.SC_CELLTYPE_COLS))[1]
-    if (!is.na(ct_col)) ct_vec <- as.character(cd[[ct_col]])
-    
-    bt_col <- which(cd_cols %in% tolower(.SC_BATCH_COLS))[1]
-    if (!is.na(bt_col)) bt_vec <- as.character(cd[[bt_col]])
-    
-    # 3. Dimensional Reductions
-    rd_names <- SingleCellExperiment::reducedDimNames(obj)
-    if (!is.null(rd_names) && length(rd_names) > 0) {
-      target_rd <- if (!is.null(reduction_name) && reduction_name %in% rd_names) {
-        reduction_name
-      } else {
-        mod_pref <- if (!is.null(modality) && grepl("atac|peak|chromatin", tolower(modality))) {
-          c("atac_lsi", "lsi", "atac_pca", "atac_umap", "harmony_atac", "integrated", "joint", "pca", "PCA")
-        } else if (!is.null(modality) && grepl("rna|gene|transcr", tolower(modality))) {
-          c("rna_pca", "pca", "PCA", "rna_umap", "harmony_rna", "integrated", "joint")
-        } else {
-          c("integrated", "joint", "harmony", "wnn", "PCA", "pca", "lsi")
-        }
-        found <- intersect(mod_pref, rd_names)
-        if (length(found) > 0) found[1] else rd_names[1]
-      }
-      embed_mat <- as.matrix(SingleCellExperiment::reducedDim(obj, target_rd))
-    }
-  } else if (is_seurat) {
-    # 1. Counts: respect modality if specified, so if multiomics data with RNA and ATAC layers
-    # is provided, we extract the assay corresponding to the active dataset selection mode
-    target_assay <- NULL
-    if (!is.null(modality) && nzchar(trimws(as.character(modality)[1L]))) {
-      mod_check <- tolower(trimws(as.character(modality)[1L]))
-      all_assays <- names(obj@assays)
-      if (grepl("atac|peak|chromatin", mod_check)) {
-        m_hit <- grep("atac|peak|chromatin|macs2|tile", all_assays, ignore.case = TRUE, value = TRUE)
-        if (length(m_hit) > 0) target_assay <- m_hit[1L]
-      } else if (grepl("rna|gene|transcr", mod_check)) {
-        m_hit <- grep("^rna$|gene|transcr", all_assays, ignore.case = TRUE, value = TRUE)
-        if (length(m_hit) == 0) m_hit <- grep("rna", all_assays, ignore.case = TRUE, value = TRUE)
-        if (length(m_hit) > 0) target_assay <- m_hit[1L]
-      }
-    }
-    if (is.null(target_assay) || !nzchar(target_assay)) {
-      target_assay <- .seurat_default_assay(obj)
-    }
 
-    # Set DefaultAssay on object so downstream methods work in the active modality
-    if (requireNamespace("SeuratObject", quietly = TRUE) && !is.null(target_assay) && target_assay %in% names(obj@assays)) {
-      try(SeuratObject::DefaultAssay(obj) <- target_assay, silent = TRUE)
-    }
-
-    counts_mat <- tryCatch(
-      .seurat_assay_counts(obj, target_assay),
-      error = function(e0) tryCatch(
-        Seurat::GetAssayData(obj, assay = target_assay, layer = "counts"),
-        error = function(e) {
-          tryCatch(
-            obj[[target_assay]]$counts,
-            error = function(e2) {
-              a_obj <- obj[[target_assay]]
-              if (methods::.hasSlot(a_obj, "counts")) methods::slot(a_obj, "counts") else NULL
-            }
-          )
-        }
-      )
-    )
-    if (is.null(counts_mat)) {
-      counts_mat <- tryCatch(.seurat_assay_counts(obj, .seurat_default_assay(obj)), error = function(e) NULL)
-    }
-    # 2. Metadata
-    md <- obj@meta.data
-    md_cols <- tolower(colnames(md))
-    ct_col <- which(md_cols %in% tolower(.SC_CELLTYPE_COLS))[1]
-    if (!is.na(ct_col)) {
-      ct_vec <- as.character(md[[ct_col]])
-    } else {
-      ident_vec <- tryCatch(as.character(Seurat::Idents(obj)), error = function(e) NULL)
-      if (!is.null(ident_vec) && length(ident_vec) == ncol(counts_mat)) ct_vec <- ident_vec
-    }
-    
-    bt_col <- which(md_cols %in% tolower(.SC_BATCH_COLS))[1]
-    if (!is.na(bt_col)) bt_vec <- as.character(md[[bt_col]])
-    
-    # 3. Dimensional Reductions
-    red_names <- names(obj@reductions)
-    if (!is.null(red_names) && length(red_names) > 0) {
-      target_red <- if (!is.null(reduction_name) && reduction_name %in% red_names) {
-        reduction_name
-      } else {
-        mod_pref <- if (!is.null(modality) && grepl("atac|peak|chromatin", tolower(modality))) {
-          c("atac_lsi", "lsi", "atac_pca", "atac_umap", "harmony_atac", "integrated", "joint", "pca", "PCA")
-        } else if (!is.null(modality) && grepl("rna|gene|transcr", tolower(modality))) {
-          c("rna_pca", "pca", "PCA", "rna_umap", "harmony_rna", "integrated", "joint")
-        } else {
-          c("integrated", "joint", "harmony", "wnn", "pca", "PCA", "lsi")
-        }
-        found <- intersect(mod_pref, red_names)
-        if (length(found) > 0) found[1] else red_names[1]
-      }
-      embed_mat <- as.matrix(Seurat::Embeddings(obj, reduction = target_red))
+  # 1. Counts (checking altExp if modality requests secondary assay)
+  assays_list <- SummarizedExperiment::assays(obj)
+  altexp_names <- tryCatch(SingleCellExperiment::altExpNames(obj), error = function(e) character(0))
+  target_exp <- NULL
+  if (!is.null(modality) && length(altexp_names) > 0) {
+    mod_check <- tolower(trimws(as.character(modality)[1L]))
+    if (grepl("atac|peak|chromatin", mod_check)) {
+      hit <- grep("atac|peak|chromatin|macs2|tile", altexp_names, ignore.case = TRUE, value = TRUE)
+      if (length(hit) > 0) target_exp <- SingleCellExperiment::altExp(obj, hit[1L])
+    } else if (grepl("rna|gene|transcr", mod_check)) {
+      hit <- grep("^rna$|gene|transcr", altexp_names, ignore.case = TRUE, value = TRUE)
+      if (length(hit) == 0) hit <- grep("rna", altexp_names, ignore.case = TRUE, value = TRUE)
+      if (length(hit) > 0) target_exp <- SingleCellExperiment::altExp(obj, hit[1L])
     }
   }
-  
+  if (!is.null(target_exp)) {
+    exp_assays <- SummarizedExperiment::assays(target_exp)
+    counts_mat <- if ("counts" %in% names(exp_assays)) exp_assays[["counts"]] else if (length(exp_assays) > 0) exp_assays[[1L]] else NULL
+  } else {
+    counts_mat <- if ("counts" %in% names(assays_list)) assays_list[["counts"]] else if (length(assays_list) > 0) assays_list[[1L]] else NULL
+  }
+
+  # 2. Metadata (cell_type and batch)
+  cd <- SummarizedExperiment::colData(obj)
+  cd_names <- colnames(cd)
+  cd_cols <- tolower(cd_names)
+  ct_col <- if (!is.null(cell_type_col) && cell_type_col %in% cd_names) {
+    match(cell_type_col, cd_names)
+  } else {
+    which(cd_cols %in% tolower(.SC_CELLTYPE_COLS))[1]
+  }
+  if (!is.na(ct_col)) ct_vec <- as.character(cd[[ct_col]])
+
+  bt_col <- if (!is.null(batch_col) && batch_col %in% cd_names) {
+    match(batch_col, cd_names)
+  } else {
+    which(cd_cols %in% tolower(.SC_BATCH_COLS))[1]
+  }
+  if (!is.na(bt_col)) bt_vec <- as.character(cd[[bt_col]])
+
+  # 3. Dimensional Reductions
+  rd_names <- SingleCellExperiment::reducedDimNames(obj)
+  if (!is.null(rd_names) && length(rd_names) > 0) {
+    target_rd <- if (!is.null(reduction_name) && reduction_name %in% rd_names) {
+      reduction_name
+    } else {
+      mod_pref <- if (!is.null(modality) && grepl("atac|peak|chromatin", tolower(modality))) {
+        c("atac_lsi", "lsi", "atac_pca", "atac_umap", "harmony_atac", "integrated", "joint", "pca", "PCA")
+      } else if (!is.null(modality) && grepl("rna|gene|transcr", tolower(modality))) {
+        c("rna_pca", "pca", "PCA", "rna_umap", "harmony_rna", "integrated", "joint")
+      } else {
+        c("integrated", "joint", "harmony", "wnn", "PCA", "pca", "lsi")
+      }
+      found <- intersect(mod_pref, rd_names)
+      if (length(found) > 0) found[1] else rd_names[1]
+    }
+    embed_mat <- as.matrix(SingleCellExperiment::reducedDim(obj, target_rd))
+  }
+
   list(
     object = obj,
     counts = counts_mat,
@@ -829,70 +666,79 @@ validate_sc_object <- function(obj, arg_name = "data", reduction_name = NULL, mo
   )
 }
 
-
-
 #' Validate and Standardize Multiomics Input Objects
 #'
-#' Strictly enforces standard multiomics input compliance in \code{scSimEval}.
-#' Validates that multiomics inputs conform to \code{Seurat} or \code{SingleCellExperiment} structures.
-#' Accepts a single multi-modal object or a list of two modality objects:
-#' \itemize{
-#'   \item A single multi-modal \code{Seurat} object containing both RNA and ATAC assays (with metadata and reductions).
-#'   \item A single multi-modal \code{SingleCellExperiment} object with an \code{altExp} for the secondary modality.
-#'   \item A named list of 2 \code{Seurat} or \code{SingleCellExperiment} objects (e.g. \code{list(rna = ..., atac = ...)}).
-#'   \item A file path to an \code{.rds} file containing any of the above.
-#' }
+#' Validates that multiomics inputs conform to \code{SingleCellExperiment} structures.
+#' Accepts either a single multi-modal \code{SingleCellExperiment} object with an
+#' \code{altExp} for the secondary modality, a named list of two \code{SingleCellExperiment}
+#' objects (e.g. \code{list(RNA = rna_sce, ATAC = atac_sce)}), or a file path to an
+#' \code{.rds} file containing either structure.
 #'
-#' @param obj Multiomics dataset object or file path to validate.
+#' @param obj Multiomics \code{SingleCellExperiment} object, list of two \code{SingleCellExperiment} objects, or \code{.rds} path.
 #' @param arg_name Name of argument for diagnostic error messages.
 #' @param reduction_name Optional reduction name to extract.
-#' @return A list with standardized components: \code{m1}, \code{m2}, \code{m1_obj}, \code{m2_obj}, \code{m1_name}, \code{m2_name}, \code{cell_types}, \code{batch_info}, \code{embedding}.
+#' @param cell_type_col Column name in \code{colData} containing cell-type labels (default \code{"cell_type"}).
+#' @param batch_col Column name in \code{colData} containing batch labels (default \code{"batch"}).
+#' @return A named list with 9 elements:
+#' \describe{
+#'   \item{m1}{Count matrix for modality 1 (typically RNA).}
+#'   \item{m2}{Count matrix for modality 2 (typically ATAC).}
+#'   \item{m1_obj}{\code{SingleCellExperiment} object for modality 1.}
+#'   \item{m2_obj}{\code{SingleCellExperiment} object for modality 2.}
+#'   \item{m1_name}{Character name of modality 1.}
+#'   \item{m2_name}{Character name of modality 2.}
+#'   \item{cell_types}{Character vector (paired) or named list (unpaired) of cell-type labels, or \code{NULL}.}
+#'   \item{batch_info}{Character vector (paired) or named list (unpaired) of batch labels, or \code{NULL}.}
+#'   \item{embedding}{Extracted dimensional reduction matrix (cells x dims), or \code{NULL}.}
+#' }
 #' @export
-validate_multiomics_input <- function(obj, arg_name = "multi_data", reduction_name = NULL) {
+validate_multiomics_input <- function(obj,
+                                      arg_name = "multi_data",
+                                      reduction_name = NULL,
+                                      cell_type_col = "cell_type",
+                                      batch_col = "batch") {
   if (is.null(obj)) return(NULL)
- 
-  # Auto-load if file path is provided
-  if (is.character(obj) && length(obj) == 1 && file.exists(obj)) {
+
+  if (is.character(obj) && length(obj) == 1L && file.exists(obj)) {
     obj <- readRDS(obj)
   }
-  obj <- .sanitize_signac_assays(obj)
- 
-  # Case A: Named list of 2 objects
+
+  # Case A: Named list of 2 SingleCellExperiment objects
   if (is.list(obj) && !inherits(obj, "Seurat") && !inherits(obj, "SingleCellExperiment")) {
-    if (length(obj) == 1) {
-      obj <- obj[[1]]
-    } else if (length(obj) >= 2) {
-      o1 <- obj[[1]]
-      o2 <- obj[[2]]
-      nm1 <- names(obj)[1] %||% "RNA"
-      nm2 <- names(obj)[2] %||% "ATAC"
-      v1 <- validate_sc_object(o1, paste0(arg_name, "[[1]]"), reduction_name = reduction_name)
-      v2 <- validate_sc_object(o2, paste0(arg_name, "[[2]]"), reduction_name = reduction_name)
-      
+    if (length(obj) == 1L) {
+      obj <- obj[[1L]]
+    } else if (length(obj) >= 2L) {
+      o1 <- obj[[1L]]
+      o2 <- obj[[2L]]
+      nm1 <- names(obj)[1L] %||% "RNA"
+      nm2 <- names(obj)[2L] %||% "ATAC"
+      v1 <- validate_sc_object(o1, paste0(arg_name, "[[1]]"), reduction_name = reduction_name,
+                               cell_type_col = cell_type_col, batch_col = batch_col)
+      v2 <- validate_sc_object(o2, paste0(arg_name, "[[2]]"), reduction_name = reduction_name,
+                               cell_type_col = cell_type_col, batch_col = batch_col)
+
       c1 <- colnames(v1$counts)
       c2 <- colnames(v2$counts)
       is_paired_cells <- !is.null(c1) && !is.null(c2) && length(c1) == length(c2) && identical(c1, c2)
-      
+
       ct <- if (is_paired_cells) {
         if (!is.null(v1$cell_types)) v1$cell_types else v2$cell_types
+      } else if (!is.null(v1$cell_types) || !is.null(v2$cell_types)) {
+        stats::setNames(list(v1$cell_types, v2$cell_types), c(nm1, nm2))
       } else {
-        if (!is.null(v1$cell_types) || !is.null(v2$cell_types)) {
-          stats::setNames(list(v1$cell_types, v2$cell_types), c(nm1, nm2))
-        } else {
-          NULL
-        }
+        NULL
       }
+
       bt <- if (is_paired_cells) {
         if (!is.null(v1$batch_info)) v1$batch_info else v2$batch_info
+      } else if (!is.null(v1$batch_info) || !is.null(v2$batch_info)) {
+        stats::setNames(list(v1$batch_info, v2$batch_info), c(nm1, nm2))
       } else {
-        if (!is.null(v1$batch_info) || !is.null(v2$batch_info)) {
-          stats::setNames(list(v1$batch_info, v2$batch_info), c(nm1, nm2))
-        } else {
-          NULL
-        }
+        NULL
       }
+
       emb <- if (!is.null(v1$embedding)) v1$embedding else v2$embedding
-      
+
       return(list(
         m1 = v1$counts,
         m2 = v2$counts,
@@ -906,105 +752,64 @@ validate_multiomics_input <- function(obj, arg_name = "multi_data", reduction_na
       ))
     }
   }
- 
-  # Case B: Multi-modal Seurat object
+
   if (inherits(obj, "Seurat")) {
-    assay_names <- names(obj@assays)
-    if (length(assay_names) >= 2) {
-      is_atac <- grepl("atac|peak|chromatin", tolower(assay_names))
-      is_rna  <- grepl("rna|gene|transcr", tolower(assay_names))
-      
-      if (any(is_rna) && any(is_atac)) {
-        a1_name <- assay_names[is_rna][1]
-        a2_name <- assay_names[is_atac][1]
-      } else {
-        a1_name <- assay_names[1]
-        a2_name <- assay_names[2]
-      }
-      
-      m1 <- .seurat_assay_counts(obj, a1_name)
-      m2 <- .seurat_assay_counts(obj, a2_name)
-      m1_obj <- obj
-      m2_obj <- obj
-      if (requireNamespace("SeuratObject", quietly = TRUE)) {
-        try({ SeuratObject::DefaultAssay(m1_obj) <- a1_name }, silent = TRUE)
-        try({ SeuratObject::DefaultAssay(m2_obj) <- a2_name }, silent = TRUE)
-      }
-      v <- validate_sc_object(obj, arg_name, reduction_name = reduction_name)
-      
-      ct_val <- v$cell_types
-      bt_val <- v$batch_info
-      m1_cells <- colnames(m1)
-      m2_cells <- colnames(m2)
-      if (!is.null(m1_cells) && !is.null(m2_cells) && !identical(m1_cells, m2_cells)) {
-        if (all(m1_cells %in% colnames(obj)) && length(m1_cells) < ncol(obj)) {
-          o1 <- obj
-          try(SeuratObject::DefaultAssay(o1) <- a1_name, silent = TRUE)
-          m1_obj <- tryCatch(o1[, m1_cells], error = function(e) NULL)
-          if (is.null(m1_obj)) {
-            md1 <- obj@meta.data[intersect(m1_cells, rownames(obj@meta.data)), , drop = FALSE]
-            m1_obj <- tryCatch(SeuratObject::CreateSeuratObject(counts = m1, meta.data = md1), error = function(e) m1)
-          }
-        }
-        if (all(m2_cells %in% colnames(obj)) && length(m2_cells) < ncol(obj)) {
-          o2 <- obj
-          try(SeuratObject::DefaultAssay(o2) <- a2_name, silent = TRUE)
-          m2_obj <- tryCatch(o2[, m2_cells], error = function(e) NULL)
-          if (is.null(m2_obj)) {
-            md2 <- obj@meta.data[intersect(m2_cells, rownames(obj@meta.data)), , drop = FALSE]
-            m2_obj <- tryCatch(SeuratObject::CreateSeuratObject(counts = m2, meta.data = md2), error = function(e) m2)
-          }
-        }
-        md_cols <- tolower(colnames(obj@meta.data))
-        ct_idx <- which(md_cols %in% tolower(.SC_CELLTYPE_COLS))[1]
-        if (!is.na(ct_idx)) {
-          ct_col <- colnames(obj@meta.data)[ct_idx]
-          ct1 <- if (inherits(m1_obj, "Seurat") && ct_col %in% colnames(m1_obj@meta.data)) as.character(m1_obj@meta.data[[ct_col]]) else as.character(obj@meta.data[m1_cells, ct_col])
-          ct2 <- if (inherits(m2_obj, "Seurat") && ct_col %in% colnames(m2_obj@meta.data)) as.character(m2_obj@meta.data[[ct_col]]) else as.character(obj@meta.data[m2_cells, ct_col])
-          ct_val <- stats::setNames(list(ct1, ct2), c(a1_name, a2_name))
-        }
-        bt_idx <- which(md_cols %in% tolower(.SC_BATCH_COLS))[1]
-        if (!is.na(bt_idx)) {
-          bt_col <- colnames(obj@meta.data)[bt_idx]
-          bt1 <- if (inherits(m1_obj, "Seurat") && bt_col %in% colnames(m1_obj@meta.data)) as.character(m1_obj@meta.data[[bt_col]]) else as.character(obj@meta.data[m1_cells, bt_col])
-          bt2 <- if (inherits(m2_obj, "Seurat") && bt_col %in% colnames(m2_obj@meta.data)) as.character(m2_obj@meta.data[[bt_col]]) else as.character(obj@meta.data[m2_cells, bt_col])
-          bt_val <- stats::setNames(list(bt1, bt2), c(a1_name, a2_name))
+    stop(sprintf(
+      "scSimEval requires a 'SingleCellExperiment' object (or list of two SingleCellExperiment objects) for '%s' (received 'Seurat').\nPlease convert via Seurat::as.SingleCellExperiment().",
+      arg_name
+    ), call. = FALSE)
+  }
+
+  # Case B: Multi-modal SingleCellExperiment with altExp
+  if (inherits(obj, "SingleCellExperiment")) {
+    alt_names <- SingleCellExperiment::altExpNames(obj)
+    if (length(alt_names) >= 1L) {
+      a2 <- SingleCellExperiment::altExp(obj, alt_names[1L])
+      m1_nm <- SingleCellExperiment::mainExpName(obj)
+      if (is.null(m1_nm) || !nzchar(m1_nm)) m1_nm <- "RNA"
+
+      cd <- SummarizedExperiment::colData(obj)
+      # Handle stacked unpaired SCE objects annotated with colData$modality
+      if ("modality" %in% colnames(cd)) {
+        mod_vals <- toupper(as.character(cd$modality))
+        rna_idx <- which(grepl("RNA|GENE|TRANSCR", mod_vals))
+        atac_idx <- which(grepl("ATAC|PEAK|CHROMATIN", mod_vals))
+        if (length(rna_idx) > 0L && length(atac_idx) > 0L &&
+            length(intersect(rna_idx, atac_idx)) == 0L) {
+          m1_obj <- obj[, rna_idx]
+          m2_obj <- a2[, atac_idx]
+          SingleCellExperiment::altExps(m1_obj) <- NULL
+          m1 <- SummarizedExperiment::assay(m1_obj, "counts")
+          m2 <- SummarizedExperiment::assay(m2_obj, "counts")
+          v1 <- validate_sc_object(m1_obj, paste0(arg_name, " (RNA)"), reduction_name = reduction_name,
+                                   cell_type_col = cell_type_col, batch_col = batch_col)
+          v2 <- validate_sc_object(m2_obj, paste0(arg_name, " (ATAC)"), reduction_name = reduction_name,
+                                   cell_type_col = cell_type_col, batch_col = batch_col)
+          return(list(
+            m1 = m1,
+            m2 = m2,
+            m1_obj = m1_obj,
+            m2_obj = m2_obj,
+            m1_name = m1_nm,
+            m2_name = alt_names[1L],
+            cell_types = stats::setNames(list(v1$cell_types, v2$cell_types), c(m1_nm, alt_names[1L])),
+            batch_info = stats::setNames(list(v1$batch_info, v2$batch_info), c(m1_nm, alt_names[1L])),
+            embedding = v1$embedding
+          ))
         }
       }
 
-      return(list(
-        m1 = m1,
-        m2 = m2,
-        m1_obj = m1_obj,
-        m2_obj = m2_obj,
-        m1_name = a1_name,
-        m2_name = a2_name,
-        cell_types = ct_val,
-        batch_info = bt_val,
-        embedding = v$embedding
-      ))
-    } else {
-      stop(sprintf("Multiomics Seurat object '%s' must contain at least 2 assays (found only '%s': expected e.g. RNA and ATAC).", arg_name, assay_names[1]), call. = FALSE)
-    }
-  }
- 
-  # Case C: Multi-modal SingleCellExperiment with altExp
-  if (inherits(obj, "SingleCellExperiment")) {
-    alt_names <- SingleCellExperiment::altExpNames(obj)
-    if (length(alt_names) >= 1) {
       m1 <- SummarizedExperiment::assay(obj, "counts")
-      a2 <- SingleCellExperiment::altExp(obj, alt_names[1])
       m2 <- SummarizedExperiment::assay(a2, "counts")
-      m1_nm <- SingleCellExperiment::mainExpName(obj)
-      if (is.null(m1_nm) || !nzchar(m1_nm)) m1_nm <- "RNA"
-      v <- validate_sc_object(obj, arg_name, reduction_name = reduction_name)
+      v <- validate_sc_object(obj, arg_name, reduction_name = reduction_name,
+                              cell_type_col = cell_type_col, batch_col = batch_col)
       return(list(
         m1 = m1,
         m2 = m2,
         m1_obj = obj,
         m2_obj = a2,
         m1_name = m1_nm,
-        m2_name = alt_names[1],
+        m2_name = alt_names[1L],
         cell_types = v$cell_types,
         batch_info = v$batch_info,
         embedding = v$embedding
@@ -1013,9 +818,9 @@ validate_multiomics_input <- function(obj, arg_name = "multi_data", reduction_na
       stop(sprintf("Multiomics SingleCellExperiment object '%s' must contain at least one altExp for the secondary modality (e.g. ATAC).", arg_name), call. = FALSE)
     }
   }
- 
+
   stop(sprintf(
-    "scSimEval strictly requires multiomics inputs for '%s' to be standardized 'Seurat' or 'SingleCellExperiment' objects containing multiomics assays, cell metadata, and reductions. Received '%s'.",
+    "scSimEval strictly requires multiomics inputs for '%s' to be 'SingleCellExperiment' objects (with altExp or as a named list). Received '%s'.",
     arg_name, paste(class(obj), collapse = "/")
   ), call. = FALSE)
 }
@@ -1024,96 +829,6 @@ validate_multiomics_input <- function(obj, arg_name = "multi_data", reduction_na
 .sc_parallel_cache$bp <- NULL
 .sc_parallel_cache$workers <- 0L
 .sc_parallel_cache$target_threads <- 1L
-.sc_parallel_cache$exported_sig <- ""
-
-.init_windows_bp_worker <- function(idx, fn_list, sig, force_wait = FALSE) {
-  if (!exists(".sc_parallel_cache", envir = .GlobalEnv, inherits = FALSE)) {
-    assign(".sc_parallel_cache", new.env(parent = emptyenv()), envir = .GlobalEnv)
-  }
-  already <- isTRUE(identical(.GlobalEnv$.sc_bp_sync_sig, sig))
-  if (!already) {
-    ns_w <- if (isNamespaceLoaded("scSimEval")) asNamespace("scSimEval") else NULL
-    for (nm in names(fn_list)) {
-      fn <- fn_list[[nm]]
-      if (is.function(fn)) {
-        fn_g <- fn
-        environment(fn_g) <- .GlobalEnv
-        assign(nm, fn_g, envir = .GlobalEnv)
-        if (!is.null(ns_w) && exists(nm, envir = ns_w, inherits = FALSE)) {
-          fn_n <- fn
-          environment(fn_n) <- ns_w
-          if (bindingIsLocked(nm, ns_w)) {
-            try(unlockBinding(nm, ns_w), silent = TRUE)
-            try(assign(nm, fn_n, envir = ns_w), silent = TRUE)
-            try(lockBinding(nm, ns_w), silent = TRUE)
-          } else {
-            try(assign(nm, fn_n, envir = ns_w), silent = TRUE)
-          }
-        }
-      }
-    }
-    assign(".sc_bp_sync_sig", sig, envir = .GlobalEnv)
-  }
-  if (!already || isTRUE(force_wait)) {
-    Sys.sleep(if (isTRUE(force_wait)) 0.15 else 0.05)
-  }
-  Sys.getpid()
-}
-
-.sync_windows_bp_functions <- function(bp) {
-  if (is.null(bp) || !isTRUE(tryCatch(BiocParallel::bpisup(bp), error = function(e) FALSE))) {
-    return(invisible(FALSE))
-  }
-
-  ns <- if (isNamespaceLoaded("scSimEval")) asNamespace("scSimEval") else NULL
-  fn_list <- list()
-  n_ns <- 0L
-  if (!is.null(ns)) {
-    for (nm in ls(ns, all.names = TRUE)) {
-      val <- tryCatch(get(nm, envir = ns, inherits = FALSE), error = function(e) NULL)
-      if (is.function(val) &&
-          (identical(environment(val), ns) || identical(environment(val), .GlobalEnv))) {
-        fn_list[[nm]] <- val
-        n_ns <- n_ns + 1L
-      }
-    }
-  }
-
-  n_glob <- 0L
-  for (nm in ls(.GlobalEnv, all.names = TRUE)) {
-    val <- tryCatch(get(nm, envir = .GlobalEnv, inherits = FALSE), error = function(e) NULL)
-    if (is.function(val) && identical(environment(val), .GlobalEnv)) {
-      fn_list[[nm]] <- val
-      n_glob <- n_glob + 1L
-    }
-  }
-
-  sig <- paste(n_ns, n_glob, sep = ":")
-  if (identical(.sc_parallel_cache$exported_sig, sig)) {
-    return(invisible(TRUE))
-  }
-
-  n_w <- max(1L, as.integer(BiocParallel::bpworkers(bp)))
-  seen_pids <- integer(0)
-  for (attempt in seq_len(3L)) {
-    pids <- tryCatch(
-      suppressWarnings(unlist(BiocParallel::bplapply(
-        seq_len(n_w),
-        .init_windows_bp_worker,
-        fn_list = fn_list,
-        sig = sig,
-        force_wait = (attempt > 1L),
-        BPPARAM = bp
-      ))),
-      error = function(e) integer(0)
-    )
-    seen_pids <- unique(c(seen_pids, as.integer(pids)))
-    if (length(seen_pids) >= n_w) break
-  }
-
-  .sc_parallel_cache$exported_sig <- sig
-  invisible(TRUE)
-}
 
 .get_windows_bpparam <- function(workers) {
   target_w <- max(as.integer(workers), as.integer(.sc_parallel_cache$target_threads), 2L)
@@ -1121,21 +836,17 @@ validate_multiomics_input <- function(obj, arg_name = "multi_data", reduction_na
   w_cur <- .sc_parallel_cache$workers
   if (!is.null(bp_cur) && !is.null(w_cur) && w_cur >= workers &&
       isTRUE(tryCatch(BiocParallel::bpisup(bp_cur), error = function(e) FALSE))) {
-    .sync_windows_bp_functions(bp_cur)
     return(bp_cur)
   }
   if (!is.null(bp_cur)) {
     try(BiocParallel::bpstop(bp_cur), silent = TRUE)
     .sc_parallel_cache$bp <- NULL
     .sc_parallel_cache$workers <- 0L
-    .sc_parallel_cache$exported_sig <- ""
   }
   bp_new <- BiocParallel::SnowParam(workers = target_w)
   BiocParallel::bpstart(bp_new)
   .sc_parallel_cache$bp <- bp_new
   .sc_parallel_cache$workers <- target_w
-  .sc_parallel_cache$exported_sig <- ""
-  .sync_windows_bp_functions(bp_new)
   bp_new
 }
 
@@ -1181,17 +892,15 @@ validate_multiomics_input <- function(obj, arg_name = "multi_data", reduction_na
     }
     return(lapply(X, FUN, ...))
   }
-  if (requireNamespace("BiocParallel", quietly = TRUE)) {
-    res <- tryCatch(
-      suppressWarnings(BiocParallel::bplapply(
-        X, FUN, ...,
-        BPPARAM = .get_windows_bpparam(min(threads, n_tasks))
-      )),
-      error = function(e) NULL
-    )
-    if (!is.null(res) && length(res) == n_tasks) {
-      return(res)
-    }
+  res <- tryCatch(
+    BiocParallel::bplapply(
+      X, FUN, ...,
+      BPPARAM = .get_windows_bpparam(min(threads, n_tasks))
+    ),
+    error = function(e) NULL
+  )
+  if (!is.null(res) && length(res) == n_tasks) {
+    return(res)
   }
   lapply(X, FUN, ...)
 }

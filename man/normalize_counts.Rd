@@ -13,7 +13,7 @@ normalize_counts(
 )
 }
 \arguments{
-\item{mat}{A count matrix (genes/features x cells), \code{dgCMatrix}, \code{SingleCellExperiment}, or \code{Seurat} object.}
+\item{mat}{A count matrix (genes/features x cells), \code{dgCMatrix}, or \code{SingleCellExperiment} object.}
 
 \item{scale_factor}{Numeric scaling factor for counts per cell. Default is 1e6 (CPM) for \code{"lognorm"}, or 1e4 for \code{"tfidf"}.}
 

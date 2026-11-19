@@ -6,19 +6,24 @@
 #' @keywords internal
 #' @noRd
 .traj_extract_input <- function(x, cell_types = NULL, arg_name = "data") {
-  if (inherits(x, "SingleCellExperiment") || inherits(x, "Seurat")) {
+  if (inherits(x, "SingleCellExperiment")) {
     v <- validate_sc_object(x, arg_name = arg_name)
     mat <- v$counts
     if (is.null(cell_types) && !is.null(v$cell_types)) {
       cell_types <- v$cell_types
     }
+  } else if (inherits(x, "Seurat")) {
+    stop(sprintf(
+      "Seurat objects are not directly supported for '%s'; convert via Seurat::as.SingleCellExperiment().",
+      arg_name
+    ), call. = FALSE)
   } else if (is.list(x) && !is.null(x$counts)) {
     mat <- if (inherits(x$counts, "dgCMatrix")) x$counts else methods::as(as.matrix(x$counts), "dgCMatrix")
     if (is.null(cell_types) && !is.null(x$cell_types)) cell_types <- x$cell_types
   } else if (!is.null(dim(x)) && length(dim(x)) == 2) {
     mat <- if (inherits(x, "dgCMatrix")) x else methods::as(as.matrix(x), "dgCMatrix")
   } else {
-    stop(sprintf("Trajectory input '%s' must be a Seurat, SingleCellExperiment, or 2D count matrix.", arg_name),
+    stop(sprintf("Trajectory input '%s' must be a SingleCellExperiment or 2D count matrix.", arg_name),
          call. = FALSE)
   }
 
@@ -68,9 +73,15 @@
   }
 
   mad_outlier <- function(val, type = "lower", use_log = TRUE) {
+    finite_vals <- val[is.finite(val)]
+    if (length(unique(finite_vals)) < 2L) return(rep(FALSE, length(val)))
+    x <- if (use_log) log1p(pmax(val, 0)) else val
+    med <- stats::median(x, na.rm = TRUE)
+    m <- stats::mad(x, center = med, constant = 1.4826, na.rm = TRUE)
+    if (!is.finite(m) || m <= 0) return(rep(FALSE, length(val)))
     if (requireNamespace("scater", quietly = TRUE)) {
       res <- tryCatch(
-        suppressWarnings(as.logical(scater::isOutlier(val, nmads = nmads, type = type, log = use_log))),
+        as.logical(scater::isOutlier(val, nmads = nmads, type = type, log = use_log)),
         error = function(e) NULL
       )
       if (!is.null(res) && length(res) == length(val)) {
@@ -78,10 +89,6 @@
         return(res)
       }
     }
-    x <- if (use_log) log1p(pmax(val, 0)) else val
-    med <- stats::median(x, na.rm = TRUE)
-    m <- stats::mad(x, center = med, constant = 1.4826, na.rm = TRUE)
-    if (!is.finite(m) || m <= 0) return(rep(FALSE, length(val)))
     if (type == "lower") x < (med - nmads * m) else x > (med + nmads * m)
   }
 
@@ -131,9 +138,9 @@
 
   ok <- is.finite(mu) & is.finite(v) & (mu > 0)
   tech <- rep(0, nrow(log_mat))
-  if (sum(ok) >= 10) {
+  if (sum(ok) >= 15L && length(unique(mu[ok])) >= 8L) {
     fit <- tryCatch(
-      suppressWarnings(stats::loess(v[ok] ~ mu[ok], span = 0.75, degree = 1)),
+      stats::loess(v[ok] ~ mu[ok], span = 0.75, degree = 1),
       error = function(e) NULL
     )
     if (!is.null(fit)) {
@@ -171,13 +178,13 @@
 #' \enumerate{
 #'   \item Harsh cell outlier filtering (3 MADs from median on library size, detected genes, and mitochondrial percentage).
 #'   \item Low-expression gene filtering (expressed in \eqn{\ge 5\%} of cells and average expression \eqn{> 0.02}).
-#'   \item HVG selection via mean-variance decomposition (\code{scran::modelGeneVar} with \code{FDR < 0.05}
+#'   \item HVG selection via mean-variance decomposition (loess trend decomposition with \code{FDR < 0.05}
 #'         and biological variance \code{> 0.5}, with adaptive top-HVG fallback for sparse/small benchmark sets).
 #'   \item Iterative removal of all-zero cells and uninformative zero features until convergence.
 #' }
 #'
-#' @param ref_data Reference count matrix, \code{SingleCellExperiment}, or \code{Seurat} object.
-#' @param sim_data Optional simulated count matrix, \code{SingleCellExperiment}, or \code{Seurat} object.
+#' @param ref_data Reference count matrix or \code{SingleCellExperiment} object.
+#' @param sim_data Optional simulated count matrix or \code{SingleCellExperiment} object.
 #' @param cell_types_ref Optional vector of reference cell-type labels.
 #' @param cell_types_sim Optional vector of simulated cell-type labels.
 #' @param nmads MAD threshold for outlier cell removal (default \code{3}).
@@ -259,23 +266,10 @@ preprocess_trajectory_hvgs <- function(
     sim_counts <- sim_counts[gene_keep, , drop = FALSE]
   }
 
-  # 3. HVG selection on reference log-normalized expression (scran + fallback)
+  # 3. HVG selection on reference log-normalized expression (empirical mean-variance decomposition)
   ref_log <- .traj_lognorm(ref_counts)
-  hvg_stats <- NULL
   hvg_method <- "empirical_mean_var"
-  if (requireNamespace("scran", quietly = TRUE) && nrow(ref_log) >= 20L && ncol(ref_log) >= 10L) {
-    hvg_df <- tryCatch({
-      suppressWarnings(scran::modelGeneVar(ref_log))
-    }, error = function(e) NULL)
-    if (!is.null(hvg_df) && all(c("bio", "FDR") %in% colnames(hvg_df))) {
-      hvg_stats <- as.data.frame(hvg_df)
-      hvg_stats$gene <- rownames(ref_log)
-      hvg_method <- "scran_modelGeneVar"
-    }
-  }
-  if (is.null(hvg_stats)) {
-    hvg_stats <- .traj_empirical_hvg_stats(ref_log)
-  }
+  hvg_stats <- .traj_empirical_hvg_stats(ref_log)
 
   strict_idx <- which(is.finite(hvg_stats$FDR) & is.finite(hvg_stats$bio) &
                         hvg_stats$FDR < fdr_threshold & hvg_stats$bio > bio_var_threshold)
@@ -536,7 +530,7 @@ infer_dynverse_trajectory <- function(
   if (is.null(pca_coords)) {
     k <- min(as.integer(n_pcs), nrow(expr_mat) - 1L, ncol(expr_mat) - 1L)
     k <- max(2L, k)
-    pca_coords <- suppressWarnings(fast_pca(Matrix::t(expr_mat), n_pcs = k))
+    pca_coords <- fast_pca(Matrix::t(expr_mat), n_pcs = k)
     rownames(pca_coords) <- cell_ids
   } else {
     pca_coords <- as.matrix(pca_coords)
@@ -559,28 +553,12 @@ infer_dynverse_trajectory <- function(
 
   mst_res <- .traj_build_mst_and_progressions(pca_coords, cell_ids, groups)
 
-  # Wrap cleanly via dynwrap when available (Docker-free)
-  traj_obj <- NULL
-  if (requireNamespace("dynwrap", quietly = TRUE)) {
-    traj_obj <- tryCatch({
-      ds <- dynwrap::wrap_data(cell_ids = cell_ids)
-      dynwrap::add_trajectory(
-        dataset = ds,
-        milestone_ids = mst_res$milestone_ids,
-        milestone_network = mst_res$milestone_network,
-        progressions = mst_res$progressions
-      )
-    }, error = function(e) NULL)
-  }
-
-  if (is.null(traj_obj)) {
-    traj_obj <- list(
-      cell_ids = cell_ids,
-      milestone_ids = mst_res$milestone_ids,
-      milestone_network = mst_res$milestone_network,
-      progressions = mst_res$progressions
-    )
-  }
+  traj_obj <- list(
+    cell_ids = cell_ids,
+    milestone_ids = mst_res$milestone_ids,
+    milestone_network = mst_res$milestone_network,
+    progressions = mst_res$progressions
+  )
 
   traj_obj$pca_coords <- pca_coords
   traj_obj$centroids <- mst_res$centroids
@@ -721,8 +699,6 @@ infer_dynverse_trajectory <- function(
 #'
 #' Quantifies both local edge correspondence (Hamming) and global Laplacian spectral similarity
 #' (Ipsen-Mikhailov) between reference and simulated trajectory milestone networks.
-#' Uses \code{dyneval::calculate_him} when \pkg{netdist} is available and falls back to an
-#' exact pure-R implementation otherwise.
 #'
 #' @param ref_traj Reference trajectory list returned by \code{\link{infer_dynverse_trajectory}}.
 #' @param sim_traj Simulated trajectory list returned by \code{\link{infer_dynverse_trajectory}}.
@@ -732,21 +708,13 @@ calc_dynverse_him <- function(ref_traj, sim_traj) {
   net1 <- ref_traj$milestone_network
   net2 <- sim_traj$milestone_network
   if (nrow(net1) == 0L || nrow(net2) == 0L) return(0)
-
-  if (requireNamespace("dyneval", quietly = TRUE)) {
-    val <- tryCatch(
-      suppressWarnings(as.numeric(dyneval::calculate_him(net2, net1, simplify = TRUE))),
-      error = function(e) NA_real_
-    )
-    if (is.finite(val)) return(max(0, min(1, val)))
-  }
   .traj_him_pure_r(net1, net2)
 }
 
 #' Compute dynverse Edge Flip Trajectory Topology Similarity
 #'
 #' Quantifies topological similarity between reference and simulated milestone graphs via
-#' minimum edge flip edit distance (\code{dyneval::calculate_edge_flip}).
+#' normalized edge agreement.
 #'
 #' @param ref_traj Reference trajectory list returned by \code{\link{infer_dynverse_trajectory}}.
 #' @param sim_traj Simulated trajectory list returned by \code{\link{infer_dynverse_trajectory}}.
@@ -757,15 +725,6 @@ calc_dynverse_edge_flip <- function(ref_traj, sim_traj) {
   net2 <- sim_traj$milestone_network
   if (nrow(net1) == 0L || nrow(net2) == 0L) return(0)
 
-  if (requireNamespace("dyneval", quietly = TRUE)) {
-    val <- tryCatch(
-      suppressWarnings(as.numeric(dyneval::calculate_edge_flip(net2, net1, simplify = TRUE))),
-      error = function(e) NA_real_
-    )
-    if (is.finite(val)) return(max(0, min(1, val)))
-  }
-
-  # Normalized binary edge disagreement fallback
   e1 <- unique(paste(pmin(net1$from, net1$to), pmax(net1$from, net1$to), sep = "||"))
   e2 <- unique(paste(pmin(net2$from, net2$to), pmax(net2$from, net2$to), sep = "||"))
   u_len <- length(union(e1, e2))
@@ -834,8 +793,7 @@ calc_dynverse_geodesic_correlation <- function(ref_traj, sim_traj, nn_map = NULL
 #' Compute dynverse Branch Assignment Overlap (F1_branches)
 #'
 #' Evaluates recovery and relevance of cellular MST branch assignments between reference
-#' and simulated trajectories via bidirectional Jaccard overlap and harmonic mean F1
-#' (matching \code{dyneval::calculate_mapping} \code{F1_branches}).
+#' and simulated trajectories via bidirectional Jaccard overlap and harmonic mean F1.
 #'
 #' @param ref_traj Reference trajectory list.
 #' @param sim_traj Simulated trajectory list.
@@ -980,7 +938,7 @@ calc_wcor_features <- function(
 #' benchmarking framework (\emph{Saelens et al., Nature Biotechnology, 2019}):
 #' \enumerate{
 #'   \item Standardized cell outlier QC (3 MADs), low-expression gene filtering
-#'         (\eqn{\ge 5\%} cells, mean \eqn{> 0.02}), and HVG selection (\code{scran::modelGeneVar}).
+#'         (\eqn{\ge 5\%} cells, mean \eqn{> 0.02}), and HVG selection (empirical mean-variance decomposition).
 #'   \item Shared HVG PCA projection and Docker-free Minimum Spanning Tree (MST) milestone
 #'         trajectory inference with continuous cell-to-milestone geodesic distances.
 #'   \item Five complementary trajectory metrics: \code{him} (Hamming-Ipsen-Mikhailov similarity),
@@ -989,8 +947,8 @@ calc_wcor_features <- function(
 #'         importance weighted correlation with \code{num_trees = 10000} and 1 percent \code{mtry}).
 #' }
 #'
-#' @param ref_data Reference count matrix, \code{SingleCellExperiment}, or \code{Seurat} object.
-#' @param sim_data Simulated count matrix, \code{SingleCellExperiment}, or \code{Seurat} object.
+#' @param ref_data Reference count matrix or \code{SingleCellExperiment} object.
+#' @param sim_data Simulated count matrix or \code{SingleCellExperiment} object.
 #' @param cell_types_ref Optional vector of reference cell types.
 #' @param cell_types_sim Optional vector of simulated cell types.
 #' @param num_trees Number of \pkg{ranger} trees per milestone for \code{wcor_features} (default \code{10000L}).
@@ -1044,7 +1002,13 @@ evaluate_trajectory_metrics <- function(
   if (is.numeric(ref_data) && is.numeric(sim_data) &&
       is.null(dim(ref_data)) && is.null(dim(sim_data))) {
     aligned <- align_distributions(as.numeric(ref_data), as.numeric(sim_data))
-    pt_cor <- suppressWarnings(stats::cor(aligned$ref, aligned$sim, method = "spearman"))
+    pt_cor <- if (length(aligned$ref) >= 2L &&
+                  stats::sd(aligned$ref) > 0 &&
+                  stats::sd(aligned$sim) > 0) {
+      stats::cor(aligned$ref, aligned$sim, method = "spearman")
+    } else {
+      0
+    }
     if (is.na(pt_cor) || !is.finite(pt_cor)) pt_cor <- 0
     return(list(
       him = NA_real_,

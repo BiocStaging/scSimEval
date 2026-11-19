@@ -92,7 +92,120 @@ res <- calc_simpipe_distribution_score(
   sim_celltypes = example_scrna$cell_types
 )
 #> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: At least one library size is zero
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: At least one library size is zero
 #> calcNormFactors has been renamed to normLibSizes
 res$distribution_score
-#> [1] 1
+#> [1] 0
 ```

@@ -72,10 +72,10 @@ and <code>scDesign3</code>-simulated counts across the top 100 highly variable g
     <div class="section level2">
     <h2 id="format">Format<a class="anchor" aria-label="anchor" href="#format"></a></h2>
     <p>A list with 4 elements:</p><dl><dt>ref</dt>
-<dd><p>A sparse count matrix (<code>dgCMatrix</code>) of reference scRNA-seq counts (100 HVGs x 100 cells).</p></dd>
+<dd><p>A <code>SingleCellExperiment</code> object containing reference scRNA-seq counts (100 HVGs x 100 cells), cell types and batch annotations in <code>colData</code>, and precomputed <code>PCA</code> in <code>reducedDims</code>.</p></dd>
 
   <dt>sim</dt>
-<dd><p>A sparse count matrix (<code>dgCMatrix</code>) of simulated scRNA-seq counts (100 HVGs x 100 cells).</p></dd>
+<dd><p>A <code>SingleCellExperiment</code> object containing simulated scRNA-seq counts (100 HVGs x 100 cells), cell types and batch annotations in <code>colData</code>, and precomputed <code>PCA</code> in <code>reducedDims</code>.</p></dd>
 
   <dt>cell_types</dt>
 <dd><p>A named factor of cell-type identities across 8 Rice Bud cell types for the 100 cells.</p></dd>
@@ -92,10 +92,20 @@ and <code>scDesign3</code>-simulated counts across the top 100 highly variable g
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_scrna</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">example_scrna</span><span class="op">$</span><span class="va">ref</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">example_scrna</span><span class="op">$</span><span class="va">sim</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">example_scrna</span><span class="op">$</span><span class="va">cell_types</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_scrna</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">example_scrna</span><span class="op">$</span><span class="va">ref</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 100 100</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">example_scrna</span><span class="op">$</span><span class="va">sim</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 100 100</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">example_scrna</span><span class="op">$</span><span class="va">cell_types</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>              Bud_axis        Bud_primordium           Bud-unknown </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                    13                    13                    13 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             Epidermis       Parenchyma_cell         Root_meristem </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                    13                    12                    12 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Shoot_apical_meristem     Vascular_cylinder </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                    12                    12 </span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

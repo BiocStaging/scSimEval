@@ -12,7 +12,7 @@ extract_feature_properties(
 )
 }
 \arguments{
-\item{data}{Count matrix (features x cells), SingleCellExperiment, or Seurat object.}
+\item{data}{Count matrix (features x cells) or \code{SingleCellExperiment} object.}
 
 \item{n_top_cor}{Number of top HVGs/HVPs to use for correlation matrix (default 500, matching SimBench).}
 
@@ -23,7 +23,20 @@ after Signac/simPIC TF-IDF transformation instead of \code{log2(CPM + 1)}.}
 \item{verbose}{Logical, whether to print progress messages.}
 }
 \value{
-A named list of feature-level summary vectors.
+A named list of 11 feature-level property summaries:
+\describe{
+  \item{mean_expression}{Numeric vector of normalized mean abundances per feature.}
+  \item{variance}{Numeric vector of normalized variances per feature.}
+  \item{scaled_variance}{Numeric vector of z-score standardized normalized variances.}
+  \item{sd}{Numeric vector of normalized standard deviations per feature.}
+  \item{cv}{Numeric vector of raw coefficient of variation percentages per feature.}
+  \item{zero_fraction_feature}{Numeric vector of per-feature zero proportions.}
+  \item{detection_freq_feature}{Numeric vector of per-feature detection rates (\code{1 - zero_fraction_feature}).}
+  \item{dispersion}{Numeric vector of raw variance-to-mean ratios.}
+  \item{bcv}{Numeric vector of empirical Biological Coefficient of Variation estimates.}
+  \item{gene_cor}{Numeric vector of upper-triangle pairwise Spearman correlations across top variable features.}
+  \item{prop_outliers_feature}{Numeric scalar proportion of features flagged as total-count outliers via Tukey IQR.}
+}
 }
 \description{
 Computes mean abundance, standard deviation, variance, scaled variance (z-score standardized variance),

@@ -56,8 +56,7 @@ plot_bubble_matrix(
 the assay modality scope to dynamically format Category V metrics with the appropriate
 differential prefix ("DE/DA ", "DE ", or "DA "). If \code{NULL}, auto-detected from data.}
 
-\item{method_classes}{Optional named list mapping method names to row group labels.
-E.g. \code{list("scRNA-seq" = c("Splatter", "SymSim"), "Multiomics" = c("scDesign3", "dyngen"))}.}
+\item{method_classes}{Optional named list mapping method names to row group labels.}
 
 \item{category_colors}{Optional named character vector to override the canonical palette.}
 
@@ -111,7 +110,6 @@ so that 1 always means best performance, while concordance/correlation metrics a
 directly (higher = better).
 }
 \examples{
-# Tidy benchmark data frame of standardized scores
 bm_df <- data.frame(
   Method   = rep(c("Splat", "scDesign3", "SymSim", "dyngen"), each = 4),
   Category = rep(c("Accuracy", "Accuracy", "Cellular Structure", "Scalability"), 4),
@@ -120,21 +118,4 @@ bm_df <- data.frame(
 )
 p <- plot_benchmark_bubble_matrix(bm_df)
 p
-\donttest{
-# Load benchmark summary across simulators
-demo_file <- system.file("shiny/scSimEvalApp/data/demo_benchmark_data.rds", package = "scSimEval")
-if (file.exists(demo_file)) {
-  demo <- readRDS(demo_file)
-  p <- plot_benchmark_bubble_matrix(
-    data = demo$benchmark_summary_table,
-    title = "Single-Cell Multiomics Simulation Benchmark",
-    method_classes = list(
-      "scRNA-seq"  = c("Splatter", "SymSim"),
-      "scATAC-seq" = c("simATAC", "SCRIP"),
-      "Multiomics" = c("scDesign3", "dyngen")
-    )
-  )
-  print(p)
-}
-}
 }

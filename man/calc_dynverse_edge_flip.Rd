@@ -16,5 +16,5 @@ Numeric edge-flip similarity in \code{[0, 1]} (higher is better).
 }
 \description{
 Quantifies topological similarity between reference and simulated milestone graphs via
-minimum edge flip edit distance (\code{dyneval::calculate_edge_flip}).
+normalized edge agreement.
 }

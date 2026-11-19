@@ -14,7 +14,21 @@ calc_all_univariate_metrics(ref, sim, metric_prefix = "")
 \item{metric_prefix}{Optional prefix string for metric names.}
 }
 \value{
-Named list of univariate distance metrics.
+A named list of 11 numeric univariate distance and similarity metrics
+  (names prefixed with \code{metric_prefix_} when provided):
+\describe{
+  \item{MAD}{Median absolute difference between quantile-aligned vectors.}
+  \item{KS}{1D Kolmogorov-Smirnov maximum vertical distance between empirical CDFs.}
+  \item{MAE}{Mean absolute error between quantile-aligned vectors.}
+  \item{RMSE}{Root mean squared error between quantile-aligned vectors.}
+  \item{Bhattacharyya}{Bhattacharyya divergence between normalized probability vectors.}
+  \item{Wasserstein}{1D Wasserstein-1 distance between distributions.}
+  \item{Runs_Statistic}{Wald-Wolfowitz runs test z-statistic measuring distribution interleaving.}
+  \item{Runs_PValue}{Left-sided p-value from the Wald-Wolfowitz runs test.}
+  \item{NN_Mismatch}{Fraction of local k-NN neighborhoods showing dataset composition mismatch.}
+  \item{Between_Dataset_Silh_Global}{Global between-dataset silhouette width.}
+  \item{KDE_ISE}{Integrated squared error between kernel density estimates.}
+}
 }
 \description{
 Compute All Univariate Distance & Accuracy Metrics for a Feature

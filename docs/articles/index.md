@@ -2,11 +2,9 @@
 
 ### Workflow Guides
 
-- [Getting Started with scSimEval: Unified Benchmarking for Single-Cell
-  Multiomics
-  Simulations](https://kabilanbio.github.io/scSimEval/articles/scSimEval-workflow.md):
-- [Interactive Shiny Studio — Complete User
-  Guide](https://kabilanbio.github.io/scSimEval/articles/shiny-app.md):
+- [Getting Started with scSimEval: Benchmarking Single-Cell Simulations
+  in
+  Bioconductor](https://kabilanbio.github.io/scSimEval/articles/scSimEval-workflow.md):
 
 ### Demonstrations
 
@@ -14,9 +12,13 @@
   Evaluation](https://kabilanbio.github.io/scSimEval/articles/demo-scrna.md):
 - [Demonstration 2: scATAC-seq Simulation
   Evaluation](https://kabilanbio.github.io/scSimEval/articles/demo-scatac.md):
-- [Demonstration 3: Multiomics (scRNA-seq + scATAC-seq) Simulation
+- [Demonstration 3: Paired Multiomics (scRNA-seq + scATAC-seq)
+  Simulation
   Evaluation](https://kabilanbio.github.io/scSimEval/articles/demo-multiomics.md):
-- [Demonstration 4: Analyzing Pre-Saved Benchmark Results
+- [Demonstration 4: Unpaired Multiomics (scRNA-seq + scATAC-seq)
+  Simulation
+  Evaluation](https://kabilanbio.github.io/scSimEval/articles/demo-unpaired-multiomics.md):
+- [Demonstration 5: Analyzing Pre-Saved Benchmark Results
   (.rds)](https://kabilanbio.github.io/scSimEval/articles/demo-saved-rds.md):
 
 ### Reference Materials

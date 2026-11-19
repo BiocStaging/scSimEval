@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Getting Started with scSimEval: Unified Benchmarking for Single-Cell Multiomics Simulations • scSimEval</title>
+<title>Getting Started with scSimEval: Benchmarking Single-Cell Simulations in Bioconductor • scSimEval</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
 <link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
@@ -16,7 +16,7 @@
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
-<meta property="og:title" content="Getting Started with scSimEval: Unified Benchmarking for Single-Cell Multiomics Simulations">
+<meta property="og:title" content="Getting Started with scSimEval: Benchmarking Single-Cell Simulations in Bioconductor">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
@@ -78,7 +78,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.png" class="logo" alt=""><h1>Getting Started with scSimEval: Unified Benchmarking for Single-Cell Multiomics Simulations</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Getting Started with scSimEval: Benchmarking Single-Cell Simulations in Bioconductor</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/kabilanbio/scSimEval/blob/HEAD/vignettes/scSimEval-workflow.Rmd" class="external-link"><code>vignettes/scSimEval-workflow.Rmd</code></a></small>
@@ -88,487 +88,330 @@
     
     
 <div class="section level2">
-<h2 id="what-do-the-8-evaluation-categories-measure-56-metrics">1. What Do the 8 Evaluation Categories Measure? (56 Metrics)<a class="anchor" aria-label="anchor" href="#what-do-the-8-evaluation-categories-measure-56-metrics"></a>
+<h2 id="overview-bioconductor-ecosystem-integration">Overview &amp; Bioconductor Ecosystem Integration<a class="anchor" aria-label="anchor" href="#overview-bioconductor-ecosystem-integration"></a>
 </h2>
-<p>Each category answers one simple question about how realistic a
-simulated dataset is:</p>
-<table class="table">
-<colgroup>
-<col width="23%">
-<col width="29%">
-<col width="23%">
-<col width="23%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">Category</th>
-<th align="center"># Metrics</th>
-<th align="left">Data Needed</th>
-<th align="left">What Question Does It Answer? (and What It
-Measures)</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left"><strong>I. Distributional Properties</strong></td>
-<td align="center"><strong>14</strong></td>
-<td align="left">Count matrix only</td>
-<td align="left">
-<strong>Do the simulated cell and gene/peak count
-distributions match real data?</strong><br>10 univariate &amp; 4
-bivariate distributional similarity measures (Wasserstein, KS, MAD,
-Bhattacharyya, Runs test, NN mismatch, Silhouette, 2D KS, 2D EMD, 2D NN
-mismatch, 2D Silhouette) across 7 cell-level, 7 feature-level, and 4
-bivariate properties.</td>
-</tr>
-<tr class="even">
-<td align="left"><strong>II. Sparsity &amp; Zero-Inflation
-Dynamics</strong></td>
-<td align="center"><strong>5</strong></td>
-<td align="left">Count matrix only</td>
-<td align="left">
-<strong>Are zero counts and dropout rates realistic
-across genes/peaks and cells?</strong><br>Logistic dropout curve
-fidelity (midpoint error
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>0</mn></msub><annotation encoding="application/x-tex">x_0</annotation></semantics></math>,
-transition slope error
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>,
-goodness-of-fit
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>),
-quadratic accessibility-sparsity RMSE &amp;
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>
-(scATAC-seq), and excess zero proportion difference.</td>
-</tr>
-<tr class="odd">
-<td align="left"><strong>III. Cellular Manifold &amp; Clustering
-Concordance</strong></td>
-<td align="center"><strong>8</strong></td>
-<td align="left">Uses <code>cell_type</code>
-</td>
-<td align="left">
-<strong>Do simulated cells form the right cell-type
-clusters and neighborhood structures?</strong><br>Maximum Mean
-Discrepancy (MMD), Generative Precision &amp; Recall, Average Silhouette
-Width (ASW), Clustering Deviation Index (CDI), Neighborhood Purity,
-Adjusted Rand Index (ARI), and Normalized Mutual Information (NMI).</td>
-</tr>
-<tr class="even">
-<td align="left"><strong>IV. Technical Variation &amp; Batch Mixing
-Dynamics</strong></td>
-<td align="center"><strong>5</strong></td>
-<td align="left">Uses <code>batch</code>
-</td>
-<td align="left">
-<strong>Are technical batch differences reproduced
-properly across batches?</strong><br>Batch Silhouette Width, Principal
-Component Regression
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mi>C</mi><mi>R</mi><mspace width="0.222em"></mspace><msup><mi>R</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">PCR\ R^2</annotation></semantics></math>),
-Cell-Specific Mixing Score (CMS), Inverse Simpson’s Index (ISI), and
-Cross-Batch F1 Score.</td>
-</tr>
-<tr class="odd">
-<td align="left"><strong>V. Biological Signal &amp; Differential
-Fidelity</strong></td>
-<td align="center"><strong>12</strong></td>
-<td align="left">Uses <code>cell_type</code>
-</td>
-<td align="left">
-<strong>Can we still detect true marker genes (DEGs)
-and accessible chromatin peaks (DARs)?</strong><br>Pseudobulk
-<code>edgeR-QLF</code> differential testing for scRNA-seq DE (6 metrics)
-and scATAC-seq DA (6 metrics):
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>-value
-uniformity, accuracy, precision, recall, F1-score, and ROC-AUC.</td>
-</tr>
-<tr class="even">
-<td align="left"><strong>VI. Multiomics Integration &amp;
-Alignment</strong></td>
-<td align="center"><strong>5</strong></td>
-<td align="left">Paired / Unpaired Multiomics</td>
-<td align="left">
-<strong>Do simulated RNA and ATAC modalities align and
-integrate well together?</strong><br>Joint-embedding integration
-quality: Batch ASW, Cell-Type ASW,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>-NN
-Graph Connectivity, Integration ARI, and Integration NMI.</td>
-</tr>
-<tr class="odd">
-<td align="left"><strong>VII. Trajectory &amp; Lineage
-Topology</strong></td>
-<td align="center"><strong>5</strong></td>
-<td align="left">scRNA-seq counts</td>
-<td align="left">
-<strong>Are cell developmental paths, branches, and
-trajectory genes preserved?</strong><br>HVG-filtered dynverse workflow
-on scRNA-seq: HIM topology similarity, edge-flip similarity, geodesic
-distance correlation, branch assignment F1 (<code>F1_branches</code>),
-and RF feature importance correlation (<code>wcor_features</code>).</td>
-</tr>
-<tr class="even">
-<td align="left"><strong>VIII. Computational Scalability &amp;
-Efficiency</strong></td>
-<td align="center"><strong>2</strong></td>
-<td align="left">Runtime &amp; RAM inputs</td>
-<td align="left">
-<strong>How fast and memory-light is each
-simulator?</strong><br>Core-normalized runtime
-(<code>core_seconds</code>) and memory per allocated core
-(<code>memory_per_core_mib</code>), alongside wall-clock elapsed time (s
-/ min) and total peak RAM (MiB / GiB).</td>
-</tr>
-</tbody>
-</table>
-<blockquote>
-<p><strong>Curated Metric Measurement Capacity by Modality:</strong> -
-<strong>scRNA-seq:</strong> <strong>44 Metrics</strong> across 7
-categories (Cat I: 14, Cat II: 4, Cat III: 8, Cat IV: 5, Cat V: 6 DE,
-Cat VII: 5 Trajectory, Cat VIII: 2 Scalability). -
-<strong>scATAC-seq:</strong> <strong>38 Metrics</strong> across 6
-categories (Cat I: 14, Cat II: 3, Cat III: 8, Cat IV: 5, Cat V: 6 DA,
-Cat VIII: 2 Scalability; Trajectory skipped for ATAC). - <strong>Paired
-Multiomics:</strong> <strong>56 Metrics</strong> across all 8 canonical
-categories (I–VIII, with 50 unique columns in Comparative Bubble
-Matrix). - <strong>Unpaired Multiomics:</strong> <strong>56
-Metrics</strong> across all 8 canonical categories (same 56 metrics,
-with Cat VI integration evaluated on joint stacked embeddings).</p>
-</blockquote>
-<div class="figure" style="text-align: center">
-<img src="figures/workflow_diagram.png" class="r-plt" alt="**Figure 1: Unified benchmarking architecture of scSimEval.** The end-to-end framework ingests reference and simulated single-cell and multiomics count matrices with experimental metadata, evaluates 56 curated evaluation measures across eight biological and computational dimensions, standardizes scores via direction-aware normalization, and generates publication-grade comparative visualizations and leaderboards." width="100%"><p class="caption">
-<strong>Figure 1: Unified benchmarking architecture of
-scSimEval.</strong> The end-to-end framework ingests reference and
-simulated single-cell and multiomics count matrices with experimental
-metadata, evaluates 56 curated evaluation measures across eight
-biological and computational dimensions, standardizes scores via
-direction-aware normalization, and generates publication-grade
-comparative visualizations and leaderboards.
-</p>
-</div>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="input-data-formats-metadata-requirements">2. Input Data Formats &amp; Metadata Requirements<a class="anchor" aria-label="anchor" href="#input-data-formats-metadata-requirements"></a>
-</h2>
-<p>In <code>scSimEval</code>, reference and simulated datasets can be
-supplied as either standard count matrices with metadata vectors or
-encapsulated as S4 objects (<code>Seurat</code> or
-<code>SingleCellExperiment</code> saved as <code>.rds</code> files):</p>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Count Matrices (<code>ref_data</code>,
-<code>sim_data</code>):</strong>
-<ul>
-<li>
-<strong>Dimensions:</strong> Features (Genes or ATAC Peaks) in
-<strong>rows</strong>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math>
-Cells in <strong>columns</strong>.</li>
-<li>
-<strong>Data Types:</strong> Sparse matrices
-(<code>dgCMatrix</code>), standard numeric matrices,
-<code>data.frame</code>, or embedded inside <code>Seurat</code> /
-<code>SingleCellExperiment</code> objects.</li>
-</ul>
-</li>
-<li>
-<strong>Cell-Type Annotations (<code>cell_types</code> —
-Mandatory):</strong>
-<ul>
-<li>Character vector or factor matching cell columns.</li>
-<li>Required for cellular manifold concordance (Category III: ARI, NMI,
-Silhouette width), biological signal fidelity (Category V: DEGs and
-DARs), and cross-batch cell type transfer F1.</li>
-</ul>
-</li>
-<li>
-<strong>Batch Identifiers (<code>batch_info</code> —
-Mandatory):</strong>
-<ul>
-<li>Character vector or factor matching cell columns.</li>
-<li>Required for technical variation and batch mixing dynamics (Category
-IV: CMS, ISI, PCR
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math>,
-Batch Silhouette) and pseudobulk biological replicate modeling (Category
-V: <code>edgeR-QLF</code>).</li>
-</ul>
-</li>
-<li>
-<strong>Computational Resource Logs (Optional / Category
-VIII):</strong>
-<ul>
-<li>Standardized execution runtime (<code>core_seconds</code>) and
-resident memory footprint per core (<code>memory_per_core_mib</code>) to
-benchmark computational scalability and algorithmic efficiency.</li>
-</ul>
-</li>
-</ol>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="modality-specific-metrics-object-guidelines-seurat-singlecellexperiment">3. Modality-Specific Metrics &amp; Object Guidelines (Seurat /
-SingleCellExperiment)<a class="anchor" aria-label="anchor" href="#modality-specific-metrics-object-guidelines-seurat-singlecellexperiment"></a>
-</h2>
-<p>In <code>scSimEval</code>, reference and simulated datasets are
-uploaded as standard <code>Seurat</code> or
-<code>SingleCellExperiment</code> S4 objects (<code>.rds</code>).
-Providing <code>cell_type</code> and <code>batch</code> metadata
-annotations enables complete benchmarking across all biological
-clustering, batch mixing, and differential signal evaluation categories
-(embedded directly in <code>meta.data</code> in Seurat or
-<code>colData</code> in SingleCellExperiment):</p>
+<p><strong><code>scSimEval</code></strong> provides a unified,
+standardized benchmarking suite to evaluate how closely synthetic
+single-cell datasets reproduce empirical biological references across
+<strong>scRNA-seq</strong>, <strong>scATAC-seq</strong>, and
+<strong>paired/unpaired single-cell multiomics</strong>.</p>
 <div class="section level3">
-<h3 id="quantitative-metric-measurement-capacity-by-modality">Quantitative Metric Measurement Capacity by Modality<a class="anchor" aria-label="anchor" href="#quantitative-metric-measurement-capacity-by-modality"></a>
+<h3 id="integration-with-existing-bioconductor-infrastructure">Integration with Existing Bioconductor Infrastructure<a class="anchor" aria-label="anchor" href="#integration-with-existing-bioconductor-infrastructure"></a>
 </h3>
-<p>When both <code>cell_type</code> and <code>batch</code> metadata are
-provided, <code>scSimEval</code> evaluates the full suite of curated
-metrics tailored for each analysis modality:</p>
-<table class="table">
-<colgroup>
-<col width="30%">
-<col width="38%">
-<col width="30%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">Modality / Analysis Option</th>
-<th align="center">Exact Metrics Evaluated</th>
-<th align="left">Active Evaluation Categories &amp; Scope</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left"><strong>1. scRNA-seq</strong></td>
-<td align="center"><strong>44 Metrics</strong></td>
-<td align="left">
-<strong>7 Categories:</strong> Distributional
-Properties (14), Sparsity &amp; Dropout (4), Clustering Concordance (8),
-Batch Mixing Dynamics (5), edgeR-QLF DE Signal (6), dynverse Trajectory
-(5), and Computational Scalability (2).</td>
-</tr>
-<tr class="even">
-<td align="left"><strong>2. scATAC-seq</strong></td>
-<td align="center"><strong>38 Metrics</strong></td>
-<td align="left">
-<strong>6 Categories:</strong> Distributional
-Properties (14), Sparsity &amp; Dropout (3), Clustering Concordance (8),
-Batch Mixing Dynamics (5), edgeR-QLF DA Signal (6), and Computational
-Scalability (2). <em>(Trajectory [Cat VII] is skipped for
-ATAC).</em>
-</td>
-</tr>
-<tr class="odd">
-<td align="left"><strong>3. Paired Multiomics</strong></td>
-<td align="center">
-<strong>56 Metrics</strong><br><em>(50 Plot
-Columns)</em>
-</td>
-<td align="left">
-<strong>All 8 Categories:</strong> Distributional
-Properties (14), Sparsity &amp; Dropout (5), Clustering Concordance (8),
-Batch Mixing Dynamics (5), Differential Signal (12: 6 DE + 6 DA),
-Multiomics Integration (5), Trajectory (5), and Computational
-Scalability (2).</td>
-</tr>
-<tr class="even">
-<td align="left"><strong>4. Unpaired Multiomics</strong></td>
-<td align="center">
-<strong>56 Metrics</strong><br><em>(50 Plot
-Columns)</em>
-</td>
-<td align="left">
-<strong>All 8 Categories:</strong> Evaluates the exact
-same 56 metrics across all 8 categories as paired multiomics. Category
-VI multiomics integration is evaluated on joint stacked embeddings.</td>
-</tr>
-</tbody>
-</table>
+<p><code>scSimEval</code> is built directly on Bioconductor core data
+structures and statistical infrastructure:</p>
+<ul>
+<li>
+<strong>Data representation</strong>: Accepts
+<code>SingleCellExperiment</code> (and multi-modal
+<code>SingleCellExperiment</code> objects with <code><a href="https://rdrr.io/pkg/SingleCellExperiment/man/altExps.html" class="external-link">altExp()</a></code>),
+reading cell-type (<code>cell_type</code>) and replicate/batch
+(<code>batch</code>) annotations directly from
+<code><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">SummarizedExperiment::colData()</a></code>. Users starting from Seurat
+objects can convert in one line via
+<code><a href="https://satijalab.org/seurat/reference/as.SingleCellExperiment.html" class="external-link">Seurat::as.SingleCellExperiment()</a></code>.</li>
+<li>
+<strong>Parallel &amp; sparse execution</strong>: Uses
+<code>BiocParallel</code> and <code>Matrix</code> sparse S4 methods for
+scalable memory-efficient evaluation.</li>
+<li>
+<strong>Downstream statistical engines</strong>: Integrates with
+<code>edgeR</code> (pseudobulk quasi-likelihood differential
+expression/accessibility), <code>CDI</code> (Clustering Deviation
+Index), <code>scater</code> and <code>scuttle</code> (QC and
+normalization utilities), and <code>CellMixS</code> (cell-specific batch
+mixing).</li>
+</ul>
 </div>
 <div class="section level3">
-<h3 id="object-setup-guidelines">Object Setup Guidelines<a class="anchor" aria-label="anchor" href="#object-setup-guidelines"></a>
+<h3 id="comparison-with-related-bioconductor-packages">Comparison with Related Bioconductor Packages<a class="anchor" aria-label="anchor" href="#comparison-with-related-bioconductor-packages"></a>
 </h3>
+<ul>
+<li>
+<strong><code>splatter</code></strong>: Primarily focuses on
+simulating scRNA-seq count matrices (e.g., Splat, Lun, Simple models)
+and provides basic property comparisons via <code>compareSCEs()</code>.
+<code>scSimEval</code> complements <code>splatter</code> by serving as a
+<strong>simulator-agnostic evaluator</strong> that benchmarks any
+simulator output across <strong>56 metrics</strong> in <strong>8
+categories</strong>—spanning distributional distances, dropout/sparsity
+curves, clustering concordance, batch mixing, pseudobulk differential
+fidelity, trajectory topology, cross-modal integration, and
+hardware-normalized scalability.</li>
+<li>
+<strong><code>countsimQC</code></strong>: Generates visual
+comparisons of distributional summaries between synthetic and real count
+matrices (primarily bulk or unimodal RNA-seq). <code>scSimEval</code>
+extends beyond marginal count QC to assess <strong>single-cell
+downstream structure</strong> (clustering ARI/NMI/CDI, batch
+PCR/CMS/ISI, pseudobulk DEG/DA ROC-AUC, scATAC-seq TF-IDF accessibility,
+paired/unpaired RNA+ATAC integration, and <code>core_seconds</code> /
+<code>memory_per_core_mib</code> efficiency).</li>
+</ul>
+<hr>
+</div>
+</div>
+<div class="section level2">
+<h2 id="input-data-format">Input Data Format<a class="anchor" aria-label="anchor" href="#input-data-format"></a>
+</h2>
+<p>All top-level <code>scSimEval</code> evaluation entry points center
+on <strong><code>SingleCellExperiment</code></strong> objects containing
+raw counts (<code>assays(sce)$counts</code>) and cell metadata columns
+(<code>cell_type</code> and <code>batch</code> in
+<code>colData(sce)</code>):</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># 1. Seurat Object Setup (.rds)</span></span>
-<span><span class="co"># Embed annotations in meta.data or via standard column assignment:</span></span>
-<span><span class="va">seurat_obj</span><span class="op">$</span><span class="va">cell_type</span> <span class="op">&lt;-</span> <span class="va">cell_types_vector</span>   <span class="co"># Enables Cat III, V, VI</span></span>
-<span><span class="va">seurat_obj</span><span class="op">$</span><span class="va">batch</span>     <span class="op">&lt;-</span> <span class="va">batch_vector</span>        <span class="co"># Enables Cat IV &amp; V</span></span>
+<code class="sourceCode R"><span><span class="co"># Optional conversion if starting from Seurat:</span></span>
+<span><span class="co"># ref_sce &lt;- Seurat::as.SingleCellExperiment(ref_seurat)</span></span>
+<span><span class="co"># sim_sce &lt;- Seurat::as.SingleCellExperiment(sim_seurat)</span></span></code></pre></div>
+<p>For multiomics studies, pass either a named list
+<code>list(RNA = rna_sce, ATAC = atac_sce)</code> or a single
+<code>SingleCellExperiment</code> containing the secondary assay in
+<code>altExp(sce, "ATAC")</code>.</p>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="quick-start-tutorial-unimodal-scrna-seq">Quick-Start Tutorial (Unimodal scRNA-seq)<a class="anchor" aria-label="anchor" href="#quick-start-tutorial-unimodal-scrna-seq"></a>
+</h2>
+<p>First, load <code>scSimEval</code> and the bundled
+<code>example_scrna</code> dataset (<code>ref</code> and
+<code>sim</code> are <code>SingleCellExperiment</code> objects with
+<code>cell_type</code> and <code>batch</code> already stored in
+<code>colData</code>):</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval/">scSimEval</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">SingleCellExperiment</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Save for scSimEval analysis</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">seurat_obj</span>, file <span class="op">=</span> <span class="st">"dataset.rds"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_scrna"</span>, package <span class="op">=</span> <span class="st">"scSimEval"</span><span class="op">)</span></span>
+<span><span class="va">example_scrna</span><span class="op">$</span><span class="va">ref</span></span>
+<span><span class="co">#&gt; class: SingleCellExperiment </span></span>
+<span><span class="co">#&gt; dim: 100 100 </span></span>
+<span><span class="co">#&gt; metadata(0):</span></span>
+<span><span class="co">#&gt; assays(1): counts</span></span>
+<span><span class="co">#&gt; rownames(100): Os04g0188433 Os05g0202800 ... Os06g0553200 Os04g0578600</span></span>
+<span><span class="co">#&gt; rowData names(0):</span></span>
+<span><span class="co">#&gt; colnames(100): AAACCGGCAAGTGTTT-1 AAACGGATCGATCAGT-1 ...</span></span>
+<span><span class="co">#&gt;   TTTGGTGCATGTCAGC-1 TTTGTGTTCATAACGC-1</span></span>
+<span><span class="co">#&gt; colData names(2): cell_type batch</span></span>
+<span><span class="co">#&gt; reducedDimNames(1): PCA</span></span>
+<span><span class="co">#&gt; mainExpName: NULL</span></span>
+<span><span class="co">#&gt; altExpNames(0):</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">colData</a></span><span class="op">(</span><span class="va">example_scrna</span><span class="op">$</span><span class="va">ref</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt; DataFrame with 3 rows and 2 columns</span></span>
+<span><span class="co">#&gt;                          cell_type    batch</span></span>
+<span><span class="co">#&gt;                           &lt;factor&gt; &lt;factor&gt;</span></span>
+<span><span class="co">#&gt; AAACCGGCAAGTGTTT-1 Parenchyma_cell   Bud_21</span></span>
+<span><span class="co">#&gt; AAACGGATCGATCAGT-1 Parenchyma_cell   Bud_21</span></span>
+<span><span class="co">#&gt; AACAGCAAGGTTAGAG-1 Epidermis         Bud_21</span></span></code></pre></div>
+<p>Run <code><a href="../reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy()</a></code> on
+<code>ref_sce</code> and <code>sim_sce</code>. Here we include timing
+and memory metadata to compute Category VIII scalability metrics
+(<code>compute_bivariate = FALSE</code> and
+<code>include_trajectory = FALSE</code> keep this quick-start vignette
+fast):</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">scrna_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy</a></span><span class="op">(</span></span>
+<span>  ref_sce            <span class="op">=</span> <span class="va">example_scrna</span><span class="op">$</span><span class="va">ref</span>,</span>
+<span>  sim_sce            <span class="op">=</span> <span class="va">example_scrna</span><span class="op">$</span><span class="va">sim</span>,</span>
+<span>  cell_type_col      <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>  batch_col          <span class="op">=</span> <span class="st">"batch"</span>,</span>
+<span>  modality           <span class="op">=</span> <span class="st">"scRNA-seq"</span>,</span>
+<span>  compute_bivariate  <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  include_trajectory <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  elapsed_time       <span class="op">=</span> <span class="fl">12.4</span>,</span>
+<span>  memory_mb          <span class="op">=</span> <span class="fl">420</span>,</span>
+<span>  sim_cores          <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>  threads            <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>  verbose            <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 2. SingleCellExperiment Setup (.rds)</span></span>
-<span><span class="co"># Embed annotations in colData:</span></span>
-<span><span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">$</span><span class="va">cell_type</span> <span class="op">&lt;-</span> <span class="va">cell_types_vector</span> <span class="co"># Enables Cat III, V, VI</span></span>
-<span><span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">$</span><span class="va">batch</span>     <span class="op">&lt;-</span> <span class="va">batch_vector</span>      <span class="co"># Enables Cat IV &amp; V</span></span>
-<span></span>
-<span><span class="co"># Save for scSimEval analysis</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">sce</span>, file <span class="op">=</span> <span class="st">"dataset.rds"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">scrna_res</span><span class="op">$</span><span class="va">metrics_summary_table</span>, <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                     Category     Property                      Metric</span></span>
+<span><span class="co">#&gt; 1  Distributional Properties library_size                 Wasserstein</span></span>
+<span><span class="co">#&gt; 2  Distributional Properties library_size                          KS</span></span>
+<span><span class="co">#&gt; 3  Distributional Properties library_size                         MAD</span></span>
+<span><span class="co">#&gt; 4  Distributional Properties library_size               Bhattacharyya</span></span>
+<span><span class="co">#&gt; 5  Distributional Properties library_size              Runs_Statistic</span></span>
+<span><span class="co">#&gt; 6  Distributional Properties library_size                 NN_Mismatch</span></span>
+<span><span class="co">#&gt; 7  Distributional Properties library_size Between_Dataset_Silh_Global</span></span>
+<span><span class="co">#&gt; 8  Distributional Properties library_size                         MAE</span></span>
+<span><span class="co">#&gt; 9  Distributional Properties library_size                        RMSE</span></span>
+<span><span class="co">#&gt; 10 Distributional Properties library_size                     KDE_ISE</span></span>
+<span><span class="co">#&gt;          Value Sim_Cores</span></span>
+<span><span class="co">#&gt; 1  22.87000000         2</span></span>
+<span><span class="co">#&gt; 2   0.20000000         2</span></span>
+<span><span class="co">#&gt; 3  10.00000000         2</span></span>
+<span><span class="co">#&gt; 4   0.00564741         2</span></span>
+<span><span class="co">#&gt; 5  -2.83556062         2</span></span>
+<span><span class="co">#&gt; 6   0.06500000         2</span></span>
+<span><span class="co">#&gt; 7   0.02451093         2</span></span>
+<span><span class="co">#&gt; 8  22.87000000         2</span></span>
+<span><span class="co">#&gt; 9  45.22554588         2</span></span>
+<span><span class="co">#&gt; 10  0.00123334         2</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="visualizing-results">Visualizing Results<a class="anchor" aria-label="anchor" href="#visualizing-results"></a>
+</h3>
+<p>We can summarize overall category scores or inspect distributional
+Q-Q / density concordance directly from the returned evaluation
+object:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_evaluation_summary.html">plot_evaluation_summary</a></span><span class="op">(</span><span class="va">scrna_res</span><span class="op">)</span></span></code></pre></div>
+<p><img src="scSimEval-workflow_files/figure-html/plot-scrna-1.png" class="r-plt" alt="" width="864"></p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_distribution_qc.html">plot_distribution_qc</a></span><span class="op">(</span></span>
+<span>  ref_data   <span class="op">=</span> <span class="va">example_scrna</span><span class="op">$</span><span class="va">ref</span>,</span>
+<span>  sim_data   <span class="op">=</span> <span class="va">example_scrna</span><span class="op">$</span><span class="va">sim</span>,</span>
+<span>  layout     <span class="op">=</span> <span class="st">"qq"</span>,</span>
+<span>  properties <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"library_size"</span>, <span class="st">"zero_fraction_cell"</span>, <span class="st">"mean_expression"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="scSimEval-workflow_files/figure-html/plot-qc-1.png" class="r-plt" alt="" width="864"></p>
 <hr>
 </div>
 </div>
 <div class="section level2">
-<h2 id="complete-pipeline-core-allocation-table-all-8-categories">4. Complete Pipeline Core Allocation Table (All 8 Categories)<a class="anchor" aria-label="anchor" href="#complete-pipeline-core-allocation-table-all-8-categories"></a>
+<h2 id="quick-start-tutorial-paired-multiomics-scrna-seq-scatac-seq">Quick-Start Tutorial (Paired Multiomics: scRNA-seq +
+scATAC-seq)<a class="anchor" aria-label="anchor" href="#quick-start-tutorial-paired-multiomics-scrna-seq-scatac-seq"></a>
 </h2>
-<table class="table">
-<colgroup>
-<col width="30%">
-<col width="38%">
-<col width="30%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">Pipeline Step / Category</th>
-<th align="center">Cores Used</th>
-<th align="left">Exact Reason</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left"><strong>Property Extraction</strong></td>
-<td align="center">4 cores</td>
-<td align="left">Exactly 4 matrices exist: Ref Cells, Sim Cells, Ref
-Features, Sim Features.</td>
-</tr>
-<tr class="even">
-<td align="left"><strong>Category I (Distributional
-Metrics)</strong></td>
-<td align="center">20 cores</td>
-<td align="left">140+ metric-property combinations split across all
-cores.</td>
-</tr>
-<tr class="odd">
-<td align="left"><strong>Category II &amp; III (Dropout, MMD,
-Gen-PR)</strong></td>
-<td align="center">5 cores</td>
-<td align="left">Exactly 5 distinct mathematical algorithms run in
-parallel.</td>
-</tr>
-<tr class="even">
-<td align="left"><strong>Category IV (Batch Integration &amp;
-Mixing)</strong></td>
-<td align="center">2 cores (if 2 batches)</td>
-<td align="left">Number of batches
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>B</mi><mo>=</mo><mn>2</mn><mo>⟹</mo></mrow><annotation encoding="application/x-tex">B = 2 \implies</annotation></semantics></math>
-only
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>B</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>B</mi><mo>−</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">B(B-1) = 2</annotation></semantics></math>
-cross-batch transfer pairs exist
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo>→</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">1 \to 2</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2</mn><mo>→</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">2 \to 1</annotation></semantics></math>).</td>
-</tr>
-<tr class="odd">
-<td align="left"><strong>Category V (DE / DA Pseudobulk
-Fidelity)</strong></td>
-<td align="center">20 cores</td>
-<td align="left">Thousands of genes and peaks tested in parallel via
-<code>edgeR-QLF</code>.</td>
-</tr>
-<tr class="even">
-<td align="left"><strong>Category VI (Multiomics Integration &amp;
-Alignment)</strong></td>
-<td align="center">Adaptive (4 to 20 cores)</td>
-<td align="left">Runs on joint low-dim space; ASW scales to all 20
-cores, and graph connectivity runs in fast C++ via <code>RANN</code>.
-<em>(Multiomics mode only)</em>
-</td>
-</tr>
-<tr class="odd">
-<td align="left"><strong>Category VII (Trajectory &amp;
-Dynverse)</strong></td>
-<td align="center">20 cores</td>
-<td align="left">Random Forest trees (<code>ranger</code>) and geodesic
-distances scale across all cores.</td>
-</tr>
-<tr class="even">
-<td align="left"><strong>Category VIII (Computational
-Scalability)</strong></td>
-<td align="center">1 core</td>
-<td align="left">Measures wall-clock runtime (<code>core_seconds</code>)
-and peak resident memory (RAM MiB).</td>
-</tr>
-</tbody>
-</table>
+<p>For simultaneous co-assay simulations,
+<code><a href="../reference/evaluate_multiomics_accuracy.html">evaluate_multiomics_accuracy()</a></code> jointly evaluates both
+unimodal layers plus Category VI cross-modal alignment:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_multiomics"</span>, package <span class="op">=</span> <span class="st">"scSimEval"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">multi_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/evaluate_multiomics_accuracy.html">evaluate_multiomics_accuracy</a></span><span class="op">(</span></span>
+<span>  ref_multi    <span class="op">=</span> <span class="va">example_multiomics</span><span class="op">$</span><span class="va">ref_multi</span>,</span>
+<span>  sim_multi    <span class="op">=</span> <span class="va">example_multiomics</span><span class="op">$</span><span class="va">sim_multi</span>,</span>
+<span>  pairing      <span class="op">=</span> <span class="st">"paired"</span>,</span>
+<span>  elapsed_time <span class="op">=</span> <span class="fl">28.5</span>,</span>
+<span>  memory_mb    <span class="op">=</span> <span class="fl">1024</span>,</span>
+<span>  sim_cores    <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>  threads      <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>  verbose      <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">multi_res</span><span class="op">$</span><span class="va">benchmark_summary_table</span><span class="op">$</span><span class="va">Category</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;       (VI) Multiomics Integration &amp; Alignment </span></span>
+<span><span class="co">#&gt;                                             5 </span></span>
+<span><span class="co">#&gt;           (VII) Trajectory &amp; Lineage Topology </span></span>
+<span><span class="co">#&gt;                                             5 </span></span>
+<span><span class="co">#&gt; (VIII) Computational Scalability &amp; Efficiency </span></span>
+<span><span class="co">#&gt;                                             2 </span></span>
+<span><span class="co">#&gt;     Biological Signal &amp; Differential Fidelity </span></span>
+<span><span class="co">#&gt;                                            12 </span></span>
+<span><span class="co">#&gt;    Cellular Manifold &amp; Clustering Concordance </span></span>
+<span><span class="co">#&gt;                                            16 </span></span>
+<span><span class="co">#&gt;                     Distributional Properties </span></span>
+<span><span class="co">#&gt;                                           270 </span></span>
+<span><span class="co">#&gt;            Sparsity &amp; Zero-Inflation Dynamics </span></span>
+<span><span class="co">#&gt;                                             7 </span></span>
+<span><span class="co">#&gt;   Technical Variation &amp; Batch Mixing Dynamics </span></span>
+<span><span class="co">#&gt;                                            10</span></span></code></pre></div>
+<p>We can also compute normalized scores (<code>[0, 1]</code>, where
+<code>1</code> is best) via <code><a href="../reference/normalize_bubble_scores.html">normalize_bubble_scores()</a></code> and
+summarize multiple simulators with
+<code><a href="../reference/plot_benchmark_bubble_matrix.html">plot_benchmark_bubble_matrix()</a></code>.</p>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="bundled-example-datasets-shiny-data-modes">5. Bundled Example Datasets &amp; Shiny Data Modes<a class="anchor" aria-label="anchor" href="#bundled-example-datasets-shiny-data-modes"></a>
+<h2 id="further-reading-interactive-gui">Further Reading &amp; Interactive GUI<a class="anchor" aria-label="anchor" href="#further-reading-interactive-gui"></a>
 </h2>
-<p><code>scSimEval</code> ships with lightweight, real plant single-cell
-example datasets (<code><a href="https://rdrr.io/r/utils/data.html" class="external-link">data()</a></code> and Shiny Studio Data Modes 1–4)
-derived from empirical Rice Bud and Soybean Root multiomics
-references:</p>
-<table class="table">
-<colgroup>
-<col width="20%">
-<col width="20%">
-<col width="20%">
-<col width="20%">
-<col width="20%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">Shiny Data Mode</th>
-<th align="left">Package Dataset</th>
-<th align="left">Tissue &amp; Scope</th>
-<th align="left">Dimensions</th>
-<th align="left">Simulators Included</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left"><strong>Mode 1: scRNA-seq</strong></td>
-<td align="left">
-<code>example_rice_bud$reference$rna</code> /
-<code>example_scrna</code>
-</td>
-<td align="left">Rice Bud paired scRNA-seq</td>
-<td align="left">100 balanced cells (8 cell types)
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math>
-top 100 HVGs</td>
-<td align="left">6 (<code>scMultiSim</code>, <code>scDesign3</code>,
-<code>MOSim</code>, <code>scCross</code>, <code>scMoMtF</code>,
-<code>Matilda</code>)</td>
-</tr>
-<tr class="even">
-<td align="left"><strong>Mode 2: scATAC-seq</strong></td>
-<td align="left">
-<code>example_rice_bud$reference$atac</code> /
-<code>example_scatac</code>
-</td>
-<td align="left">Rice Bud paired scATAC-seq</td>
-<td align="left">100 balanced cells (8 cell types)
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math>
-top 100 HVPs</td>
-<td align="left">6 (<code>scMultiSim</code>, <code>scDesign3</code>,
-<code>MOSim</code>, <code>scCross</code>, <code>scMoMtF</code>,
-<code>Matilda</code>)</td>
-</tr>
-<tr class="odd">
-<td align="left"><strong>Mode 3: Paired Multiomics</strong></td>
-<td align="left">
-<code>example_rice_bud</code> /
-<code>example_multiomics</code>
-</td>
-<td align="left">Rice Bud paired RNA + ATAC</td>
-<td align="left">100 identical paired cells
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math>
-100 HVGs + 100 HVPs</td>
-<td align="left">6 (<code>scMultiSim</code>, <code>scDesign3</code>,
-<code>MOSim</code>, <code>scCross</code>, <code>scMoMtF</code>,
-<code>Matilda</code>)</td>
-</tr>
-<tr class="even">
-<td align="left"><strong>Mode 3: Unpaired Multiomics</strong></td>
-<td align="left"><code>example_soybean_root</code></td>
-<td align="left">Soybean Root unpaired RNA + ATAC</td>
-<td align="left">100 RNA cells
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math>
-100 HVGs; 100 ATAC cells
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math>
-100 HVPs (8 cell types)</td>
-<td align="left">3 (<code>scMultiSim</code>, <code>scDesign3</code>,
-<code>scCross</code>)</td>
-</tr>
-<tr class="odd">
-<td align="left"><strong>Mode 4: Upload Saved Results</strong></td>
-<td align="left"><code>demo_paired_multiomics_saved.rds</code></td>
-<td align="left">Pre-computed Rice Bud Paired session</td>
-<td align="left">6 simulators, 1,950 evaluated metric rows</td>
-<td align="left">Instant zero-latency leaderboard &amp; visualization
-reload</td>
-</tr>
-</tbody>
-</table>
+<ul>
+<li>
+<strong>Complete 56-Metric Reference</strong>: See
+<code><a href="../articles/metrics-catalog.html">vignette("metrics-catalog", package = "scSimEval")</a></code> for
+definitions, formulas, and optimization directions for every measure
+across Categories I–VIII.</li>
+<li>
+<strong>Domain Case Studies</strong>: See the scRNA-seq, scATAC-seq,
+paired multiomics, unpaired multiomics, and <code>.rds</code>
+aggregation vignettes.</li>
+<li>
+<strong>Interactive Shiny Interface</strong>: Point-and-click
+dataset exploration, dynamic filtering, and high-resolution report
+exports are available in the companion package
+<strong><code>scSimEvalGUI</code></strong>
+(<code>scSimEvalGUI::launch_scSimEval_app()</code>).</li>
+</ul>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="session-information">Session Information<a class="anchor" aria-label="anchor" href="#session-information"></a>
+</h2>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; R version 4.6.2 (2026-10-29)</span></span>
+<span><span class="co">#&gt; Platform: x86_64-pc-linux-gnu</span></span>
+<span><span class="co">#&gt; Running under: Ubuntu 24.04.5 LTS</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Matrix products: default</span></span>
+<span><span class="co">#&gt; BLAS:   /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.12.0 </span></span>
+<span><span class="co">#&gt; LAPACK: /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.12.0  LAPACK version 3.12.0</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; locale:</span></span>
+<span><span class="co">#&gt;  [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              </span></span>
+<span><span class="co">#&gt;  [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    </span></span>
+<span><span class="co">#&gt;  [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   </span></span>
+<span><span class="co">#&gt;  [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 </span></span>
+<span><span class="co">#&gt;  [9] LC_ADDRESS=C               LC_TELEPHONE=C            </span></span>
+<span><span class="co">#&gt; [11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; time zone: Asia/Kolkata</span></span>
+<span><span class="co">#&gt; tzcode source: system (glibc)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attached base packages:</span></span>
+<span><span class="co">#&gt; [1] stats4    stats     graphics  grDevices utils     datasets  methods  </span></span>
+<span><span class="co">#&gt; [8] base     </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; other attached packages:</span></span>
+<span><span class="co">#&gt;  [1] SingleCellExperiment_1.34.0 SummarizedExperiment_1.42.0</span></span>
+<span><span class="co">#&gt;  [3] Biobase_2.72.0              GenomicRanges_1.64.0       </span></span>
+<span><span class="co">#&gt;  [5] Seqinfo_1.2.0               IRanges_2.46.0             </span></span>
+<span><span class="co">#&gt;  [7] S4Vectors_0.50.3            BiocGenerics_0.58.1        </span></span>
+<span><span class="co">#&gt;  [9] generics_0.1.4              MatrixGenerics_1.24.0      </span></span>
+<span><span class="co">#&gt; [11] matrixStats_1.5.0           scSimEval_0.99.10          </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span><span class="co">#&gt;   [1] RColorBrewer_1.1-3  jsonlite_2.0.0      magrittr_2.0.5     </span></span>
+<span><span class="co">#&gt;   [4] ggbeeswarm_0.7.3    SuppDists_1.1-9.9   farver_2.1.2       </span></span>
+<span><span class="co">#&gt;   [7] rmarkdown_2.32      fs_2.1.0            ragg_1.5.2         </span></span>
+<span><span class="co">#&gt;  [10] vctrs_0.7.3         htmltools_0.5.9     S4Arrays_1.12.1    </span></span>
+<span><span class="co">#&gt;  [13] BiocNeighbors_2.6.0 SparseArray_1.12.3  sass_0.4.10        </span></span>
+<span><span class="co">#&gt;  [16] sctransform_0.4.3   parallelly_1.50.0   KernSmooth_2.23-27 </span></span>
+<span><span class="co">#&gt;  [19] bslib_0.12.0        htmlwidgets_1.6.4   desc_1.4.3         </span></span>
+<span><span class="co">#&gt;  [22] ica_1.0-3           plyr_1.8.9          cachem_1.1.0       </span></span>
+<span><span class="co">#&gt;  [25] igraph_2.3.4        lifecycle_1.0.5     pkgconfig_2.0.3    </span></span>
+<span><span class="co">#&gt;  [28] rsvd_2.0.0          Matrix_1.7-6        R6_2.6.1           </span></span>
+<span><span class="co">#&gt;  [31] fastmap_1.2.0       future_1.82.0       digest_0.6.39      </span></span>
+<span><span class="co">#&gt;  [34] patchwork_1.3.2     Seurat_6.0.0        scater_1.40.2      </span></span>
+<span><span class="co">#&gt;  [37] RSpectra_0.16-2     irlba_2.4.1         textshaping_1.0.5  </span></span>
+<span><span class="co">#&gt;  [40] beachmat_2.28.0     labeling_0.4.3      progressr_1.1.0    </span></span>
+<span><span class="co">#&gt;  [43] httr_1.4.9          abind_1.4-8         compiler_4.6.2     </span></span>
+<span><span class="co">#&gt;  [46] proxy_0.4-29        withr_3.0.3         S7_0.2.2           </span></span>
+<span><span class="co">#&gt;  [49] BiocParallel_1.46.0 viridis_0.6.5       fastDummies_1.7.6  </span></span>
+<span><span class="co">#&gt;  [52] MASS_7.3-66         DelayedArray_0.38.2 ggsci_5.2.0        </span></span>
+<span><span class="co">#&gt;  [55] tools_4.6.2         ranger_0.18.0       vipor_0.4.7        </span></span>
+<span><span class="co">#&gt;  [58] otel_0.3.0          beeswarm_0.4.0      future.apply_1.21.0</span></span>
+<span><span class="co">#&gt;  [61] glue_1.8.1          grid_4.6.2          Rtsne_0.17         </span></span>
+<span><span class="co">#&gt;  [64] cluster_2.1.8.3     reshape2_1.4.5      gtable_0.3.6       </span></span>
+<span><span class="co">#&gt;  [67] class_7.3-24        data.table_1.18.6.1 BiocSingular_1.28.1</span></span>
+<span><span class="co">#&gt;  [70] ScaledMatrix_1.20.0 sp_2.2-4            XVector_0.52.0     </span></span>
+<span><span class="co">#&gt;  [73] RcppAnnoy_0.0.23    ggrepel_0.9.8       RANN_2.6.3         </span></span>
+<span><span class="co">#&gt;  [76] pillar_1.11.1       stringr_1.6.0       spam_2.11-4        </span></span>
+<span><span class="co">#&gt;  [79] RcppHNSW_0.7.0      limma_3.68.5        splines_4.6.2      </span></span>
+<span><span class="co">#&gt;  [82] dplyr_1.2.1         lattice_0.23-1      tidyselect_1.2.1   </span></span>
+<span><span class="co">#&gt;  [85] locfit_1.5-9.12     CDI_1.10.0          scuttle_1.22.0     </span></span>
+<span><span class="co">#&gt;  [88] pbapply_1.7-5       knitr_1.52          gridExtra_2.3.1    </span></span>
+<span><span class="co">#&gt;  [91] edgeR_4.10.7        scattermore_1.2     RhpcBLASctl_0.23-42</span></span>
+<span><span class="co">#&gt;  [94] xfun_0.62           pls_2.9-0           statmod_1.5.2      </span></span>
+<span><span class="co">#&gt;  [97] stringi_1.8.9       yaml_2.3.12         evaluate_1.0.5     </span></span>
+<span><span class="co">#&gt; [100] codetools_0.2-20    kSamples_1.2-12     tibble_3.3.1       </span></span>
+<span><span class="co">#&gt; [103] cli_3.6.6           uwot_0.2.5          RcppParallel_6.2.1 </span></span>
+<span><span class="co">#&gt; [106] systemfonts_1.3.3   jquerylib_0.1.4     Rcpp_1.1.2         </span></span>
+<span><span class="co">#&gt; [109] globals_0.20.0      png_0.1-9           parallel_4.6.2     </span></span>
+<span><span class="co">#&gt; [112] pkgdown_2.2.1       ggplot2_4.0.4       dotCall64_1.2      </span></span>
+<span><span class="co">#&gt; [115] mclust_6.1.3        listenv_1.1.0       viridisLite_0.4.3  </span></span>
+<span><span class="co">#&gt; [118] scales_1.4.0        ggridges_0.5.7      e1071_1.7-17       </span></span>
+<span><span class="co">#&gt; [121] SeuratObject_5.4.0  rlang_1.3.0         cowplot_1.2.0</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

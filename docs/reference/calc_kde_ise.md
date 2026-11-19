@@ -36,5 +36,5 @@ identical density shapes).
 ref <- stats::rnorm(50)
 sim <- stats::rnorm(50)
 calc_kde_ise(ref, sim)
-#> [1] 0.01216429
+#> [1] 0.001464264
 ```

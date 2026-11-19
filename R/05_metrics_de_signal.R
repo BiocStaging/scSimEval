@@ -10,7 +10,7 @@
 #' Fits a quasi-likelihood negative binomial generalized linear model including
 #' the cellular detection rate (DetRate: fraction of expressed genes per cell) as a covariate.
 #'
-#' @param counts Single-cell count matrix (genes x cells), or SingleCellExperiment / Seurat object.
+#' @param counts Single-cell count matrix (genes x cells), or \code{SingleCellExperiment} object.
 #' @param group Factor or vector specifying the comparison cell groups (must contain exactly 2 levels for pairwise DE).
 #' @param cdr Optional numeric vector of cellular detection rates per cell. If NULL, computed automatically as fraction of non-zero genes.
 #' @param fdr_cutoff FDR / adjusted p-value threshold for significance (default 0.05).
@@ -43,7 +43,7 @@ run_edger_qlf_detrate <- function(
   if (inherits(counts, "SingleCellExperiment")) {
     counts <- SummarizedExperiment::assay(counts, "counts")
   } else if (inherits(counts, "Seurat")) {
-    counts <- .get_seurat_counts(counts)
+    stop("Seurat objects are not directly supported; convert via Seurat::as.SingleCellExperiment().", call. = FALSE)
   }
   
   group <- droplevels(as.factor(group))
@@ -97,7 +97,7 @@ run_edger_qlf_detrate <- function(
   if (requireNamespace("edgeR", quietly = TRUE)) {
     res_df <- tryCatch({
       dge <- edgeR::DGEList(counts = sub_counts, group = group)
-      dge <- suppressMessages(edgeR::calcNormFactors(dge))
+      dge <- edgeR::calcNormFactors(dge)
       dge <- edgeR::estimateDisp(dge, design = design)
       fit <- edgeR::glmQLFit(dge, design = design)
       qlf <- edgeR::glmQLFTest(fit, coef = ncol(design))
@@ -663,13 +663,14 @@ evaluate_predictive_de_model <- function(
 #' @noRd
 .calc_pval_distribution_score <- function(pvals) {
   pvals <- pvals[!is.na(pvals) & !is.nan(pvals)]
-  if (length(pvals) < 5) return(1.0)
-  
-  ks_stat <- tryCatch({
-    suppressWarnings(stats::ks.test(pvals, "punif", 0, 1)$statistic)
-  }, error = function(e) 0.0)
-  
-  as.numeric(max(0.0, min(1.0, 1.0 - as.numeric(ks_stat))))
+  n <- length(pvals)
+  if (n < 5L) return(1.0)
+
+  p_sorted <- sort(pvals)
+  d_plus <- max(seq_len(n) / n - p_sorted)
+  d_minus <- max(p_sorted - (seq_len(n) - 1) / n)
+  ks_stat <- max(d_plus, d_minus)
+  as.numeric(max(0.0, min(1.0, 1.0 - ks_stat)))
 }
 
 .run_pairwise_pb_contrasts <- function(
@@ -889,12 +890,12 @@ evaluate_deg_fidelity <- function(
   if (inherits(ref_data, "SingleCellExperiment")) {
     ref_data <- SummarizedExperiment::assay(ref_data, "counts")
   } else if (inherits(ref_data, "Seurat")) {
-    ref_data <- .get_seurat_counts(ref_data)
+    stop("Seurat objects are not directly supported; convert via Seurat::as.SingleCellExperiment().", call. = FALSE)
   }
   if (inherits(sim_data, "SingleCellExperiment")) {
     sim_data <- SummarizedExperiment::assay(sim_data, "counts")
   } else if (inherits(sim_data, "Seurat")) {
-    sim_data <- .get_seurat_counts(sim_data)
+    stop("Seurat objects are not directly supported; convert via Seurat::as.SingleCellExperiment().", call. = FALSE)
   }
   
   ref_celltypes <- as.character(ref_celltypes)
@@ -1056,7 +1057,7 @@ evaluate_rna_de_fidelity <- evaluate_deg_fidelity
 #' Frequently applied to scATAC-seq peak accessibility data prior to pseudobulking
 #' or single-cell modeling (Squair et al., 2021; Teo et al., 2024 / Libra).
 #'
-#' @param mat Single-cell matrix, sparse dgCMatrix, SingleCellExperiment, or Seurat object.
+#' @param mat Single-cell matrix, sparse \code{dgCMatrix}, or \code{SingleCellExperiment} object.
 #'
 #' @return A matrix of the same class with all positive entries set to 1.
 #' @examples
@@ -1067,15 +1068,13 @@ binarize_matrix <- function(mat) {
   if (inherits(mat, "SingleCellExperiment")) {
     mat <- SummarizedExperiment::assay(mat, "counts")
   } else if (inherits(mat, "Seurat")) {
-    mat <- .get_seurat_counts(mat)
+    stop("Seurat objects are not directly supported; convert via Seurat::as.SingleCellExperiment().", call. = FALSE)
   }
-  
-  if (inherits(mat, "dgCMatrix")) {
-    res <- mat
-    res@x[res@x > 0] <- 1
-    return(res)
+
+  if (inherits(mat, "Matrix")) {
+    return((mat > 0) * 1)
   }
-  
+
   res <- mat
   res[res > 0] <- 1
   res
@@ -1123,7 +1122,7 @@ to_pseudobulk <- function(
   if (inherits(input, "SingleCellExperiment")) {
     input <- SummarizedExperiment::assay(input, "counts")
   } else if (inherits(input, "Seurat")) {
-    input <- .get_seurat_counts(input)
+    stop("Seurat objects are not directly supported; convert via Seurat::as.SingleCellExperiment().", call. = FALSE)
   }
   
   if (isTRUE(binarize)) {
@@ -1249,7 +1248,7 @@ run_edger_qlf_da <- function(
     res_df <- tryCatch({
       y <- edgeR::DGEList(counts = sub_mat, group = groups)
       if (norm_method != "none") {
-        y <- suppressMessages(edgeR::calcNormFactors(y, method = norm_method))
+        y <- edgeR::calcNormFactors(y, method = norm_method)
       }
       y <- edgeR::estimateDisp(y, design)
       fit <- edgeR::glmQLFit(y, design)
@@ -1411,12 +1410,12 @@ evaluate_atac_da_fidelity <- function(
   if (inherits(ref_data, "SingleCellExperiment")) {
     ref_data <- SummarizedExperiment::assay(ref_data, "counts")
   } else if (inherits(ref_data, "Seurat")) {
-    ref_data <- .get_seurat_counts(ref_data)
+    stop("Seurat objects are not directly supported; convert via Seurat::as.SingleCellExperiment().", call. = FALSE)
   }
   if (inherits(sim_data, "SingleCellExperiment")) {
     sim_data <- SummarizedExperiment::assay(sim_data, "counts")
   } else if (inherits(sim_data, "Seurat")) {
-    sim_data <- .get_seurat_counts(sim_data)
+    stop("Seurat objects are not directly supported; convert via Seurat::as.SingleCellExperiment().", call. = FALSE)
   }
   
   ref_celltypes <- as.character(ref_celltypes)

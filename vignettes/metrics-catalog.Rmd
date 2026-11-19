@@ -107,3 +107,11 @@ The table below lists all 56 evaluation measures implemented in `scSimEval`. For
 | 54 | `wcor_features` | Driver Gene Importance Corr. | VII. Lineage Trajectory | Higher is better | Verifies that the exact same dynamic regulatory genes govern trajectory progression in simulated and real cells. |
 | 55 | `core_seconds` | Cumulative Core-Seconds | VIII. Scalability | Lower is better | Total computational effort: elapsed wall-clock seconds multiplied by the number of allocated processor cores. |
 | 56 | `memory_per_core_mib` | Peak RAM per Core (MiB) | VIII. Scalability | Lower is better | Hardware-normalized resident memory footprint: peak RAM consumption divided by allocated cores. |
+
+---
+
+# Session Information
+
+```{r session-info}
+sessionInfo()
+```

@@ -21,8 +21,9 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-demonstrations" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Demonstrations</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-demonstrations"><li><a class="dropdown-item" href="../articles/demo-scrna.html">1. scRNA-seq Simulation Evaluation</a></li>
     <li><a class="dropdown-item" href="../articles/demo-scatac.html">2. scATAC-seq Simulation Evaluation</a></li>
-    <li><a class="dropdown-item" href="../articles/demo-multiomics.html">3. Multiomics (RNA + ATAC) Evaluation</a></li>
-    <li><a class="dropdown-item" href="../articles/demo-saved-rds.html">4. Analyzing Pre-Saved Benchmark (.rds)</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-multiomics.html">3. Paired Multiomics (RNA + ATAC) Evaluation</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-unpaired-multiomics.html">4. Unpaired Multiomics (RNA + ATAC) Evaluation</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-saved-rds.html">5. Analyzing Pre-Saved Benchmark (.rds)</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../articles/metrics-catalog.html">Metric Catalog (56 Metrics)</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -74,8 +75,42 @@
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Named list of univariate distance metrics.</p>
-    </div>
+    <p>A named list of 11 numeric univariate distance and similarity metrics
+  (names prefixed with <code>metric_prefix_</code> when provided):</p><dl><dt>MAD</dt>
+<dd><p>Median absolute difference between quantile-aligned vectors.</p></dd>
+
+  <dt>KS</dt>
+<dd><p>1D Kolmogorov-Smirnov maximum vertical distance between empirical CDFs.</p></dd>
+
+  <dt>MAE</dt>
+<dd><p>Mean absolute error between quantile-aligned vectors.</p></dd>
+
+  <dt>RMSE</dt>
+<dd><p>Root mean squared error between quantile-aligned vectors.</p></dd>
+
+  <dt>Bhattacharyya</dt>
+<dd><p>Bhattacharyya divergence between normalized probability vectors.</p></dd>
+
+  <dt>Wasserstein</dt>
+<dd><p>1D Wasserstein-1 distance between distributions.</p></dd>
+
+  <dt>Runs_Statistic</dt>
+<dd><p>Wald-Wolfowitz runs test z-statistic measuring distribution interleaving.</p></dd>
+
+  <dt>Runs_PValue</dt>
+<dd><p>Left-sided p-value from the Wald-Wolfowitz runs test.</p></dd>
+
+  <dt>NN_Mismatch</dt>
+<dd><p>Fraction of local k-NN neighborhoods showing dataset composition mismatch.</p></dd>
+
+  <dt>Between_Dataset_Silh_Global</dt>
+<dd><p>Global between-dataset silhouette width.</p></dd>
+
+  <dt>KDE_ISE</dt>
+<dd><p>Integrated squared error between kernel density estimates.</p></dd>
+
+
+</dl></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
@@ -83,37 +118,37 @@
 <span class="r-in"><span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">50</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">calc_all_univariate_metrics</span><span class="op">(</span><span class="va">ref</span>, <span class="va">sim</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $MAD</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.132005</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.06811227</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $KS</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1567074</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.08</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $MAE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1783822</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1339628</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $RMSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.2352733</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.2398392</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $Bhattacharyya</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.002745265</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.00184261</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $Wasserstein</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1783822</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1339628</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $Runs_Statistic</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] -0.6030535</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.005089</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $Runs_PValue</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.2732366</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.842573</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $NN_Mismatch</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.07</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $Between_Dataset_Silh_Global</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] -0.00492554</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] -0.01544037</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $KDE_ISE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.01278388</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.008094561</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>
     </div>

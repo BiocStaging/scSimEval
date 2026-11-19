@@ -1,6 +1,6 @@
 # Perform TF-IDF Normalization for scATAC-seq Peak Matrices
 
-Computes Term Frequency–Inverse Document Frequency (TF-IDF)
+Computes Term Frequency-Inverse Document Frequency (TF-IDF)
 normalization following the Signac (`RunTFIDF(..., method = 1)`) and
 simPIC (Chugh et al., 2024) standard for scATAC-seq chromatin
 accessibility matrices: \$\$\text{TF-IDF}\_{i,j} = \log\left(1 +
@@ -17,8 +17,8 @@ tfidf_transform(mat, scale_factor = 10000)
 
 - mat:
 
-  A peak-by-cell count matrix, sparse `dgCMatrix`,
-  `SingleCellExperiment`, or `Seurat` object.
+  A peak-by-cell count matrix, sparse `dgCMatrix`, or
+  `SingleCellExperiment` object.
 
 - scale_factor:
 

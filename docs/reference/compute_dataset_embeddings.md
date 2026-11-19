@@ -88,21 +88,19 @@ emb <- compute_dataset_embeddings(
   reduction = "umap",
   cell_types = example_scrna$cell_types
 )
-#> Warning: You're computing too large a percentage of total singular values, use a standard svd instead.
-#> Warning: You're computing too large a percentage of total singular values, use a standard svd instead.
 head(emb)
-#>   Cell_ID       Dim1       Dim2   Dataset      Role Dataset_Type Cell_Type
-#> 1 Cell_01  2.1842285  0.3066108 Reference Reference    Reference     TypeA
-#> 2 Cell_02 -0.6592609 -1.5866539 Reference Reference    Reference     TypeA
-#> 3 Cell_03  1.4652766  1.5027129 Reference Reference    Reference     TypeA
-#> 4 Cell_04 -1.8158411 -0.5365884 Reference Reference    Reference     TypeA
-#> 5 Cell_05 -0.3859525  0.9999394 Reference Reference    Reference     TypeA
-#> 6 Cell_06 -0.4865342 -0.7764473 Reference Reference    Reference     TypeA
-#>     Cluster Library_Size Detected_Features   Batch
-#> 1 Cluster_2          225                47 Batch 1
-#> 2 Cluster_2          208                49 Batch 1
-#> 3 Cluster_1          262                48 Batch 1
-#> 4 Cluster_2          227                47 Batch 1
-#> 5 Cluster_1          255                51 Batch 1
-#> 6 Cluster_1          256                46 Batch 1
+#>              Cell_ID       Dim1       Dim2   Dataset      Role Dataset_Type
+#> 1 AAACCGGCAAGTGTTT-1  1.5914843  1.4215237 Reference Reference    Reference
+#> 2 AAACGGATCGATCAGT-1  1.4820130  0.1709445 Reference Reference    Reference
+#> 3 AACAGCAAGGTTAGAG-1  0.4982631 -1.8602255 Reference Reference    Reference
+#> 4 AACCTAATCAAGTGAG-1 -2.4570603 -0.5679842 Reference Reference    Reference
+#> 5 AAGGTGCAGGGTCCAC-1 -0.7598619  3.5520495 Reference Reference    Reference
+#> 6 AAGTTTGTCCACCTGT-1  0.1700575 -1.1177501 Reference Reference    Reference
+#>           Cell_Type   Cluster Library_Size Detected_Features   Batch
+#> 1   Parenchyma_cell Cluster_3            6                 5 Batch 1
+#> 2   Parenchyma_cell Cluster_4            2                 2 Batch 1
+#> 3         Epidermis Cluster_8           18                11 Batch 1
+#> 4    Bud_primordium Cluster_4           17                11 Batch 1
+#> 5 Vascular_cylinder Cluster_5          271                14 Batch 1
+#> 6     Root_meristem Cluster_3           10                 8 Batch 1
 ```

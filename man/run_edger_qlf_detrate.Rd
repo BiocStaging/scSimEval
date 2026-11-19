@@ -14,7 +14,7 @@ run_edger_qlf_detrate(
 )
 }
 \arguments{
-\item{counts}{Single-cell count matrix (genes x cells), or SingleCellExperiment / Seurat object.}
+\item{counts}{Single-cell count matrix (genes x cells), or \code{SingleCellExperiment} object.}
 
 \item{group}{Factor or vector specifying the comparison cell groups (must contain exactly 2 levels for pairwise DE).}
 

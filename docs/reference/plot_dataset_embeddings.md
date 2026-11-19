@@ -41,18 +41,18 @@ plot_dataset_embeddings(
 
   `"facet"`
 
-  : Faceted grid showing Reference alongside all selected simulated
-    datasets simultaneously (default).
+  :   Faceted grid showing Reference alongside all selected simulated
+      datasets simultaneously (default).
 
   `"side_by_side"`
 
-  : Direct side-by-side comparison of Reference versus a single chosen
-    simulator.
+  :   Direct side-by-side comparison of Reference versus a single chosen
+      simulator.
 
   `"overlay"`
 
-  : Overlaid single coordinate space showing Reference and Simulated
-    cells together.
+  :   Overlaid single coordinate space showing Reference and Simulated
+      cells together.
 
 - color_by:
 
@@ -100,7 +100,5 @@ emb <- compute_dataset_embeddings(
   reduction = "umap",
   cell_types = example_scrna$cell_types
 )
-#> Warning: You're computing too large a percentage of total singular values, use a standard svd instead.
-#> Warning: You're computing too large a percentage of total singular values, use a standard svd instead.
 plot_dataset_embeddings(emb, reduction = "umap", layout = "facet")
 ```

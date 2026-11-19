@@ -10,10 +10,9 @@ Biotechnology, 2019*):
 2.  Low-expression gene filtering (expressed in \\\ge 5\\\\ of cells and
     average expression \\\> 0.02\\).
 
-3.  HVG selection via mean-variance decomposition
-    ([`scran::modelGeneVar`](https://rdrr.io/pkg/scran/man/modelGeneVar.html)
-    with `FDR < 0.05` and biological variance `> 0.5`, with adaptive
-    top-HVG fallback for sparse/small benchmark sets).
+3.  HVG selection via mean-variance decomposition (loess trend
+    decomposition with `FDR < 0.05` and biological variance `> 0.5`,
+    with adaptive top-HVG fallback for sparse/small benchmark sets).
 
 4.  Iterative removal of all-zero cells and uninformative zero features
     until convergence.
@@ -40,12 +39,11 @@ preprocess_trajectory_hvgs(
 
 - ref_data:
 
-  Reference count matrix, `SingleCellExperiment`, or `Seurat` object.
+  Reference count matrix or `SingleCellExperiment` object.
 
 - sim_data:
 
-  Optional simulated count matrix, `SingleCellExperiment`, or `Seurat`
-  object.
+  Optional simulated count matrix or `SingleCellExperiment` object.
 
 - cell_types_ref:
 
@@ -100,5 +98,5 @@ data(example_scrna, package = "scSimEval")
 prep <- preprocess_trajectory_hvgs(example_scrna$ref, example_scrna$sim,
   cell_types_ref = example_scrna$cell_types, cell_types_sim = example_scrna$cell_types)
 length(prep$hvgs)
-#> [1] 60
+#> [1] 47
 ```

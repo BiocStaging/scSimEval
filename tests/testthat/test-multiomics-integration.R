@@ -62,8 +62,6 @@ test_that("evaluate_multiomics_accuracy integrates Category VI metrics into mast
   res <- evaluate_multiomics_accuracy(
     ref_multi = m$ref_multi,
     sim_multi = m$sim_multi,
-    cell_types = rep(c("A", "B"), each = 50),
-    batch_info = rep(c("Rep1", "Rep2"), 50),
     compute_bivariate = FALSE,
     verbose = FALSE
   )

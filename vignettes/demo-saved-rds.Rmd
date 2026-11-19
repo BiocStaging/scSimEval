@@ -228,10 +228,10 @@ knitr::include_graphics("figures/presaved_scalability_benchmark.png")
 
 # 4. Instant Exploration in Shiny Studio
 
-Any individual or consolidated `.rds` benchmark file can also be loaded into the interactive **scSimEval Shiny Studio** with zero latency:
+Interactive visual exploration of `.rds` benchmark bundles is available via the companion **`scSimEvalGUI`** package:
 
 ```r
-launch_scSimEval_app()
+scSimEvalGUI::launch_scSimEval_app()
 ```
 
 Navigate to **Data Hub $\rightarrow$ Upload Pre-Saved Benchmark Session (.rds)** to interactively filter tissues (`Flag`, `Leaf`, `Root`), toggle metric categories, inspect leaderboards, and export custom figures without re-running evaluations.

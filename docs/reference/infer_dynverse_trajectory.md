@@ -54,5 +54,4 @@ containing `milestone_ids`, `milestone_network`, `progressions`,
 data(example_scrna, package = "scSimEval")
 prep <- preprocess_trajectory_hvgs(example_scrna$ref, cell_types_ref = example_scrna$cell_types)
 traj <- infer_dynverse_trajectory(prep$ref_expr, prep$cell_types_ref)
-#> Error in dimnames(x) <- dn: length of 'dimnames' [1] not equal to array extent
 ```

@@ -8,45 +8,39 @@ evaluate_multiple_datasets(
   datasets,
   pair_by_prefix = TRUE,
   compute_bivariate = FALSE,
-  threads = 1,
+  threads = 1L,
   verbose = TRUE
 )
 }
 \arguments{
-\item{datasets}{A named list of datasets to evaluate. Can be provided in two formats:
-\itemize{
-  \item \strong{Format A (Grouped Multiomics & Unimodal):} A list of dataset specifications, e.g.:
-    \code{list("Method 1" = list(ref = list(rna = ..., atac = ...), sim = list(rna = ..., atac = ...)), "Method 3" = list(ref = ..., sim = ..., modality = "scATAC-seq"))}
-  \item \strong{Format B (Flat Named Datasets):} A list with named modality datasets, e.g.:
-    \code{list("Method 1-scRNA-seq" = list(ref = ..., sim = ...), "Method 1-scATAC-seq" = list(ref = ..., sim = ...), "Method 3-scATAC-seq" = list(ref = ..., sim = ...), "Method 4-scRNA-seq" = list(ref = ..., sim = ...))}
-}}
+\item{datasets}{A named list of dataset specifications (\code{Format A} grouped multiomics/unimodal lists,
+or \code{Format B} flat modality-suffixed lists).}
 
-\item{pair_by_prefix}{Logical; if \code{TRUE} (default), datasets sharing a common root prefix
-(such as "Method 1-scRNA-seq" and "Method 1-scATAC-seq") are automatically paired as multiomics
-for joint cross-modal evaluation. If \code{FALSE}, each dataset entry is evaluated independently.}
+\item{pair_by_prefix}{Logical; if \code{TRUE} (default), datasets sharing a root prefix
+across RNA and ATAC entries are paired for multiomics evaluation.}
 
-\item{compute_bivariate}{Logical; whether to compute 2D bivariate tests (default FALSE for speed).}
+\item{compute_bivariate}{Logical; whether to compute 2D bivariate tests (default \code{FALSE}).}
 
-\item{threads}{Number of CPU threads for parallel metric computation. Default is 1.}
+\item{threads}{Integer number of CPU threads. Default is \code{1L}.}
 
-\item{verbose}{Logical; whether to print progress messages. Default is TRUE.}
+\item{verbose}{Logical; whether to print progress messages. Default is \code{TRUE}.}
 }
 \value{
-An S3 object of class \code{scSimEval_consolidated} containing:
-  \itemize{
-    \item \code{consolidated_summary_table}: Master tidy data.frame with columns \code{Dataset}, \code{Data_Name}, \code{Modality}, \code{Category}, \code{Property}, \code{Metric}, and \code{Value}.
-    \item \code{consolidated_score_matrix}: Wide comparison matrix comparing all datasets across metrics.
-    \item \code{dataset_overview}: Aggregate summary table with total metrics and mean scores per dataset.
-    \item \code{dataset_results}: Named list containing detailed evaluation results for each individual dataset.
-  }
+An S3 object of class \code{c("scSimEval_consolidated", "list")} containing:
+\describe{
+  \item{consolidated_summary_table}{Master tidy data.frame with columns \code{Dataset}, \code{Data_Name}, \code{Modality}, \code{Category}, \code{Property}, \code{Metric}, and \code{Value}.}
+  \item{consolidated_score_matrix}{Numeric matrix comparing datasets across all evaluated metric keys.}
+  \item{dataset_overview}{Data frame summarizing metric counts and mean KS, Wasserstein, and RMSE per dataset.}
+  \item{dataset_results}{Named list of detailed per-dataset evaluation outputs.}
+}
 }
 \description{
-Orchestrates simultaneous benchmarking across a collection of single-cell datasets,
-including paired multiomics (e.g., scRNA-seq and scATAC-seq from the same biological experiment)
-and unimodal datasets (e.g., standalone scRNA-seq or scATAC-seq). Produces a unified,
-consolidated summary table, comparative ranking matrix, and dataset overview.
+Orchestrates simultaneous benchmarking across a collection of single-cell
+\code{SingleCellExperiment} datasets, including paired/unpaired multiomics
+and unimodal scRNA-seq or scATAC-seq experiments.
 }
 \examples{
 data(example_scrna, package = "scSimEval")
-res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+ds <- list("DemoCohort" = list(ref = example_scrna$ref, sim = example_scrna$sim))
+res <- evaluate_multiple_datasets(ds, verbose = FALSE)
 }

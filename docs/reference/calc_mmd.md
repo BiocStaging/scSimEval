@@ -69,5 +69,5 @@ Numeric scalar representing the multi-scale RBF Maximum Mean Discrepancy
 ref <- matrix(stats::rnorm(400), 20, 20)
 sim <- matrix(stats::rnorm(400), 20, 20)
 calc_mmd(ref, sim)
-#> [1] 0.2215625
+#> [1] 0.2267079
 ```

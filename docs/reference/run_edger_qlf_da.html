@@ -25,8 +25,9 @@ for scRNA-seq on replicate pseudobulk count matrices using edgeR's Quasi-Likelih
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-demonstrations" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Demonstrations</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-demonstrations"><li><a class="dropdown-item" href="../articles/demo-scrna.html">1. scRNA-seq Simulation Evaluation</a></li>
     <li><a class="dropdown-item" href="../articles/demo-scatac.html">2. scATAC-seq Simulation Evaluation</a></li>
-    <li><a class="dropdown-item" href="../articles/demo-multiomics.html">3. Multiomics (RNA + ATAC) Evaluation</a></li>
-    <li><a class="dropdown-item" href="../articles/demo-saved-rds.html">4. Analyzing Pre-Saved Benchmark (.rds)</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-multiomics.html">3. Paired Multiomics (RNA + ATAC) Evaluation</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-unpaired-multiomics.html">4. Unpaired Multiomics (RNA + ATAC) Evaluation</a></li>
+    <li><a class="dropdown-item" href="../articles/demo-saved-rds.html">5. Analyzing Pre-Saved Benchmark (.rds)</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../articles/metrics-catalog.html">Metric Catalog (56 Metrics)</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -131,14 +132,15 @@ benchmark-proven control over false discovery rates across biological replicates
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">mat</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Rep1:A"</span>, <span class="st">"Rep2:A"</span>, <span class="st">"Rep1:B"</span>, <span class="st">"Rep2:B"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">groups</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"B"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu">run_edger_qlf_da</span><span class="op">(</span><span class="va">mat</span>, <span class="va">groups</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> calcNormFactors has been renamed to normLibSizes</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        feature      logFC   logCPM    F_stat     PValue       FDR is_da</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Peak_1  Peak_1 -0.2606915 13.79811 0.5929909 0.44594805 0.9000085 FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Peak_2  Peak_2 -0.1231070 13.22553 0.0524159 0.82011968 0.9000085 FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Peak_3  Peak_3 -0.3490234 13.39955 0.5677554 0.45572100 0.9000085 FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Peak_4  Peak_4  0.4471192 13.39955 0.9394291 0.33845539 0.9000085 FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Peak_5  Peak_5 -0.7985621 13.46369 3.2861166 0.07764638 0.8013723 FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Peak_6  Peak_6 -0.6912661 13.64058 3.0323557 0.08957894 0.8013723 FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        feature      logFC   logCPM     F_stat    PValue       FDR is_da</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Peak_1  Peak_1 -0.3019143 13.54416 0.46741686 0.4949693 0.8971892 FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Peak_2  Peak_2  0.1974071 13.45300 0.18414511 0.6682968 0.8971892 FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Peak_3  Peak_3 -0.2887477 13.32175 0.37540544 0.5407685 0.8971892 FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Peak_4  Peak_4  0.1137972 13.60187 0.07144893 0.7895141 0.8971892 FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Peak_5  Peak_5  0.4949255 13.65736 1.42380272 0.2341921 0.7888139 FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Peak_6  Peak_6 -0.1030907 13.95182 0.08846914 0.7664411 0.8971892 FALSE</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

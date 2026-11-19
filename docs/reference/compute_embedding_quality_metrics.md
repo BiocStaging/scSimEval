@@ -42,13 +42,11 @@ emb <- compute_dataset_embeddings(
   reduction = "umap",
   cell_types = example_scrna$cell_types
 )
-#> Warning: You're computing too large a percentage of total singular values, use a standard svd instead.
-#> Warning: You're computing too large a percentage of total singular values, use a standard svd instead.
 compute_embedding_quality_metrics(emb)
 #>     Dataset      Role Cells (N) Mean Silhouette ARI (Cluster Fidelity)
-#> 1 Reference Reference        80          0.0009                 0.0277
-#> 2  Splatter Simulated        80          0.0074                 0.0188
+#> 1 Reference Reference       100         -0.0391                 0.1203
+#> 2  Splatter Simulated       100         -0.0191                 0.0725
 #>   Mean Library Size Mean Detected Features Library Size Diff (%)
-#> 1             256.3                   49.2                  0.00
-#> 2             242.3                   48.3                  5.46
+#> 1              37.6                    7.9                  0.00
+#> 2              59.7                    7.1                 58.78
 ```

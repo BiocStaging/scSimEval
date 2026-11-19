@@ -24,7 +24,7 @@ calc_rmse(ref, sim, align = TRUE)
 
 ## Value
 
-Quadratic error penalizing large discrepancies.
+Non-negative numeric root mean squared difference.
 
 ## Examples
 
@@ -32,5 +32,5 @@ Quadratic error penalizing large discrepancies.
 ref <- stats::rnorm(50)
 sim <- stats::rnorm(50)
 calc_rmse(ref, sim)
-#> [1] 0.5146827
+#> [1] 0.2020698
 ```

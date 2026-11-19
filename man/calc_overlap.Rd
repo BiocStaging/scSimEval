@@ -21,8 +21,7 @@ Integrated from simpipe (Sun et al., Genome Biology 2021; duohongrui/simpipe).
 Quantifies the shared area under the empirical probability density curves of
 the reference and simulated distributions:
 \deqn{\mathrm{OV}(P, Q) = \int_{-\infty}^{+\infty} \min(\hat{f}_{\mathrm{ref}}(x), \hat{f}_{\mathrm{sim}}(x))\,dx}
-Uses \code{overlapping::overlap()} when available, with an exact normalized
-kernel density trapezoidal integration fallback.
+Computes the shared area via normalized kernel density trapezoidal integration.
 }
 \examples{
 ref <- stats::rnorm(50)

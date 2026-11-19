@@ -14,7 +14,7 @@ calc_wasserstein_1d(ref, sim, p = 1)
 \item{p}{Power of the Wasserstein metric (default 1 for standard earth mover's distance).}
 }
 \value{
-The 1D Wasserstein distance between the two empirical distributions.
+Non-negative numeric scalar giving the 1D \eqn{L_p} Wasserstein distance between the two empirical distributions.
 }
 \description{
 Integrated from HelenaLC/simulation-comparison.

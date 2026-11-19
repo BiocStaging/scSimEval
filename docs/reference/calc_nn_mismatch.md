@@ -48,5 +48,5 @@ well-mixed, 1 = completely separated).
 ref <- stats::rnorm(50)
 sim <- stats::rnorm(50)
 calc_nn_mismatch(ref, sim)
-#> [1] 0.07
+#> [1] 0
 ```

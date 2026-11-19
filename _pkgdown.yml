@@ -526,12 +526,6 @@ reference:
       - compute_method_leaderboard
       - zoom_plot
       - normalize_bubble_scores
-      - .normalize_bubble_scores
-
-  - title: "Interactive Graphical Interface (Shiny App Studio)"
-    desc: "Interactive Shiny web application providing point-and-click simulation benchmarking, UMAP/t-SNE embedding explorations, and dynamic data packaging."
-    contents:
-      - launch_scSimEval_app
 
   - title: "Category-Specific Evaluation Suites"
     desc: "Targeted evaluation functions executing specialized metric pipelines."

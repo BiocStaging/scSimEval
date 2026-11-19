@@ -67,8 +67,9 @@ Description: A simple and unified evaluation toolkit for benchmarking single-cel
     memory_mb resource benchmarking.
     Includes non-linear low-dimensional cell embedding projections (UMAP,
     t-SNE, PCA) with quantitative cluster separability (Silhouette) and fidelity
-    (ARI) metrics, automated score normalization, leaderboards, 600 DPI bubble
-    plots, and an interactive Shiny app studio.
+    (ARI) metrics, automated score normalization, leaderboards, and publication
+    visualizations. Interactive GUI exploration is available via the companion
+    \code{scSimEvalGUI} package.
 License: MIT + file LICENSE
 URL: https://kabilanbio.github.io/scSimEval/, https://github.com/kabilanbio/scSimEval
 BugReports: https://github.com/kabilanbio/scSimEval/issues
@@ -81,8 +82,10 @@ VignetteBuilder: knitr
 Imports:
     methods,
     stats,
-    RColorBrewer,
     utils,
+    grDevices,
+    grid,
+    RColorBrewer,
     Matrix,
     class,
     ggplot2,
@@ -93,45 +96,24 @@ Imports:
     CDI,
     RANN
 Suggests:
-    BiocStyle,
-    testthat,
+    testthat (>= 3.0.0),
     knitr,
     rmarkdown,
-    shiny,
-    bslib,
-    DT,
-    writexl,
-    openxlsx,
-    zip,
-    plotly,
     cowplot,
     ggrepel,
     patchwork,
-    MLmetrics,
-    overlapping,
-    philentropy,
-    provenance,
     fasano.franceschini.test,
     ks,
-    waddR,
     emdist,
     MASS,
-    randtests,
-    caTools,
     edgeR,
     clue,
     mclust,
     cluster,
-    clValid,
-    clusterSim,
-    fpc,
     CellMixS,
     kSamples,
     limma,
     bluster,
-    Seurat,
-    SeuratObject,
-    Signac,
     e1071,
     irlba,
     Rtsne,
@@ -141,10 +123,6 @@ Suggests:
     data.table,
     igraph,
     ranger,
-    scran,
     scater,
-    scuttle,
-    dynwrap,
-    dyneval,
-    bsicons
+    scuttle
 Config/roxygen2/version: 8.1.1

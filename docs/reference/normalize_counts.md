@@ -20,8 +20,8 @@ normalize_counts(
 
 - mat:
 
-  A count matrix (genes/features x cells), `dgCMatrix`,
-  `SingleCellExperiment`, or `Seurat` object.
+  A count matrix (genes/features x cells), `dgCMatrix`, or
+  `SingleCellExperiment` object.
 
 - scale_factor:
 

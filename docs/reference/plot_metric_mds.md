@@ -9,6 +9,8 @@ MDS space for benchmarking single-cell simulation methods.
 plot_metric_mds(
   benchmark_data,
   ordination_by = c("simulators", "summaries"),
+  assay_modality = c("auto", "scRNA-seq", "scATAC-seq", "multiomics"),
+  group_by = c("category", "summary_type"),
   by_category = FALSE,
   as_list = FALSE,
   category = NULL,
@@ -31,9 +33,25 @@ plot_metric_mds(
 
 - ordination_by:
 
-  Character. Either `"summaries"` (default; ordinated points represent
-  biological and computational summaries) or `"simulators"` (ordinated
-  points represent candidate simulators).
+  Character. Either `"simulators"` (ordinated points represent candidate
+  simulators) or `"summaries"` (default; ordinated points represent
+  biological and computational summaries).
+
+- assay_modality:
+
+  Character string specifying the molecular modality: `"auto"` (default;
+  automatically detects from data attributes or metrics), `"scRNA-seq"`,
+  `"scATAC-seq"`, or `"multiomics"`. When `"scATAC-seq"`, feature-level
+  metrics are labeled `"peak"`. When `"scRNA-seq"`, feature-level
+  metrics are labeled `"gene"`. When `"multiomics"`, feature-level
+  metrics are labeled `"features"`.
+
+- group_by:
+
+  Character. Grouping variable for metric points when
+  `ordination_by = "summaries"`: `"category"` (default) groups points by
+  evaluation category (I–VIII); `"summary_type"` groups by
+  feature/cell/global level.
 
 - by_category:
 
@@ -73,8 +91,8 @@ plot_metric_mds(
 - palette:
 
   Optional named character vector of colors. For
-  `ordination_by = "summaries"`, maps `"gene"`, `"cell"`, and
-  `"global"`.
+  `ordination_by = "summaries"`, maps feature-level (`"peak"`, `"gene"`,
+  or `"features"`), `"cell"`, and `"global"`.
 
 - title:
 
@@ -96,6 +114,7 @@ A `ggplot` or `patchwork` object.
 
 When `ordination_by = "summaries"`, each point represents an evaluated
 property/metric, colored by its biological level: `"gene"` (red),
+`"peak"` (red, for scATAC-seq), `"features"` (red, for multiomics),
 `"cell"` (blue), or `"global"` (green). If `by_category = TRUE`, a
 multi-panel dashboard is produced showing one MDS ordination per
 category (by default across the 6 canonical categories with \>= 3
@@ -107,13 +126,76 @@ measures).
 ``` r
 data(example_scrna, package = "scSimEval")
 res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
-#> [1/5] Extracting cell-level properties...
-#> [2/5] Extracting feature-level properties...
+#> [1/5] Extracting cell-level and feature-level properties...
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> calcNormFactors has been renamed to normLibSizes
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
+#> Warning: no non-missing arguments to max; returning -Inf
 #> [3/5] Computing univariate accuracy metrics...
 #> [4/5] Computing bivariate metrics (Fasano-Franceschini, KDE zstat, 2D EMD)...
 #> [5/5] Computing zero-probability and manifold distances...
 #> Evaluating batch integration & confounder mixing...
 #> Evaluating scRNA-seq biological signal fidelity (Libra Pseudobulk edgeR-QLF)...
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
+#> calcNormFactors has been renamed to normLibSizes
 #> calcNormFactors has been renamed to normLibSizes
 #> calcNormFactors has been renamed to normLibSizes
 #> [6/7] Evaluating trajectory and lineage topology (HVG + dynverse, scRNA-seq only)...

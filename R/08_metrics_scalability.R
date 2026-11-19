@@ -74,7 +74,15 @@
   if (is.null(sim_cores) || length(sim_cores) == 0 || is.na(sim_cores[1])) {
     return(NULL)
   }
-  val <- suppressWarnings(as.integer(sim_cores[1]))
+  raw <- sim_cores[1]
+  val <- if (is.character(raw)) {
+    raw_trim <- trimws(raw)
+    if (!grepl("^[0-9]+$", raw_trim)) NA_integer_ else as.integer(raw_trim)
+  } else if (is.numeric(raw) && is.finite(raw)) {
+    as.integer(raw)
+  } else {
+    NA_integer_
+  }
   if (is.na(val) || val < 1L) {
     stop("`sim_cores` must be a positive integer >= 1.", call. = FALSE)
   }

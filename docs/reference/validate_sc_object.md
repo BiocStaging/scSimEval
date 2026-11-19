@@ -1,22 +1,30 @@
 # Validate and Standardize Single-Cell Input Objects
 
-Strictly enforces standard input object compliance in `scSimEval`
-(Option B). Validates that input datasets are either
-`SingleCellExperiment` or `Seurat` objects, extracting underlying count
-matrices, cell annotations, batch labels, and dimensional reductions.
+Strictly enforces `SingleCellExperiment` compliance in `scSimEval`.
+Validates that input datasets are `SingleCellExperiment` objects,
+extracting underlying count matrices, cell annotations, batch labels,
+and dimensional reductions. Users starting from `Seurat` objects should
+first convert via
+[`Seurat::as.SingleCellExperiment()`](https://satijalab.org/seurat/reference/as.SingleCellExperiment.html).
 
 ## Usage
 
 ``` r
-validate_sc_object(obj, arg_name = "data", reduction_name = NULL)
+validate_sc_object(
+  obj,
+  arg_name = "data",
+  reduction_name = NULL,
+  modality = NULL,
+  cell_type_col = "cell_type",
+  batch_col = "batch"
+)
 ```
 
 ## Arguments
 
 - obj:
 
-  An object to validate, strictly required to be a
-  `SingleCellExperiment` or `Seurat` object.
+  A `SingleCellExperiment` object to validate.
 
 - arg_name:
 
@@ -27,27 +35,44 @@ validate_sc_object(obj, arg_name = "data", reduction_name = NULL)
   Optional name of precomputed dimensional reduction (e.g. `"PCA"`,
   `"integrated"`).
 
+- modality:
+
+  Optional character string specifying the modality (e.g. `"scRNA-seq"`
+  or `"scATAC-seq"`) to guide assay/`altExp` selection.
+
+- cell_type_col:
+
+  Column name in `colData(obj)` containing cell-type labels (default
+  `"cell_type"`).
+
+- batch_col:
+
+  Column name in `colData(obj)` containing batch/replicate labels
+  (default `"batch"`).
+
 ## Value
 
-A list with standardized components:
+A named list with 5 elements:
 
 - object:
 
-  The original `SingleCellExperiment` or `Seurat` object.
+  The validated `SingleCellExperiment` object.
 
 - counts:
 
-  Extracted raw count matrix (features x cells).
+  Extracted raw count matrix (`dgCMatrix` or numeric matrix, features x
+  cells).
 
 - cell_types:
 
-  Extracted or parsed cell-type factor/vector, or NULL if absent.
+  Character vector of extracted cell-type annotations, or `NULL` if
+  absent.
 
 - batch_info:
 
-  Extracted or parsed batch factor/vector, or NULL if absent.
+  Character vector of extracted batch annotations, or `NULL` if absent.
 
 - embedding:
 
-  Extracted dimensional reduction matrix (cells x dims), or NULL if
-  absent.
+  Extracted dimensional reduction numeric matrix (cells x dims), or
+  `NULL`.

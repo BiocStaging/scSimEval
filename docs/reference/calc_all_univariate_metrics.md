@@ -24,7 +24,55 @@ calc_all_univariate_metrics(ref, sim, metric_prefix = "")
 
 ## Value
 
-Named list of univariate distance metrics.
+A named list of 11 numeric univariate distance and similarity metrics
+(names prefixed with `metric_prefix_` when provided):
+
+- MAD:
+
+  Median absolute difference between quantile-aligned vectors.
+
+- KS:
+
+  1D Kolmogorov-Smirnov maximum vertical distance between empirical
+  CDFs.
+
+- MAE:
+
+  Mean absolute error between quantile-aligned vectors.
+
+- RMSE:
+
+  Root mean squared error between quantile-aligned vectors.
+
+- Bhattacharyya:
+
+  Bhattacharyya divergence between normalized probability vectors.
+
+- Wasserstein:
+
+  1D Wasserstein-1 distance between distributions.
+
+- Runs_Statistic:
+
+  Wald-Wolfowitz runs test z-statistic measuring distribution
+  interleaving.
+
+- Runs_PValue:
+
+  Left-sided p-value from the Wald-Wolfowitz runs test.
+
+- NN_Mismatch:
+
+  Fraction of local k-NN neighborhoods showing dataset composition
+  mismatch.
+
+- Between_Dataset_Silh_Global:
+
+  Global between-dataset silhouette width.
+
+- KDE_ISE:
+
+  Integrated squared error between kernel density estimates.
 
 ## Examples
 
@@ -33,36 +81,36 @@ ref <- stats::rnorm(50)
 sim <- stats::rnorm(50)
 calc_all_univariate_metrics(ref, sim)
 #> $MAD
-#> [1] 0.2552427
+#> [1] 0.06811227
 #> 
 #> $KS
-#> [1] 0.2205651
+#> [1] 0.08
 #> 
 #> $MAE
-#> [1] 0.3120819
+#> [1] 0.1339628
 #> 
 #> $RMSE
-#> [1] 0.4446398
+#> [1] 0.2398392
 #> 
 #> $Bhattacharyya
-#> [1] 0.006985793
+#> [1] 0.00184261
 #> 
 #> $Wasserstein
-#> [1] 0.3120819
+#> [1] 0.1339628
 #> 
 #> $Runs_Statistic
-#> [1] -0.4020356
+#> [1] 1.005089
 #> 
 #> $Runs_PValue
-#> [1] 0.3438289
+#> [1] 0.842573
 #> 
 #> $NN_Mismatch
-#> [1] 0.05
+#> [1] 0
 #> 
 #> $Between_Dataset_Silh_Global
-#> [1] 0.01116562
+#> [1] -0.01544037
 #> 
 #> $KDE_ISE
-#> [1] 0.02391995
+#> [1] 0.008094561
 #> 
 ```

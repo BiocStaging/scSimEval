@@ -8,7 +8,7 @@ labels is computed and scaled to \$\[0, 1\]\$ via \$(ASW + 1) / 2\$.
 ## Usage
 
 ``` r
-calc_cell_type_asw(embed, cell_type)
+calc_cell_type_asw(embed, cell_type, threads = 1)
 ```
 
 ## Arguments
@@ -20,6 +20,10 @@ calc_cell_type_asw(embed, cell_type)
 - cell_type:
 
   Vector or factor of cell-type labels for each cell.
+
+- threads:
+
+  Number of CPU threads (default 1).
 
 ## Value
 

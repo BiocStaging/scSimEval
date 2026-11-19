@@ -8,7 +8,7 @@
 #' pairwise cell correlation (on top HVGs), cell k-NN hubness, pairwise PCA distance,
 #' and outlier proportions.
 #'
-#' @param data Count matrix (features x cells), SingleCellExperiment, or Seurat object.
+#' @param data Count matrix (features x cells) or \code{SingleCellExperiment} object.
 #' @param max_cells_cor Maximum number of cells for computing pairwise correlation (default 1000).
 #' @param n_top_hvgs Number of highly variable genes/peaks to use for correlation and PCA (default 500).
 #' @param modality Optional modality string (e.g. \code{"scRNA-seq"}, \code{"scATAC-seq"}). When ATAC/peaks
@@ -16,7 +16,19 @@
 #'   instead of \code{log2(CPM + 1)}.
 #' @param verbose Logical, whether to print progress messages.
 #'
-#' @return A named list of cell-level summary vectors.
+#' @return A named list of 10 cell-level property summaries:
+#' \describe{
+#'   \item{library_size}{Numeric vector of total counts per cell.}
+#'   \item{log_library_size}{Numeric vector of \code{log(library_size + 1)}.}
+#'   \item{tmm_factor}{Numeric vector of TMM normalization factors per cell.}
+#'   \item{effective_library_size}{Numeric vector of \code{library_size * tmm_factor}.}
+#'   \item{zero_fraction_cell}{Numeric vector of per-cell zero count proportions.}
+#'   \item{detection_freq_cell}{Numeric vector of per-cell non-zero feature proportions (\code{1 - zero_fraction_cell}).}
+#'   \item{cell_cor}{Numeric vector of upper-triangle pairwise Spearman correlations across cells.}
+#'   \item{pca_dist}{Numeric vector of pairwise Euclidean distances between cells in top PCA space.}
+#'   \item{knn_hubness}{Numeric vector giving how often each cell appears among other cells' 5\% nearest neighbors.}
+#'   \item{prop_outliers_cell}{Numeric scalar proportion of cells flagged as library-size outliers via Tukey IQR.}
+#' }
 #' @examples
 #' data(example_scrna, package = "scSimEval")
 #' extract_cell_properties(example_scrna$ref)
@@ -27,40 +39,20 @@ extract_cell_properties <- function(data, max_cells_cor = 1000, n_top_hvgs = 500
   if (inherits(data, "SingleCellExperiment")) {
     data <- SummarizedExperiment::assay(data, "counts")
   } else if (inherits(data, "Seurat")) {
-    data <- tryCatch(
-      .get_seurat_counts(data),
-      error = function(e) {
-        tryCatch(
-          Seurat::GetAssayData(data, layer = "counts"),
-          error = function(e2) {
-            def_a <- tryCatch(Seurat::DefaultAssay(data), error = function(e3) names(data@assays)[1])
-            a_obj <- data[[def_a]]
-            if (inherits(a_obj, "Assay5")) {
-              tryCatch(SeuratObject::LayerData(a_obj, layer = "counts"), error = function(e4) a_obj$counts)
-            } else if (methods::.hasSlot(a_obj, "counts")) {
-              methods::slot(a_obj, "counts")
-            } else {
-              data
-            }
-          }
-        )
-      }
-    )
+    stop("Seurat objects are not directly supported; convert via Seurat::as.SingleCellExperiment().", call. = FALSE)
   }
-  
+
   if (verbose) message("Extracting cell library size & log-library size...")
   lib_size <- as.numeric(Matrix::colSums(data))
   log_lib_size <- log(lib_size + 1)
-  
+
   if (verbose) message("Extracting cell zero fraction & detection rate...")
   zero_fraction_cell <- fast_sparse_zero_fraction_cell(data)
   detection_freq_cell <- 1 - zero_fraction_cell
-  
-  # Normalize counts: TF-IDF for scATAC-seq (simPIC/Signac), log2(CPM+1) for scRNA-seq
+
   if (verbose) message("Extracting cell-cell correlations on top variable features...")
   norm_mat <- normalize_counts(data, method = if (is_atac) "tfidf" else "lognorm")
 
-  # Select top variable genes/peaks directly from sparse matrix (excluding zero-variance features)
   raw_vars <- fast_row_vars(data)
   pos_gene_idx <- which(raw_vars > 0)
   n_hvg <- min(n_top_hvgs, length(pos_gene_idx))
@@ -71,77 +63,70 @@ extract_cell_properties <- function(data, max_cells_cor = 1000, n_top_hvgs = 500
     order(rank_vars, decreasing = TRUE)[seq_len(min(n_top_hvgs, length(rank_vars)))]
   }
   sub_cpm <- as.matrix(norm_mat[top_hvg_idx, , drop = FALSE])
-  
+
   n_cells <- ncol(data)
   max_cor_cells <- min(n_cells, min(max_cells_cor, 500))
-  if (n_cells > max_cor_cells) {
-    sub_cell_idx <- sample(seq_len(n_cells), max_cor_cells)
-    cor_cpm <- sub_cpm[, sub_cell_idx, drop = FALSE]
+  cor_cpm <- if (n_cells > max_cor_cells) {
+    sub_cpm[, sample(seq_len(n_cells), max_cor_cells), drop = FALSE]
   } else {
-    cor_cpm <- sub_cpm
+    sub_cpm
   }
-  
-  cell_cor_mat <- suppressWarnings(stats::cor(cor_cpm, method = "spearman"))
-  cell_cor <- cell_cor_mat[upper.tri(cell_cor_mat)]
-  
-  # PCA and pairwise cell distance (cell_pcd from HelenaLC)
+
+  cor_vars <- fast_col_vars(cor_cpm)
+  cor_cpm_valid <- cor_cpm[, cor_vars > 0, drop = FALSE]
+  cell_cor <- if (ncol(cor_cpm_valid) >= 2L && nrow(cor_cpm_valid) >= 2L) {
+    cell_cor_mat <- stats::cor(cor_cpm_valid, method = "spearman")
+    cell_cor_mat[upper.tri(cell_cor_mat)]
+  } else {
+    numeric(0)
+  }
+
   if (verbose) message("Extracting cell PCA distance and k-NN hubness...")
   pca_dist <- numeric(0)
   knn_hubness <- numeric(0)
   tryCatch({
     pca_pts <- fast_pca(t(sub_cpm), n_pcs = min(20, ncol(sub_cpm) - 1, nrow(sub_cpm) - 1))
-    
-    # Subsample for distance if large
-    if (n_cells > 200) {
-      d_idx <- sample(seq_len(n_cells), 200)
-      pca_dist <- as.numeric(stats::dist(pca_pts[d_idx, ]))
+    pca_dist <- if (n_cells > 200) {
+      as.numeric(stats::dist(pca_pts[sample(seq_len(n_cells), 200), , drop = FALSE]))
     } else {
-      pca_dist <- as.numeric(stats::dist(pca_pts))
+      as.numeric(stats::dist(pca_pts))
     }
-    
-    # Fast k-NN hubness (count how often a cell is in the 5% nearest neighbors)
-    k_val <- max(2, round(0.05 * n_cells))
-    if (requireNamespace("RANN", quietly = TRUE)) {
-      nn <- RANN::nn2(pca_pts, k = k_val + 1)
-      idx_nn <- nn$nn.idx[, seq(2, k_val + 1)]
-      knn_hubness <- as.numeric(tabulate(idx_nn, nbins = n_cells))
-    }
+    k_val <- max(2L, round(0.05 * n_cells))
+    nn <- RANN::nn2(pca_pts, k = min(k_val + 1L, nrow(pca_pts)))
+    idx_nn <- nn$nn.idx[, seq(2L, ncol(nn$nn.idx)), drop = FALSE]
+    knn_hubness <- as.numeric(tabulate(idx_nn, nbins = n_cells))
   }, error = function(e) NULL)
-  
-  # TMM normalization factor & effective library size (countsimQC & simpipe)
+
+  # TMM normalization factor & effective library size
   tmm_factors <- rep(1, n_cells)
   if (requireNamespace("edgeR", quietly = TRUE)) {
     tryCatch({
       sub_data <- data
-      if (nrow(sub_data) > 2000) {
-        rm_means <- if (inherits(sub_data, "Matrix")) Matrix::rowMeans(sub_data) else rowMeans(sub_data)
-        top_idx <- order(rm_means, decreasing = TRUE)[seq_len(2000)]
+      if (nrow(sub_data) > 2000L) {
+        rm_means <- Matrix::rowMeans(sub_data)
+        top_idx <- order(rm_means, decreasing = TRUE)[seq_len(2000L)]
         sub_data <- sub_data[top_idx, , drop = FALSE]
       }
-      dge <- suppressMessages(suppressWarnings(edgeR::DGEList(counts = as.matrix(sub_data))))
-      dge <- suppressMessages(suppressWarnings(edgeR::calcNormFactors(dge, method = "TMM")))
-      norm_f <- as.numeric(dge$samples$norm.factors)
-      if (length(norm_f) == n_cells && !any(is.na(norm_f)) && !all(norm_f == 1)) {
-        tmm_factors <- norm_f
-      } else {
-        cs <- colSums(as.matrix(sub_data))
-        med_cs <- stats::median(cs[cs > 0])
-        if (!is.na(med_cs) && med_cs > 0) tmm_factors <- cs / med_cs
+      cs_sub <- as.numeric(Matrix::colSums(sub_data))
+      pos_cells <- which(cs_sub > 0)
+      if (length(pos_cells) >= 2L) {
+        dge <- edgeR::DGEList(counts = as.matrix(sub_data[, pos_cells, drop = FALSE]))
+        dge <- edgeR::calcNormFactors(dge, method = "TMM")
+        norm_f <- as.numeric(dge$samples$norm.factors)
+        if (length(norm_f) == length(pos_cells) && !any(is.na(norm_f)) && !all(norm_f == 1)) {
+          tmm_factors[pos_cells] <- norm_f
+        }
       }
-    }, error = function(e) {
-      cs <- colSums(as.matrix(data))
-      med_cs <- stats::median(cs[cs > 0])
-      if (!is.na(med_cs) && med_cs > 0) tmm_factors <- cs / med_cs
-    })
-  } else {
-    cs <- colSums(as.matrix(data))
-    med_cs <- stats::median(cs[cs > 0])
-    if (!is.na(med_cs) && med_cs > 0) tmm_factors <- cs / med_cs
+    }, error = function(e) NULL)
+  }
+  if (all(tmm_factors == 1)) {
+    med_cs <- stats::median(lib_size[lib_size > 0])
+    if (!is.na(med_cs) && med_cs > 0) tmm_factors <- lib_size / med_cs
   }
   effective_lib_size <- lib_size * tmm_factors
-  
+
   prop_outliers_cell <- calc_outlier_proportion(lib_size)
-  
+
   list(
     library_size = lib_size,
     log_library_size = log_lib_size,
@@ -162,14 +147,27 @@ extract_cell_properties <- function(data, max_cells_cor = 1000, n_top_hvgs = 500
 #' coefficient of variation (CV), feature dropout (zero fraction), dispersion,
 #' Biological Coefficient of Variation (BCV), gene-gene correlations, and outlier proportions.
 #'
-#' @param data Count matrix (features x cells), SingleCellExperiment, or Seurat object.
+#' @param data Count matrix (features x cells) or \code{SingleCellExperiment} object.
 #' @param n_top_cor Number of top HVGs/HVPs to use for correlation matrix (default 500, matching SimBench).
 #' @param modality Optional modality string (e.g. \code{"scRNA-seq"}, \code{"scATAC-seq"}). When ATAC/peaks
 #'   are provided or auto-detected, feature summaries and pairwise peak-peak correlations are computed
 #'   after Signac/simPIC TF-IDF transformation instead of \code{log2(CPM + 1)}.
 #' @param verbose Logical, whether to print progress messages.
 #'
-#' @return A named list of feature-level summary vectors.
+#' @return A named list of 11 feature-level property summaries:
+#' \describe{
+#'   \item{mean_expression}{Numeric vector of normalized mean abundances per feature.}
+#'   \item{variance}{Numeric vector of normalized variances per feature.}
+#'   \item{scaled_variance}{Numeric vector of z-score standardized normalized variances.}
+#'   \item{sd}{Numeric vector of normalized standard deviations per feature.}
+#'   \item{cv}{Numeric vector of raw coefficient of variation percentages per feature.}
+#'   \item{zero_fraction_feature}{Numeric vector of per-feature zero proportions.}
+#'   \item{detection_freq_feature}{Numeric vector of per-feature detection rates (\code{1 - zero_fraction_feature}).}
+#'   \item{dispersion}{Numeric vector of raw variance-to-mean ratios.}
+#'   \item{bcv}{Numeric vector of empirical Biological Coefficient of Variation estimates.}
+#'   \item{gene_cor}{Numeric vector of upper-triangle pairwise Spearman correlations across top variable features.}
+#'   \item{prop_outliers_feature}{Numeric scalar proportion of features flagged as total-count outliers via Tukey IQR.}
+#' }
 #' @examples
 #' data(example_scrna, package = "scSimEval")
 #' extract_feature_properties(example_scrna$ref)
@@ -179,46 +177,26 @@ extract_feature_properties <- function(data, n_top_cor = 500, modality = NULL, v
   if (inherits(data, "SingleCellExperiment")) {
     data <- SummarizedExperiment::assay(data, "counts")
   } else if (inherits(data, "Seurat")) {
-    data <- tryCatch(
-      .get_seurat_counts(data),
-      error = function(e) {
-        tryCatch(
-          Seurat::GetAssayData(data, layer = "counts"),
-          error = function(e2) {
-            def_a <- tryCatch(Seurat::DefaultAssay(data), error = function(e3) names(data@assays)[1])
-            a_obj <- data[[def_a]]
-            if (inherits(a_obj, "Assay5")) {
-              tryCatch(SeuratObject::LayerData(a_obj, layer = "counts"), error = function(e4) a_obj$counts)
-            } else if (methods::.hasSlot(a_obj, "counts")) {
-              methods::slot(a_obj, "counts")
-            } else {
-              data
-            }
-          }
-        )
-      }
-    )
+    stop("Seurat objects are not directly supported; convert via Seurat::as.SingleCellExperiment().", call. = FALSE)
   }
-  
+
   if (verbose) message("Extracting feature zero fraction...")
   zero_fraction_feature <- fast_sparse_zero_fraction_feature(data)
   detection_freq_feature <- 1 - zero_fraction_feature
-  
+
   if (verbose) message("Extracting mean, variance, and SD...")
   raw_mean <- as.numeric(Matrix::rowMeans(data))
   raw_var <- fast_row_vars(data)
   raw_sd <- sqrt(raw_var)
-  
+
   cv_val <- ifelse(raw_mean > 0, (raw_sd / raw_mean) * 100, 0)
-  dispersion_val <- ifelse(raw_mean > 0, (raw_var) / raw_mean, 0)
-  
-  # Normalize counts: TF-IDF for scATAC-seq (simPIC/Signac standard), log2(CPM+1) for scRNA-seq
+  dispersion_val <- ifelse(raw_mean > 0, raw_var / raw_mean, 0)
+
   norm_mat <- normalize_counts(data, method = if (is_atac) "tfidf" else "lognorm")
   mean_val <- as.numeric(Matrix::rowMeans(norm_mat))
   var_val <- fast_row_vars(norm_mat)
   sd_val <- sqrt(var_val)
 
-  # Select top variable features (ranking by TF-IDF variance for ATAC peaks, raw variance for RNA genes)
   pos_var_idx <- which(raw_var > 0)
   n_genes_cor <- min(n_top_cor, length(pos_var_idx))
   rank_vars <- if (is_atac) var_val else raw_var
@@ -228,33 +206,34 @@ extract_feature_properties <- function(data, n_top_cor = 500, modality = NULL, v
     order(rank_vars, decreasing = TRUE)[seq_len(min(n_top_cor, length(rank_vars)))]
   }
   sub_g_mat <- as.matrix(norm_mat[top_g_idx, , drop = FALSE])
-  
-  # Scaled variance (z-score standardized variance of normalized expression/TF-IDF)
+
   sd_var_val <- stats::sd(var_val, na.rm = TRUE)
   scaled_var_val <- if (!is.na(sd_var_val) && sd_var_val > 0) {
     as.numeric((var_val - mean(var_val, na.rm = TRUE)) / sd_var_val)
   } else {
     rep(0, length(var_val))
   }
-  
-  # Biological Coefficient of Variation (BCV) via fast empirical Negative Binomial approximation
+
   if (verbose) message("Extracting Biological Coefficient of Variation (BCV)...")
   bcv_val <- sqrt(pmax(0, dispersion_val - 1) / pmax(1e-6, raw_mean))
-  
-  # Gene-gene correlation on top variable genes
+
   if (verbose) message("Extracting gene-gene correlation...")
-  g_cor_mat <- suppressWarnings({
-    if (ncol(sub_g_mat) > 500) {
-      cor_cells_sub <- sample(seq_len(ncol(sub_g_mat)), 500)
-      stats::cor(t(sub_g_mat[, cor_cells_sub, drop = FALSE]), method = "spearman")
-    } else {
-      stats::cor(t(sub_g_mat), method = "spearman")
-    }
-  })
-  gene_cor <- g_cor_mat[upper.tri(g_cor_mat)]
-  
+  sub_cor_in <- if (ncol(sub_g_mat) > 500L) {
+    sub_g_mat[, sample(seq_len(ncol(sub_g_mat)), 500L), drop = FALSE]
+  } else {
+    sub_g_mat
+  }
+  feat_sub_vars <- fast_row_vars(sub_cor_in)
+  sub_cor_valid <- sub_cor_in[feat_sub_vars > 0, , drop = FALSE]
+  gene_cor <- if (nrow(sub_cor_valid) >= 2L && ncol(sub_cor_valid) >= 2L) {
+    g_cor_mat <- stats::cor(t(sub_cor_valid), method = "spearman")
+    g_cor_mat[upper.tri(g_cor_mat)]
+  } else {
+    numeric(0)
+  }
+
   prop_outliers_feature <- calc_outlier_proportion(as.numeric(Matrix::rowSums(data)))
-  
+
   list(
     mean_expression = mean_val,
     variance = var_val,
@@ -306,26 +285,16 @@ calc_bhattacharyya <- function(ref, sim, align = TRUE) {
   
   p_ref <- ref / s_ref
   p_sim <- sim / s_sim
-  
-  if (requireNamespace("philentropy", quietly = TRUE)) {
-    tryCatch(
-      as.numeric(suppressMessages(philentropy::distance(rbind(p_ref, p_sim), method = "bhattacharyya", mute.message = TRUE))),
-      error = function(e) {
-        bc <- sum(sqrt(p_ref * p_sim), na.rm = TRUE)
-        if (is.na(bc) || bc <= 0) Inf else -log(bc)
-      }
-    )
-  } else {
-    bc <- sum(sqrt(p_ref * p_sim), na.rm = TRUE)
-    if (is.na(bc) || bc <= 0) return(Inf)
-    -log(bc)
-  }
+
+  bc <- sum(sqrt(p_ref * p_sim), na.rm = TRUE)
+  if (is.na(bc) || bc <= 0) return(Inf)
+  -log(bc)
 }
 
 #' Calculate Kolmogorov-Smirnov Distance (1D KS)
 #' @param ref Numeric vector of reference values.
 #' @param sim Numeric vector of simulated values.
-#' @return Maximum vertical distance between empirical CDFs (between 0 and 1).
+#' @return Numeric scalar in \code{[0, 1]} giving the maximum vertical distance between empirical CDFs.
 #' @examples
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
@@ -334,13 +303,10 @@ calc_bhattacharyya <- function(ref, sim, align = TRUE) {
 calc_ks <- function(ref, sim) {
   ref <- stats::na.omit(as.numeric(ref))
   sim <- stats::na.omit(as.numeric(sim))
-  if (length(ref) == 0 || length(sim) == 0) return(NA_real_)
-  
-  if (requireNamespace("provenance", quietly = TRUE)) {
-    as.numeric(provenance::KS.diss(ref, sim))
-  } else {
-    suppressWarnings(as.numeric(stats::ks.test(ref, sim)$statistic))
-  }
+  if (length(ref) == 0L || length(sim) == 0L) return(NA_real_)
+
+  u <- sort(unique(c(ref, sim)))
+  as.numeric(max(abs(stats::ecdf(ref)(u) - stats::ecdf(sim)(u))))
 }
 
 #' @title Calculate 1D Wasserstein Metric / Earth Mover's Distance (WS)
@@ -349,7 +315,7 @@ calc_ks <- function(ref, sim) {
 #' @param ref Numeric vector of reference values.
 #' @param sim Numeric vector of simulated values.
 #' @param p Power of the Wasserstein metric (default 1 for standard earth mover's distance).
-#' @return The 1D Wasserstein distance between the two empirical distributions.
+#' @return Non-negative numeric scalar giving the 1D \eqn{L_p} Wasserstein distance between the two empirical distributions.
 #' @examples
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
@@ -358,22 +324,20 @@ calc_ks <- function(ref, sim) {
 calc_wasserstein_1d <- function(ref, sim, p = 1) {
   ref <- stats::na.omit(as.numeric(ref))
   sim <- stats::na.omit(as.numeric(sim))
-  if (length(ref) == 0 || length(sim) == 0) return(NA_real_)
-  
-  if (requireNamespace("waddR", quietly = TRUE)) {
-    tryCatch(waddR::wasserstein_metric(ref, sim, p = p), error = function(e) NA_real_)
-  } else {
-    # Exact 1D Wasserstein-1 via integrated quantile difference
-    aligned <- align_distributions(ref, sim, method = "quantile", n_points = 1000)
-    mean(abs(aligned$ref - aligned$sim)^p)^(1/p)
+  if (length(ref) == 0L || length(sim) == 0L) return(NA_real_)
+
+  if (length(ref) == length(sim)) {
+    return(mean(abs(sort(ref) - sort(sim))^p)^(1 / p))
   }
+  aligned <- align_distributions(ref, sim, method = "quantile", n_points = 1000)
+  mean(abs(aligned$ref - aligned$sim)^p)^(1 / p)
 }
 
 #' Calculate Median Absolute Deviation (MAD)
 #' @param ref Numeric vector of reference distribution.
 #' @param sim Numeric vector of simulated distribution.
 #' @param align Logical, whether to sort and quantile-align vectors. Default TRUE.
-#' @return Numeric MAD value.
+#' @return Non-negative numeric MAD value.
 #' @examples
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
@@ -392,7 +356,7 @@ calc_mad <- function(ref, sim, align = TRUE) {
 #' @param ref Numeric vector of reference values.
 #' @param sim Numeric vector of simulated values.
 #' @param align Logical, whether to sort and quantile-align vectors. Default TRUE.
-#' @return Mean absolute difference.
+#' @return Non-negative numeric mean absolute difference.
 #' @examples
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
@@ -404,18 +368,14 @@ calc_mae <- function(ref, sim, align = TRUE) {
     ref <- aligned$ref
     sim <- aligned$sim
   }
-  if (requireNamespace("MLmetrics", quietly = TRUE)) {
-    MLmetrics::MAE(sim, ref)
-  } else {
-    mean(abs(sim - ref), na.rm = TRUE)
-  }
+  mean(abs(sim - ref), na.rm = TRUE)
 }
 
 #' Calculate Root Mean Squared Error (RMSE)
 #' @param ref Numeric vector of reference values.
 #' @param sim Numeric vector of simulated values.
 #' @param align Logical, whether to sort and quantile-align vectors. Default TRUE.
-#' @return Quadratic error penalizing large discrepancies.
+#' @return Non-negative numeric root mean squared difference.
 #' @examples
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
@@ -427,11 +387,7 @@ calc_rmse <- function(ref, sim, align = TRUE) {
     ref <- aligned$ref
     sim <- aligned$sim
   }
-  if (requireNamespace("MLmetrics", quietly = TRUE)) {
-    MLmetrics::RMSE(sim, ref)
-  } else {
-    sqrt(mean((sim - ref)^2, na.rm = TRUE))
-  }
+  sqrt(mean((sim - ref)^2, na.rm = TRUE))
 }
 
 #' Calculate 1D Kernel Density Estimation Integrated Squared Error (KDE-ISE)
@@ -477,8 +433,7 @@ calc_kde_ise <- function(ref, sim, n_points = 512) {
 #' Quantifies the shared area under the empirical probability density curves of
 #' the reference and simulated distributions:
 #' \deqn{\mathrm{OV}(P, Q) = \int_{-\infty}^{+\infty} \min(\hat{f}_{\mathrm{ref}}(x), \hat{f}_{\mathrm{sim}}(x))\,dx}
-#' Uses \code{overlapping::overlap()} when available, with an exact normalized
-#' kernel density trapezoidal integration fallback.
+#' Computes the shared area via normalized kernel density trapezoidal integration.
 #'
 #' @param ref Numeric vector of reference values.
 #' @param sim Numeric vector of simulated values.
@@ -492,46 +447,35 @@ calc_kde_ise <- function(ref, sim, n_points = 512) {
 calc_overlap <- function(ref, sim, nbins = 1024) {
   ref <- stats::na.omit(as.numeric(ref))
   sim <- stats::na.omit(as.numeric(sim))
-  if (length(ref) < 2 || length(sim) < 2) return(NA_real_)
-  
+  if (length(ref) < 2L || length(sim) < 2L) return(NA_real_)
+
   sd_ref <- stats::sd(ref)
   sd_sim <- stats::sd(sim)
   if (is.na(sd_ref) || is.na(sd_sim)) return(NA_real_)
   if (sd_ref == 0 && sd_sim == 0) {
     return(if (ref[1] == sim[1]) 1.0 else 0.0)
   }
-  
-  if (requireNamespace("overlapping", quietly = TRUE) && sd_ref > 0 && sd_sim > 0) {
-    ov_res <- tryCatch(
-      suppressWarnings(overlapping::overlap(x = list(ref = ref, sim = sim), nbins = nbins, plot = FALSE)$OV),
-      error = function(e) NULL
-    )
-    if (!is.null(ov_res) && length(ov_res) >= 1 && is.finite(ov_res[1])) {
-      return(min(1.0, max(0.0, as.numeric(ov_res[1]))))
-    }
-  }
-  
-  # Exact KDE intersection integral fallback (matching overlapping::overlap formulation)
+
   pooled <- c(ref, sim)
   bw_val <- stats::bw.nrd0(pooled)
   if (is.na(bw_val) || !is.finite(bw_val) || bw_val <= 0) {
     rng <- max(pooled) - min(pooled)
     bw_val <- if (rng > 0) rng / 50 else 1e-4
   }
-  
+
   xmin <- min(pooled) - 3 * bw_val
   xmax <- max(pooled) + 3 * bw_val
-  
+
   d_ref <- stats::density(ref, from = xmin, to = xmax, n = nbins, bw = bw_val)
   d_sim <- stats::density(sim, from = xmin, to = xmax, n = nbins, bw = bw_val)
-  
+
   dx <- d_ref$x[2] - d_ref$x[1]
   area_ref <- sum((d_ref$y[-1] + d_ref$y[-length(d_ref$y)]) / 2) * dx
   area_sim <- sum((d_sim$y[-1] + d_sim$y[-length(d_sim$y)]) / 2) * dx
-  
+
   y_ref <- if (area_ref > 0) d_ref$y / area_ref else d_ref$y
   y_sim <- if (area_sim > 0) d_sim$y / area_sim else d_sim$y
-  
+
   min_y <- pmin(y_ref, y_sim)
   ov_val <- sum((min_y[-1] + min_y[-length(min_y)]) / 2) * dx
   min(1.0, max(0.0, as.numeric(ov_val)))
@@ -626,7 +570,7 @@ calc_emd_2d <- function(ref_mat, sim_mat, n = 25) {
       )
       k_ref <- MASS::kde2d(ref_mat[, 1], ref_mat[, 2], n = n, lims = lims)
       k_sim <- MASS::kde2d(sim_mat[, 1], sim_mat[, 2], n = n, lims = lims)
-      as.numeric(suppressWarnings(emdist::emd2d(k_ref$z, k_sim$z, max.iter = 2000L))) / n
+      as.numeric(emdist::emd2d(k_ref$z, k_sim$z, max.iter = 2000L)) / n
     }, error = function(e) NA_real_)
   } else {
     NA_real_
@@ -648,7 +592,11 @@ calc_emd_2d <- function(ref_mat, sim_mat, n = 25) {
 #' @param ref Numeric vector of reference values.
 #' @param sim Numeric vector of simulated values.
 #' @param alternative Alternative hypothesis: "left.sided" (default in countsimQC) or "two.sided".
-#' @return A named list with the runs test statistic and p-value.
+#' @return A named list with 2 numeric scalars:
+#' \describe{
+#'   \item{runs_statistic}{Standardized Wald-Wolfowitz z-statistic comparing observed runs to expected runs under mixing.}
+#'   \item{runs_pvalue}{Associated p-value under the selected \code{alternative} hypothesis.}
+#' }
 #' @examples
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
@@ -658,45 +606,34 @@ calc_runs_test <- function(ref, sim, alternative = c("left.sided", "two.sided"))
   alternative <- match.arg(alternative)
   ref <- stats::na.omit(as.numeric(ref))
   sim <- stats::na.omit(as.numeric(sim))
-  if (length(ref) < 2 || length(sim) < 2) {
+  if (length(ref) < 2L || length(sim) < 2L) {
     return(list(runs_statistic = NA_real_, runs_pvalue = NA_real_))
   }
-  
+
   df <- data.frame(
     val = c(ref, sim),
     ds = c(rep(1, length(ref)), rep(0, length(sim)))
   )
   df <- df[order(df$val), ]
-  
-  if (requireNamespace("randtests", quietly = TRUE)) {
-    res <- tryCatch(
-      randtests::runs.test(df$ds, threshold = 0.5, alternative = alternative, plot = FALSE),
-      error = function(e) NULL
-    )
-    if (!is.null(res)) {
-      return(list(runs_statistic = as.numeric(res$statistic), runs_pvalue = as.numeric(res$p.value)))
-    }
-  }
-  
-  # Base R exact Wald-Wolfowitz normal approximation
+
   r <- rle(df$ds)
   n_runs <- length(r$lengths)
   n1 <- sum(df$ds == 1)
   n0 <- sum(df$ds == 0)
   mu_r <- 1 + (2 * n1 * n0) / (n1 + n0)
   var_r <- (2 * n1 * n0 * (2 * n1 * n0 - n1 - n0)) / ((n1 + n0)^2 * (n1 + n0 - 1))
-  
+
   if (is.na(var_r) || var_r <= 0) {
     return(list(runs_statistic = 0, runs_pvalue = 1))
   }
-  
+
   z <- (n_runs - mu_r) / sqrt(var_r)
   p_val <- if (alternative == "left.sided") {
     stats::pnorm(z)
   } else {
     2 * stats::pnorm(-abs(z))
   }
-  
+
   list(runs_statistic = as.numeric(z), runs_pvalue = as.numeric(p_val))
 }
 
@@ -770,12 +707,14 @@ calc_nn_mismatch <- function(ref, sim, k = NULL, subsample_size = 300) {
   dmat <- as.matrix(stats::dist(combined, method = "euclidean"))
   diag(dmat) <- Inf
   
+  expected_counts <- k * expected_p
+  use_sim_pval <- any(expected_counts < 5)
   mismatches <- vapply(seq_len(N), function(j) {
     nn_idx <- order(dmat[j, ])[seq_len(k)]
     nn_labels <- factor(labels[nn_idx], levels = c("ref", "sim"))
     tab <- table(nn_labels)
     pval <- tryCatch(
-      suppressWarnings(stats::chisq.test(tab, p = expected_p)$p.value),
+      stats::chisq.test(tab, p = expected_p, simulate.p.value = use_sim_pval)$p.value,
       error = function(e) 1.0
     )
     if (is.na(pval)) pval <- 1.0
@@ -887,7 +826,21 @@ calc_between_dataset_silhouette <- function(ref, sim, subsample_size = 300) {
 #' @param ref Numeric vector of reference values.
 #' @param sim Numeric vector of simulated values.
 #' @param metric_prefix Optional prefix string for metric names.
-#' @return Named list of univariate distance metrics.
+#' @return A named list of 11 numeric univariate distance and similarity metrics
+#'   (names prefixed with \code{metric_prefix_} when provided):
+#' \describe{
+#'   \item{MAD}{Median absolute difference between quantile-aligned vectors.}
+#'   \item{KS}{1D Kolmogorov-Smirnov maximum vertical distance between empirical CDFs.}
+#'   \item{MAE}{Mean absolute error between quantile-aligned vectors.}
+#'   \item{RMSE}{Root mean squared error between quantile-aligned vectors.}
+#'   \item{Bhattacharyya}{Bhattacharyya divergence between normalized probability vectors.}
+#'   \item{Wasserstein}{1D Wasserstein-1 distance between distributions.}
+#'   \item{Runs_Statistic}{Wald-Wolfowitz runs test z-statistic measuring distribution interleaving.}
+#'   \item{Runs_PValue}{Left-sided p-value from the Wald-Wolfowitz runs test.}
+#'   \item{NN_Mismatch}{Fraction of local k-NN neighborhoods showing dataset composition mismatch.}
+#'   \item{Between_Dataset_Silh_Global}{Global between-dataset silhouette width.}
+#'   \item{KDE_ISE}{Integrated squared error between kernel density estimates.}
+#' }
 #' @examples
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
@@ -932,7 +885,14 @@ calc_all_univariate_metrics <- function(ref, sim, metric_prefix = "") {
 #' @param sim_mat 2-column matrix for simulation.
 #' @param metric_prefix Optional prefix string for metric names.
 #' @param threads CPU threads.
-#' @return Named list of bivariate metrics.
+#' @return A named list of 4 numeric 2D bivariate distributional metrics
+#'   (names prefixed with \code{metric_prefix_} when provided):
+#' \describe{
+#'   \item{Fasano_Franceschini_2D_KS}{Fasano-Franceschini 2D Kolmogorov-Smirnov test statistic.}
+#'   \item{EMD_2D}{Normalized 2D Earth Mover's Distance between kernel density surfaces.}
+#'   \item{NN_Mismatch_2D}{Fraction of 2D k-NN neighborhoods with dataset composition mismatch.}
+#'   \item{Between_Dataset_Silh_2D_Global}{Global between-dataset silhouette width in standardized 2D space.}
+#' }
 #' @examples
 #' ref <- matrix(stats::rnorm(100), 50, 2)
 #' sim <- matrix(stats::rnorm(100), 50, 2)

@@ -19,9 +19,9 @@ preprocess_trajectory_hvgs(
 )
 }
 \arguments{
-\item{ref_data}{Reference count matrix, \code{SingleCellExperiment}, or \code{Seurat} object.}
+\item{ref_data}{Reference count matrix or \code{SingleCellExperiment} object.}
 
-\item{sim_data}{Optional simulated count matrix, \code{SingleCellExperiment}, or \code{Seurat} object.}
+\item{sim_data}{Optional simulated count matrix or \code{SingleCellExperiment} object.}
 
 \item{cell_types_ref}{Optional vector of reference cell-type labels.}
 
@@ -52,7 +52,7 @@ from the \emph{dynverse} benchmarking study (\emph{Saelens et al., Nature Biotec
 \enumerate{
   \item Harsh cell outlier filtering (3 MADs from median on library size, detected genes, and mitochondrial percentage).
   \item Low-expression gene filtering (expressed in \eqn{\ge 5\%} of cells and average expression \eqn{> 0.02}).
-  \item HVG selection via mean-variance decomposition (\code{scran::modelGeneVar} with \code{FDR < 0.05}
+  \item HVG selection via mean-variance decomposition (loess trend decomposition with \code{FDR < 0.05}
         and biological variance \code{> 0.5}, with adaptive top-HVG fallback for sparse/small benchmark sets).
   \item Iterative removal of all-zero cells and uninformative zero features until convergence.
 }

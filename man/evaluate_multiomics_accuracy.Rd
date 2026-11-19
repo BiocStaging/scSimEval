@@ -7,128 +7,101 @@
 evaluate_multiomics_accuracy(
   ref_multi,
   sim_multi,
-  cell_types = NULL,
-  batch_info = NULL,
+  cell_type_col = "cell_type",
+  batch_col = "batch",
   pairing = c("paired", "unpaired"),
-  is_paired = NULL,
   memory_mb = NULL,
   elapsed_time = NULL,
-  feature_pairs = NULL,
-  compute_bivariate = FALSE,
-  threads = 1,
-  verbose = TRUE,
   time_unit = c("seconds", "minutes"),
   memory_unit = c("MiB", "MB"),
   sim_cores = NULL,
-  elapsed_time_rna = NULL,
-  elapsed_time_atac = NULL,
-  memory_mb_rna = NULL,
-  memory_mb_atac = NULL,
-  time_unit_rna = NULL,
-  time_unit_atac = NULL,
-  memory_unit_rna = NULL,
-  memory_unit_atac = NULL,
-  sim_cores_rna = NULL,
-  sim_cores_atac = NULL,
-  trajectory_num_trees = 10000L
+  separate_resources = NULL,
+  feature_pairs = NULL,
+  compute_bivariate = FALSE,
+  threads = 1L,
+  trajectory_num_trees = 10000L,
+  verbose = TRUE
 )
 }
 \arguments{
-\item{ref_multi}{Named list of reference matrices for Modality 1 and 2.}
+\item{ref_multi}{Reference multiomics \code{SingleCellExperiment} (with \code{altExp}) or named list of two SCE objects.}
 
-\item{sim_multi}{Named list of simulated matrices for Modality 1 and 2.}
+\item{sim_multi}{Simulated multiomics \code{SingleCellExperiment} (with \code{altExp}) or named list of two SCE objects.}
 
-\item{cell_types}{Optional factor or vector of cell type labels for cells.}
+\item{cell_type_col}{Column name in \code{colData} containing cell-type labels (default \code{"cell_type"}).}
 
-\item{batch_info}{Optional factor or vector of batch labels for cells.}
+\item{batch_col}{Column name in \code{colData} containing batch/replicate labels (default \code{"batch"}).}
 
-\item{pairing}{Character string specifying whether the multiomics dataset is
-\code{"paired"} (simultaneous co-assay from the same individual cells, e.g.,
-10x Chromium Multiome, SHARE-seq, SNARE-seq) or \code{"unpaired"} (independent
-profiling of modalities from separate cells of the same biological tissue).
-Default is \code{"paired"}. In \code{"unpaired"} mode, cell-level pairing
-metrics (FOSCTTM, Match@1, cross-modal generation, and direct peak-to-gene
-coupling) are skipped, while population-level cross-modal metrics (cross-modal
-label transfer, co-expression module fidelity, peak co-accessibility, and
-accessibility profile concordance) are computed alongside all unimodal metrics.}
+\item{pairing}{Character string specifying \code{"paired"} (default) or \code{"unpaired"} assay structure.}
 
-\item{is_paired}{Optional logical alias for \code{pairing}. If provided,
-\code{TRUE} corresponds to \code{"paired"} and \code{FALSE} to \code{"unpaired"}.}
+\item{memory_mb}{Optional numeric peak memory allocation (in \code{memory_unit}).}
 
-\item{memory_mb}{Optional numeric value of peak memory allocation (in \code{memory_unit}).}
+\item{elapsed_time}{Optional numeric wall-clock runtime (in \code{time_unit}).}
 
-\item{elapsed_time}{Optional numeric value of wall-clock elapsed time (in \code{time_unit}).}
+\item{time_unit}{Unit of \code{elapsed_time}: \code{"seconds"} (default) or \code{"minutes"}.}
+
+\item{memory_unit}{Unit of \code{memory_mb}: \code{"MiB"} (default) or \code{"MB"}.}
+
+\item{sim_cores}{Optional positive integer specifying CPU cores used by the simulator.}
+
+\item{separate_resources}{Optional named list (e.g., \code{list(rna = list(...), atac = list(...))})
+giving per-modality \code{elapsed_time}, \code{memory_mb}, \code{time_unit}, \code{memory_unit},
+and \code{sim_cores} when RNA and ATAC layers are simulated separately.}
 
 \item{feature_pairs}{Optional 2-column data.frame of linked feature pairs.}
 
-\item{compute_bivariate}{Logical, whether to compute 2D bivariate tests. Default FALSE for speed.}
+\item{compute_bivariate}{Logical, whether to compute 2D bivariate tests. Default \code{FALSE}.}
 
-\item{threads}{Number of CPU threads. Default is 1.}
+\item{threads}{Integer number of CPU threads. Default is \code{1L}.}
 
-\item{verbose}{Logical, whether to print execution progress. Default is TRUE.}
+\item{trajectory_num_trees}{Number of Random Forest trees for Category VII \code{wcor_features} (default \code{10000L}).}
 
-\item{time_unit}{Character string specifying the unit of \code{elapsed_time}:
-\code{"seconds"} (default, or \code{"s"}) or \code{"minutes"} (or \code{"min"}).}
-
-\item{memory_unit}{Character string specifying the unit of \code{memory_mb}:
-\code{"MiB"} (default, binary mebibytes) or \code{"MB"} (decimal megabytes, converted to MiB).}
-
-\item{sim_cores}{Optional positive integer specifying the number of CPU cores used
-by the simulator to generate \code{sim_multi}. Default is NULL.}
-
-\item{elapsed_time_rna, elapsed_time_atac}{Optional separate wall-clock runtimes for RNA and ATAC layers
-when modalities are simulated independently (used if combined \code{elapsed_time} is NULL).}
-
-\item{memory_mb_rna, memory_mb_atac}{Optional separate peak RAM allocations for RNA and ATAC layers
-when modalities are simulated independently (used if combined \code{memory_mb} is NULL).}
-
-\item{time_unit_rna, time_unit_atac}{Optional time units (\code{"seconds"} or \code{"minutes"}) for
-\code{elapsed_time_rna} and \code{elapsed_time_atac}; defaults to \code{time_unit}.}
-
-\item{memory_unit_rna, memory_unit_atac}{Optional memory units (\code{"MiB"} or \code{"MB"}) for
-\code{memory_mb_rna} and \code{memory_mb_atac}; defaults to \code{memory_unit}.}
-
-\item{sim_cores_rna, sim_cores_atac}{Optional positive integers specifying simulation CPU cores for
-separate RNA and ATAC runs (used if combined \code{sim_cores} is NULL).}
-
-\item{trajectory_num_trees}{Number of Random Forest trees for Category VII \code{wcor_features}
-(default \code{10000L}, per Saelens et al. 2019).}
+\item{verbose}{Logical, whether to print progress messages. Default is \code{TRUE}.}
 }
 \value{
-A list containing detailed results and a unified tidy master summary table.
+A named list containing:
+\describe{
+  \item{benchmark_summary_table}{Master tidy data frame with columns \code{Category}, \code{Property}, \code{Metric}, \code{Value}, \code{Modality} (and \code{Sim_Cores} if provided).}
+  \item{metrics_summary_table}{Alias of \code{benchmark_summary_table}.}
+  \item{summary_table}{Alias of \code{benchmark_summary_table}.}
+  \item{pairing}{Resolved pairing mode (\code{"paired"} or \code{"unpaired"}).}
+  \item{mod1_unimodal}{Full unimodal evaluation output for modality 1.}
+  \item{mod2_unimodal}{Full unimodal evaluation output for modality 2.}
+  \item{clustering}{List with elements \code{m1} and \code{m2} containing Category III results.}
+  \item{batch}{Named list of Category IV batch mixing results per modality.}
+  \item{signal}{Named list of Category V differential fidelity results per modality.}
+  \item{trajectory}{Category VII \emph{dynverse} trajectory results inferred from the scRNA-seq layer.}
+  \item{cross_modality}{List storing Category VI integration output under \code{correlation}.}
+  \item{resource_usage}{Normalized Category VIII scalability list supporting both \code{"combined"} and \code{"separate"} modes.}
+}
 }
 \description{
 Orchestrates comprehensive benchmarking across all 8 evaluation categories
-using strictly the user's provided inputs:
-\itemize{
-  \item \code{ref_multi}: List of reference omics objects/matrices (e.g. \code{list(RNA = ..., ATAC = ...)}).
-  \item \code{sim_multi}: List of simulated omics objects/matrices (e.g. \code{list(RNA = ..., ATAC = ...)}).
-  \item \code{cell_types}: Vector/factor of cell-type identities.
-  \item \code{batch_info}: Vector/factor of batch or biological replicate annotations.
-  \item Computational resource usage: \code{elapsed_time}, \code{memory_mb}.
-  \item Trajectory features inferred directly from scRNA-seq counts.
-}
+using \code{SingleCellExperiment} inputs (either a multi-modal SCE containing
+an \code{altExp} for chromatin accessibility, or a named list of two SCE
+objects such as \code{list(RNA = rna_sce, ATAC = atac_sce)}). Cell-type and
+batch labels are read directly from \code{colData} via \code{cell_type_col}
+and \code{batch_col}. Users starting from \code{Seurat} objects should
+convert via \code{Seurat::as.SingleCellExperiment()}.
 }
 \details{
 \if{html}{\figure{workflow_diagram.png}{options: width="800" alt="scSimEval Unified Benchmarking Workflow Diagram"}}
 
 
-\strong{Multiomics Metric Measurement Capacity across 4 Analysis Options (56 Evaluation Measures Suite):}
-Both \code{cell_type} and \code{batch} metadata annotations are strictly mandatory for benchmarking to enable complete evaluation across all biological and technical dimensions.
+\strong{Multiomics Metric Measurement Capacity (56 Evaluation Measures Suite):}
 \itemize{
-  \item \strong{1. scRNA-seq (45 Metrics):} Evaluates 45 metrics across 7 categories (I, II, III, IV, V, VII, VIII).
-  \item \strong{2. scATAC-seq (32 Metrics):} Evaluates 32 metrics across 6 categories (I, II, III, IV, V, VIII; trajectory skipped).
-  \item \strong{3. Paired Multiomics (56 Metrics):} Evaluates all 56 metrics across all 8 canonical categories (I–VIII):
-    simultaneous unimodal layers (Cat I & II), dual clustering concordance (Cat III), dual batch mixing dynamics (Cat IV),
-    dual biological signal fidelity (Cat V: 12 metrics), Multiomics Integration & Alignment (Cat VI: 7 metrics including FOSCTTM,
-    Match@1, cross-modal generation fidelity, peak-to-gene coupling), scRNA Trajectory (Cat VII), and Scalability (Cat VIII).
-  \item \strong{4. Unpaired Multiomics (51 Metrics):} Evaluates 51 metrics across 7 categories:
-    evaluates both unimodal layers (Cat I & II), dual clustering (Cat III), dual batch mixing (Cat IV), dual differential signal (Cat V),
-    population-level multiomics integration & alignment (Cat VI), scRNA trajectory (Cat VII), and scalability (Cat VIII).
-    Omits 5 cell-level pairing measures (FOSCTTM, Match@1, cross-modal generation, and cell-matched coupling) due to separate cell identities (56 - 5 = 51).
+  \item \strong{Paired Multiomics (56 Metrics):} Dual unimodal properties (Cat I--II),
+    dual clustering (Cat III), dual batch mixing (Cat IV), dual biological signal (Cat V),
+    cross-modal integration & pairing (Cat VI), scRNA trajectory (Cat VII), and scalability (Cat VIII).
+  \item \strong{Unpaired Multiomics (51 Metrics):} Evaluates both modalities independently
+    with population-level integration & alignment, omitting cell-matched pairing metrics.
 }
 }
 \examples{
 data(example_multiomics, package = "scSimEval")
-evaluate_multiomics_accuracy(example_multiomics$ref_multi, example_multiomics$sim_multi)
+res <- evaluate_multiomics_accuracy(
+  example_multiomics$ref_multi,
+  example_multiomics$sim_multi,
+  verbose = FALSE
+)
 }

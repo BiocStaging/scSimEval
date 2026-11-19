@@ -2,8 +2,8 @@ test_that("evaluate_simulation_accuracy executes correctly on example_scrna", {
   data("example_scrna", package = "scSimEval", envir = environment())
   
   res <- evaluate_simulation_accuracy(
-    ref_data = example_scrna$ref,
-    sim_data = example_scrna$sim,
+    ref_sce = example_scrna$ref,
+    sim_sce = example_scrna$sim,
     compute_bivariate = FALSE,
     verbose = FALSE
   )
@@ -80,8 +80,6 @@ test_that("evaluate_multiomics_accuracy executes end-to-end on example_multiomic
   master_res <- evaluate_multiomics_accuracy(
     ref_multi = example_multiomics$ref_multi,
     sim_multi = example_multiomics$sim_multi,
-    cell_types = example_multiomics$cell_types,
-    batch_info = example_multiomics$batch_info,
     memory_mb = example_multiomics$resource_stats$memory_mb,
     elapsed_time = example_multiomics$resource_stats$elapsed_time,
     verbose = FALSE
@@ -105,14 +103,14 @@ test_that("evaluate_multiomics_accuracy executes end-to-end on example_multiomic
 })
 
 
-test_that("evaluate_simulation_accuracy strictly requires Seurat or SingleCellExperiment", {
+test_that("evaluate_simulation_accuracy strictly requires SingleCellExperiment", {
   raw_mat1 <- matrix(rpois(100, 2), 10, 10)
   raw_mat2 <- matrix(rpois(100, 2), 10, 10)
   
   # Plain matrices must throw informative error
   expect_error(
     evaluate_simulation_accuracy(raw_mat1, raw_mat2, verbose = FALSE),
-    "scSimEval strictly requires a 'Seurat' or 'SingleCellExperiment' object"
+    "scSimEval strictly requires a 'SingleCellExperiment' object"
   )
 })
 
@@ -120,8 +118,8 @@ test_that("scalability inputs support minutes, MB vs MiB conversion, and sim_cor
   data("example_scrna", package = "scSimEval", envir = environment())
 
   res <- evaluate_simulation_accuracy(
-    ref_data = example_scrna$ref,
-    sim_data = example_scrna$sim,
+    ref_sce = example_scrna$ref,
+    sim_sce = example_scrna$sim,
     compute_bivariate = FALSE,
     memory_mb = 500,
     elapsed_time = 2.5,
@@ -150,8 +148,6 @@ test_that("scalability inputs support minutes, MB vs MiB conversion, and sim_cor
   res_m <- evaluate_multiomics_accuracy(
     ref_multi = example_multiomics$ref_multi,
     sim_multi = example_multiomics$sim_multi,
-    cell_types = example_multiomics$cell_types,
-    batch_info = example_multiomics$batch_info,
     memory_mb = 1024,
     elapsed_time = 1.5,
     time_unit = "min",
@@ -172,19 +168,23 @@ test_that("multiomics supports both combined and separate RNA/ATAC scalability i
   res_sep <- evaluate_multiomics_accuracy(
     ref_multi = example_multiomics$ref_multi,
     sim_multi = example_multiomics$sim_multi,
-    cell_types = example_multiomics$cell_types,
-    batch_info = example_multiomics$batch_info,
     pairing = "paired",
-    elapsed_time_rna = 2.0,
-    elapsed_time_atac = 30.0,
-    memory_mb_rna = 1000,
-    memory_mb_atac = 1200,
-    time_unit_rna = "minutes",
-    time_unit_atac = "seconds",
-    memory_unit_rna = "MB",
-    memory_unit_atac = "MiB",
-    sim_cores_rna = 4L,
-    sim_cores_atac = 8L,
+    separate_resources = list(
+      rna = list(
+        elapsed_time = 2.0,
+        memory_mb = 1000,
+        time_unit = "minutes",
+        memory_unit = "MB",
+        sim_cores = 4L
+      ),
+      atac = list(
+        elapsed_time = 30.0,
+        memory_mb = 1200,
+        time_unit = "seconds",
+        memory_unit = "MiB",
+        sim_cores = 8L
+      )
+    ),
     verbose = FALSE
   )
 
@@ -208,8 +208,6 @@ test_that("multiomics supports both combined and separate RNA/ATAC scalability i
   res_unp <- evaluate_multiomics_accuracy(
     ref_multi = example_multiomics$ref_multi,
     sim_multi = example_multiomics$sim_multi,
-    cell_types = example_multiomics$cell_types,
-    batch_info = example_multiomics$batch_info,
     pairing = "unpaired",
     elapsed_time = 2.5,
     memory_mb = 2048,
@@ -295,8 +293,8 @@ test_that("Category VII Saelens et al. (2019) HVG preprocessing and dynverse met
 
   # 4. Gold-standard filter preserves all 5 Category VII dynverse metrics
   eval_uni <- evaluate_simulation_accuracy(
-    ref_data = example_scrna$ref,
-    sim_data = example_scrna$sim,
+    ref_sce = example_scrna$ref,
+    sim_sce = example_scrna$sim,
     compute_bivariate = FALSE,
     trajectory_num_trees = 500L,
     verbose = FALSE
@@ -311,8 +309,8 @@ test_that("Category VII Saelens et al. (2019) HVG preprocessing and dynverse met
   # 5. Category VII requires scRNA-seq only and is skipped for scATAC-seq
   data("example_scatac", package = "scSimEval", envir = environment())
   eval_atac <- evaluate_simulation_accuracy(
-    ref_data = example_scatac$ref,
-    sim_data = example_scatac$sim,
+    ref_sce = example_scatac$ref,
+    sim_sce = example_scatac$sim,
     modality = "scATAC-seq",
     compute_bivariate = FALSE,
     trajectory_num_trees = 500L,
@@ -328,7 +326,6 @@ test_that("Category VII Saelens et al. (2019) HVG preprocessing and dynverse met
   eval_mo <- evaluate_multiomics_accuracy(
     ref_multi = example_multiomics$ref_multi,
     sim_multi = example_multiomics$sim_multi,
-    cell_types = example_multiomics$cell_types,
     compute_bivariate = FALSE,
     trajectory_num_trees = 500L,
     verbose = FALSE

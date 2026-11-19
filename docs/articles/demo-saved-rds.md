@@ -1,345 +1,446 @@
-# Demonstration 4: Analyzing Pre-Saved Benchmark Results (.rds)
+# Demonstration 5: Analyzing Pre-Saved Benchmark Results (.rds)
 
 ## Introduction
 
-In large-scale benchmarking studies involving multiple simulation
-methods, diverse biological datasets, or multi-core high-performance
-computing (HPC) clusters, running the full 56 curated evaluation metric
-suite can take considerable time. Once an evaluation is complete,
-researchers typically serialize the output using
-[`saveRDS()`](https://rdrr.io/r/base/readRDS.html) for long-term
-storage, publication sharing, and reproducible downstream analysis.
+In multi-tissue or multi-simulator benchmarking studies executed on
+high-performance computing (HPC) clusters, computing the full 56-metric
+evaluation suite across dozens of dataset-simulator pairs is
+computationally intensive. Once evaluations are serialized to `.rds`
+files via [`saveRDS()`](https://rdrr.io/r/base/readRDS.html),
+**`scSimEval`** enables instant reloading, cross-dataset consolidation,
+custom leaderboard ranking, and publication-grade visualization —
+**without re-computing a single metric**.
 
-**`scSimEval`** is architected to allow instant reloading, re-analysis,
-leaderboard ranking, and publication-grade visualization of any
-pre-saved `.rds` benchmark file — **without re-computing a single
-metric**.
-
-This tutorial demonstrates how to load, inspect, rank, and visualize
-pre-saved benchmark results in R console sessions and prepare them for
-interactive exploration.
-
-------------------------------------------------------------------------
-
-## 1. Loading a Pre-Saved Benchmark Object
-
-`scSimEval` bundles a pre-computed multi-dataset benchmark archive in
-its package directory. You can load it directly via base R’s
-[`readRDS()`](https://rdrr.io/r/base/readRDS.html):
-
-\
-[`library`](https://rdrr.io/r/base/library.html)`(`[`scSimEval`](https://kabilanbio.github.io/scSimEval/)`)`\
-\
-`# Locate the bundled benchmark file or supply your own path`\
-`rds_path`` ``<-`` `[`system.file`](https://rdrr.io/r/base/system.file.html)`(``"shiny"``, ``"scSimEvalApp"``, ``"data"``, ``"demo_multidataset_benchmark.rds"``, package ``=`` ``"scSimEval"``)`\
-`if`` ``(``rds_path`` ``==`` ``""``)`` ``{`\
-`  ``rds_path`` ``<-`` `[`file.path`](https://rdrr.io/r/base/file.path.html)`(``".."``, ``"inst"``, ``"shiny"``, ``"scSimEvalApp"``, ``"data"``, ``"demo_multidataset_benchmark.rds"``)`\
-`}`\
-\
-`# Ingest the serialized benchmark object`\
-`bench_data`` ``<-`` `[`readRDS`](https://rdrr.io/r/base/readRDS.html)`(``rds_path``)`\
-\
-`# Verify class and contents`\
-[`class`](https://rdrr.io/r/base/class.html)`(``bench_data``)`\
-`#> [1] "scSimEval_multidataset_benchmark" "scSimEval_consolidated"          `\
-`#> [3] "list"`\
-[`names`](https://rdrr.io/r/base/names.html)`(``bench_data``)`\
-`#>  [1] "benchmark_df"             "granular_benchmark_table"`\
-`#>  [3] "benchmark_summary_table"  "cross_dataset_stats"     `\
-`#>  [5] "dataset_summary"          "dataset_summary_df"      `\
-`#>  [7] "methods"                  "datasets"                `\
-`#>  [9] "is_multidataset"          "n_datasets"              `\
-`#> [11] "n_simulators"`
-
-The loaded object contains: \* `benchmark_df`: The complete tidy
-evaluations table across all simulators and metrics. \*
-`benchmark_summary_table`: Formatted scores ready for reporting. \*
-`methods`: Character vector of evaluated simulators (e.g., `scDesign3`,
-`SCRIP`, `dyngen`, `Splatter`, `SymSim`, `simATAC`). \* `datasets`:
-Evaluated datasets (e.g., `Rice Bud (Paired)`,
-`Soybean Root (Unpaired)`).
+This demonstration illustrates a complete downstream `.rds` workflow
+using **3 independently saved Rice paired multiomics benchmark
+sessions** (`Flag`, `Leaf`, and `Root` tissues), each containing all 6
+simulators (`scDesign3`, `MOSim`, `scCross`, `scMultiSim`, `Matilda`,
+and `scMoMtF`) evaluated across all 8 canonical categories (2,142 metric
+evaluations per tissue; 6,426 total rows).
 
 ------------------------------------------------------------------------
 
-## 2. Inspecting the Benchmark Structure
+## 1. Loading & Merging Multiple Pre-Saved `.rds` Sessions
 
-The core of every `scSimEval` benchmark object is a tidy data frame
-following standard tidyverse conventions:
+Each saved session `.rds` archive contains the standardized
+`benchmark_df`, dataset summaries, and metadata. Using
+[`combine_benchmark_results()`](https://kabilanbio.github.io/scSimEval/reference/combine_benchmark_results.md),
+multiple `.rds` files computed on separate nodes or at different times
+can be merged into a unified cross-tissue benchmark table in seconds:
 
-\
-`# Preview top rows of the benchmark scores`\
-[`head`](https://rdrr.io/r/utils/head.html)`(``bench_data``$``benchmark_df``[``, `[`c`](https://rdrr.io/r/base/c.html)`(``"Dataset"``, ``"Method"``, ``"Category"``, ``"Metric"``, ``"Score_Raw"``, ``"Score"``)``]``, ``8``)`\
-`#>             Dataset     Method                      Category      Metric`\
-`#> 1 Rice Bud (Paired)  scDesign3 (I) Distributional Properties Wasserstein`\
-`#> 2 Rice Bud (Paired) scMultiSim (I) Distributional Properties Wasserstein`\
-`#> 3 Rice Bud (Paired)    scMoMtF (I) Distributional Properties Wasserstein`\
-`#> 4 Rice Bud (Paired)    Matilda (I) Distributional Properties Wasserstein`\
-`#> 5 Rice Bud (Paired)      MOSim (I) Distributional Properties Wasserstein`\
-`#> 6 Rice Bud (Paired)    scCross (I) Distributional Properties Wasserstein`\
-`#> 7 Rice Bud (Paired)  scDesign3 (I) Distributional Properties          KS`\
-`#> 8 Rice Bud (Paired) scMultiSim (I) Distributional Properties          KS`\
-`#>   Score_Raw  Score`\
-`#> 1    0.0842 1.0000`\
-`#> 2    0.1014 0.8289`\
-`#> 3    0.1411 0.4334`\
-`#> 4    0.1593 0.2522`\
-`#> 5    0.1847 0.0500`\
-`#> 6    0.1299 0.5452`\
-`#> 7    0.0541 1.0000`\
-`#> 8    0.0818 0.7539`
+``` r
+library(scSimEval)
 
-Each row records: \* **`Dataset`**: Experimental source or condition. \*
-**`Method`**: Simulation algorithm evaluated. \* **`Category`**: One of
-the 8 canonical evaluation categories (e.g.,
-`(I) Distributional Properties`,
-`(V) Biological Signal & Differential Fidelity`). \* **`Metric`**: Name
-of the curated evaluation metric. \* **`Score_Raw`**: Unnormalized
-empirical value in physical units (seconds, peak RAM in MiB, correlation
-coefficient, Kolmogorov-Smirnov distance). \* **`Score`**: Standardized
-direction-aware fidelity score normalized to $`[0, 1]`$, where $`1.0`$
-represents top fidelity.
+# 1. Load three independently saved benchmark sessions (zero re-computation)
+flag_sess <- readRDS("rice_Flag_vs_all_6_simulators.rds")
+leaf_sess <- readRDS("rice_Leaf_vs_all_6_simulators.rds")
+root_sess <- readRDS("rice_Root_vs_all_6_simulators.rds")
+
+# 2. Extract their tidy benchmark tables
+raw_dfs <- list(
+  Flag = flag_sess$benchmark_df,
+  Leaf = leaf_sess$benchmark_df,
+  Root = root_sess$benchmark_df
+)
+
+# 3. Consolidate into a single cross-tissue benchmark with re-normalized scores
+combined_res <- combine_benchmark_results(
+  list_of_benchmarks   = raw_dfs,
+  filter_gold_standard = TRUE,
+  recompute_normalized = TRUE
+)
+
+combined_df <- standardize_benchmark_categories(combined_res$granular_benchmark_table)
+saveRDS(combined_df, "scSimEval_combined_benchmark_results.rds")
+```
+
+Let’s inspect the consolidated cross-tissue object structure:
+
+``` r
+cat("Total consolidated metric rows:", nrow(combined_df), "\n")
+#> Total consolidated metric rows: 6426
+cat("Datasets merged:", paste(unique(combined_df$Dataset), collapse = ", "), "\n")
+#> Datasets merged: Rice Flag (Paired), Rice Leaf (Paired), Rice Root (Paired)
+cat("Simulators evaluated:", paste(unique(combined_df$Method), collapse = ", "), "\n\n")
+#> Simulators evaluated: scMultiSim, scDesign3, MOSim, scCross, scMoMtF, Matilda
+head(combined_df[, c("Dataset", "Method", "Category", "Metric", "Score_Raw", "Score")], 8)
+#>                                            Dataset     Method
+#> scMultiSim_Rice Flag (Paired).1 Rice Flag (Paired) scMultiSim
+#> scMultiSim_Rice Flag (Paired).2 Rice Flag (Paired) scMultiSim
+#> scMultiSim_Rice Flag (Paired).3 Rice Flag (Paired) scMultiSim
+#> scMultiSim_Rice Flag (Paired).4 Rice Flag (Paired) scMultiSim
+#> scMultiSim_Rice Flag (Paired).5 Rice Flag (Paired) scMultiSim
+#> scMultiSim_Rice Flag (Paired).6 Rice Flag (Paired) scMultiSim
+#> scMultiSim_Rice Flag (Paired).7 Rice Flag (Paired) scMultiSim
+#> scMultiSim_Rice Flag (Paired).8 Rice Flag (Paired) scMultiSim
+#>                                                      Category
+#> scMultiSim_Rice Flag (Paired).1 (I) Distributional Properties
+#> scMultiSim_Rice Flag (Paired).2 (I) Distributional Properties
+#> scMultiSim_Rice Flag (Paired).3 (I) Distributional Properties
+#> scMultiSim_Rice Flag (Paired).4 (I) Distributional Properties
+#> scMultiSim_Rice Flag (Paired).5 (I) Distributional Properties
+#> scMultiSim_Rice Flag (Paired).6 (I) Distributional Properties
+#> scMultiSim_Rice Flag (Paired).7 (I) Distributional Properties
+#> scMultiSim_Rice Flag (Paired).8 (I) Distributional Properties
+#>                                                      Metric    Score_Raw
+#> scMultiSim_Rice Flag (Paired).1                 Wasserstein 731.24604681
+#> scMultiSim_Rice Flag (Paired).2                          KS   0.89184061
+#> scMultiSim_Rice Flag (Paired).3                         MAD 727.00000000
+#> scMultiSim_Rice Flag (Paired).4               Bhattacharyya   0.02651393
+#> scMultiSim_Rice Flag (Paired).5              Runs_Statistic -46.28018284
+#> scMultiSim_Rice Flag (Paired).6                 NN_Mismatch   0.94333333
+#> scMultiSim_Rice Flag (Paired).7 Between_Dataset_Silh_Global   0.57833873
+#> scMultiSim_Rice Flag (Paired).8                         MAE 731.24604681
+#>                                    Score
+#> scMultiSim_Rice Flag (Paired).1 0.000000
+#> scMultiSim_Rice Flag (Paired).2 0.000000
+#> scMultiSim_Rice Flag (Paired).3 0.000000
+#> scMultiSim_Rice Flag (Paired).4 0.451561
+#> scMultiSim_Rice Flag (Paired).5 0.000000
+#> scMultiSim_Rice Flag (Paired).6 0.000000
+#> scMultiSim_Rice Flag (Paired).7 0.000000
+#> scMultiSim_Rice Flag (Paired).8 0.000000
+```
 
 ------------------------------------------------------------------------
 
-## 3. Generating Simulator Leaderboards
+## 2. Computing Cross-Tissue, Per-Tissue & Category Leaderboards
 
-Use
+#### 2.1 Overall Cross-Tissue Composite Leaderboard (Flag + Leaf + Root)
+
 [`compute_method_leaderboard()`](https://kabilanbio.github.io/scSimEval/reference/compute_method_leaderboard.md)
-to compute composite rankings across all 56 curated evaluation metrics:
+aggregates direction-aware normalized fidelity scores across all three
+tissues and all 8 categories:
 
-\
-`# Compute standard overall composite leaderboard`\
-`leaderboard`` ``<-`` `[`compute_method_leaderboard`](https://kabilanbio.github.io/scSimEval/reference/compute_method_leaderboard.md)`(``bench_data``)`\
-[`print`](https://rdrr.io/r/base/print.html)`(``leaderboard``)`\
-`#>   Overall_Rank     Method Average_Fidelity Fidelity_Score`\
-`#> 4            1  scDesign3            85.3%         0.8529`\
-`#> 6            2 scMultiSim            83.9%         0.8387`\
-`#> 5            3    scMoMtF            83.1%         0.8310`\
-`#> 3            4    scCross            80.2%         0.8023`\
-`#> 2            5      MOSim            77.0%         0.7699`\
-`#> 1            6    Matilda            76.6%         0.7658`
+``` r
+overall_lb <- compute_method_leaderboard(combined_df)
+print(overall_lb)
+#>   Overall_Rank     Method Average_Fidelity Fidelity_Score
+#> 4            1  scDesign3            89.1%         0.8908
+#> 2            2      MOSim            81.1%         0.8113
+#> 3            3    scCross            62.6%         0.6261
+#> 6            4 scMultiSim            48.6%         0.4863
+#> 1            5    Matilda            32.0%         0.3202
+#> 5            6    scMoMtF            26.9%         0.2694
+```
 
-#### 3.1 Category-Specific Leaderboards
+#### 2.2 Per-Tissue Consistency Check
 
-In addition to the global composite leaderboard, researchers often
-evaluate simulator rankings within specific biological domains. For
-example, to assess which method excels at capturing **Category I
-(Distributional Properties)**:
+Evaluating each tissue individually confirms whether simulator rankings
+remain stable across distinct plant organs:
 
-\
-`# Extract Category I evaluation rows`\
-`cat1_df`` ``<-`` `[`subset`](https://rdrr.io/r/base/subset.html)`(``bench_data``$``benchmark_df``, ``Category`` ``==`` ``"(I) Distributional Properties"``)`\
-\
-`# Compute Category I leaderboard`\
-`cat1_leaderboard`` ``<-`` `[`compute_method_leaderboard`](https://kabilanbio.github.io/scSimEval/reference/compute_method_leaderboard.md)`(``cat1_df``)`\
-[`print`](https://rdrr.io/r/base/print.html)`(``cat1_leaderboard``)`\
-`#>   Overall_Rank     Method Average_Fidelity Fidelity_Score`\
-`#> 4            1  scDesign3            94.3%         0.9430`\
-`#> 6            2 scMultiSim            89.6%         0.8956`\
-`#> 5            3    scMoMtF            86.4%         0.8636`\
-`#> 3            4    scCross            84.2%         0.8422`\
-`#> 1            5    Matilda            81.3%         0.8125`\
-`#> 2            6      MOSim            77.0%         0.7701`
+``` r
+per_tissue_lbs <- lapply(unique(combined_df$Dataset), function(ds) {
+  lb <- compute_method_leaderboard(subset(combined_df, Dataset == ds))
+  lb$Dataset <- ds
+  lb[, c("Dataset", "Overall_Rank", "Method", "Average_Fidelity", "Fidelity_Score")]
+})
+do.call(rbind, per_tissue_lbs)
+#>               Dataset Overall_Rank     Method Average_Fidelity Fidelity_Score
+#> 4  Rice Flag (Paired)            1  scDesign3            89.4%         0.8941
+#> 2  Rice Flag (Paired)            2      MOSim            82.4%         0.8238
+#> 3  Rice Flag (Paired)            3    scCross            59.6%         0.5960
+#> 6  Rice Flag (Paired)            4 scMultiSim            48.6%         0.4857
+#> 5  Rice Flag (Paired)            5    scMoMtF            27.9%         0.2785
+#> 1  Rice Flag (Paired)            6    Matilda            27.8%         0.2783
+#> 41 Rice Leaf (Paired)            1  scDesign3            91.2%         0.9119
+#> 21 Rice Leaf (Paired)            2      MOSim            76.3%         0.7634
+#> 31 Rice Leaf (Paired)            3    scCross            58.4%         0.5835
+#> 61 Rice Leaf (Paired)            4 scMultiSim            48.0%         0.4798
+#> 11 Rice Leaf (Paired)            5    Matilda            31.4%         0.3142
+#> 51 Rice Leaf (Paired)            6    scMoMtF            28.9%         0.2891
+#> 42 Rice Root (Paired)            1  scDesign3            86.7%         0.8666
+#> 22 Rice Root (Paired)            2      MOSim            84.7%         0.8466
+#> 32 Rice Root (Paired)            3    scCross            69.9%         0.6987
+#> 62 Rice Root (Paired)            4 scMultiSim            49.3%         0.4935
+#> 12 Rice Root (Paired)            5    Matilda            36.8%         0.3683
+#> 52 Rice Root (Paired)            6    scMoMtF            24.1%         0.2406
+```
 
-------------------------------------------------------------------------
+#### 2.3 Category-Specific Leaderboards
 
-## 4. Generating Publication-Quality Figures
+Researchers can slice the pre-saved `.rds` table to rank simulators
+within specific biological domains — for example, **Category I
+(Distributional Properties)** and **Category VI (Multiomics Integration
+& Alignment)**:
 
-All visualization functions in `scSimEval` accept the loaded `.rds`
-object directly:
+``` r
+# Category I: Distributional Properties
+cat1_lb <- compute_method_leaderboard(
+  subset(combined_df, Category == "(I) Distributional Properties")
+)
+print(cat1_lb)
+#>   Overall_Rank     Method Average_Fidelity Fidelity_Score
+#> 4            1  scDesign3            91.2%         0.9119
+#> 2            2      MOSim            89.6%         0.8965
+#> 3            3    scCross            66.2%         0.6615
+#> 6            4 scMultiSim            51.6%         0.5155
+#> 1            5    Matilda            26.2%         0.2616
+#> 5            6    scMoMtF            21.6%         0.2164
 
-#### 4.1 Comparative Bubble Matrix
-
-Generate the flagship multi-dimensional bubble matrix mapping every
-simulator across all curated evaluation measures:
-
-\
-`# Multi-simulator comparative bubble matrix`\
-`p_bubble`` ``<-`` `[`plot_benchmark_bubble_matrix`](https://kabilanbio.github.io/scSimEval/reference/plot_benchmark_bubble_matrix.md)`(`\
-`  data       ``=`` ``bench_data``,`\
-`  title      ``=`` ``"Cross-Dataset Simulation Fidelity Benchmarking"``,`\
-`  theme_mode ``=`` ``"publication"`\
-`)`\
-[`print`](https://rdrr.io/r/base/print.html)`(``p_bubble``)`
-
-#### 4.2 Category Summary Bars
-
-Generate rank-ordered horizontal bar charts comparing simulator
-performance across each category:
-
-\
-`# Category-wise summary horizontal bar chart`\
-`p_summary`` ``<-`` `[`plot_evaluation_summary`](https://kabilanbio.github.io/scSimEval/reference/plot_evaluation_summary.md)`(`\
-`  data  ``=`` ``bench_data``,`\
-`  title ``=`` ``"Overall Simulation Fidelity by Category"`\
-`)`\
-[`print`](https://rdrr.io/r/base/print.html)`(``p_summary``)`
-
-#### 4.3 Interactive Figure Zooming with `zoom_plot()`
-
-When inspecting dense figures with many metrics or simulators, use
-[`zoom_plot()`](https://kabilanbio.github.io/scSimEval/reference/zoom_plot.md)
-to focus on specific coordinate windows:
-
-\
-`# Magnify top-left corner of the bubble matrix (first 10 metrics, top 3 simulators)`\
-[`zoom_plot`](https://kabilanbio.github.io/scSimEval/reference/zoom_plot.md)`(``p_bubble``, x_range ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``1``, ``10``)``, y_range ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``4``, ``6``)``)`
-
-------------------------------------------------------------------------
-
-## 5. Merging Multiple Saved Benchmark Runs
-
-When benchmark evaluations are executed across different computing nodes
-or datasets at different times, use
-[`combine_benchmark_results()`](https://kabilanbio.github.io/scSimEval/reference/combine_benchmark_results.md)
-or
-[`append_benchmark_results()`](https://kabilanbio.github.io/scSimEval/reference/combine_benchmark_results.md)
-to merge individual `.rds` objects into a single consolidated benchmark:
-
-\
-`# Load two independently computed benchmark runs`\
-`run1`` ``<-`` `[`readRDS`](https://rdrr.io/r/base/readRDS.html)`(``"benchmark_dataset_A.rds"``)`\
-`run2`` ``<-`` `[`readRDS`](https://rdrr.io/r/base/readRDS.html)`(``"benchmark_dataset_B.rds"``)`\
-\
-`# Merge into a single cross-dataset benchmark object`\
-`merged_benchmark`` ``<-`` `[`combine_benchmark_results`](https://kabilanbio.github.io/scSimEval/reference/combine_benchmark_results.md)`(`\
-`  ``run1``, ``run2``,`\
-`  dataset_names ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Dataset_A"``, ``"Dataset_B"``)`\
-`)`\
-\
-`# Compute unified cross-dataset leaderboard`\
-[`compute_method_leaderboard`](https://kabilanbio.github.io/scSimEval/reference/compute_method_leaderboard.md)`(``merged_benchmark``)`
+# Category VI: Multiomics Integration & Alignment
+cat6_lb <- compute_method_leaderboard(
+  subset(combined_df, Category == "(VI) Multiomics Integration & Alignment")
+)
+print(cat6_lb)
+#>   Overall_Rank     Method Average_Fidelity Fidelity_Score
+#> 1            1    Matilda            87.0%         0.8702
+#> 4            2  scDesign3            77.8%         0.7781
+#> 6            3 scMultiSim            69.1%         0.6914
+#> 3            4    scCross            68.6%         0.6858
+#> 5            5    scMoMtF            51.7%         0.5167
+#> 2            6      MOSim            39.3%         0.3933
+```
 
 ------------------------------------------------------------------------
 
-## 6. Instant Exploration in Shiny Studio
+## 3. Publication-Grade Cross-Tissue Visualizations from `.rds`
 
-Any `.rds` benchmark file saved from
-[`evaluate_simulation_accuracy()`](https://kabilanbio.github.io/scSimEval/reference/evaluate_simulation_accuracy.md),
-[`evaluate_multiomics_accuracy()`](https://kabilanbio.github.io/scSimEval/reference/evaluate_multiomics_accuracy.md),
-or
-[`evaluate_multiple_datasets()`](https://kabilanbio.github.io/scSimEval/reference/evaluate_multiple_datasets.md)
-can also be loaded into the **scSimEval Shiny Studio** with zero
-latency:
+Every visualization function in `scSimEval` accepts the consolidated
+`.rds` data frame directly, enabling rapid regeneration of
+high-resolution manuscript figures.
 
-1.  Launch the app in R:
+#### 3.1 Cross-Tissue Comparative Bubble Matrix
 
-    \
-    [`launch_scSimEval_app`](https://kabilanbio.github.io/scSimEval/reference/launch_scSimEval_app.md)`(``)`
+``` r
+p_bubble <- plot_benchmark_bubble_matrix(
+  combined_df,
+  title     = "Cross-Tissue Simulation Fidelity: Rice Flag, Leaf & Root (Pre-Saved .rds)",
+  base_size = 12
+)
+ggsave("figures/presaved_benchmark_bubble_matrix.png", plot = p_bubble, width = 18, height = 9, dpi = 300)
+```
 
-2.  Navigate to **Data Hub** $`\rightarrow`$**Mode 4: Upload
-    Pre-Computed Benchmark Table (.rds / .csv)**.
+![\*\*Figure 1: Cross-Tissue Comparative Bubble Matrix (Rice Flag, Leaf
+& Root).\*\* Consolidates normalized fidelity scores across all 8
+evaluation categories and 6 simulators directly from three pre-saved
+\`.rds\` session
+archives.](figures/presaved_benchmark_bubble_matrix.png)
 
-3.  Select your `.rds` file.
-
-4.  The entire Shiny interface — including the 56-metric Bubble Matrix,
-    Fidelity Leaderboards, and all 8 Visualization Panels — populates
-    instantaneously without re-running any computations.
+**Figure 1: Cross-Tissue Comparative Bubble Matrix (Rice Flag, Leaf &
+Root).** Consolidates normalized fidelity scores across all 8 evaluation
+categories and 6 simulators directly from three pre-saved `.rds` session
+archives.
 
 ------------------------------------------------------------------------
 
-## 7. Summary
+#### 3.2 Evaluation Summary Polar Chart
 
-Analyzing pre-saved `.rds` benchmark files allows you to: \* **Avoid
-redundant computation**: Calculate metrics once on an HPC cluster and
-re-analyze instantly on a local workstation. \* **Explore custom
-biological priorities**: Re-weight categories dynamically using
-[`compute_method_leaderboard()`](https://kabilanbio.github.io/scSimEval/reference/compute_method_leaderboard.md).
-\* **Export publication figures**: Render high-resolution (600 DPI)
-bubble matrices, heatmaps, and summary bars on demand. \* **Seamlessly
-bridge CLI and GUI**: Move effortlessly between R console workflows and
-the interactive Shiny Studio interface.
+``` r
+p_summary <- plot_evaluation_summary(combined_df, normalize_scores = TRUE, base_size = 11)
+ggsave("figures/presaved_evaluation_summary.png", plot = p_summary, width = 14, height = 7, dpi = 300)
+```
 
-\
-[`sessionInfo`](https://rdrr.io/r/utils/sessionInfo.html)`(``)`\
-`#> R version 4.6.1 (2026-06-24 ucrt)`\
-`#> Platform: x86_64-w64-mingw32/x64`\
-`#> Running under: Windows 11 x64 (build 26300)`\
-`#> `\
-`#> Matrix products: default`\
-`#>   LAPACK version 3.12.1`\
-`#> `\
-`#> locale:`\
-`#> [1] LC_COLLATE=English_India.utf8  LC_CTYPE=English_India.utf8   `\
-`#> [3] LC_MONETARY=English_India.utf8 LC_NUMERIC=C                  `\
-`#> [5] LC_TIME=English_India.utf8    `\
-`#> `\
-`#> time zone: Asia/Calcutta`\
-`#> tzcode source: internal`\
-`#> `\
-`#> attached base packages:`\
-`#> [1] stats     graphics  grDevices utils     datasets  methods   base     `\
-`#> `\
-`#> other attached packages:`\
-`#> [1] scSimEval_0.99.10`\
-`#> `\
-`#> loaded via a namespace (and not attached):`\
-`#>   [1] RColorBrewer_1.1-3          jsonlite_2.0.0             `\
-`#>   [3] magrittr_2.0.5              spatstat.utils_3.2-5       `\
-`#>   [5] farver_2.1.2                rmarkdown_2.32             `\
-`#>   [7] fs_2.1.0                    ragg_1.5.2                 `\
-`#>   [9] vctrs_0.7.3                 ROCR_1.0-12                `\
-`#>  [11] spatstat.explore_3.8-3      htmltools_0.5.9            `\
-`#>  [13] S4Arrays_1.13.0             SparseArray_1.13.2         `\
-`#>  [15] sass_0.4.10                 sctransform_0.4.3          `\
-`#>  [17] parallelly_1.48.0           KernSmooth_2.23-26         `\
-`#>  [19] bslib_0.12.0                htmlwidgets_1.6.4          `\
-`#>  [21] desc_1.4.3                  ica_1.0-3                  `\
-`#>  [23] plyr_1.8.9                  plotly_4.12.1              `\
-`#>  [25] zoo_1.9-1                   cachem_1.1.0               `\
-`#>  [27] igraph_2.3.3                mime_0.13                  `\
-`#>  [29] lifecycle_1.0.5             pkgconfig_2.0.3            `\
-`#>  [31] Matrix_1.7-6                R6_2.6.1                   `\
-`#>  [33] fastmap_1.2.0               MatrixGenerics_1.25.0      `\
-`#>  [35] fitdistrplus_1.2-6          future_1.76.0              `\
-`#>  [37] shiny_1.14.0                digest_0.6.39              `\
-`#>  [39] patchwork_1.3.2             S4Vectors_0.51.10          `\
-`#>  [41] Seurat_5.5.1                tensor_1.5.1               `\
-`#>  [43] RSpectra_0.16-2             irlba_2.3.7                `\
-`#>  [45] textshaping_1.0.5           GenomicRanges_1.65.4       `\
-`#>  [47] progressr_1.0.0             spatstat.sparse_3.2-0      `\
-`#>  [49] polyclip_1.10-7             httr_1.4.9                 `\
-`#>  [51] abind_1.4-8                 compiler_4.6.1             `\
-`#>  [53] S7_0.2.2                    BiocParallel_1.47.0        `\
-`#>  [55] fastDummies_1.7.6           MASS_7.3-66                `\
-`#>  [57] DelayedArray_0.39.8         ggsci_5.2.0                `\
-`#>  [59] tools_4.6.1                 lmtest_0.9-40              `\
-`#>  [61] otel_0.2.0                  httpuv_1.6.17              `\
-`#>  [63] future.apply_1.20.2         goftest_1.2-3              `\
-`#>  [65] glue_1.8.1                  nlme_3.1-171               `\
-`#>  [67] promises_1.5.0              grid_4.6.1                 `\
-`#>  [69] Rtsne_0.17                  cluster_2.1.8.3            `\
-`#>  [71] reshape2_1.4.5              generics_0.1.4             `\
-`#>  [73] gtable_0.3.6                spatstat.data_3.1-9        `\
-`#>  [75] tidyr_1.3.2                 data.table_1.18.6.1        `\
-`#>  [77] sp_2.2-3                    XVector_0.52.0             `\
-`#>  [79] BiocGenerics_0.59.12        spatstat.geom_3.8-3        `\
-`#>  [81] RcppAnnoy_0.0.23            ggrepel_0.9.8              `\
-`#>  [83] RANN_2.6.3                  pillar_1.11.1              `\
-`#>  [85] stringr_1.6.0               spam_2.11-4                `\
-`#>  [87] RcppHNSW_0.7.0              later_1.4.8                `\
-`#>  [89] splines_4.6.1               dplyr_1.2.1                `\
-`#>  [91] lattice_0.22-9              deldir_2.0-4               `\
-`#>  [93] survival_3.8-12             tidyselect_1.2.1           `\
-`#>  [95] SingleCellExperiment_1.35.2 CDI_1.11.0                 `\
-`#>  [97] miniUI_0.1.2                pbapply_1.7-5              `\
-`#>  [99] knitr_1.52                  gridExtra_2.3.1            `\
-`#> [101] IRanges_2.47.5              Seqinfo_1.3.2              `\
-`#> [103] SummarizedExperiment_1.43.0 scattermore_1.2            `\
-`#> [105] stats4_4.6.1                xfun_0.60                  `\
-`#> [107] Biobase_2.73.2              matrixStats_1.5.0          `\
-`#> [109] stringi_1.8.9               yaml_2.3.12                `\
-`#> [111] evaluate_1.0.5              codetools_0.2-20           `\
-`#> [113] tibble_3.3.1                cli_3.6.6                  `\
-`#> [115] uwot_0.2.5                  xtable_1.8-8               `\
-`#> [117] reticulate_1.47.0           systemfonts_1.3.2          `\
-`#> [119] jquerylib_0.1.4             dichromat_2.0-1            `\
-`#> [121] Rcpp_1.1.2                  spatstat.random_3.5-2      `\
-`#> [123] globals_0.19.1              png_0.1-9                  `\
-`#> [125] spatstat.univar_3.2-0       parallel_4.6.1             `\
-`#> [127] pkgdown_2.2.1               ggplot2_4.0.3              `\
-`#> [129] dotCall64_1.2               listenv_1.0.0              `\
-`#> [131] viridisLite_0.4.3           scales_1.4.0               `\
-`#> [133] ggridges_0.5.7              SeuratObject_5.4.0         `\
-`#> [135] purrr_1.2.2                 rlang_1.3.0                `\
-`#> [137] cowplot_1.2.0`
+![\*\*Figure 2: Cross-Tissue Evaluation Summary Polar Chart.\*\*
+Displays aggregated category-level fidelity scores across Rice Flag,
+Leaf, and Root tissues.](figures/presaved_evaluation_summary.png)
+
+**Figure 2: Cross-Tissue Evaluation Summary Polar Chart.** Displays
+aggregated category-level fidelity scores across Rice Flag, Leaf, and
+Root tissues.
+
+------------------------------------------------------------------------
+
+#### 3.3 Relative Metric Heatmap
+
+``` r
+p_heatmap <- plot_metric_heatmap(combined_df, scale_fill = "relative", base_size = 10)
+ggsave("figures/presaved_metric_heatmap.png", plot = p_heatmap, width = 15, height = 10, dpi = 300)
+```
+
+![\*\*Figure 3: Cross-Tissue Relative Metric Heatmap.\*\* Hierarchically
+clustered relative fidelity scores aggregated across Flag, Leaf, and
+Root paired multiomics benchmarks.](figures/presaved_metric_heatmap.png)
+
+**Figure 3: Cross-Tissue Relative Metric Heatmap.** Hierarchically
+clustered relative fidelity scores aggregated across Flag, Leaf, and
+Root paired multiomics benchmarks.
+
+------------------------------------------------------------------------
+
+#### 3.4 Multi-Panel Category Boxplots
+
+``` r
+p_boxplots <- plot_metric_boxplots(combined_df, score_type = "normalized", base_size = 11)
+ggsave("figures/presaved_metric_boxplots.png", plot = p_boxplots, width = 14, height = 9, dpi = 300)
+```
+
+![\*\*Figure 4: Cross-Tissue Metric Score Distributions Across
+Categories.\*\* Captures inter-tissue and inter-metric score variance
+across all 8 categories.](figures/presaved_metric_boxplots.png)
+
+**Figure 4: Cross-Tissue Metric Score Distributions Across Categories.**
+Captures inter-tissue and inter-metric score variance across all 8
+categories.
+
+------------------------------------------------------------------------
+
+#### 3.5 PCA Ordination Biplot & MDS Metric Space
+
+``` r
+p_pca <- plot_metric_pca(combined_df, panel = "both", top_n_loadings = 8, base_size = 11)
+ggsave("figures/presaved_pca_ordination.png", plot = p_pca, width = 13, height = 6.5, dpi = 300)
+
+p_mds <- plot_metric_mds(combined_df, ordination_by = "summaries", normalize_scores = TRUE, base_size = 11)
+ggsave("figures/presaved_mds_metric_space.png", plot = p_mds, width = 12, height = 7, dpi = 300)
+```
+
+![\*\*Figure 5: Cross-Tissue PCA Ordination Biplot.\*\* Projects
+simulator profiles and the top 8 metric loadings driving separation
+across Flag, Leaf, and Root.](figures/presaved_pca_ordination.png)
+
+**Figure 5: Cross-Tissue PCA Ordination Biplot.** Projects simulator
+profiles and the top 8 metric loadings driving separation across Flag,
+Leaf, and Root.
+
+![\*\*Figure 6: Cross-Tissue Multidimensional Scaling (MDS) Metric
+Space.\*\* Visualizes global pairwise similarity among simulators across
+summary metrics.](figures/presaved_mds_metric_space.png)
+
+**Figure 6: Cross-Tissue Multidimensional Scaling (MDS) Metric Space.**
+Visualizes global pairwise similarity among simulators across summary
+metrics.
+
+------------------------------------------------------------------------
+
+#### 3.6 Cross-Tissue Computational Scalability Benchmark
+
+``` r
+p_scalability <- plot_scalability_benchmark(
+  benchmark_data = combined_df,
+  type           = "composite",
+  layout         = "4panel",
+  modality       = "total",
+  time_unit      = "core_seconds",
+  memory_unit    = "MiB/core",
+  base_size      = 11
+)
+ggsave("figures/presaved_scalability_benchmark.png", plot = p_scalability, width = 13, height = 8.5, dpi = 300)
+```
+
+![\*\*Figure 7: Cross-Tissue 4-Panel Scalability Benchmark.\*\*
+Aggregates core-seconds runtime, peak resident RAM per core (MiB/core),
+and speed-memory trade-offs across Flag, Leaf, and
+Root.](figures/presaved_scalability_benchmark.png)
+
+**Figure 7: Cross-Tissue 4-Panel Scalability Benchmark.** Aggregates
+core-seconds runtime, peak resident RAM per core (MiB/core), and
+speed-memory trade-offs across Flag, Leaf, and Root.
+
+------------------------------------------------------------------------
+
+## 4. Instant Exploration in Shiny Studio
+
+Interactive visual exploration of `.rds` benchmark bundles is available
+via the companion **`scSimEvalGUI`** package:
+
+``` r
+scSimEvalGUI::launch_scSimEval_app()
+```
+
+Navigate to **Data Hub $\rightarrow$ Upload Pre-Saved Benchmark Session
+(.rds)** to interactively filter tissues (`Flag`, `Leaf`, `Root`),
+toggle metric categories, inspect leaderboards, and export custom
+figures without re-running evaluations.
+
+------------------------------------------------------------------------
+
+## 5. Cross-Tissue Takeaways
+
+Consolidating the three pre-saved Rice `.rds` sessions (6,426 metric
+evaluations) demonstrates strong rank stability across distinct plant
+tissues: \* **`scDesign3`** consistently ranked **\#1** across all three
+tissues (**89.1%** overall: Flag 89.4%, Leaf 91.2%, Root 86.7%). \*
+**`MOSim`** consistently ranked **\#2** (**81.1%** overall: Flag 82.4%,
+Leaf 76.3%, Root 84.7%), closing the gap with `scDesign3` most closely
+in Root tissue. \* **`scCross`** (**62.6%**) and **`scMultiSim`**
+(**48.6%**) held steady at ranks \#3 and \#4 across every tissue, while
+**`Matilda`** (**32.0%**) and **`scMoMtF`** (**26.9%**) offered the
+fastest execution footprints.
+
+------------------------------------------------------------------------
+
+## 6. Session Information
+
+``` r
+sessionInfo()
+#> R version 4.6.2 (2026-10-29)
+#> Platform: x86_64-pc-linux-gnu
+#> Running under: Ubuntu 24.04.5 LTS
+#> 
+#> Matrix products: default
+#> BLAS:   /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.12.0 
+#> LAPACK: /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.12.0  LAPACK version 3.12.0
+#> 
+#> locale:
+#>  [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+#>  [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+#>  [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+#>  [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+#>  [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+#> [11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+#> 
+#> time zone: Asia/Kolkata
+#> tzcode source: system (glibc)
+#> 
+#> attached base packages:
+#> [1] stats     graphics  grDevices utils     datasets  methods   base     
+#> 
+#> other attached packages:
+#> [1] scSimEval_0.99.10
+#> 
+#> loaded via a namespace (and not attached):
+#>   [1] pbapply_1.7-5               gridExtra_2.3.1            
+#>   [3] rlang_1.3.0                 magrittr_2.0.5             
+#>   [5] RcppAnnoy_0.0.23            otel_0.3.0                 
+#>   [7] matrixStats_1.5.0           ggridges_0.5.7             
+#>   [9] compiler_4.6.2              png_0.1-9                  
+#>  [11] systemfonts_1.3.3           vctrs_0.7.3                
+#>  [13] reshape2_1.4.5              stringr_1.6.0              
+#>  [15] pkgconfig_2.0.3             fastmap_1.2.0              
+#>  [17] XVector_0.52.0              rmarkdown_2.32             
+#>  [19] ragg_1.5.2                  xfun_0.62                  
+#>  [21] cachem_1.1.0                jsonlite_2.0.0             
+#>  [23] DelayedArray_0.38.2         BiocParallel_1.46.0        
+#>  [25] irlba_2.4.1                 parallel_4.6.2             
+#>  [27] cluster_2.1.8.3             R6_2.6.1                   
+#>  [29] ica_1.0-3                   bslib_0.12.0               
+#>  [31] stringi_1.8.9               RColorBrewer_1.1-3         
+#>  [33] parallelly_1.50.0           GenomicRanges_1.64.0       
+#>  [35] jquerylib_0.1.4             scattermore_1.2            
+#>  [37] Rcpp_1.1.2                  Seqinfo_1.2.0              
+#>  [39] SummarizedExperiment_1.42.0 knitr_1.52                 
+#>  [41] future.apply_1.21.0         IRanges_2.46.0             
+#>  [43] sctransform_0.4.3           Matrix_1.7-6               
+#>  [45] igraph_2.3.4                tidyselect_1.2.1           
+#>  [47] abind_1.4-8                 yaml_2.3.12                
+#>  [49] codetools_0.2-20            listenv_1.1.0              
+#>  [51] lattice_0.23-1              tibble_3.3.1               
+#>  [53] plyr_1.8.9                  Biobase_2.72.0             
+#>  [55] S7_0.2.2                    evaluate_1.0.5             
+#>  [57] Rtsne_0.17                  future_1.82.0              
+#>  [59] fastDummies_1.7.6           desc_1.4.3                 
+#>  [61] pillar_1.11.1               MatrixGenerics_1.24.0      
+#>  [63] Seurat_6.0.0                KernSmooth_2.23-27         
+#>  [65] stats4_4.6.2                generics_0.1.4             
+#>  [67] RcppHNSW_0.7.0              sp_2.2-4                   
+#>  [69] S4Vectors_0.50.3            ggplot2_4.0.4              
+#>  [71] scales_1.4.0                globals_0.20.0             
+#>  [73] glue_1.8.1                  tools_4.6.2                
+#>  [75] RSpectra_0.16-2             RANN_2.6.3                 
+#>  [77] fs_2.1.0                    dotCall64_1.2              
+#>  [79] cowplot_1.2.0               grid_4.6.2                 
+#>  [81] SingleCellExperiment_1.34.0 patchwork_1.3.2            
+#>  [83] cli_3.6.6                   textshaping_1.0.5          
+#>  [85] spam_2.11-4                 S4Arrays_1.12.1            
+#>  [87] dplyr_1.2.1                 uwot_0.2.5                 
+#>  [89] gtable_0.3.6                pls_2.9-0                  
+#>  [91] ggsci_5.2.0                 sass_0.4.10                
+#>  [93] digest_0.6.39               progressr_1.1.0            
+#>  [95] BiocGenerics_0.58.1         SparseArray_1.12.3         
+#>  [97] ggrepel_0.9.8               htmlwidgets_1.6.4          
+#>  [99] SeuratObject_5.4.0          farver_2.1.2               
+#> [101] htmltools_0.5.9             pkgdown_2.2.1              
+#> [103] lifecycle_1.0.5             httr_1.4.9                 
+#> [105] CDI_1.10.0                  MASS_7.3-66
+```

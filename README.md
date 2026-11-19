@@ -30,33 +30,34 @@ remotes::install_github("kabilanbio/scSimEval")
 
 ## Quick Start
 
-### 1. Interactive Shiny Studio
-Launch the built-in, interactive graphical studio directly from R:
-
-```R
-library(scSimEval)
-launch_scSimEval_app()
-```
-
-The Shiny app provides automated dataset validation, real-time metric calculation, interactive diagnostic plots with zoom/scroll, and summary report exports.
-
-### 2. Command-Line R Workflow
-Run benchmarking directly in reproducible R scripts or HPC pipelines:
+### 1. Reproducible R Workflow (SingleCellExperiment)
+Run benchmarking directly on `SingleCellExperiment` objects with cell-type and batch annotations stored in `colData`:
 
 ```R
 library(scSimEval)
 
-# Run benchmark evaluation
+# Users starting from Seurat objects should convert first:
+# ref_sce <- Seurat::as.SingleCellExperiment(ref_seurat)
+
+# Run benchmark evaluation (cell_type & batch read from colData)
 benchmark_results <- evaluate_simulation_accuracy(
-  ref_data   = reference_counts,
-  sim_data   = simulated_counts,
-  cell_types = cell_type_annotations,
-  batch_info = batch_annotations,
-  threads    = 4
+  ref_sce       = ref_sce,
+  sim_sce       = sim_sce,
+  cell_type_col = "cell_type",
+  batch_col     = "batch",
+  threads       = 4
 )
 
 # Visualize summary
 plot_evaluation_summary(benchmark_results)
+```
+
+### 2. Interactive Shiny Studio
+Interactive exploration, point-and-click benchmarking, and report export are available through the companion **`scSimEvalGUI`** package:
+
+```R
+library(scSimEvalGUI)
+launch_scSimEval_app()
 ```
 
 ---

@@ -17,6 +17,4 @@ Numeric HIM similarity in \code{[0, 1]} (higher is better).
 \description{
 Quantifies both local edge correspondence (Hamming) and global Laplacian spectral similarity
 (Ipsen-Mikhailov) between reference and simulated trajectory milestone networks.
-Uses \code{dyneval::calculate_him} when \pkg{netdist} is available and falls back to an
-exact pure-R implementation otherwise.
 }

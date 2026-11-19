@@ -7,7 +7,7 @@
 tfidf_transform(mat, scale_factor = 10000)
 }
 \arguments{
-\item{mat}{A peak-by-cell count matrix, sparse \code{dgCMatrix}, \code{SingleCellExperiment}, or \code{Seurat} object.}
+\item{mat}{A peak-by-cell count matrix, sparse \code{dgCMatrix}, or \code{SingleCellExperiment} object.}
 
 \item{scale_factor}{Numeric scaling factor applied prior to \code{log1p}. Default is \code{1e4} (10,000).}
 }
@@ -15,7 +15,7 @@ tfidf_transform(mat, scale_factor = 10000)
 TF-IDF transformed matrix (preserving \code{dgCMatrix} sparsity when sparse input is supplied).
 }
 \description{
-Computes Term Frequency–Inverse Document Frequency (TF-IDF) normalization
+Computes Term Frequency-Inverse Document Frequency (TF-IDF) normalization
 following the Signac (\code{RunTFIDF(..., method = 1)}) and simPIC
 (Chugh et al., 2024) standard for scATAC-seq chromatin accessibility matrices:
 \deqn{\text{TF-IDF}_{i,j} = \log\left(1 + \frac{X_{i,j}}{N_j} \cdot \frac{N_{\text{cells}}}{\sum_k X_{i,k}} \cdot \text{scale\_factor}\right)}
