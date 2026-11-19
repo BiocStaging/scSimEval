@@ -67,9 +67,14 @@
     assay_for_read <- assay_obj
     if (length(count_layers) > 1L || !identical(count_layers, "counts")) {
       assay_for_read <- tryCatch(
-        SeuratObject::JoinLayers(assay_obj, layers = count_layers, new = "counts"),
+        SeuratObject::JoinLayers(assay_obj, layers = "counts"),
         error = function(e) {
-          stop(sprintf("Could not join split counts layers in Seurat assay '%s': %s", assay_name, conditionMessage(e)), call. = FALSE)
+          tryCatch(
+            SeuratObject::JoinLayers(assay_obj),
+            error = function(e2) {
+              stop(sprintf("Could not join split counts layers in Seurat assay '%s': %s", assay_name, conditionMessage(e2)), call. = FALSE)
+            }
+          )
         }
       )
     }

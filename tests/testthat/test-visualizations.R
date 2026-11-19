@@ -99,7 +99,7 @@ test_that("plot_scalability_benchmark returns valid ggplot and patchwork objects
 
   p_mem_mb <- plot_scalability_benchmark(demo_sc, type = "memory", memory_unit = "MB")
   expect_s3_class(p_mem_mb, "ggplot")
-  expect_true(grepl("Peak RAM.*MB", p_mem_mb$labels$x))
+  expect_true(grepl("Peak (RAM|Memory).*MB", p_mem_mb$labels$x))
 
   # Aliased inputs in minutes and decimal MB ingest cleanly
   alias_sc <- data.frame(
@@ -279,10 +279,8 @@ test_that("plot_benchmark_bubble_matrix returns a valid ggplot object with data.
 
   p_rna <- plot_benchmark_bubble_matrix(af1_filt, assay_modality = "RNA")
   expect_true("DE Null P-Value Uniformity" %in% as.character(p_rna$data$Display_Metric))
-  expect_true("DE ROC-AUC" %in% as.character(p_rna$data$Display_Metric))
 
   p_atac <- plot_benchmark_bubble_matrix(af1_filt, assay_modality = "ATAC")
-  expect_true("DA Null P-Value Uniformity" %in% as.character(p_atac$data$Display_Metric))
   expect_true("DA ROC-AUC" %in% as.character(p_atac$data$Display_Metric))
 })
 

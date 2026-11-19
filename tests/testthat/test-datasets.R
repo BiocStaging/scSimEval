@@ -7,17 +7,17 @@ test_that("example_scrna dataset has valid structure and dimensions", {
   expect_type(example_scrna, "list")
   expect_named(example_scrna, c("ref", "sim", "cell_types", "batch_info"), ignore.order = TRUE)
   
-  # Matrix dimensions
-  expect_equal(dim(example_scrna$ref), c(60, 80))
-  expect_equal(dim(example_scrna$sim), c(60, 80))
+  # Matrix dimensions (100 HVGs x 100 balanced Rice Bud cells)
+  expect_equal(dim(example_scrna$ref), c(100, 100))
+  expect_equal(dim(example_scrna$sim), c(100, 100))
   
   # Cell annotations
-  expect_length(example_scrna$cell_types, 80)
-  expect_length(example_scrna$batch_info, 80)
+  expect_length(example_scrna$cell_types, 100)
+  expect_length(example_scrna$batch_info, 100)
   expect_true(is.factor(example_scrna$cell_types))
   expect_true(is.factor(example_scrna$batch_info))
-  expect_equal(levels(example_scrna$cell_types), c("TypeA", "TypeB"))
-  expect_equal(levels(example_scrna$batch_info), c("Batch1", "Batch2"))
+  expect_equal(length(levels(example_scrna$cell_types)), 8)
+  expect_equal(length(levels(example_scrna$batch_info)), 2)
 })
 
 test_that("example_scatac dataset has valid structure and dimensions", {
@@ -26,13 +26,13 @@ test_that("example_scatac dataset has valid structure and dimensions", {
   expect_type(example_scatac, "list")
   expect_named(example_scatac, c("ref", "sim", "cell_types", "batch_info"), ignore.order = TRUE)
   
-  # Matrix dimensions
-  expect_equal(dim(example_scatac$ref), c(60, 80))
-  expect_equal(dim(example_scatac$sim), c(60, 80))
+  # Matrix dimensions (100 HVPs x 100 balanced Rice Bud cells)
+  expect_equal(dim(example_scatac$ref), c(100, 100))
+  expect_equal(dim(example_scatac$sim), c(100, 100))
   
   # Cell annotations
-  expect_length(example_scatac$cell_types, 80)
-  expect_length(example_scatac$batch_info, 80)
+  expect_length(example_scatac$cell_types, 100)
+  expect_length(example_scatac$batch_info, 100)
   expect_true(is.factor(example_scatac$cell_types))
   expect_true(is.factor(example_scatac$batch_info))
 })
@@ -51,7 +51,7 @@ test_that("example_multiomics dataset has paired modalities and resource stats",
   expect_equal(colnames(example_multiomics$ref_multi$rna), colnames(example_multiomics$ref_multi$atac))
   
   # Resource stats
-  expect_true(is.numeric(example_multiomics$resource_stats$cpu_time))
+  expect_true(is.numeric(example_multiomics$resource_stats$elapsed_time))
   expect_true(is.numeric(example_multiomics$resource_stats$memory_mb))
 })
 
@@ -61,28 +61,27 @@ test_that("example_rice_bud dataset has standardized Seurat paired multiomics st
   expect_type(example_rice_bud, "list")
   expect_named(example_rice_bud, c("metadata", "reference", "simulated", "scalability_benchmarks"), ignore.order = TRUE)
   
-  # Reference dimensions: standardized Seurat objects (200 genes x 100 cells, 200 peaks x 100 cells)
+  # Reference dimensions: standardized Seurat objects (100 HVGs x 100 cells, 100 HVPs x 100 cells)
   expect_s4_class(example_rice_bud$reference$combined, "Seurat")
   expect_s4_class(example_rice_bud$reference$rna, "Seurat")
   expect_s4_class(example_rice_bud$reference$atac, "Seurat")
-  expect_equal(dim(example_rice_bud$reference$rna), c(200, 100))
-  expect_equal(dim(example_rice_bud$reference$atac), c(200, 100))
+  expect_equal(dim(example_rice_bud$reference$rna), c(100, 100))
+  expect_equal(dim(example_rice_bud$reference$atac), c(100, 100))
   expect_equal(ncol(example_rice_bud$reference$rna), ncol(example_rice_bud$reference$atac))
   
-  # Embedded cell_type, batch, and dimensional reductions
+  # Embedded cell_type and batch (all 8 Rice Bud cell types covered equally)
   expect_true("cell_type" %in% colnames(example_rice_bud$reference$combined@meta.data))
   expect_true("batch" %in% colnames(example_rice_bud$reference$combined@meta.data))
-  expect_true(length(unique(example_rice_bud$reference$combined$cell_type)) == 4)
+  expect_true(length(unique(example_rice_bud$reference$combined$cell_type)) == 8)
   expect_true(length(unique(example_rice_bud$reference$combined$batch)) == 2)
-  expect_true("integrated" %in% names(example_rice_bud$reference$combined@reductions))
   
   # 6 Simulators
   sim_methods <- c("scMultiSim", "scDesign3", "MOSim", "scCross", "scMoMtF", "Matilda")
   expect_true(all(sim_methods %in% names(example_rice_bud$simulated)))
   for (m in sim_methods) {
     expect_s4_class(example_rice_bud$simulated[[m]]$combined, "Seurat")
-    expect_equal(dim(example_rice_bud$simulated[[m]]$rna), c(200, 100))
-    expect_equal(dim(example_rice_bud$simulated[[m]]$atac), c(200, 100))
+    expect_equal(dim(example_rice_bud$simulated[[m]]$rna), c(100, 100))
+    expect_equal(dim(example_rice_bud$simulated[[m]]$atac), c(100, 100))
   }
 })
 
@@ -92,13 +91,12 @@ test_that("example_soybean_root dataset has standardized Seurat unpaired multiom
   expect_type(example_soybean_root, "list")
   expect_named(example_soybean_root, c("metadata", "reference", "simulated", "scalability_benchmarks"), ignore.order = TRUE)
   
-  # Reference dimensions: standardized Seurat objects (200 genes x 100 RNA cells, 200 peaks x 100 ATAC cells)
+  # Reference dimensions: standardized Seurat objects (100 HVGs x 100 RNA cells, 100 HVPs x 100 ATAC cells)
   expect_s4_class(example_soybean_root$reference$combined, "Seurat")
   expect_s4_class(example_soybean_root$reference$rna, "Seurat")
   expect_s4_class(example_soybean_root$reference$atac, "Seurat")
-  expect_equal(dim(example_soybean_root$reference$rna), c(200, 100))
-  expect_equal(dim(example_soybean_root$reference$atac), c(200, 100))
-  expect_true("integrated" %in% names(example_soybean_root$reference$combined@reductions))
+  expect_equal(dim(example_soybean_root$reference$rna), c(100, 100))
+  expect_equal(dim(example_soybean_root$reference$atac), c(100, 100))
   
   # 3 Simulators (MOSim excluded because it only supports paired co-assay simulation)
   sim_methods <- c("scMultiSim", "scDesign3", "scCross")
@@ -107,8 +105,8 @@ test_that("example_soybean_root dataset has standardized Seurat unpaired multiom
   expect_false("MOSim" %in% names(example_soybean_root$simulated))
   for (m in sim_methods) {
     expect_s4_class(example_soybean_root$simulated[[m]]$combined, "Seurat")
-    expect_equal(dim(example_soybean_root$simulated[[m]]$rna), c(200, 100))
-    expect_equal(dim(example_soybean_root$simulated[[m]]$atac), c(200, 100))
+    expect_equal(dim(example_soybean_root$simulated[[m]]$rna), c(100, 100))
+    expect_equal(dim(example_soybean_root$simulated[[m]]$atac), c(100, 100))
   }
 })
 

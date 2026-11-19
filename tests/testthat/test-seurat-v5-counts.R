@@ -10,9 +10,9 @@ test_that("Seurat v5 count extraction supports Assay5 and split counts layers", 
   assay <- obj[[SeuratObject::DefaultAssay(obj)]]
   skip_if_not(inherits(assay, "Assay5"), "Requires SeuratObject v5 Assay5")
 
-  expect_equal(scSimEval:::.seurat_assay_counts(obj), counts)
-  expect_equal(scSimEval:::.get_seurat_counts(obj), counts)
-  expect_equal(scSimEval::validate_sc_object(obj)$counts, counts)
+  expect_equal(as.matrix(scSimEval:::.seurat_assay_counts(obj)), counts)
+  expect_equal(as.matrix(scSimEval:::.get_seurat_counts(obj)), counts)
+  expect_equal(as.matrix(scSimEval::validate_sc_object(obj)$counts), counts)
 
   # Seurat v5 can represent counts as per-sample layers. Extraction should
   # join those layers on a copy and return the original feature-by-cell matrix.
@@ -21,8 +21,8 @@ test_that("Seurat v5 count extraction supports Assay5 and split counts layers", 
     obj_split[[SeuratObject::DefaultAssay(obj_split)]],
     f = factor(c("sample1", "sample1", "sample2", "sample2"))
   )
-  expect_equal(scSimEval:::.seurat_assay_counts(obj_split), counts)
-  expect_equal(scSimEval::validate_sc_object(obj_split)$counts, counts)
+  expect_equal(as.matrix(scSimEval:::.seurat_assay_counts(obj_split)), counts)
+  expect_equal(as.matrix(scSimEval::validate_sc_object(obj_split)$counts), counts)
 })
 
 test_that("Seurat v5 multiomics count extraction works for both Assay5 modalities", {
@@ -43,6 +43,6 @@ test_that("Seurat v5 multiomics count extraction works for both Assay5 modalitie
               "Requires SeuratObject v5 Assay5")
 
   validated <- scSimEval::validate_multiomics_input(obj)
-  expect_equal(validated$m1, rna)
-  expect_equal(validated$m2, atac)
+  expect_equal(as.matrix(validated$m1), rna)
+  expect_equal(as.matrix(validated$m2), atac)
 })

@@ -17,6 +17,8 @@ validate_sc_object(
 \item{arg_name}{Name of the argument being validated (for clear error messages).}
 
 \item{reduction_name}{Optional name of precomputed dimensional reduction (e.g. \code{"PCA"}, \code{"integrated"}).}
+
+\item{modality}{Optional character string specifying the modality (e.g. \code{"scRNA-seq"} or \code{"scATAC-seq"}) to guide assay selection.}
 }
 \value{
 A list with standardized components:

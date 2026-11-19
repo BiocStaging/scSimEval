@@ -274,22 +274,15 @@ fast_cross_distance_sq <- function(X, Y) {
 
 .run_prcomp_irlba <- function(X, n, center = TRUE, scale. = FALSE) {
   if (!requireNamespace("irlba", quietly = TRUE)) return(NULL)
-  has_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-  if (has_seed) {
-    old_seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-    on.exit(assign(".Random.seed", old_seed, envir = .GlobalEnv), add = TRUE)
-  } else {
-    on.exit(
-      if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-        rm(".Random.seed", envir = .GlobalEnv)
-      },
-      add = TRUE
-    )
-  }
-  set.seed(42L)
+  v_init <- rep(1 / sqrt(max(1L, ncol(X))), ncol(X))
   tryCatch(
-    suppressWarnings(irlba::prcomp_irlba(X, n = n, center = center, scale. = scale.)),
-    error = function(e) NULL
+    suppressWarnings(irlba::prcomp_irlba(X, n = n, center = center, scale. = scale., v = v_init)),
+    error = function(e) {
+      tryCatch(
+        suppressWarnings(irlba::prcomp_irlba(X, n = n, center = center, scale. = scale.)),
+        error = function(e2) NULL
+      )
+    }
   )
 }
 
@@ -662,6 +655,7 @@ extract_dataset_summary <- function(mat, role = "Reference", method_name = "Data
 #' @param obj An object to validate, strictly required to be a \code{SingleCellExperiment} or \code{Seurat} object.
 #' @param arg_name Name of the argument being validated (for clear error messages).
 #' @param reduction_name Optional name of precomputed dimensional reduction (e.g. \code{"PCA"}, \code{"integrated"}).
+#' @param modality Optional character string specifying the modality (e.g. \code{"scRNA-seq"} or \code{"scATAC-seq"}) to guide assay selection.
 #'
 #' @return A list with standardized components:
 #'   \item{object}{The original \code{SingleCellExperiment} or \code{Seurat} object.}
@@ -1152,14 +1146,6 @@ validate_multiomics_input <- function(obj, arg_name = "multi_data", reduction_na
     max(1L, as.integer(threads[1L]))
   }
   .sc_parallel_cache$target_threads <- threads
-  th_str <- as.character(threads)
-  try(Sys.setenv(
-    OMP_NUM_THREADS = th_str,
-    MKL_NUM_THREADS = th_str,
-    OPENBLAS_NUM_THREADS = th_str,
-    VECLIB_MAXIMUM_THREADS = th_str,
-    NUMEXPR_NUM_THREADS = th_str
-  ), silent = TRUE)
   options(mc.cores = threads)
   if (requireNamespace("RcppParallel", quietly = TRUE)) {
     try(RcppParallel::setThreadOptions(numThreads = threads), silent = TRUE)

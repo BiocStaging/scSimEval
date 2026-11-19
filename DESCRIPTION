@@ -131,6 +131,7 @@ Suggests:
     bluster,
     Seurat,
     SeuratObject,
+    Signac,
     e1071,
     irlba,
     Rtsne,

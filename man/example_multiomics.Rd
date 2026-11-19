@@ -7,8 +7,8 @@
 \format{
 A list with 5 elements:
 \describe{
-  \item{ref_multi}{Named list of sparse count matrices: \code{rna} (100 HVGs x 100 cells) and \code{atac} (100 HVPs x 100 cells).}
-  \item{sim_multi}{Named list of simulated sparse count matrices: \code{rna} (100 x 100) and \code{atac} (100 x 100).}
+  \item{ref_multi}{Named list of \code{SingleCellExperiment} objects: \code{rna} (100 HVGs x 100 cells) and \code{atac} (100 HVPs x 100 cells), complete with \code{colData} and precomputed \code{PCA} in \code{reducedDims}.}
+  \item{sim_multi}{Named list of simulated \code{SingleCellExperiment} objects: \code{rna} (100 x 100) and \code{atac} (100 x 100).}
   \item{cell_types}{A named factor of shared cell-type identities across 8 Rice Bud cell types for the 100 paired cells.}
   \item{batch_info}{A named factor of batch annotations (\code{Bud_21}, \code{Bud_22}) for the 100 paired cells.}
   \item{resource_stats}{A list of empirical scalability metrics: \code{elapsed_time}, \code{memory_mb}, \code{sim_cores}.}
