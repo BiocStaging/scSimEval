@@ -8,6 +8,7 @@ plot_metric_mds(
   benchmark_data,
   ordination_by = c("simulators", "summaries"),
   assay_modality = c("auto", "scRNA-seq", "scATAC-seq", "multiomics"),
+  group_by = c("category", "summary_type"),
   by_category = FALSE,
   as_list = FALSE,
   category = NULL,
@@ -34,6 +35,10 @@ biological and computational summaries).}
 When \code{"scATAC-seq"}, feature-level metrics are labeled \code{"peak"}.
 When \code{"scRNA-seq"}, feature-level metrics are labeled \code{"gene"}.
 When \code{"multiomics"}, feature-level metrics are labeled \code{"features"}.}
+
+\item{group_by}{Character. Grouping variable for metric points when \code{ordination_by = "summaries"}:
+\code{"category"} (default) groups points by evaluation category (I–VIII);
+\code{"summary_type"} groups by feature/cell/global level.}
 
 \item{by_category}{Logical. If \code{TRUE} and \code{ordination_by = "summaries"}, generates
 a multi-panel grid displaying an MDS ordination for each evaluation category separately

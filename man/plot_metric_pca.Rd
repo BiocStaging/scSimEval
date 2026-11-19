@@ -8,6 +8,7 @@ plot_metric_pca(
   benchmark_data,
   panel = c("both", "methods", "loadings"),
   assay_modality = c("auto", "scRNA-seq", "scATAC-seq", "multiomics"),
+  group_by = c("category", "summary_type"),
   by_category = FALSE,
   as_list = FALSE,
   category = NULL,
@@ -30,6 +31,10 @@ plot_metric_pca(
 When \code{"scATAC-seq"}, feature-level metrics are labeled \code{"peak"}.
 When \code{"scRNA-seq"}, feature-level metrics are labeled \code{"gene"}.
 When \code{"multiomics"}, feature-level metrics are labeled \code{"features"}.}
+
+\item{group_by}{Character. Grouping variable for loading vectors in panel b:
+\code{"category"} (default) groups vectors by evaluation category (I–VIII);
+\code{"summary_type"} groups by feature/cell/global level.}
 
 \item{by_category}{Logical. If \code{TRUE}, perform separate PCA ordinations per evaluation category. Default \code{FALSE}.}
 

@@ -3,28 +3,28 @@
 \docType{data}
 \name{example_scrna}
 \alias{example_scrna}
-\title{Synthetic Example scRNA-seq Benchmarking Dataset}
+\title{Example scRNA-seq Benchmarking Dataset (Rice Bud)}
 \format{
 A list with 4 elements:
 \describe{
-  \item{ref}{A \code{SingleCellExperiment} object containing reference count data (60 genes x 80 cells), cell types and batch annotations in \code{colData}, and precomputed PCA reductions in \code{reducedDims}.}
-  \item{sim}{A \code{SingleCellExperiment} object containing simulated count data (60 genes x 80 cells), cell types and batch annotations in \code{colData}, and precomputed PCA reductions in \code{reducedDims}.}
-  \item{cell_types}{A factor of cell-type identities ("TypeA", "TypeB") for the 80 cells.}
-  \item{batch_info}{A factor of batch annotations ("Batch1", "Batch2") for the 80 cells.}
+  \item{ref}{A sparse count matrix (\code{dgCMatrix}) of reference scRNA-seq counts (100 HVGs x 100 cells).}
+  \item{sim}{A sparse count matrix (\code{dgCMatrix}) of simulated scRNA-seq counts (100 HVGs x 100 cells).}
+  \item{cell_types}{A named factor of cell-type identities across 8 Rice Bud cell types for the 100 cells.}
+  \item{batch_info}{A named factor of batch annotations (\code{Bud_21}, \code{Bud_22}) for the 100 cells.}
 }
 }
 \source{
-Synthetic benchmark data generated via negative binomial sampling with
-  cell-type specific expression shifts.
+Derived from rice bud paired multiomics data (\emph{Oryza sativa}, GEO accession GSE232863).
 }
 \usage{
 data(example_scrna)
 }
 \description{
-A synthetic single-cell RNA sequencing dataset designed for testing, benchmarking,
-and demonstrating evaluation metrics in \code{scSimEval}. Contains paired
-empirical reference counts and simulated counts across 60 genes and 80 cells
-from two cell types and two batches.
+A real, subsampled single-cell RNA sequencing dataset from rice bud tissue
+(\emph{Oryza sativa}) designed for testing, benchmarking, and demonstrating
+evaluation metrics in \code{scSimEval}. Contains empirical reference counts
+and \code{scDesign3}-simulated counts across the top 100 highly variable genes
+(HVGs) and 100 balanced cells covering all 8 biological cell types and 2 batches.
 }
 \examples{
 data(example_scrna)

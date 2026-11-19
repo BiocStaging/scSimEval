@@ -3,27 +3,28 @@
 \docType{data}
 \name{example_multiomics}
 \alias{example_multiomics}
-\title{Synthetic Example Multiomics Benchmarking Dataset}
+\title{Example Paired Multiomics Benchmarking Dataset (Rice Bud)}
 \format{
 A list with 5 elements:
 \describe{
-  \item{ref_multi}{Named list of \code{SingleCellExperiment} objects: \code{rna} (60 x 80) and \code{atac} (60 x 80), complete with precomputed PCA reductions in \code{reducedDims}.}
-  \item{sim_multi}{Named list of \code{SingleCellExperiment} objects: \code{rna} (60 x 80) and \code{atac} (60 x 80), complete with precomputed PCA reductions in \code{reducedDims}.}
-  \item{cell_types}{A factor of cell-type identities ("TypeA", "TypeB") for the 80 cells.}
-  \item{batch_info}{A factor of batch annotations ("Batch1", "Batch2") for the 80 cells.}
-  \item{resource_stats}{A list of computational scalability metrics: \code{cpu_time}, \code{memory_mb}, \code{system_time}, \code{elapsed_time}.}
+  \item{ref_multi}{Named list of sparse count matrices: \code{rna} (100 HVGs x 100 cells) and \code{atac} (100 HVPs x 100 cells).}
+  \item{sim_multi}{Named list of simulated sparse count matrices: \code{rna} (100 x 100) and \code{atac} (100 x 100).}
+  \item{cell_types}{A named factor of shared cell-type identities across 8 Rice Bud cell types for the 100 paired cells.}
+  \item{batch_info}{A named factor of batch annotations (\code{Bud_21}, \code{Bud_22}) for the 100 paired cells.}
+  \item{resource_stats}{A list of empirical scalability metrics: \code{elapsed_time}, \code{memory_mb}, \code{sim_cores}.}
 }
 }
 \source{
-Synthetic multiomics benchmark data generated for testing \code{scSimEval}.
+Derived from rice bud paired multiomics data (\emph{Oryza sativa}, GEO accession GSE232863).
 }
 \usage{
 data(example_multiomics)
 }
 \description{
-A unified single-cell multiomics dataset pairing scRNA-seq and scATAC-seq
-profiles across the same 80 cells, accompanied by cell-type labels, batch annotations,
-and logged computational scalability metrics.
+A unified paired single-cell multiomics dataset combining \code{example_scrna}
+(100 HVGs) and \code{example_scatac} (100 HVPs) across the exact same 100 balanced
+rice bud cells, accompanied by shared cell-type labels, batch annotations, and
+empirical computational scalability metrics.
 }
 \examples{
 data(example_multiomics)

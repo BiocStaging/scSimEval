@@ -3,28 +3,28 @@
 \docType{data}
 \name{example_scatac}
 \alias{example_scatac}
-\title{Synthetic Example scATAC-seq Benchmarking Dataset}
+\title{Example scATAC-seq Benchmarking Dataset (Rice Bud)}
 \format{
 A list with 4 elements:
 \describe{
-  \item{ref}{A \code{SingleCellExperiment} object containing reference peak accessibility counts (60 peaks x 80 cells), cell types and batch annotations in \code{colData}, and precomputed PCA reductions in \code{reducedDims}.}
-  \item{sim}{A \code{SingleCellExperiment} object containing simulated peak accessibility counts (60 peaks x 80 cells), cell types and batch annotations in \code{colData}, and precomputed PCA reductions in \code{reducedDims}.}
-  \item{cell_types}{A factor of cell-type identities ("TypeA", "TypeB") for the 80 cells.}
-  \item{batch_info}{A factor of batch annotations ("Batch1", "Batch2") for the 80 cells.}
+  \item{ref}{A sparse count matrix (\code{dgCMatrix}) of reference peak accessibility counts (100 HVPs x 100 cells).}
+  \item{sim}{A sparse count matrix (\code{dgCMatrix}) of simulated peak accessibility counts (100 HVPs x 100 cells).}
+  \item{cell_types}{A named factor of cell-type identities across 8 Rice Bud cell types for the 100 cells.}
+  \item{batch_info}{A named factor of batch annotations (\code{Bud_21}, \code{Bud_22}) for the 100 cells.}
 }
 }
 \source{
-Synthetic benchmark data generated via binomial sampling with
-  cell-type specific accessibility shifts.
+Derived from rice bud paired multiomics data (\emph{Oryza sativa}, GEO accession GSE232863).
 }
 \usage{
 data(example_scatac)
 }
 \description{
-A synthetic single-cell ATAC sequencing peak accessibility dataset designed for testing,
-benchmarking, and demonstrating evaluation metrics in \code{scSimEval}. Contains paired
-empirical reference accessibility counts and simulated accessibility counts across 60 peaks
-and 80 cells matching the cells in \code{example_scrna}.
+A real, subsampled single-cell ATAC sequencing peak accessibility dataset from
+rice bud tissue (\emph{Oryza sativa}) designed for testing, benchmarking, and
+demonstrating evaluation metrics in \code{scSimEval}. Contains empirical reference
+peak counts and \code{scDesign3}-simulated counts across the top 100 highly variable
+peaks (HVPs) and the same 100 balanced paired cells as \code{example_scrna}.
 }
 \examples{
 data(example_scatac)

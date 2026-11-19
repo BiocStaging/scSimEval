@@ -480,6 +480,95 @@ and peak resident memory (RAM MiB).</td>
 </tr>
 </tbody>
 </table>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="bundled-example-datasets-shiny-data-modes">5. Bundled Example Datasets &amp; Shiny Data Modes<a class="anchor" aria-label="anchor" href="#bundled-example-datasets-shiny-data-modes"></a>
+</h2>
+<p><code>scSimEval</code> ships with lightweight, real plant single-cell
+example datasets (<code><a href="https://rdrr.io/r/utils/data.html" class="external-link">data()</a></code> and Shiny Studio Data Modes 1–4)
+derived from empirical Rice Bud and Soybean Root multiomics
+references:</p>
+<table class="table">
+<colgroup>
+<col width="20%">
+<col width="20%">
+<col width="20%">
+<col width="20%">
+<col width="20%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Shiny Data Mode</th>
+<th align="left">Package Dataset</th>
+<th align="left">Tissue &amp; Scope</th>
+<th align="left">Dimensions</th>
+<th align="left">Simulators Included</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left"><strong>Mode 1: scRNA-seq</strong></td>
+<td align="left">
+<code>example_rice_bud$reference$rna</code> /
+<code>example_scrna</code>
+</td>
+<td align="left">Rice Bud paired scRNA-seq</td>
+<td align="left">100 balanced cells (8 cell types)
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math>
+top 100 HVGs</td>
+<td align="left">6 (<code>scMultiSim</code>, <code>scDesign3</code>,
+<code>MOSim</code>, <code>scCross</code>, <code>scMoMtF</code>,
+<code>Matilda</code>)</td>
+</tr>
+<tr class="even">
+<td align="left"><strong>Mode 2: scATAC-seq</strong></td>
+<td align="left">
+<code>example_rice_bud$reference$atac</code> /
+<code>example_scatac</code>
+</td>
+<td align="left">Rice Bud paired scATAC-seq</td>
+<td align="left">100 balanced cells (8 cell types)
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math>
+top 100 HVPs</td>
+<td align="left">6 (<code>scMultiSim</code>, <code>scDesign3</code>,
+<code>MOSim</code>, <code>scCross</code>, <code>scMoMtF</code>,
+<code>Matilda</code>)</td>
+</tr>
+<tr class="odd">
+<td align="left"><strong>Mode 3: Paired Multiomics</strong></td>
+<td align="left">
+<code>example_rice_bud</code> /
+<code>example_multiomics</code>
+</td>
+<td align="left">Rice Bud paired RNA + ATAC</td>
+<td align="left">100 identical paired cells
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math>
+100 HVGs + 100 HVPs</td>
+<td align="left">6 (<code>scMultiSim</code>, <code>scDesign3</code>,
+<code>MOSim</code>, <code>scCross</code>, <code>scMoMtF</code>,
+<code>Matilda</code>)</td>
+</tr>
+<tr class="even">
+<td align="left"><strong>Mode 3: Unpaired Multiomics</strong></td>
+<td align="left"><code>example_soybean_root</code></td>
+<td align="left">Soybean Root unpaired RNA + ATAC</td>
+<td align="left">100 RNA cells
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math>
+100 HVGs; 100 ATAC cells
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math>
+100 HVPs (8 cell types)</td>
+<td align="left">3 (<code>scMultiSim</code>, <code>scDesign3</code>,
+<code>scCross</code>)</td>
+</tr>
+<tr class="odd">
+<td align="left"><strong>Mode 4: Upload Saved Results</strong></td>
+<td align="left"><code>demo_paired_multiomics_saved.rds</code></td>
+<td align="left">Pre-computed Rice Bud Paired session</td>
+<td align="left">6 simulators, 1,950 evaluated metric rows</td>
+<td align="left">Instant zero-latency leaderboard &amp; visualization
+reload</td>
+</tr>
+</tbody>
+</table>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

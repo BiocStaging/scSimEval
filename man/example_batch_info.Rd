@@ -3,10 +3,9 @@
 \docType{data}
 \name{example_batch_info}
 \alias{example_batch_info}
-\title{Example Batch Annotations Vector}
+\title{Example Batch Annotations Vector (Rice Bud)}
 \format{
-A named factor with 80 elements across 2 levels: "Batch1" (40 cells) and "Batch2" (40 cells).
-  Names correspond to individual cell barcodes (\code{"Cell_01"} to \code{"Cell_80"}).
+A named factor with 100 elements across 2 levels: \code{Bud_21} and \code{Bud_22}.
 }
 \source{
 Derived from \code{example_scrna$batch_info}.
@@ -15,10 +14,9 @@ Derived from \code{example_scrna$batch_info}.
 data(example_batch_info)
 }
 \description{
-A named factor vector containing technical batch annotations ("Batch1", "Batch2")
-for 80 single cells, matching the column names of \code{\link{example_scrna}} and
-\code{\link{example_scatac}}. Useful as a reference template for formatting batch
-metadata inputs in \code{scSimEval}.
+A named factor vector containing biological batch annotations (\code{Bud_21},
+\code{Bud_22}) for 100 single cells, matching the column names of
+\code{\link{example_scrna}} and \code{\link{example_scatac}}.
 }
 \examples{
 data(example_batch_info)

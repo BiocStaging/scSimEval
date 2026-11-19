@@ -3,10 +3,11 @@
 \docType{data}
 \name{example_cell_types}
 \alias{example_cell_types}
-\title{Example Cell-Type Annotations Vector}
+\title{Example Cell-Type Annotations Vector (Rice Bud)}
 \format{
-A named factor with 80 elements across 2 levels: "TypeA" (40 cells) and "TypeB" (40 cells).
-  Names correspond to individual cell barcodes (\code{"Cell_01"} to \code{"Cell_80"}).
+A named factor with 100 elements across 8 levels (\code{Bud-unknown},
+  \code{Bud_axis}, \code{Bud_primordium}, \code{Epidermis}, \code{Parenchyma_cell},
+  \code{Root_meristem}, \code{Shoot_apical_meristem}, \code{Vascular_cylinder}).
 }
 \source{
 Derived from \code{example_scrna$cell_types}.
@@ -15,10 +16,9 @@ Derived from \code{example_scrna$cell_types}.
 data(example_cell_types)
 }
 \description{
-A named factor vector containing discrete cell-type labels ("TypeA", "TypeB")
-for 80 single cells, matching the column names of \code{\link{example_scrna}} and
-\code{\link{example_scatac}}. Useful as a reference template for formatting cell-type
-metadata inputs in \code{scSimEval}.
+A named factor vector containing discrete cell-type labels across all 8 Rice Bud
+cell types for 100 balanced single cells (12--13 cells per type), matching the
+column names of \code{\link{example_scrna}} and \code{\link{example_scatac}}.
 }
 \examples{
 data(example_cell_types)
