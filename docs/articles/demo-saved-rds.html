@@ -90,251 +90,357 @@
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>In large-scale benchmarking studies involving multiple simulation
-methods, diverse biological datasets, or multi-core high-performance
-computing (HPC) clusters, running the full 56 curated evaluation metric
-suite can take considerable time. Once an evaluation is complete,
-researchers typically serialize the output using <code><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS()</a></code>
-for long-term storage, publication sharing, and reproducible downstream
-analysis.</p>
-<p><strong><code>scSimEval</code></strong> is architected to allow
-instant reloading, re-analysis, leaderboard ranking, and
-publication-grade visualization of any pre-saved <code>.rds</code>
-benchmark file — <strong>without re-computing a single
+<p>In multi-tissue or multi-simulator benchmarking studies executed on
+high-performance computing (HPC) clusters, computing the full 56-metric
+evaluation suite across dozens of dataset-simulator pairs is
+computationally intensive. Once evaluations are serialized to
+<code>.rds</code> files via <code><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS()</a></code>,
+<strong><code>scSimEval</code></strong> enables instant reloading,
+cross-dataset consolidation, custom leaderboard ranking, and
+publication-grade visualization — <strong>without re-computing a single
 metric</strong>.</p>
-<p>This tutorial demonstrates how to load, inspect, rank, and visualize
-pre-saved benchmark results in R console sessions and prepare them for
-interactive exploration.</p>
+<p>This demonstration illustrates a complete downstream
+<code>.rds</code> workflow using <strong>3 independently saved Rice
+paired multiomics benchmark sessions</strong> (<code>Flag</code>,
+<code>Leaf</code>, and <code>Root</code> tissues), each containing all 6
+simulators (<code>scDesign3</code>, <code>MOSim</code>,
+<code>scCross</code>, <code>scMultiSim</code>, <code>Matilda</code>, and
+<code>scMoMtF</code>) evaluated across all 8 canonical categories (2,142
+metric evaluations per tissue; 6,426 total rows).</p>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="loading-a-pre-saved-benchmark-object">1. Loading a Pre-Saved Benchmark Object<a class="anchor" aria-label="anchor" href="#loading-a-pre-saved-benchmark-object"></a>
+<h2 id="loading-merging-multiple-pre-saved--rds-sessions">1. Loading &amp; Merging Multiple Pre-Saved <code>.rds</code>
+Sessions<a class="anchor" aria-label="anchor" href="#loading-merging-multiple-pre-saved--rds-sessions"></a>
 </h2>
-<p><code>scSimEval</code> bundles a pre-computed multi-dataset benchmark
-archive in its package directory. You can load it directly via base R’s
-<code><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS()</a></code>:</p>
+<p>Each saved session <code>.rds</code> archive contains the
+standardized <code>benchmark_df</code>, dataset summaries, and metadata.
+Using <code><a href="../reference/combine_benchmark_results.html">combine_benchmark_results()</a></code>, multiple
+<code>.rds</code> files computed on separate nodes or at different times
+can be merged into a unified cross-tissue benchmark table in
+seconds:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kabilanbio.github.io/scSimEval/">scSimEval</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Locate the bundled benchmark file or supply your own path</span></span>
-<span><span class="va">rds_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"shiny"</span>, <span class="st">"scSimEvalApp"</span>, <span class="st">"data"</span>, <span class="st">"demo_multidataset_benchmark.rds"</span>, package <span class="op">=</span> <span class="st">"scSimEval"</span><span class="op">)</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="va">rds_path</span> <span class="op">==</span> <span class="st">""</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">rds_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">".."</span>, <span class="st">"inst"</span>, <span class="st">"shiny"</span>, <span class="st">"scSimEvalApp"</span>, <span class="st">"data"</span>, <span class="st">"demo_multidataset_benchmark.rds"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
+<span><span class="co"># 1. Load three independently saved benchmark sessions (zero re-computation)</span></span>
+<span><span class="va">flag_sess</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"rice_Flag_vs_all_6_simulators.rds"</span><span class="op">)</span></span>
+<span><span class="va">leaf_sess</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"rice_Leaf_vs_all_6_simulators.rds"</span><span class="op">)</span></span>
+<span><span class="va">root_sess</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"rice_Root_vs_all_6_simulators.rds"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Ingest the serialized benchmark object</span></span>
-<span><span class="va">bench_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">rds_path</span><span class="op">)</span></span>
+<span><span class="co"># 2. Extract their tidy benchmark tables</span></span>
+<span><span class="va">raw_dfs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  Flag <span class="op">=</span> <span class="va">flag_sess</span><span class="op">$</span><span class="va">benchmark_df</span>,</span>
+<span>  Leaf <span class="op">=</span> <span class="va">leaf_sess</span><span class="op">$</span><span class="va">benchmark_df</span>,</span>
+<span>  Root <span class="op">=</span> <span class="va">root_sess</span><span class="op">$</span><span class="va">benchmark_df</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Verify class and contents</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">bench_data</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "scSimEval_multidataset_benchmark" "scSimEval_consolidated"          </span></span>
-<span><span class="co">#&gt; [3] "list"</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">bench_data</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] "benchmark_df"             "granular_benchmark_table"</span></span>
-<span><span class="co">#&gt;  [3] "benchmark_summary_table"  "cross_dataset_stats"     </span></span>
-<span><span class="co">#&gt;  [5] "dataset_summary"          "dataset_summary_df"      </span></span>
-<span><span class="co">#&gt;  [7] "methods"                  "datasets"                </span></span>
-<span><span class="co">#&gt;  [9] "is_multidataset"          "n_datasets"              </span></span>
-<span><span class="co">#&gt; [11] "n_simulators"</span></span></code></pre></div>
-<p>The loaded object contains: * <code>benchmark_df</code>: The complete
-tidy evaluations table across all simulators and metrics. *
-<code>benchmark_summary_table</code>: Formatted scores ready for
-reporting. * <code>methods</code>: Character vector of evaluated
-simulators (e.g., <code>scDesign3</code>, <code>SCRIP</code>,
-<code>dyngen</code>, <code>Splatter</code>, <code>SymSim</code>,
-<code>simATAC</code>). * <code>datasets</code>: Evaluated datasets
-(e.g., <code>Rice Bud (Paired)</code>,
-<code>Soybean Root (Unpaired)</code>).</p>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="inspecting-the-benchmark-structure">2. Inspecting the Benchmark Structure<a class="anchor" aria-label="anchor" href="#inspecting-the-benchmark-structure"></a>
-</h2>
-<p>The core of every <code>scSimEval</code> benchmark object is a tidy
-data frame following standard tidyverse conventions:</p>
+<span><span class="co"># 3. Consolidate into a single cross-tissue benchmark with re-normalized scores</span></span>
+<span><span class="va">combined_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/combine_benchmark_results.html">combine_benchmark_results</a></span><span class="op">(</span></span>
+<span>  list_of_benchmarks   <span class="op">=</span> <span class="va">raw_dfs</span>,</span>
+<span>  filter_gold_standard <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  recompute_normalized <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">combined_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/standardize_benchmark_categories.html">standardize_benchmark_categories</a></span><span class="op">(</span><span class="va">combined_res</span><span class="op">$</span><span class="va">granular_benchmark_table</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">combined_df</span>, <span class="st">"scSimEval_combined_benchmark_results.rds"</span><span class="op">)</span></span></code></pre></div>
+<p>Let’s inspect the consolidated cross-tissue object structure:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Preview top rows of the benchmark scores</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">bench_data</span><span class="op">$</span><span class="va">benchmark_df</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Dataset"</span>, <span class="st">"Method"</span>, <span class="st">"Category"</span>, <span class="st">"Metric"</span>, <span class="st">"Score_Raw"</span>, <span class="st">"Score"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">8</span><span class="op">)</span></span>
-<span><span class="co">#&gt;             Dataset     Method                      Category      Metric</span></span>
-<span><span class="co">#&gt; 1 Rice Bud (Paired)  scDesign3 (I) Distributional Properties Wasserstein</span></span>
-<span><span class="co">#&gt; 2 Rice Bud (Paired) scMultiSim (I) Distributional Properties Wasserstein</span></span>
-<span><span class="co">#&gt; 3 Rice Bud (Paired)    scMoMtF (I) Distributional Properties Wasserstein</span></span>
-<span><span class="co">#&gt; 4 Rice Bud (Paired)    Matilda (I) Distributional Properties Wasserstein</span></span>
-<span><span class="co">#&gt; 5 Rice Bud (Paired)      MOSim (I) Distributional Properties Wasserstein</span></span>
-<span><span class="co">#&gt; 6 Rice Bud (Paired)    scCross (I) Distributional Properties Wasserstein</span></span>
-<span><span class="co">#&gt; 7 Rice Bud (Paired)  scDesign3 (I) Distributional Properties          KS</span></span>
-<span><span class="co">#&gt; 8 Rice Bud (Paired) scMultiSim (I) Distributional Properties          KS</span></span>
-<span><span class="co">#&gt;   Score_Raw  Score</span></span>
-<span><span class="co">#&gt; 1    0.0842 1.0000</span></span>
-<span><span class="co">#&gt; 2    0.1014 0.8289</span></span>
-<span><span class="co">#&gt; 3    0.1411 0.4334</span></span>
-<span><span class="co">#&gt; 4    0.1593 0.2522</span></span>
-<span><span class="co">#&gt; 5    0.1847 0.0500</span></span>
-<span><span class="co">#&gt; 6    0.1299 0.5452</span></span>
-<span><span class="co">#&gt; 7    0.0541 1.0000</span></span>
-<span><span class="co">#&gt; 8    0.0818 0.7539</span></span></code></pre></div>
-<p>Each row records: * <strong><code>Dataset</code></strong>:
-Experimental source or condition. *
-<strong><code>Method</code></strong>: Simulation algorithm evaluated. *
-<strong><code>Category</code></strong>: One of the 8 canonical
-evaluation categories (e.g., <code>(I) Distributional Properties</code>,
-<code>(V) Biological Signal &amp; Differential Fidelity</code>). *
-<strong><code>Metric</code></strong>: Name of the curated evaluation
-metric. * <strong><code>Score_Raw</code></strong>: Unnormalized
-empirical value in physical units (seconds, peak RAM in MiB, correlation
-coefficient, Kolmogorov-Smirnov distance). *
-<strong><code>Score</code></strong>: Standardized direction-aware
-fidelity score normalized to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="true" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0, 1]</annotation></semantics></math>,
-where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>1.0</mn><annotation encoding="application/x-tex">1.0</annotation></semantics></math>
-represents top fidelity.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Total consolidated metric rows:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">combined_df</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Total consolidated metric rows: 6426</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Datasets merged:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">combined_df</span><span class="op">$</span><span class="va">Dataset</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Datasets merged: Rice Flag (Paired), Rice Leaf (Paired), Rice Root (Paired)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Simulators evaluated:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">combined_df</span><span class="op">$</span><span class="va">Method</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Simulators evaluated: scMultiSim, scDesign3, MOSim, scCross, scMoMtF, Matilda</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">combined_df</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Dataset"</span>, <span class="st">"Method"</span>, <span class="st">"Category"</span>, <span class="st">"Metric"</span>, <span class="st">"Score_Raw"</span>, <span class="st">"Score"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">8</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                                            Dataset     Method</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).1 Rice Flag (Paired) scMultiSim</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).2 Rice Flag (Paired) scMultiSim</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).3 Rice Flag (Paired) scMultiSim</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).4 Rice Flag (Paired) scMultiSim</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).5 Rice Flag (Paired) scMultiSim</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).6 Rice Flag (Paired) scMultiSim</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).7 Rice Flag (Paired) scMultiSim</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).8 Rice Flag (Paired) scMultiSim</span></span>
+<span><span class="co">#&gt;                                                      Category</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).1 (I) Distributional Properties</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).2 (I) Distributional Properties</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).3 (I) Distributional Properties</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).4 (I) Distributional Properties</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).5 (I) Distributional Properties</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).6 (I) Distributional Properties</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).7 (I) Distributional Properties</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).8 (I) Distributional Properties</span></span>
+<span><span class="co">#&gt;                                                      Metric    Score_Raw</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).1                 Wasserstein 731.24604681</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).2                          KS   0.89184061</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).3                         MAD 727.00000000</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).4               Bhattacharyya   0.02651393</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).5              Runs_Statistic -46.28018284</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).6                 NN_Mismatch   0.94333333</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).7 Between_Dataset_Silh_Global   0.57833873</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).8                         MAE 731.24604681</span></span>
+<span><span class="co">#&gt;                                    Score</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).1 0.000000</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).2 0.000000</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).3 0.000000</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).4 0.451561</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).5 0.000000</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).6 0.000000</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).7 0.000000</span></span>
+<span><span class="co">#&gt; scMultiSim_Rice Flag (Paired).8 0.000000</span></span></code></pre></div>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="generating-simulator-leaderboards">3. Generating Simulator Leaderboards<a class="anchor" aria-label="anchor" href="#generating-simulator-leaderboards"></a>
+<h2 id="computing-cross-tissue-per-tissue-category-leaderboards">2. Computing Cross-Tissue, Per-Tissue &amp; Category
+Leaderboards<a class="anchor" aria-label="anchor" href="#computing-cross-tissue-per-tissue-category-leaderboards"></a>
 </h2>
-<p>Use <code><a href="../reference/compute_method_leaderboard.html">compute_method_leaderboard()</a></code> to compute composite
-rankings across all 56 curated evaluation metrics:</p>
+<div class="section level4">
+<h4 id="overall-cross-tissue-composite-leaderboard-flag-leaf-root">2.1 Overall Cross-Tissue Composite Leaderboard (Flag + Leaf +
+Root)<a class="anchor" aria-label="anchor" href="#overall-cross-tissue-composite-leaderboard-flag-leaf-root"></a>
+</h4>
+<p><code><a href="../reference/compute_method_leaderboard.html">compute_method_leaderboard()</a></code> aggregates direction-aware
+normalized fidelity scores across all three tissues and all 8
+categories:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Compute standard overall composite leaderboard</span></span>
-<span><span class="va">leaderboard</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_method_leaderboard.html">compute_method_leaderboard</a></span><span class="op">(</span><span class="va">bench_data</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">leaderboard</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">overall_lb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_method_leaderboard.html">compute_method_leaderboard</a></span><span class="op">(</span><span class="va">combined_df</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">overall_lb</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   Overall_Rank     Method Average_Fidelity Fidelity_Score</span></span>
-<span><span class="co">#&gt; 4            1  scDesign3            94.8%         0.9478</span></span>
-<span><span class="co">#&gt; 6            2 scMultiSim            69.3%         0.6927</span></span>
-<span><span class="co">#&gt; 5            3    scMoMtF            53.8%         0.5384</span></span>
-<span><span class="co">#&gt; 3            4    scCross            51.9%         0.5193</span></span>
-<span><span class="co">#&gt; 1            5    Matilda            25.5%         0.2548</span></span>
-<span><span class="co">#&gt; 2            6      MOSim            14.3%         0.1432</span></span></code></pre></div>
+<span><span class="co">#&gt; 4            1  scDesign3            89.1%         0.8908</span></span>
+<span><span class="co">#&gt; 2            2      MOSim            81.1%         0.8113</span></span>
+<span><span class="co">#&gt; 3            3    scCross            62.6%         0.6261</span></span>
+<span><span class="co">#&gt; 6            4 scMultiSim            48.6%         0.4863</span></span>
+<span><span class="co">#&gt; 1            5    Matilda            32.0%         0.3202</span></span>
+<span><span class="co">#&gt; 5            6    scMoMtF            26.9%         0.2694</span></span></code></pre></div>
+</div>
 <div class="section level4">
-<h4 id="category-specific-leaderboards">3.1 Category-Specific Leaderboards<a class="anchor" aria-label="anchor" href="#category-specific-leaderboards"></a>
+<h4 id="per-tissue-consistency-check">2.2 Per-Tissue Consistency Check<a class="anchor" aria-label="anchor" href="#per-tissue-consistency-check"></a>
 </h4>
-<p>In addition to the global composite leaderboard, researchers often
-evaluate simulator rankings within specific biological domains. For
-example, to assess which method excels at capturing <strong>Category I
-(Distributional Properties)</strong>:</p>
+<p>Evaluating each tissue individually confirms whether simulator
+rankings remain stable across distinct plant organs:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Extract Category I evaluation rows</span></span>
-<span><span class="va">cat1_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">bench_data</span><span class="op">$</span><span class="va">benchmark_df</span>, <span class="va">Category</span> <span class="op">==</span> <span class="st">"(I) Distributional Properties"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Compute Category I leaderboard</span></span>
-<span><span class="va">cat1_leaderboard</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_method_leaderboard.html">compute_method_leaderboard</a></span><span class="op">(</span><span class="va">cat1_df</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">cat1_leaderboard</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Overall_Rank     Method Average_Fidelity Fidelity_Score</span></span>
-<span><span class="co">#&gt; 4            1  scDesign3           100.0%         1.0000</span></span>
-<span><span class="co">#&gt; 6            2 scMultiSim            72.4%         0.7240</span></span>
-<span><span class="co">#&gt; 5            3    scMoMtF            54.9%         0.5488</span></span>
-<span><span class="co">#&gt; 3            4    scCross            41.3%         0.4126</span></span>
-<span><span class="co">#&gt; 1            5    Matilda            25.4%         0.2543</span></span>
-<span><span class="co">#&gt; 2            6      MOSim             0.0%         0.0000</span></span></code></pre></div>
-<hr>
+<code class="sourceCode R"><span><span class="va">per_tissue_lbs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">combined_df</span><span class="op">$</span><span class="va">Dataset</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">ds</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">lb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_method_leaderboard.html">compute_method_leaderboard</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">combined_df</span>, <span class="va">Dataset</span> <span class="op">==</span> <span class="va">ds</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">lb</span><span class="op">$</span><span class="va">Dataset</span> <span class="op">&lt;-</span> <span class="va">ds</span></span>
+<span>  <span class="va">lb</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Dataset"</span>, <span class="st">"Overall_Rank"</span>, <span class="st">"Method"</span>, <span class="st">"Average_Fidelity"</span>, <span class="st">"Fidelity_Score"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">per_tissue_lbs</span><span class="op">)</span></span>
+<span><span class="co">#&gt;               Dataset Overall_Rank     Method Average_Fidelity Fidelity_Score</span></span>
+<span><span class="co">#&gt; 4  Rice Flag (Paired)            1  scDesign3            89.4%         0.8941</span></span>
+<span><span class="co">#&gt; 2  Rice Flag (Paired)            2      MOSim            82.4%         0.8238</span></span>
+<span><span class="co">#&gt; 3  Rice Flag (Paired)            3    scCross            59.6%         0.5960</span></span>
+<span><span class="co">#&gt; 6  Rice Flag (Paired)            4 scMultiSim            48.6%         0.4857</span></span>
+<span><span class="co">#&gt; 5  Rice Flag (Paired)            5    scMoMtF            27.9%         0.2785</span></span>
+<span><span class="co">#&gt; 1  Rice Flag (Paired)            6    Matilda            27.8%         0.2783</span></span>
+<span><span class="co">#&gt; 41 Rice Leaf (Paired)            1  scDesign3            91.2%         0.9119</span></span>
+<span><span class="co">#&gt; 21 Rice Leaf (Paired)            2      MOSim            76.3%         0.7634</span></span>
+<span><span class="co">#&gt; 31 Rice Leaf (Paired)            3    scCross            58.4%         0.5835</span></span>
+<span><span class="co">#&gt; 61 Rice Leaf (Paired)            4 scMultiSim            48.0%         0.4798</span></span>
+<span><span class="co">#&gt; 11 Rice Leaf (Paired)            5    Matilda            31.4%         0.3142</span></span>
+<span><span class="co">#&gt; 51 Rice Leaf (Paired)            6    scMoMtF            28.9%         0.2891</span></span>
+<span><span class="co">#&gt; 42 Rice Root (Paired)            1  scDesign3            86.7%         0.8666</span></span>
+<span><span class="co">#&gt; 22 Rice Root (Paired)            2      MOSim            84.7%         0.8466</span></span>
+<span><span class="co">#&gt; 32 Rice Root (Paired)            3    scCross            69.9%         0.6987</span></span>
+<span><span class="co">#&gt; 62 Rice Root (Paired)            4 scMultiSim            49.3%         0.4935</span></span>
+<span><span class="co">#&gt; 12 Rice Root (Paired)            5    Matilda            36.8%         0.3683</span></span>
+<span><span class="co">#&gt; 52 Rice Root (Paired)            6    scMoMtF            24.1%         0.2406</span></span></code></pre></div>
 </div>
-</div>
-<div class="section level2">
-<h2 id="generating-publication-quality-figures">4. Generating Publication-Quality Figures<a class="anchor" aria-label="anchor" href="#generating-publication-quality-figures"></a>
-</h2>
-<p>All visualization functions in <code>scSimEval</code> accept the
-loaded <code>.rds</code> object directly:</p>
 <div class="section level4">
-<h4 id="comparative-bubble-matrix">4.1 Comparative Bubble Matrix<a class="anchor" aria-label="anchor" href="#comparative-bubble-matrix"></a>
+<h4 id="category-specific-leaderboards">2.3 Category-Specific Leaderboards<a class="anchor" aria-label="anchor" href="#category-specific-leaderboards"></a>
 </h4>
-<p>Generate the flagship multi-dimensional bubble matrix mapping every
-simulator across all curated evaluation measures:</p>
+<p>Researchers can slice the pre-saved <code>.rds</code> table to rank
+simulators within specific biological domains — for example,
+<strong>Category I (Distributional Properties)</strong> and
+<strong>Category VI (Multiomics Integration &amp;
+Alignment)</strong>:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Multi-simulator comparative bubble matrix</span></span>
-<span><span class="va">p_bubble</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_benchmark_bubble_matrix.html">plot_benchmark_bubble_matrix</a></span><span class="op">(</span></span>
-<span>  data       <span class="op">=</span> <span class="va">bench_data</span>,</span>
-<span>  title      <span class="op">=</span> <span class="st">"Cross-Dataset Simulation Fidelity Benchmarking"</span>,</span>
-<span>  theme_mode <span class="op">=</span> <span class="st">"publication"</span></span>
+<code class="sourceCode R"><span><span class="co"># Category I: Distributional Properties</span></span>
+<span><span class="va">cat1_lb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_method_leaderboard.html">compute_method_leaderboard</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">combined_df</span>, <span class="va">Category</span> <span class="op">==</span> <span class="st">"(I) Distributional Properties"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p_bubble</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">cat1_lb</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   Overall_Rank     Method Average_Fidelity Fidelity_Score</span></span>
+<span><span class="co">#&gt; 4            1  scDesign3            91.2%         0.9119</span></span>
+<span><span class="co">#&gt; 2            2      MOSim            89.6%         0.8965</span></span>
+<span><span class="co">#&gt; 3            3    scCross            66.2%         0.6615</span></span>
+<span><span class="co">#&gt; 6            4 scMultiSim            51.6%         0.5155</span></span>
+<span><span class="co">#&gt; 1            5    Matilda            26.2%         0.2616</span></span>
+<span><span class="co">#&gt; 5            6    scMoMtF            21.6%         0.2164</span></span>
+<span></span>
+<span><span class="co"># Category VI: Multiomics Integration &amp; Alignment</span></span>
+<span><span class="va">cat6_lb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_method_leaderboard.html">compute_method_leaderboard</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">combined_df</span>, <span class="va">Category</span> <span class="op">==</span> <span class="st">"(VI) Multiomics Integration &amp; Alignment"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">cat6_lb</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   Overall_Rank     Method Average_Fidelity Fidelity_Score</span></span>
+<span><span class="co">#&gt; 1            1    Matilda            87.0%         0.8702</span></span>
+<span><span class="co">#&gt; 4            2  scDesign3            77.8%         0.7781</span></span>
+<span><span class="co">#&gt; 6            3 scMultiSim            69.1%         0.6914</span></span>
+<span><span class="co">#&gt; 3            4    scCross            68.6%         0.6858</span></span>
+<span><span class="co">#&gt; 5            5    scMoMtF            51.7%         0.5167</span></span>
+<span><span class="co">#&gt; 2            6      MOSim            39.3%         0.3933</span></span></code></pre></div>
+<hr>
 </div>
+</div>
+<div class="section level2">
+<h2 id="publication-grade-cross-tissue-visualizations-from--rds">3. Publication-Grade Cross-Tissue Visualizations from
+<code>.rds</code><a class="anchor" aria-label="anchor" href="#publication-grade-cross-tissue-visualizations-from--rds"></a>
+</h2>
+<p>Every visualization function in <code>scSimEval</code> accepts the
+consolidated <code>.rds</code> data frame directly, enabling rapid
+regeneration of high-resolution manuscript figures.</p>
 <div class="section level4">
-<h4 id="category-summary-bars">4.2 Category Summary Bars<a class="anchor" aria-label="anchor" href="#category-summary-bars"></a>
+<h4 id="cross-tissue-comparative-bubble-matrix">3.1 Cross-Tissue Comparative Bubble Matrix<a class="anchor" aria-label="anchor" href="#cross-tissue-comparative-bubble-matrix"></a>
 </h4>
-<p>Generate rank-ordered horizontal bar charts comparing simulator
-performance across each category:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Category-wise summary horizontal bar chart</span></span>
-<span><span class="va">p_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_evaluation_summary.html">plot_evaluation_summary</a></span><span class="op">(</span></span>
-<span>  data  <span class="op">=</span> <span class="va">bench_data</span>,</span>
-<span>  title <span class="op">=</span> <span class="st">"Overall Simulation Fidelity by Category"</span></span>
+<code class="sourceCode R"><span><span class="va">p_bubble</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_benchmark_bubble_matrix.html">plot_benchmark_bubble_matrix</a></span><span class="op">(</span></span>
+<span>  <span class="va">combined_df</span>,</span>
+<span>  title     <span class="op">=</span> <span class="st">"Cross-Tissue Simulation Fidelity: Rice Flag, Leaf &amp; Root (Pre-Saved .rds)"</span>,</span>
+<span>  base_size <span class="op">=</span> <span class="fl">12</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p_summary</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="st">"figures/presaved_benchmark_bubble_matrix.png"</span>, plot <span class="op">=</span> <span class="va">p_bubble</span>, width <span class="op">=</span> <span class="fl">18</span>, height <span class="op">=</span> <span class="fl">9</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/presaved_benchmark_bubble_matrix.png" class="r-plt" alt="**Figure 1: Cross-Tissue Comparative Bubble Matrix (Rice Flag, Leaf &amp; Root).** Consolidates normalized fidelity scores across all 8 evaluation categories and 6 simulators directly from three pre-saved `.rds` session archives." width="100%"><p class="caption">
+<strong>Figure 1: Cross-Tissue Comparative Bubble Matrix (Rice Flag,
+Leaf &amp; Root).</strong> Consolidates normalized fidelity scores
+across all 8 evaluation categories and 6 simulators directly from three
+pre-saved <code>.rds</code> session archives.
+</p>
+</div>
+<hr>
 </div>
 <div class="section level4">
-<h4 id="interactive-figure-zooming-with-zoom_plot">4.3 Interactive Figure Zooming with <code>zoom_plot()</code><a class="anchor" aria-label="anchor" href="#interactive-figure-zooming-with-zoom_plot"></a>
+<h4 id="evaluation-summary-polar-chart">3.2 Evaluation Summary Polar Chart<a class="anchor" aria-label="anchor" href="#evaluation-summary-polar-chart"></a>
 </h4>
-<p>When inspecting dense figures with many metrics or simulators, use
-<code><a href="../reference/zoom_plot.html">zoom_plot()</a></code> to focus on specific coordinate windows:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Magnify top-left corner of the bubble matrix (first 10 metrics, top 3 simulators)</span></span>
-<span><span class="fu"><a href="../reference/zoom_plot.html">zoom_plot</a></span><span class="op">(</span><span class="va">p_bubble</span>, x_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">10</span><span class="op">)</span>, y_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">6</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">p_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_evaluation_summary.html">plot_evaluation_summary</a></span><span class="op">(</span><span class="va">combined_df</span>, normalize_scores <span class="op">=</span> <span class="cn">TRUE</span>, base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="st">"figures/presaved_evaluation_summary.png"</span>, plot <span class="op">=</span> <span class="va">p_summary</span>, width <span class="op">=</span> <span class="fl">14</span>, height <span class="op">=</span> <span class="fl">7</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/presaved_evaluation_summary.png" class="r-plt" alt="**Figure 2: Cross-Tissue Evaluation Summary Polar Chart.** Displays aggregated category-level fidelity scores across Rice Flag, Leaf, and Root tissues." width="100%"><p class="caption">
+<strong>Figure 2: Cross-Tissue Evaluation Summary Polar Chart.</strong>
+Displays aggregated category-level fidelity scores across Rice Flag,
+Leaf, and Root tissues.
+</p>
+</div>
 <hr>
 </div>
-</div>
-<div class="section level2">
-<h2 id="merging-multiple-saved-benchmark-runs">5. Merging Multiple Saved Benchmark Runs<a class="anchor" aria-label="anchor" href="#merging-multiple-saved-benchmark-runs"></a>
-</h2>
-<p>When benchmark evaluations are executed across different computing
-nodes or datasets at different times, use
-<code><a href="../reference/combine_benchmark_results.html">combine_benchmark_results()</a></code> or
-<code><a href="../reference/combine_benchmark_results.html">append_benchmark_results()</a></code> to merge individual
-<code>.rds</code> objects into a single consolidated benchmark:</p>
+<div class="section level4">
+<h4 id="relative-metric-heatmap">3.3 Relative Metric Heatmap<a class="anchor" aria-label="anchor" href="#relative-metric-heatmap"></a>
+</h4>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Load two independently computed benchmark runs</span></span>
-<span><span class="va">run1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"benchmark_dataset_A.rds"</span><span class="op">)</span></span>
-<span><span class="va">run2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"benchmark_dataset_B.rds"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Merge into a single cross-dataset benchmark object</span></span>
-<span><span class="va">merged_benchmark</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/combine_benchmark_results.html">combine_benchmark_results</a></span><span class="op">(</span></span>
-<span>  <span class="va">run1</span>, <span class="va">run2</span>,</span>
-<span>  dataset_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Dataset_A"</span>, <span class="st">"Dataset_B"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Compute unified cross-dataset leaderboard</span></span>
-<span><span class="fu"><a href="../reference/compute_method_leaderboard.html">compute_method_leaderboard</a></span><span class="op">(</span><span class="va">merged_benchmark</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">p_heatmap</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_metric_heatmap.html">plot_metric_heatmap</a></span><span class="op">(</span><span class="va">combined_df</span>, scale_fill <span class="op">=</span> <span class="st">"relative"</span>, base_size <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="st">"figures/presaved_metric_heatmap.png"</span>, plot <span class="op">=</span> <span class="va">p_heatmap</span>, width <span class="op">=</span> <span class="fl">15</span>, height <span class="op">=</span> <span class="fl">10</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/presaved_metric_heatmap.png" class="r-plt" alt="**Figure 3: Cross-Tissue Relative Metric Heatmap.** Hierarchically clustered relative fidelity scores aggregated across Flag, Leaf, and Root paired multiomics benchmarks." width="100%"><p class="caption">
+<strong>Figure 3: Cross-Tissue Relative Metric Heatmap.</strong>
+Hierarchically clustered relative fidelity scores aggregated across
+Flag, Leaf, and Root paired multiomics benchmarks.
+</p>
+</div>
 <hr>
 </div>
-<div class="section level2">
-<h2 id="instant-exploration-in-shiny-studio">6. Instant Exploration in Shiny Studio<a class="anchor" aria-label="anchor" href="#instant-exploration-in-shiny-studio"></a>
-</h2>
-<p>Any <code>.rds</code> benchmark file saved from
-<code><a href="../reference/evaluate_simulation_accuracy.html">evaluate_simulation_accuracy()</a></code>,
-<code><a href="../reference/evaluate_multiomics_accuracy.html">evaluate_multiomics_accuracy()</a></code>, or
-<code><a href="../reference/evaluate_multiple_datasets.html">evaluate_multiple_datasets()</a></code> can also be loaded into the
-<strong>scSimEval Shiny Studio</strong> with zero latency:</p>
-<ol style="list-style-type: decimal">
-<li>
-<p>Launch the app in R:</p>
+<div class="section level4">
+<h4 id="multi-panel-category-boxplots">3.4 Multi-Panel Category Boxplots<a class="anchor" aria-label="anchor" href="#multi-panel-category-boxplots"></a>
+</h4>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p_boxplots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_metric_boxplots.html">plot_metric_boxplots</a></span><span class="op">(</span><span class="va">combined_df</span>, score_type <span class="op">=</span> <span class="st">"normalized"</span>, base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="st">"figures/presaved_metric_boxplots.png"</span>, plot <span class="op">=</span> <span class="va">p_boxplots</span>, width <span class="op">=</span> <span class="fl">14</span>, height <span class="op">=</span> <span class="fl">9</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/presaved_metric_boxplots.png" class="r-plt" alt="**Figure 4: Cross-Tissue Metric Score Distributions Across Categories.** Captures inter-tissue and inter-metric score variance across all 8 categories." width="100%"><p class="caption">
+<strong>Figure 4: Cross-Tissue Metric Score Distributions Across
+Categories.</strong> Captures inter-tissue and inter-metric score
+variance across all 8 categories.
+</p>
+</div>
+<hr>
+</div>
+<div class="section level4">
+<h4 id="pca-ordination-biplot-mds-metric-space">3.5 PCA Ordination Biplot &amp; MDS Metric Space<a class="anchor" aria-label="anchor" href="#pca-ordination-biplot-mds-metric-space"></a>
+</h4>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p_pca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_metric_pca.html">plot_metric_pca</a></span><span class="op">(</span><span class="va">combined_df</span>, panel <span class="op">=</span> <span class="st">"both"</span>, top_n_loadings <span class="op">=</span> <span class="fl">8</span>, base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="st">"figures/presaved_pca_ordination.png"</span>, plot <span class="op">=</span> <span class="va">p_pca</span>, width <span class="op">=</span> <span class="fl">13</span>, height <span class="op">=</span> <span class="fl">6.5</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">p_mds</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_metric_mds.html">plot_metric_mds</a></span><span class="op">(</span><span class="va">combined_df</span>, ordination_by <span class="op">=</span> <span class="st">"summaries"</span>, normalize_scores <span class="op">=</span> <span class="cn">TRUE</span>, base_size <span class="op">=</span> <span class="fl">11</span><span class="op">)</span></span>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="st">"figures/presaved_mds_metric_space.png"</span>, plot <span class="op">=</span> <span class="va">p_mds</span>, width <span class="op">=</span> <span class="fl">12</span>, height <span class="op">=</span> <span class="fl">7</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/presaved_pca_ordination.png" class="r-plt" alt="**Figure 5: Cross-Tissue PCA Ordination Biplot.** Projects simulator profiles and the top 8 metric loadings driving separation across Flag, Leaf, and Root." width="100%"><p class="caption">
+<strong>Figure 5: Cross-Tissue PCA Ordination Biplot.</strong> Projects
+simulator profiles and the top 8 metric loadings driving separation
+across Flag, Leaf, and Root.
+</p>
+</div>
+<div class="figure">
+<img src="figures/presaved_mds_metric_space.png" class="r-plt" alt="**Figure 6: Cross-Tissue Multidimensional Scaling (MDS) Metric Space.** Visualizes global pairwise similarity among simulators across summary metrics." width="100%"><p class="caption">
+<strong>Figure 6: Cross-Tissue Multidimensional Scaling (MDS) Metric
+Space.</strong> Visualizes global pairwise similarity among simulators
+across summary metrics.
+</p>
+</div>
+<hr>
+</div>
+<div class="section level4">
+<h4 id="cross-tissue-computational-scalability-benchmark">3.6 Cross-Tissue Computational Scalability Benchmark<a class="anchor" aria-label="anchor" href="#cross-tissue-computational-scalability-benchmark"></a>
+</h4>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p_scalability</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_scalability_benchmark.html">plot_scalability_benchmark</a></span><span class="op">(</span></span>
+<span>  benchmark_data <span class="op">=</span> <span class="va">combined_df</span>,</span>
+<span>  type           <span class="op">=</span> <span class="st">"composite"</span>,</span>
+<span>  layout         <span class="op">=</span> <span class="st">"4panel"</span>,</span>
+<span>  modality       <span class="op">=</span> <span class="st">"total"</span>,</span>
+<span>  time_unit      <span class="op">=</span> <span class="st">"core_seconds"</span>,</span>
+<span>  memory_unit    <span class="op">=</span> <span class="st">"MiB/core"</span>,</span>
+<span>  base_size      <span class="op">=</span> <span class="fl">11</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu">ggsave</span><span class="op">(</span><span class="st">"figures/presaved_scalability_benchmark.png"</span>, plot <span class="op">=</span> <span class="va">p_scalability</span>, width <span class="op">=</span> <span class="fl">13</span>, height <span class="op">=</span> <span class="fl">8.5</span>, dpi <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/presaved_scalability_benchmark.png" class="r-plt" alt="**Figure 7: Cross-Tissue 4-Panel Scalability Benchmark.** Aggregates core-seconds runtime, peak resident RAM per core (MiB/core), and speed-memory trade-offs across Flag, Leaf, and Root." width="100%"><p class="caption">
+<strong>Figure 7: Cross-Tissue 4-Panel Scalability Benchmark.</strong>
+Aggregates core-seconds runtime, peak resident RAM per core (MiB/core),
+and speed-memory trade-offs across Flag, Leaf, and Root.
+</p>
+</div>
+<hr>
+</div>
+</div>
+<div class="section level2">
+<h2 id="instant-exploration-in-shiny-studio">4. Instant Exploration in Shiny Studio<a class="anchor" aria-label="anchor" href="#instant-exploration-in-shiny-studio"></a>
+</h2>
+<p>Any individual or consolidated <code>.rds</code> benchmark file can
+also be loaded into the interactive <strong>scSimEval Shiny
+Studio</strong> with zero latency:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/launch_scSimEval_app.html">launch_scSimEval_app</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-</li>
-<li><p>Navigate to <strong>Data Hub</strong>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\rightarrow</annotation></semantics></math><strong>Mode 4: Upload Pre-Computed Benchmark Table (.rds /
-.csv)</strong>.</p></li>
-<li><p>Select your <code>.rds</code> file.</p></li>
-<li><p>The entire Shiny interface — including the 56-metric Bubble
-Matrix, Fidelity Leaderboards, and all 8 Visualization Panels —
-populates instantaneously without re-running any computations.</p></li>
-</ol>
+<p>Navigate to <strong>Data Hub
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\rightarrow</annotation></semantics></math>
+Upload Pre-Saved Benchmark Session (.rds)</strong> to interactively
+filter tissues (<code>Flag</code>, <code>Leaf</code>,
+<code>Root</code>), toggle metric categories, inspect leaderboards, and
+export custom figures without re-running evaluations.</p>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="summary">7. Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
+<h2 id="cross-tissue-takeaways">5. Cross-Tissue Takeaways<a class="anchor" aria-label="anchor" href="#cross-tissue-takeaways"></a>
 </h2>
-<p>Analyzing pre-saved <code>.rds</code> benchmark files allows you to:
-* <strong>Avoid redundant computation</strong>: Calculate metrics once
-on an HPC cluster and re-analyze instantly on a local workstation. *
-<strong>Explore custom biological priorities</strong>: Re-weight
-categories dynamically using <code><a href="../reference/compute_method_leaderboard.html">compute_method_leaderboard()</a></code>.
-* <strong>Export publication figures</strong>: Render high-resolution
-(600 DPI) bubble matrices, heatmaps, and summary bars on demand. *
-<strong>Seamlessly bridge CLI and GUI</strong>: Move effortlessly
-between R console workflows and the interactive Shiny Studio
-interface.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<p>Consolidating the three pre-saved Rice <code>.rds</code> sessions
+(6,426 metric evaluations) demonstrates strong rank stability across
+distinct plant tissues: * <strong><code>scDesign3</code></strong>
+consistently ranked <strong>#1</strong> across all three tissues
+(<strong>89.1%</strong> overall: Flag 89.4%, Leaf 91.2%, Root 86.7%). *
+<strong><code>MOSim</code></strong> consistently ranked
+<strong>#2</strong> (<strong>81.1%</strong> overall: Flag 82.4%, Leaf
+76.3%, Root 84.7%), closing the gap with <code>scDesign3</code> most
+closely in Root tissue. * <strong><code>scCross</code></strong>
+(<strong>62.6%</strong>) and <strong><code>scMultiSim</code></strong>
+(<strong>48.6%</strong>) held steady at ranks #3 and #4 across every
+tissue, while <strong><code>Matilda</code></strong>
+(<strong>32.0%</strong>) and <strong><code>scMoMtF</code></strong>
+(<strong>26.9%</strong>) offered the fastest execution footprints.</p>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="session-information">6. Session Information<a class="anchor" aria-label="anchor" href="#session-information"></a>
+</h2>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; R version 4.6.2 (2026-10-29)</span></span>
 <span><span class="co">#&gt; Platform: x86_64-pc-linux-gnu</span></span>
