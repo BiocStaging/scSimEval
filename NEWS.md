@@ -1,5 +1,10 @@
 # scSimEval 0.99.11
 
+* **Package Tarball Size Reduction**: Excluded web-only `pkgdown` demonstration articles (`vignettes/demo-*.Rmd`), pre-rendered figure assets (`vignettes/figures/`), and pre-saved benchmark `.rds` archives (`vignettes/*.rds`) via `.Rbuildignore`, reducing the built Bioconductor source tarball size to `< 1 MB`.
+
+
+# scSimEval 0.99.10
+
 * **Standalone Interactive GUI (`scSimEvalStudio`)**: Decoupled the Shiny application into a dedicated companion package (`scSimEvalStudio`), maintaining `scSimEval` as a focused, lightweight computational benchmarking engine per Bioconductor design principles.
 * **Standardized SingleCellExperiment API**: Core evaluation workflows (`evaluate_simulation_accuracy`, `evaluate_multiomics_accuracy`, `extract_dataset_summary`) now natively require and operate directly on standard Bioconductor `SingleCellExperiment` objects with standardized `colData` annotations.
 * **Bioconductor Multiomics via `altExp`**: Upgraded multiomics evaluation pipelines to represent paired multimodal data (scRNA-seq + scATAC-seq) using Bioconductor's standard `altExp()` assay representation.

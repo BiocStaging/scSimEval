@@ -50,6 +50,11 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.99.11" id="scsimeval-09911">scSimEval 0.99.11<a class="anchor" aria-label="anchor" href="#scsimeval-09911"></a></h2>
 <ul><li>
+<strong>Package Tarball Size Reduction</strong>: Excluded web-only <code>pkgdown</code> demonstration articles (<code>vignettes/demo-*.Rmd</code>), pre-rendered figure assets (<code>vignettes/figures/</code>), and pre-saved benchmark <code>.rds</code> archives (<code>vignettes/*.rds</code>) via <code>.Rbuildignore</code>, reducing the built Bioconductor source tarball size to <code>&lt; 1 MB</code>.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.99.10" id="scsimeval-09910">scSimEval 0.99.10<a class="anchor" aria-label="anchor" href="#scsimeval-09910"></a></h2>
+<ul><li>
 <strong>Standalone Interactive GUI (<code>scSimEvalStudio</code>)</strong>: Decoupled the Shiny application into a dedicated companion package (<code>scSimEvalStudio</code>), maintaining <code>scSimEval</code> as a focused, lightweight computational benchmarking engine per Bioconductor design principles.</li>
 <li>
 <strong>Standardized SingleCellExperiment API</strong>: Core evaluation workflows (<code>evaluate_simulation_accuracy</code>, <code>evaluate_multiomics_accuracy</code>, <code>extract_dataset_summary</code>) now natively require and operate directly on standard Bioconductor <code>SingleCellExperiment</code> objects with standardized <code>colData</code> annotations.</li>
