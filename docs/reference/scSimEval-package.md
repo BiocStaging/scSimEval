@@ -46,7 +46,8 @@ memory_mb resource benchmarking. Includes non-linear low-dimensional
 cell embedding projections (UMAP, t-SNE, PCA) with quantitative cluster
 separability (Silhouette) and fidelity (ARI) metrics, automated score
 normalization, leaderboards, and publication visualizations. Interactive
-GUI exploration is available via the companion `scSimEvalGUI` package.
+GUI exploration is available via the companion `scSimEvalStudio`
+package.
 
 ## See also
 

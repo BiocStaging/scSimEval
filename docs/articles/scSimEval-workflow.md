@@ -231,8 +231,8 @@ and summarize multiple simulators with
   multiomics, unpaired multiomics, and `.rds` aggregation vignettes.
 - **Interactive Shiny Interface**: Point-and-click dataset exploration,
   dynamic filtering, and high-resolution report exports are available in
-  the companion package **`scSimEvalGUI`**
-  (`scSimEvalGUI::launch_scSimEval_app()`).
+  the companion package **`scSimEvalStudio`**
+  ([`scSimEvalStudio::launch_scSimEval_app()`](https://rdrr.io/pkg/scSimEvalStudio/man/launch_scSimEval_app.html)).
 
 ------------------------------------------------------------------------
 

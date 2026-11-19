@@ -332,10 +332,10 @@ speed-memory trade-offs across Flag, Leaf, and Root.
 ## 4. Instant Exploration in Shiny Studio
 
 Interactive visual exploration of `.rds` benchmark bundles is available
-via the companion **`scSimEvalGUI`** package:
+via the companion **`scSimEvalStudio`** package:
 
 ``` r
-scSimEvalGUI::launch_scSimEval_app()
+scSimEvalStudio::launch_scSimEval_app()
 ```
 
 Navigate to **Data Hub $\rightarrow$ Upload Pre-Saved Benchmark Session

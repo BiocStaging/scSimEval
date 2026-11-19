@@ -69,7 +69,7 @@ Description: A simple and unified evaluation toolkit for benchmarking single-cel
     t-SNE, PCA) with quantitative cluster separability (Silhouette) and fidelity
     (ARI) metrics, automated score normalization, leaderboards, and publication
     visualizations. Interactive GUI exploration is available via the companion
-    \code{scSimEvalGUI} package.
+    \code{scSimEvalStudio} package.
 License: MIT + file LICENSE
 URL: https://kabilanbio.github.io/scSimEval/, https://github.com/kabilanbio/scSimEval
 BugReports: https://github.com/kabilanbio/scSimEval/issues

@@ -138,7 +138,7 @@ We can also compute normalized scores (`[0, 1]`, where `1` is best) via `normali
 
 * **Complete 56-Metric Reference**: See `vignette("metrics-catalog", package = "scSimEval")` for definitions, formulas, and optimization directions for every measure across Categories I--VIII.
 * **Domain Case Studies**: See the scRNA-seq, scATAC-seq, paired multiomics, unpaired multiomics, and `.rds` aggregation vignettes.
-* **Interactive Shiny Interface**: Point-and-click dataset exploration, dynamic filtering, and high-resolution report exports are available in the companion package **`scSimEvalGUI`** (`scSimEvalGUI::launch_scSimEval_app()`).
+* **Interactive Shiny Interface**: Point-and-click dataset exploration, dynamic filtering, and high-resolution report exports are available in the companion package **`scSimEvalStudio`** (`scSimEvalStudio::launch_scSimEval_app()`).
 
 ---
 

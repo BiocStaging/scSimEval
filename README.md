@@ -53,10 +53,10 @@ plot_evaluation_summary(benchmark_results)
 ```
 
 ### 2. Interactive Shiny Studio
-Interactive exploration, point-and-click benchmarking, and report export are available through the companion **`scSimEvalGUI`** package:
+Interactive exploration, point-and-click benchmarking, and report export are available through the companion **`scSimEvalStudio`** package:
 
 ```R
-library(scSimEvalGUI)
+library(scSimEvalStudio)
 launch_scSimEval_app()
 ```
 
