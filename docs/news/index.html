@@ -49,9 +49,26 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.99.10" id="scsimeval-09910">scSimEval 0.99.10<a class="anchor" aria-label="anchor" href="#scsimeval-09910"></a></h2>
-<ul><li>Updated the data input option which align with Seurat and Single cell experiment objects.</li>
+<ul><li>
+<strong>Standalone Interactive GUI (<code>scSimEvalStudio</code>)</strong>: Decoupled the Shiny application into a dedicated companion package (<code>scSimEvalStudio</code>), maintaining <code>scSimEval</code> as a focused, lightweight computational benchmarking engine per Bioconductor design principles.</li>
 <li>
-<strong>Fasano-Franceschini 2D KS Min-Max Normalization</strong>: Corrected direction-aware score normalization in <code>.normalize_bubble_scores()</code> so that <code>Fasano_Franceschini_2D_KS</code> (and other bounded distance/divergence metrics) properly scale to <code>[0, 1]</code> across benchmarked simulators rather than bypassing min-max scaling.</li>
+<strong>Standardized SingleCellExperiment API</strong>: Core evaluation workflows (<code>evaluate_simulation_accuracy</code>, <code>evaluate_multiomics_accuracy</code>, <code>extract_dataset_summary</code>) now natively require and operate directly on standard Bioconductor <code>SingleCellExperiment</code> objects with standardized <code>colData</code> annotations.</li>
+<li>
+<strong>Bioconductor Multiomics via <code>altExp</code></strong>: Upgraded multiomics evaluation pipelines to represent paired multimodal data (scRNA-seq + scATAC-seq) using Bioconductor’s standard <code>altExp()</code> assay representation.</li>
+<li>
+<strong>Streamlined Dependencies</strong>: Replaced direct dependencies on heavy external single-cell ecosystems (<code>Seurat</code>, <code>Signac</code>) by moving optional adapters to <code>Suggests</code>, drastically reducing dependency overhead.</li>
+<li>
+<strong>Accessor Method Compliance</strong>: Eliminated all direct S4 <code>@</code> slot accesses across metric computation, trajectories, and dimension reductions in favor of formal accessor methods (<code>assay()</code>, <code>assays()</code>, <code>colData()</code>, <code>reducedDim()</code>, <code>altExp()</code>).</li>
+<li>
+<strong>Clean Condition &amp; Error Handling</strong>: Removed all instances of <code><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings()</a></code>, <code><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages()</a></code>, <code><a href="https://rdrr.io/r/base/bindenv.html" class="external-link">unlockBinding()</a></code>, and global variable assignments (<code>&lt;&lt;-</code>) to adhere to strict Bioconductor code hygiene standards.</li>
+<li>
+<strong>Modular Function Architecture</strong>: Refactored monolithic visualization and benchmarking functions into cohesive, single-purpose helper functions for improved maintainability and extensibility.</li>
+<li>
+<strong>Comprehensive Return Documentation</strong>: Upgraded <code>@return</code> documentation across all exported functions to explicit <code>\describe{}</code> format detailing output slots, dimensions, and object structures.</li>
+<li>
+<strong>Fully Evaluated &amp; Reproducible Vignettes</strong>: Reworked vignettes (<code>scSimEval-workflow.Rmd</code> and <code>metrics-catalog.Rmd</code>) into fully executable, reproducible workflows incorporating sample datasets and concluding with <code><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo()</a></code>.</li>
+<li>
+<strong>High-DPI Visual Assets</strong>: Upgraded workflow architecture diagrams (<code>workflow_diagram.png</code>) to crisp 350 DPI high-resolution figures across documentation, vignettes, and web resources.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.99.9" id="scsimeval-0999">scSimEval 0.99.9<a class="anchor" aria-label="anchor" href="#scsimeval-0999"></a></h2>

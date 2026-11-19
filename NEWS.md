@@ -1,7 +1,15 @@
 # scSimEval 0.99.10
 
-* Updated the data input option which align with Seurat and Single cell experiment objects.
-* **Fasano-Franceschini 2D KS Min-Max Normalization**: Corrected direction-aware score normalization in `.normalize_bubble_scores()` so that `Fasano_Franceschini_2D_KS` (and other bounded distance/divergence metrics) properly scale to `[0, 1]` across benchmarked simulators rather than bypassing min-max scaling.
+* **Standalone Interactive GUI (`scSimEvalStudio`)**: Decoupled the Shiny application into a dedicated companion package (`scSimEvalStudio`), maintaining `scSimEval` as a focused, lightweight computational benchmarking engine per Bioconductor design principles.
+* **Standardized SingleCellExperiment API**: Core evaluation workflows (`evaluate_simulation_accuracy`, `evaluate_multiomics_accuracy`, `extract_dataset_summary`) now natively require and operate directly on standard Bioconductor `SingleCellExperiment` objects with standardized `colData` annotations.
+* **Bioconductor Multiomics via `altExp`**: Upgraded multiomics evaluation pipelines to represent paired multimodal data (scRNA-seq + scATAC-seq) using Bioconductor's standard `altExp()` assay representation.
+* **Streamlined Dependencies**: Replaced direct dependencies on heavy external single-cell ecosystems (`Seurat`, `Signac`) by moving optional adapters to `Suggests`, drastically reducing dependency overhead.
+* **Accessor Method Compliance**: Eliminated all direct S4 `@` slot accesses across metric computation, trajectories, and dimension reductions in favor of formal accessor methods (`assay()`, `assays()`, `colData()`, `reducedDim()`, `altExp()`).
+* **Clean Condition & Error Handling**: Removed all instances of `suppressWarnings()`, `suppressMessages()`, `unlockBinding()`, and global variable assignments (`<<-`) to adhere to strict Bioconductor code hygiene standards.
+* **Modular Function Architecture**: Refactored monolithic visualization and benchmarking functions into cohesive, single-purpose helper functions for improved maintainability and extensibility.
+* **Comprehensive Return Documentation**: Upgraded `@return` documentation across all exported functions to explicit `\describe{}` format detailing output slots, dimensions, and object structures.
+* **Fully Evaluated & Reproducible Vignettes**: Reworked vignettes (`scSimEval-workflow.Rmd` and `metrics-catalog.Rmd`) into fully executable, reproducible workflows incorporating sample datasets and concluding with `sessionInfo()`.
+* **High-DPI Visual Assets**: Upgraded workflow architecture diagrams (`workflow_diagram.png`) to crisp 350 DPI high-resolution figures across documentation, vignettes, and web resources.
 
 
 # scSimEval 0.99.9
