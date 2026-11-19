@@ -1,6 +1,6 @@
 # Changelog
 
-## scSimEval 0.99.10
+## scSimEval 0.99.11
 
 - Updated the data input option which align with Seurat and Single cell
   experiment objects.

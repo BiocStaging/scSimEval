@@ -41,13 +41,13 @@ Sakthivel K, Dwijesh Chandra Mishra D, Shashi Bhushan Lal D, Ulavappa
 Angadi D, Sudhir Srivastava D, Neeraj Budhlakoti D, Krishna Kumar
 Chaturvedi D, Ranjeet Ranjan Kumar D, Navin Chandra Gupta D (2026).
 *scSimEval: Unified Benchmarking and Accuracy Evaluation for Single-Cell
-Multiomics Simulation Methods*. R package version 0.99.10,
+Multiomics Simulation Methods*. R package version 0.99.11,
 <https://kabilanbio.github.io/scSimEval/>.
 
     @Manual{,
       title = {scSimEval: Unified Benchmarking and Accuracy Evaluation for Single-Cell Multiomics Simulation Methods},
       author = {Kabilan Sakthivel and Dr {Dwijesh Chandra Mishra} and Dr {Shashi Bhushan Lal} and Dr {Ulavappa Angadi} and Dr {Sudhir Srivastava} and Dr {Neeraj Budhlakoti} and Dr {Krishna Kumar Chaturvedi} and Dr {Ranjeet Ranjan Kumar} and Dr {Navin Chandra Gupta}},
       year = {2026},
-      note = {R package version 0.99.10},
+      note = {R package version 0.99.11},
       url = {https://kabilanbio.github.io/scSimEval/},
     }
