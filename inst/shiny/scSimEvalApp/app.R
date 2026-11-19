@@ -3464,15 +3464,9 @@ ui <- page_navbar(
           div(
             style = "background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 6px; padding: 10px; margin-bottom: 12px;",
             div(style = "font-weight: 700; color: #1E3A8A; font-size: 0.86rem; margin-bottom: 6px;", icon("flask", class = "me-1"), "Load Example scRNA-seq Data:"),
-            radioButtons(
-              "opt_example_scrna_dataset", NULL,
-              choices = c(
-                "Rice Bud (Paired, 6 Simulators)" = "rice_bud",
-                "Soybean Root (Unpaired, 3 Simulators)" = "soybean_root"
-              ),
-              selected = "rice_bud"
-            ),
-            actionButton("btn_load_example_scrna", "Load Example scRNA-seq Data", class = "btn btn-primary btn-sm w-100", icon = icon("play"))
+            p("Rice Bud (Oryza sativa) scRNA-seq dataset (100 balanced cells across 8 cell types, top 100 HVGs, 2 batches) evaluated across 6 simulators (scMultiSim, scDesign3, MOSim, scCross, scMoMtF, Matilda).",
+              style = "font-size: 0.78rem; color: #475569; margin-bottom: 8px; line-height: 1.4;"),
+            actionButton("btn_load_example_scrna", "Load Rice Bud Example (scRNA-seq, 6 Simulators)", class = "btn btn-primary btn-sm w-100", icon = icon("play"))
           ),
           div(
             style = "font-size: 0.78rem; color: #1E3A8A; background: #EFF6FF; border-left: 3px solid #2563EB; border-radius: 4px; padding: 8px 10px; margin-bottom: 12px;",
@@ -3497,15 +3491,9 @@ ui <- page_navbar(
           div(
             style = "background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 6px; padding: 10px; margin-bottom: 12px;",
             div(style = "font-weight: 700; color: #0284C7; font-size: 0.86rem; margin-bottom: 6px;", icon("flask", class = "me-1"), "Load Example scATAC-seq Data:"),
-            radioButtons(
-              "opt_example_scatac_dataset", NULL,
-              choices = c(
-                "Rice Bud (Paired, 6 Simulators)" = "rice_bud",
-                "Soybean Root (Unpaired, 3 Simulators)" = "soybean_root"
-              ),
-              selected = "rice_bud"
-            ),
-            actionButton("btn_load_example_scatac", "Load Example scATAC-seq Data", class = "btn btn-info text-white btn-sm w-100", icon = icon("play"))
+            p("Rice Bud (Oryza sativa) scATAC-seq dataset (100 balanced cells across 8 cell types, top 100 HVPs, 2 batches) evaluated across 6 simulators (scMultiSim, scDesign3, MOSim, scCross, scMoMtF, Matilda).",
+              style = "font-size: 0.78rem; color: #475569; margin-bottom: 8px; line-height: 1.4;"),
+            actionButton("btn_load_example_scatac", "Load Rice Bud Example (scATAC-seq, 6 Simulators)", class = "btn btn-info text-white btn-sm w-100", icon = icon("play"))
           ),
           div(
             style = "font-size: 0.78rem; color: #0C4A6E; background: #F0F9FF; border-left: 3px solid #0284C7; border-radius: 4px; padding: 8px 10px; margin-bottom: 12px;",
@@ -3541,13 +3529,13 @@ ui <- page_navbar(
             div(style = "font-weight: 700; color: #312E81; font-size: 0.86rem; margin-bottom: 6px;", icon("flask", class = "me-1"), "Load Example Multiomics Data:"),
             conditionalPanel(
               condition = "input.opt_multi_pairing == 'paired'",
-              p("Rice Bud (Oryza sativa) Seurat v5 paired multiomics dataset (100 cells, 200 genes, 200 peaks, 4 cell types, 2 batches) evaluated across 6 simulators (scMultiSim, scDesign3, MOSim, scCross, scMoMtF, Matilda).",
+              p("Rice Bud (Oryza sativa) Seurat v5 paired multiomics dataset (100 balanced cells, 100 HVGs, 100 HVPs, 8 cell types, 2 batches) evaluated across 6 simulators (scMultiSim, scDesign3, MOSim, scCross, scMoMtF, Matilda).",
                 style = "font-size: 0.78rem; color: #475569; margin-bottom: 8px; line-height: 1.4;"),
               actionButton("btn_load_example_paired_multi", "Load Rice Bud Example (Paired, 6 Simulators)", class = "btn btn-primary btn-sm w-100", icon = icon("play"))
             ),
             conditionalPanel(
               condition = "input.opt_multi_pairing == 'unpaired'",
-              p("Soybean Root (Glycine max) Seurat v5 unpaired multiomics dataset (100 RNA cells, 100 ATAC cells, 200 genes, 200 peaks, 4 cell types, 2 batches) evaluated across 3 simulators (scMultiSim, scDesign3, scCross).",
+              p("Soybean Root (Glycine max) Seurat v5 unpaired multiomics dataset (100 balanced RNA cells x 100 HVGs, 100 balanced ATAC cells x 100 HVPs, 8 cell types) evaluated across 3 simulators (scMultiSim, scDesign3, scCross).",
                 style = "font-size: 0.78rem; color: #475569; margin-bottom: 8px; line-height: 1.4;"),
               actionButton("btn_load_example_unpaired_multi", "Load Soybean Root Example (Unpaired, 3 Simulators)", class = "btn btn-primary btn-sm w-100", icon = icon("play"))
             )
@@ -3572,6 +3560,13 @@ ui <- page_navbar(
         # Mode 4: Upload Saved Results (.rds / .csv)
         conditionalPanel(
           condition = "input.opt_data_mode == 'upload_bench'",
+          div(
+            style = "background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 6px; padding: 10px; margin-bottom: 12px;",
+            div(style = "font-weight: 700; color: #1E3A8A; font-size: 0.86rem; margin-bottom: 6px;", icon("flask", class = "me-1"), "Load Example Saved Results (.rds):"),
+            p("Pre-computed Rice Bud Paired Multiomics session (.rds: 100 balanced cells, 100 HVGs, 100 HVPs, 6 simulators) ready for instant leaderboard and visualization exploration.",
+              style = "font-size: 0.78rem; color: #475569; margin-bottom: 8px; line-height: 1.4;"),
+            actionButton("btn_load_example_saved_rds", "Load Paired Multiomics Example (.rds)", class = "btn btn-primary btn-sm w-100", icon = icon("play"))
+          ),
           div(
             style = "background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 6px; padding: 12px; margin-bottom: 12px;",
             div(style = "font-weight: 700; color: #1E3A8A; font-size: 0.86rem; margin-bottom: 6px;", icon("file-arrow-up", class = "me-1"), "Upload Saved Benchmark Results"),
@@ -5789,7 +5784,7 @@ server <- function(input, output, session) {
       summary_df$Dataset <- "Rice Bud (scRNA-seq)"
       ct <- get_rb_ct()
       bt <- get_rb_bt()
-      source_name <- "Example Data: Rice Bud scRNA-seq (Seurat v5: 100 cells, 200 genes, 4 cell types, 2 batches, 6 simulators)"
+      source_name <- "Example Data: Rice Bud scRNA-seq (Seurat v5: 100 balanced cells, 100 HVGs, 8 cell types, 2 batches, 6 simulators)"
       
     } else if (type == "scrna_soy") {
       target_mode <- "scrna"
@@ -5864,7 +5859,7 @@ server <- function(input, output, session) {
       summary_df$Dataset <- "Rice Bud (scATAC-seq)"
       ct <- get_rb_ct()
       bt <- get_rb_bt()
-      source_name <- "Example Data: Rice Bud scATAC-seq (Seurat v5: 100 cells, 200 peaks, 4 cell types, 2 batches, 6 simulators)"
+      source_name <- "Example Data: Rice Bud scATAC-seq (Seurat v5: 100 balanced cells, 100 HVPs, 8 cell types, 2 batches, 6 simulators)"
       
     } else if (type == "scatac_soy") {
       target_mode <- "scatac"
@@ -5940,7 +5935,7 @@ server <- function(input, output, session) {
       summary_df <- bm$dataset_summary_df[bm$dataset_summary_df$Dataset == "Rice Bud (Paired)", ]
       ct <- get_rb_ct()
       bt <- get_rb_bt()
-      source_name <- "Example Data: Rice Bud Paired Multiomics (Seurat v5: 100 cells, 200 genes, 200 peaks, 4 cell types, 2 batches, 6 simulators)"
+      source_name <- "Example Data: Rice Bud Paired Multiomics (Seurat v5: 100 balanced cells, 100 HVGs, 100 HVPs, 8 cell types, 2 batches, 6 simulators)"
       
     } else if (type == "multi_unpaired") {
       target_mode <- "multiomics"
@@ -5961,7 +5956,7 @@ server <- function(input, output, session) {
       summary_df <- bm$dataset_summary_df[bm$dataset_summary_df$Dataset == "Soybean Root (Unpaired)", ]
       ct <- get_sb_ct("rna")
       bt <- get_sb_bt("rna")
-      source_name <- "Example Data: Soybean Root Unpaired Multiomics (Seurat v5: 100 RNA cells, 100 ATAC cells, 200 genes, 200 peaks, 4 cell types, 2 batches, 3 simulators)"
+      source_name <- "Example Data: Soybean Root Unpaired Multiomics (Seurat v5: 100 balanced RNA cells x 100 HVGs, 100 balanced ATAC cells x 100 HVPs, 8 cell types, 3 simulators)"
       
     } else {
       # "all" - Full benchmark of both datasets
@@ -6063,12 +6058,41 @@ server <- function(input, output, session) {
   }
   
   observeEvent(input$btn_load_example_scrna, {
-    ds <- input$opt_example_scrna_dataset %||% "rice_bud"
-    load_example_benchmark(if (ds == "soybean_root") "scrna_soy" else "scrna_rice")
+    load_example_benchmark("scrna_rice")
   })
   observeEvent(input$btn_load_example_scatac, {
-    ds <- input$opt_example_scatac_dataset %||% "rice_bud"
-    load_example_benchmark(if (ds == "soybean_root") "scatac_soy" else "scatac_rice")
+    load_example_benchmark("scatac_rice")
+  })
+  observeEvent(input$btn_load_example_saved_rds, {
+    rds_file <- get_pkg_data_file("demo_paired_multiomics_saved.rds")
+    if (is.null(rds_file) || !file.exists(rds_file)) {
+      showNotification("Example paired multiomics .rds session file not found.", type = "error")
+      return()
+    }
+    sess <- readRDS(rds_file)
+    bench_df <- filter_gold_standard_metrics(sess$benchmark_df)
+    if (!"Score_Norm" %in% colnames(bench_df) && "Score" %in% colnames(bench_df)) {
+      bench_df$Score_Norm <- bench_df$Score
+    }
+    mode_data$upload_bench <- list(
+      benchmark_df       = bench_df,
+      methods            = unique(bench_df$Method),
+      toy_ref            = sess$toy_ref,
+      toy_sim            = sess$toy_sim,
+      sim_matrices       = sess$sim_matrices %||% list(),
+      ref_matrices       = sess$ref_matrices %||% list(),
+      cell_types         = sess$cell_types,
+      batch              = sess$batch,
+      cell_types_map     = sess$cell_types_map %||% list(),
+      batches_map        = sess$batches_map %||% list(),
+      source_name        = sess$source_name %||% "Saved Example Session: Rice Bud Paired Multiomics (.rds)",
+      dataset_summary_df = sess$dataset_summary_df,
+      all_matrices       = sess$all_matrices %||% list()
+    )
+    sync_active_mode_data("upload_bench")
+    rv_plot_triggers$bubble <- 0; rv_plot_triggers$sum <- 0; rv_plot_triggers$dist <- 0; rv_plot_triggers$scale <- 0; rv_plot_triggers$box <- 0; rv_plot_triggers$heat <- 0; rv_plot_triggers$pca <- 0; rv_plot_triggers$mds <- 0; rv_plot_triggers$emb <- 0
+    showNotification("Loaded Paired Multiomics Example (.rds) successfully!", type = "message", duration = 6)
+    nav_select("datahub_subtabs", "Dataset properties")
   })
   observeEvent(input$btn_load_example_paired_multi, {
     load_example_benchmark("multi_paired")
