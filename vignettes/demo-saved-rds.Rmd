@@ -1,12 +1,12 @@
 ---
-title: "Demonstration 4: Analyzing Pre-Saved Benchmark Results (.rds)"
+title: "Demonstration 5: Analyzing Pre-Saved Benchmark Results (.rds)"
 output:
   rmarkdown::html_vignette:
     toc: true
     toc_depth: 3
     number_sections: false
 vignette: >
-  %\VignetteIndexEntry{Demonstration 4: Analyzing Pre-Saved Benchmark Results (.rds)}
+  %\VignetteIndexEntry{Demonstration 5: Analyzing Pre-Saved Benchmark Results (.rds)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

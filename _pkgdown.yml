@@ -468,9 +468,11 @@ navbar:
           href: articles/demo-scrna.html
         - text: "2. scATAC-seq Simulation Evaluation"
           href: articles/demo-scatac.html
-        - text: "3. Multiomics (RNA + ATAC) Evaluation"
+        - text: "3. Paired Multiomics (RNA + ATAC) Evaluation"
           href: articles/demo-multiomics.html
-        - text: "4. Analyzing Pre-Saved Benchmark (.rds)"
+        - text: "4. Unpaired Multiomics (RNA + ATAC) Evaluation"
+          href: articles/demo-unpaired-multiomics.html
+        - text: "5. Analyzing Pre-Saved Benchmark (.rds)"
           href: articles/demo-saved-rds.html
     - text: "Metric Catalog (56 Metrics)"
       href: articles/metrics-catalog.html
@@ -681,6 +683,7 @@ articles:
       - demo-scrna
       - demo-scatac
       - demo-multiomics
+      - demo-unpaired-multiomics
       - demo-saved-rds
 
   - title: "Reference Materials"
