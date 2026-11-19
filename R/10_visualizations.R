@@ -5348,9 +5348,11 @@ compute_dataset_embeddings <- function(reference,
   extract_counts <- function(obj) {
     if (is.null(obj)) return(NULL)
     if (inherits(obj, "SingleCellExperiment")) {
-      SingleCellExperiment::counts(obj)
+      cnts <- tryCatch(SummarizedExperiment::assay(obj, "counts"), error = function(e) NULL)
+      if (is.null(cnts)) cnts <- tryCatch(SummarizedExperiment::assay(obj, 1), error = function(e) NULL)
+      cnts %||% obj
     } else if (inherits(obj, "Seurat")) {
-      obj[["RNA"]]$counts
+      .get_seurat_counts(obj)
     } else {
       obj
     }
