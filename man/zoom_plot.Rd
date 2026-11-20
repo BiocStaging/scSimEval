@@ -36,3 +36,4 @@ p <- plot_evaluation_summary(res)
 p_zoom_in <- zoom_plot(p, step = 1)
 p_zoom_out <- zoom_plot(p, step = -1)
 }
+\keyword{internal}

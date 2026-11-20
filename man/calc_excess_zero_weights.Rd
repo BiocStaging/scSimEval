@@ -26,3 +26,4 @@ Calculates the posterior probability of zero counts being technical dropouts
 data(example_scrna, package = "scSimEval")
 calc_excess_zero_weights(example_scrna$ref)
 }
+\keyword{internal}

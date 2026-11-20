@@ -39,12 +39,17 @@ example_soybean_root$reference$combined
 dim(example_soybean_root$reference$rna)
 dim(example_soybean_root$reference$atac)
 names(example_soybean_root$simulated)
+example_soybean_root$scalability_benchmarks
 \donttest{
-evaluate_multiomics_accuracy(
-  ref_multi = list(RNA = example_soybean_root$reference$rna, ATAC = example_soybean_root$reference$atac),
-  sim_multi = list(RNA = example_soybean_root$simulated$scMultiSim$rna, ATAC = example_soybean_root$simulated$scMultiSim$atac),
-  pairing = "unpaired"
+res <- evaluate_multiomics_accuracy(
+  ref_multi = list(RNA = example_soybean_root$reference$rna,
+                   ATAC = example_soybean_root$reference$atac),
+  sim_multi = list(RNA = example_soybean_root$simulated$scMultiSim$rna,
+                   ATAC = example_soybean_root$simulated$scMultiSim$atac),
+  pairing = "unpaired",
+  verbose = FALSE
 )
+head(res$benchmark_summary_table, 8)
 }
 }
 \keyword{datasets}

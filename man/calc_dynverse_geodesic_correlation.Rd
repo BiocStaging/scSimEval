@@ -21,3 +21,4 @@ Computes pairwise cell-to-milestone geodesic distances along each trajectory net
 aligns cells across the shared HVG PCA manifold, and computes the Spearman rank
 correlation clipped to \code{[0, 1]} (matching \code{dyneval}'s \code{correlation} metric).
 }
+\keyword{internal}

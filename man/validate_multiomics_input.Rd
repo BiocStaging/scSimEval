@@ -44,3 +44,4 @@ Accepts either a single multi-modal \code{SingleCellExperiment} object with an
 objects (e.g. \code{list(RNA = rna_sce, ATAC = atac_sce)}), or a file path to an
 \code{.rds} file containing either structure.
 }
+\keyword{internal}

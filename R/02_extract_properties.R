@@ -19,6 +19,7 @@
 #' @examples
 #' data(example_scrna, package = "scSimEval")
 #' calc_zero_probability_curve(example_scrna$ref)
+#' @keywords internal
 #' @export
 calc_zero_probability_curve <- function(counts) {
   if (inherits(counts, "SingleCellExperiment")) {
@@ -97,6 +98,7 @@ evaluate_zero_probability_curve <- function(ref_counts, sim_counts) {
 #' @examples
 #' data(example_scrna, package = "scSimEval")
 #' calc_excess_zero_weights(example_scrna$ref)
+#' @keywords internal
 #' @export
 calc_excess_zero_weights <- function(counts) {
   if (inherits(counts, "SingleCellExperiment")) {
@@ -153,6 +155,7 @@ calc_excess_zero_weights <- function(counts) {
 #' @examples
 #' data(example_scatac, package = "scSimEval")
 #' calc_accessibility_sparsity_curve(example_scatac$ref)
+#' @keywords internal
 #' @export
 calc_accessibility_sparsity_curve <- function(data, poly_degree = 2) {
   if (inherits(data, "SingleCellExperiment")) {

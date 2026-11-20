@@ -44,3 +44,4 @@ Computes Accuracy, Macro-Precision, Macro-Recall, and Macro-F1 score.
 data(example_scrna, package = "scSimEval")
 evaluate_predictive_de_model(example_scrna$ref, group = example_scrna$cell_types)
 }
+\keyword{internal}

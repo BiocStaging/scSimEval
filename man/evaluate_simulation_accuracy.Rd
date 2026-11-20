@@ -99,6 +99,9 @@ Cell-type and batch annotations are retrieved directly from \code{colData(ref_sc
 }
 \examples{
 data(example_scrna, package = "scSimEval")
-res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim,
-                                    include_trajectory = FALSE, verbose = FALSE)
+res <- evaluate_simulation_accuracy(
+  example_scrna$ref, example_scrna$sim,
+  include_trajectory = FALSE, verbose = FALSE
+)
+head(res$metrics_summary_table, 10)
 }

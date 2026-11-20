@@ -103,80 +103,26 @@ simulations. *Frontiers in Neuroinformatics*, 16, 883742.
 ## Examples
 
 ``` r
-data(example_scrna, package = "scSimEval")
-res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
-#> [1/5] Extracting cell-level and feature-level properties...
-#> calcNormFactors has been renamed to normLibSizes
-#> Warning: no non-missing arguments to max; returning -Inf
-#> Warning: no non-missing arguments to max; returning -Inf
-#> Warning: no non-missing arguments to max; returning -Inf
-#> calcNormFactors has been renamed to normLibSizes
-#> Warning: no non-missing arguments to max; returning -Inf
-#> Warning: no non-missing arguments to max; returning -Inf
-#> Warning: no non-missing arguments to max; returning -Inf
-#> Warning: no non-missing arguments to max; returning -Inf
-#> Warning: no non-missing arguments to max; returning -Inf
-#> [3/5] Computing univariate accuracy metrics...
-#> [4/5] Computing bivariate metrics (Fasano-Franceschini, KDE zstat, 2D EMD)...
-#> [5/5] Computing zero-probability and manifold distances...
-#> Evaluating batch integration & confounder mixing...
-#> Evaluating scRNA-seq biological signal fidelity (Libra Pseudobulk edgeR-QLF)...
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> [6/7] Evaluating trajectory and lineage topology (HVG + dynverse, scRNA-seq only)...
-#> Unimodal accuracy evaluation complete.
+data(example_rice_bud, package = "scSimEval")
+sb <- example_rice_bud$scalability_benchmarks
+scal_df <- rbind(
+  data.frame(
+    Method    = sb$Method,
+    Category  = "(VIII) Computational Scalability & Efficiency",
+    Metric    = "Core_Seconds",
+    Value     = mapply(compute_core_seconds, sb$Runtime_Seconds, sim_cores = sb$Sim_Cores),
+    Sim_Cores = sb$Sim_Cores,
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    Method    = sb$Method,
+    Category  = "(VIII) Computational Scalability & Efficiency",
+    Metric    = "Memory_Per_Core_MiB",
+    Value     = mapply(compute_memory_per_core, sb$PeakRAM_MiB, sim_cores = sb$Sim_Cores),
+    Sim_Cores = sb$Sim_Cores,
+    stringsAsFactors = FALSE
+  )
+)
+p <- plot_scalability_benchmark(scal_df, type = "composite", layout = "4panel", base_size = 9.5)
+print(p)
 ```

@@ -31,6 +31,7 @@
 #' idx <- which(example_scrna$cell_types %in% top2)
 #' res <- run_edger_qlf_detrate(example_scrna$ref[, idx], example_scrna$cell_types[idx])
 #' head(res)
+#' @keywords internal
 #' @export
 run_edger_qlf_detrate <- function(
   counts,
@@ -97,7 +98,12 @@ run_edger_qlf_detrate <- function(
   if (requireNamespace("edgeR", quietly = TRUE)) {
     res_df <- tryCatch({
       dge <- edgeR::DGEList(counts = sub_counts, group = group)
-      dge <- edgeR::calcNormFactors(dge)
+      norm_fn <- if (exists("normLibSizes", envir = asNamespace("edgeR"), inherits = FALSE)) {
+        edgeR::normLibSizes
+      } else {
+        edgeR::calcNormFactors
+      }
+      dge <- norm_fn(dge, method = "TMMwsp")
       dge <- edgeR::estimateDisp(dge, design = design)
       fit <- edgeR::glmQLFit(dge, design = design)
       qlf <- edgeR::glmQLFTest(fit, coef = ncol(design))
@@ -229,6 +235,7 @@ run_edger_qlf_detrate <- function(
 #' )
 #' res$P
 #' res$deg_ratio
+#' @keywords internal
 #' @export
 calc_simpipe_deg_ratio <- function(
   ref_data,
@@ -402,6 +409,7 @@ calc_simpipe_deg_ratio <- function(
 #'   sim_celltypes = example_scrna$cell_types
 #' )
 #' res$distribution_score
+#' @keywords internal
 #' @export
 calc_simpipe_distribution_score <- function(
   sim_data,
@@ -553,6 +561,7 @@ calc_simpipe_distribution_score <- function(
 #' @examples
 #' data(example_scrna, package = "scSimEval")
 #' evaluate_predictive_de_model(example_scrna$ref, group = example_scrna$cell_types)
+#' @keywords internal
 #' @export
 evaluate_predictive_de_model <- function(
   data,
@@ -862,6 +871,18 @@ evaluate_predictive_de_model <- function(
 #'   \item{de_results_ref}{List of edgeR-QLF DE results for reference}
 #'   \item{de_results_sim}{List of edgeR-QLF DE results for simulation}
 #'   \item{ml_classification}{Detailed classification results using simulated pseudobulk DEGs}
+#' @examples
+#' data(example_scrna, package = "scSimEval")
+#' rep_id <- factor(rep(c("Rep1", "Rep2"), length.out = ncol(example_scrna$ref)))
+#' res <- evaluate_deg_fidelity(
+#'   ref_data = example_scrna$ref,
+#'   sim_data = example_scrna$sim,
+#'   ref_celltypes = example_scrna$cell_types,
+#'   sim_celltypes = example_scrna$cell_types,
+#'   batch_ref = rep_id,
+#'   batch_sim = rep_id
+#' )
+#' res$deg_summary_table
 #' @export
 evaluate_deg_fidelity <- function(
   ref_data,
@@ -1069,6 +1090,7 @@ evaluate_rna_de_fidelity <- evaluate_deg_fidelity
 #' @examples
 #' m <- matrix(c(0, 2, 1, 0, 5, 0), nrow = 2)
 #' binarize_matrix(m)
+#' @keywords internal
 #' @export
 binarize_matrix <- function(mat) {
   if (inherits(mat, "SingleCellExperiment")) {
@@ -1110,6 +1132,7 @@ binarize_matrix <- function(mat) {
 #' ct_id <- factor(rep(c("TypeA", "TypeB"), each = ncol(example_scatac$ref) / 2))
 #' pb <- to_pseudobulk(example_scatac$ref, cell_types = ct_id, replicates = rep_id)
 #' length(pb)
+#' @keywords internal
 #' @export
 to_pseudobulk <- function(
   input,
@@ -1214,6 +1237,7 @@ to_pseudobulk <- function(
 #' groups <- c("A", "A", "B", "B")
 #' res <- run_edger_qlf_da(mat, groups)
 #' head(res)
+#' @keywords internal
 #' @export
 run_edger_qlf_da <- function(
   pseudobulk_mat,
@@ -1254,7 +1278,13 @@ run_edger_qlf_da <- function(
     res_df <- tryCatch({
       y <- edgeR::DGEList(counts = sub_mat, group = groups)
       if (norm_method != "none") {
-        y <- edgeR::calcNormFactors(y, method = norm_method)
+        norm_fn <- if (exists("normLibSizes", envir = asNamespace("edgeR"), inherits = FALSE)) {
+          edgeR::normLibSizes
+        } else {
+          edgeR::calcNormFactors
+        }
+        eff_method <- if (identical(norm_method, "TMM") && mean(sub_mat == 0) > 0.3) "TMMwsp" else norm_method
+        y <- norm_fn(y, method = eff_method)
       }
       y <- edgeR::estimateDisp(y, design)
       fit <- edgeR::glmQLFit(y, design)

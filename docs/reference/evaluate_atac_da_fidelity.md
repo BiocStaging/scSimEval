@@ -141,97 +141,15 @@ res <- evaluate_atac_da_fidelity(
   batch_ref = rep_id,
   batch_sim = rep_id
 )
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
 #> Warning: Zero sample variances detected, have been offset away from zero
-#> calcNormFactors has been renamed to normLibSizes
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> Warning: procv: no points with non-zero weight
-#> calcNormFactors has been renamed to normLibSizes
-#> Warning: Zero sample variances detected, have been offset away from zero
-#> calcNormFactors has been renamed to normLibSizes
-#> Warning: Zero sample variances detected, have been offset away from zero
-#> calcNormFactors has been renamed to normLibSizes
-#> Warning: Zero sample variances detected, have been offset away from zero
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> Warning: Zero sample variances detected, have been offset away from zero
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> Warning: Zero sample variances detected, have been offset away from zero
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
 res$da_summary_table
 #>                             SubCategory          Metric     Value
-#> 1 scATAC-seq Differential Accessibility pval_dist_score 0.7915991
-#> 2 scATAC-seq Differential Accessibility        accuracy 0.9489286
-#> 3 scATAC-seq Differential Accessibility       precision 0.4340659
-#> 4 scATAC-seq Differential Accessibility          recall 0.4365079
-#> 5 scATAC-seq Differential Accessibility        f1_score 0.4350649
-#> 6 scATAC-seq Differential Accessibility             auc 0.8362706
+#> 1 scATAC-seq Differential Accessibility pval_dist_score 0.8350425
+#> 2 scATAC-seq Differential Accessibility        accuracy 0.9967857
+#> 3 scATAC-seq Differential Accessibility       precision 0.8928571
+#> 4 scATAC-seq Differential Accessibility          recall 0.8928571
+#> 5 scATAC-seq Differential Accessibility        f1_score 0.8928571
+#> 6 scATAC-seq Differential Accessibility             auc 0.9740260
 #>                                                         Direction
 #> 1    Higher is better (1.0 = uniform null p-values, no inflation)
 #> 2             Higher is better (1.0 = perfect DAR classification)

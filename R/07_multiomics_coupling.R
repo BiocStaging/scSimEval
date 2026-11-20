@@ -27,6 +27,7 @@
 #' bt <- rep(c("B1", "B2"), each = 50)
 #' ct <- rep(c("T1", "T2"), 50)
 #' calc_batch_asw(emb, bt, ct)
+#' @keywords internal
 #' @export
 calc_batch_asw <- function(embed, batch, cell_type = NULL, threads = 1) {
   if (is.null(embed) || nrow(embed) < 3) return(NA_real_)
@@ -109,7 +110,7 @@ calc_batch_asw <- function(embed, batch, cell_type = NULL, threads = 1) {
 #' Evaluates biological conservation and cell-type cluster separation in integrated
 #' or joint multiomics space, following \code{scCross} and \code{scib}.
 #' The silhouette width of cells with respect to ground-truth cell-type labels is
-#' computed and scaled to $[0, 1]$ via $(ASW + 1) / 2$.
+#' computed and scaled to \eqn{[0, 1]}{[0, 1]} via \eqn{(\mathrm{ASW} + 1) / 2}{(ASW + 1) / 2}.
 #'
 #' @param embed Numeric matrix of cell coordinates (cells x dimensions).
 #' @param cell_type Vector or factor of cell-type labels for each cell.
@@ -124,6 +125,7 @@ calc_batch_asw <- function(embed, batch, cell_type = NULL, threads = 1) {
 #' emb <- matrix(rnorm(100 * 10), 100, 10)
 #' ct <- rep(c("T1", "T2"), each = 50)
 #' calc_cell_type_asw(emb, ct)
+#' @keywords internal
 #' @export
 calc_cell_type_asw <- function(embed, cell_type, threads = 1) {
   if (is.null(embed) || nrow(embed) < 3) return(NA_real_)
@@ -174,7 +176,7 @@ calc_cell_type_asw <- function(embed, cell_type, threads = 1) {
 #' the k-nearest neighbor (k-NN) graph across modalities/batches, following
 #' \code{scCross}, \code{scMultiSim}, and \code{scib}.
 #' For each cell type, the relative size of the largest connected component
-#' (LCC) in the induced subgraph is calculated: $|LCC| / |V_c|$. The overall score
+#' (LCC) in the induced subgraph is calculated: \eqn{|\mathrm{LCC}| / |V_c|}{|LCC| / |V_c|}. The overall score
 #' is the mean across all cell types.
 #'
 #' @param embed Numeric matrix of cell coordinates (cells x dimensions).
@@ -191,6 +193,7 @@ calc_cell_type_asw <- function(embed, cell_type, threads = 1) {
 #' emb <- matrix(rnorm(60 * 5), 60, 5)
 #' ct <- rep(c("A", "B"), each = 30)
 #' calc_graph_connectivity(emb, ct, k = 10)
+#' @keywords internal
 #' @export
 calc_graph_connectivity <- function(embed, cell_type, k = 15) {
   if (is.null(embed) || nrow(embed) < 2) return(NA_real_)
@@ -306,6 +309,7 @@ calc_graph_connectivity <- function(embed, cell_type, k = 15) {
 #' emb <- matrix(rnorm(60 * 4), 60, 4)
 #' ct <- rep(c("TypeA", "TypeB"), each = 30)
 #' calc_integration_ari(emb, ct)
+#' @keywords internal
 #' @export
 calc_integration_ari <- function(embed, cell_type, n_clusters = NULL) {
   if (is.null(embed) || nrow(embed) < 2) return(NA_real_)
@@ -361,6 +365,7 @@ calc_integration_ari <- function(embed, cell_type, n_clusters = NULL) {
 #' emb <- matrix(rnorm(60 * 4), 60, 4)
 #' ct <- rep(c("TypeA", "TypeB"), each = 30)
 #' calc_integration_nmi(emb, ct)
+#' @keywords internal
 #' @export
 calc_integration_nmi <- function(embed, cell_type, n_clusters = NULL) {
   if (is.null(embed) || nrow(embed) < 2) return(NA_real_)
@@ -441,7 +446,11 @@ calc_integration_nmi <- function(embed, cell_type, n_clusters = NULL) {
 #' @examples
 #' data(example_multiomics, package = "scSimEval")
 #' ct <- rep(c("A", "B"), each = 50)
-#' res <- evaluate_multiomics_integration(sim_multi = example_multiomics$sim_multi, cell_types = ct)
+#' res <- evaluate_multiomics_integration(
+#'   sim_multi = example_multiomics$sim_multi,
+#'   cell_types = ct
+#' )
+#' unlist(res[vapply(res, function(x) is.numeric(x) && length(x) == 1L, logical(1))])
 #' @export
 evaluate_multiomics_integration <- function(
   ref_multi = NULL,

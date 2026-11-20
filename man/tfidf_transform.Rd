@@ -25,3 +25,4 @@ set.seed(42)
 m <- matrix(rpois(100, 0.5), nrow = 10)
 tfidf_mat <- tfidf_transform(m)
 }
+\keyword{internal}

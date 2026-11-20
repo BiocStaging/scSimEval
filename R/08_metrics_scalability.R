@@ -92,13 +92,13 @@
 #' Compute Core-Seconds Runtime Metric
 #'
 #' Quantifies cumulative CPU work across all allocated processing cores
-#' (\eqn{\text{Elapsed Time (s)} \times N_{\text{cores}}}; Lannelongue et al., 2021;
-#' Wratten et al., 2021; Grealey et al., 2022).
+#' (\eqn{\text{Elapsed Time (s)} \times N_{\text{cores}}}{Elapsed Time (s) * N_cores};
+#' Lannelongue et al., 2021; Wratten et al., 2021; Grealey et al., 2022).
 #'
 #' @param elapsed_time Numeric elapsed wall-clock runtime.
 #' @param time_unit Time unit of \code{elapsed_time}: \code{"seconds"} (default) or \code{"minutes"}.
 #' @param sim_cores Positive integer specifying the number of CPU cores allocated (default \code{1L}).
-#' @return Numeric Core-Seconds (\eqn{\text{core}\cdot\text{s}}).
+#' @return Numeric Core-Seconds (\eqn{\text{core}\cdot\text{s}}{core*s}).
 #' @references
 #' Lannelongue, L., Grealey, J., & Inouye, M. (2021). Green Algorithms: Quantifying the carbon footprint
 #' of computation. \emph{Advanced Science}, 8(12), 2100707.
@@ -108,6 +108,12 @@
 #'
 #' Grealey, J., et al. (2022). The Carbon Footprint of Bioinformatics. \emph{Molecular Biology and Evolution},
 #' 39(3), msac034.
+#' @examples
+#' # Single-core run taking 45 seconds
+#' compute_core_seconds(elapsed_time = 45, time_unit = "seconds", sim_cores = 1L)
+#'
+#' # 8-core parallel run taking 2.5 minutes
+#' compute_core_seconds(elapsed_time = 2.5, time_unit = "minutes", sim_cores = 8L)
 #' @export
 compute_core_seconds <- function(elapsed_time, time_unit = "seconds", sim_cores = 1L) {
   sec <- .convert_time_to_seconds(elapsed_time, time_unit)
@@ -120,8 +126,8 @@ compute_core_seconds <- function(elapsed_time, time_unit = "seconds", sim_cores 
 #' Compute Peak RAM per Allocated CPU Core
 #'
 #' Normalizes peak memory consumption by the number of allocated processor cores
-#' (\eqn{\text{Peak RAM} / N_{\text{cores}}}; Holtgrewe et al., 2015; Boisvert et al., 2012;
-#' Chen et al., 2022).
+#' (\eqn{\text{Peak RAM} / N_{\text{cores}}}{Peak RAM / N_cores};
+#' Holtgrewe et al., 2015; Boisvert et al., 2012; Chen et al., 2022).
 #'
 #' @param memory_val Numeric peak memory consumption.
 #' @param memory_unit Memory unit of \code{memory_val}: \code{"MiB"} (default) or \code{"MB"}.
@@ -138,6 +144,10 @@ compute_core_seconds <- function(elapsed_time, time_unit = "seconds", sim_cores 
 #'
 #' Chen, W., et al. (2022). STEPS 4.0: Fast and memory-efficient molecular simulations of neurons
 #' at the nanoscale. \emph{Frontiers in Neuroinformatics}, 16, 883742.
+#' @examples
+#' # 4096 MiB peak RAM across 4 CPU cores (reported in MiB/core and GiB/core)
+#' compute_memory_per_core(4096, memory_unit = "MiB", sim_cores = 4L, target_unit = "MiB")
+#' compute_memory_per_core(4096, memory_unit = "MiB", sim_cores = 4L, target_unit = "GiB")
 #' @export
 compute_memory_per_core <- function(memory_val, memory_unit = "MiB", sim_cores = 1L,
                                     target_unit = c("MiB", "GiB", "MB", "GB")) {

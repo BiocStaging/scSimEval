@@ -49,3 +49,4 @@ idx <- which(example_scrna$cell_types \%in\% top2)
 res <- run_edger_qlf_detrate(example_scrna$ref[, idx], example_scrna$cell_types[idx])
 head(res)
 }
+\keyword{internal}

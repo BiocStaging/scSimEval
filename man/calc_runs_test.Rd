@@ -31,3 +31,4 @@ ref <- stats::rnorm(50)
 sim <- stats::rnorm(50)
 calc_runs_test(ref, sim)
 }
+\keyword{internal}

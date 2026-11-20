@@ -39,6 +39,22 @@ sub-panel with exact numeric score labels, direction-awareness indicators (indic
 or lower values are optimal), and standardized or original raw score formulation.
 }
 \examples{
-data(example_scrna, package = "scSimEval")
-res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+bm_df <- data.frame(
+  Method   = rep(c("scDesign3", "scMultiSim", "Splatter", "SymSim"), each = 4),
+  Category = "(I) Distributional Properties",
+  Metric   = rep(c("KS", "Wasserstein", "MAD", "RMSE"), 4),
+  Value    = c(
+    0.10, 0.16, 0.12, 0.19,
+    0.15, 0.22, 0.16, 0.25,
+    0.23, 0.34, 0.26, 0.36,
+    0.31, 0.44, 0.35, 0.47
+  ),
+  stringsAsFactors = FALSE
+)
+p <- plot_category_metric_bars(
+  bm_df,
+  category = "(I) Distributional Properties",
+  base_size = 9.5
+)
+print(p)
 }

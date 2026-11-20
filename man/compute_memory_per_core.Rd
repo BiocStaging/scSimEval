@@ -26,8 +26,13 @@ Numeric Peak RAM per allocated core in requested target unit.
 }
 \description{
 Normalizes peak memory consumption by the number of allocated processor cores
-(\eqn{\text{Peak RAM} / N_{\text{cores}}}; Holtgrewe et al., 2015; Boisvert et al., 2012;
-Chen et al., 2022).
+(\eqn{\text{Peak RAM} / N_{\text{cores}}}{Peak RAM / N_cores};
+Holtgrewe et al., 2015; Boisvert et al., 2012; Chen et al., 2022).
+}
+\examples{
+# 4096 MiB peak RAM across 4 CPU cores (reported in MiB/core and GiB/core)
+compute_memory_per_core(4096, memory_unit = "MiB", sim_cores = 4L, target_unit = "MiB")
+compute_memory_per_core(4096, memory_unit = "MiB", sim_cores = 4L, target_unit = "GiB")
 }
 \references{
 Holtgrewe, M., Kuchenbecker, L., & Reinert, K. (2015). Methods for the detection and assembly of

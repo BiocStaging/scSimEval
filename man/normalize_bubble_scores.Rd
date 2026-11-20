@@ -16,3 +16,13 @@ The input data frame with \code{Score_Norm} populated in \code{[0, 1]} (higher i
 Rescales metric raw scores to a 0-1 range where 1 is always best, taking into account
 whether the metric is higher-is-better or lower-is-better, naturally bounded, or unbounded.
 }
+\examples{
+df <- data.frame(
+  Method = rep(c("scDesign3", "Splatter", "SymSim"), each = 2),
+  Metric = rep(c("KS", "ARI"), 3),
+  Value  = c(0.12, 0.85, 0.28, 0.68, 0.41, 0.52),
+  stringsAsFactors = FALSE
+)
+norm_df <- normalize_bubble_scores(df)
+print(norm_df)
+}

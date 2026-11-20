@@ -113,6 +113,11 @@ A list of class `scSimEval_integration` containing:
 ``` r
 data(example_multiomics, package = "scSimEval")
 ct <- rep(c("A", "B"), each = 50)
-res <- evaluate_multiomics_integration(sim_multi = example_multiomics$sim_multi, cell_types = ct)
+res <- evaluate_multiomics_integration(
+  sim_multi = example_multiomics$sim_multi,
+  cell_types = ct
+)
 #> Using precomputed dimensional reduction from sim_multi for Category VI.
+unlist(res[vapply(res, function(x) is.numeric(x) && length(x) == 1L, logical(1))])
+#> NULL
 ```

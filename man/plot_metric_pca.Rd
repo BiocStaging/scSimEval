@@ -74,6 +74,28 @@ are mathematically considered in the PCA decomposition. Panel \code{"both"} disp
 }
 }
 \examples{
-data(example_scrna, package = "scSimEval")
-res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+bm_df <- data.frame(
+  Method = rep(c("scDesign3", "scMultiSim", "Splatter", "SymSim", "MOSim"), each = 8),
+  Category = rep(c(
+    "(I) Distributional Properties", "(I) Distributional Properties",
+    "(I) Distributional Properties",
+    "(II) Sparsity & Zero-Inflation Dynamics",
+    "(III) Cellular Manifold & Clustering Concordance",
+    "(III) Cellular Manifold & Clustering Concordance",
+    "(IV) Technical Variation & Batch Mixing Dynamics",
+    "(V) Biological Signal & Differential Fidelity"
+  ), 5),
+  Metric = rep(c("KS", "Wasserstein", "RMSE", "Zero_Prob_RMSE",
+                 "ARI", "Silhouette_ASW", "CMS", "DE_F1"), 5),
+  Value = c(
+    0.10, 0.16, 0.22, 0.07, 0.85, 0.74, 0.88, 0.84,
+    0.18, 0.20, 0.24, 0.15, 0.82, 0.81, 0.76, 0.79,
+    0.21, 0.35, 0.31, 0.12, 0.64, 0.70, 0.80, 0.61,
+    0.34, 0.42, 0.48, 0.26, 0.59, 0.52, 0.61, 0.68,
+    0.15, 0.29, 0.26, 0.19, 0.75, 0.66, 0.70, 0.77
+  ),
+  stringsAsFactors = FALSE
+)
+p <- plot_metric_pca(bm_df, base_size = 9.5)
+print(p)
 }

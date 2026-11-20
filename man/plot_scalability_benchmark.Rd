@@ -48,17 +48,37 @@ A \code{ggplot} or \code{patchwork} object.
 }
 \description{
 Evaluates computational resource efficiency across single-cell simulators using
-core-normalized Category VIII benchmarks: \strong{Core-Seconds} (\eqn{\text{Elapsed Time (s)} \times N_{\text{cores}}};
+core-normalized Category VIII benchmarks: \strong{Core-Seconds} (\eqn{\text{Elapsed Time (s)} \times N_{\text{cores}}}{Elapsed Time (s) * N_cores};
 Lannelongue et al., 2021; Wratten et al., 2021; Grealey et al., 2022) and \strong{Peak RAM per Core}
-(\eqn{\text{Peak RAM} / N_{\text{cores}}}; Holtgrewe et al., 2015; Boisvert et al., 2012; Chen et al., 2022),
+(\eqn{\text{Peak RAM} / N_{\text{cores}}}{Peak RAM / N_cores}; Holtgrewe et al., 2015; Boisvert et al., 2012; Chen et al., 2022),
 alongside resource tradeoff frontiers, cost footprints, and simulation throughput.
 }
 \details{
 \if{html}{\figure{scalability_benchmark.png}{options: width="800" alt="Computational Scalability and Resource Footprint"}}
 }
 \examples{
-data(example_scrna, package = "scSimEval")
-res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+data(example_rice_bud, package = "scSimEval")
+sb <- example_rice_bud$scalability_benchmarks
+scal_df <- rbind(
+  data.frame(
+    Method    = sb$Method,
+    Category  = "(VIII) Computational Scalability & Efficiency",
+    Metric    = "Core_Seconds",
+    Value     = mapply(compute_core_seconds, sb$Runtime_Seconds, sim_cores = sb$Sim_Cores),
+    Sim_Cores = sb$Sim_Cores,
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    Method    = sb$Method,
+    Category  = "(VIII) Computational Scalability & Efficiency",
+    Metric    = "Memory_Per_Core_MiB",
+    Value     = mapply(compute_memory_per_core, sb$PeakRAM_MiB, sim_cores = sb$Sim_Cores),
+    Sim_Cores = sb$Sim_Cores,
+    stringsAsFactors = FALSE
+  )
+)
+p <- plot_scalability_benchmark(scal_df, type = "composite", layout = "4panel", base_size = 9.5)
+print(p)
 }
 \references{
 Lannelongue, L., et al. (2021). Green Algorithms: Quantifying the carbon footprint of computation. \emph{Advanced Science}, 8(12), 2100707.

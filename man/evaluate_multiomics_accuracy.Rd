@@ -104,4 +104,5 @@ res <- evaluate_multiomics_accuracy(
   example_multiomics$sim_multi,
   verbose = FALSE
 )
+head(res$benchmark_summary_table, 10)
 }

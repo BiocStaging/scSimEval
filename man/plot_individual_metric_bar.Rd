@@ -32,6 +32,13 @@ Generates a publication-quality barplot comparing simulator methods on a single
 evaluation metric, with exact score labels, direction awareness, and performance ranking.
 }
 \examples{
-data(example_scrna, package = "scSimEval")
-res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+bm_df <- data.frame(
+  Method   = c("scDesign3", "scMultiSim", "MOSim", "Splatter", "SymSim"),
+  Category = "(I) Distributional Properties",
+  Metric   = "KS",
+  Value    = c(0.10, 0.14, 0.18, 0.23, 0.31),
+  stringsAsFactors = FALSE
+)
+p <- plot_individual_metric_bar(bm_df, metric = "KS", base_size = 10)
+print(p)
 }

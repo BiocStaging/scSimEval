@@ -35,3 +35,4 @@ for scRNA-seq or TF-IDF (\code{"tfidf"}) for scATAC-seq, preserving
 data(example_scrna, package = "scSimEval")
 norm_mat <- normalize_counts(example_scrna$ref)
 }
+\keyword{internal}

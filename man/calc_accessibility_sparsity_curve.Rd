@@ -33,3 +33,4 @@ proportion (NZP / detection frequency) as modeled in the simATAC framework
 data(example_scatac, package = "scSimEval")
 calc_accessibility_sparsity_curve(example_scatac$ref)
 }
+\keyword{internal}

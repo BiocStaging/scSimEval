@@ -92,6 +92,7 @@
 #' data(example_cell_types)
 #' head(example_cell_types)
 #' table(example_cell_types)
+#' @keywords internal
 "example_cell_types"
 
 #' Example Batch Annotations Vector (Rice Bud)
@@ -109,6 +110,7 @@
 #' data(example_batch_info)
 #' head(example_batch_info)
 #' table(example_batch_info)
+#' @keywords internal
 "example_batch_info"
 
 #' Real Paired Single-Cell Multiomics Benchmark Dataset (Rice Bud, SingleCellExperiment)
@@ -143,12 +145,17 @@
 #' dim(example_rice_bud$reference$rna)
 #' dim(example_rice_bud$reference$atac)
 #' names(example_rice_bud$simulated)
+#' example_rice_bud$scalability_benchmarks
 #' \donttest{
-#' evaluate_multiomics_accuracy(
-#'   ref_multi = list(RNA = example_rice_bud$reference$rna, ATAC = example_rice_bud$reference$atac),
-#'   sim_multi = list(RNA = example_rice_bud$simulated$scDesign3$rna, ATAC = example_rice_bud$simulated$scDesign3$atac),
-#'   pairing = "paired"
+#' res <- evaluate_multiomics_accuracy(
+#'   ref_multi = list(RNA = example_rice_bud$reference$rna,
+#'                    ATAC = example_rice_bud$reference$atac),
+#'   sim_multi = list(RNA = example_rice_bud$simulated$scDesign3$rna,
+#'                    ATAC = example_rice_bud$simulated$scDesign3$atac),
+#'   pairing = "paired",
+#'   verbose = FALSE
 #' )
+#' head(res$benchmark_summary_table, 8)
 #' }
 "example_rice_bud"
 
@@ -184,11 +191,16 @@
 #' dim(example_soybean_root$reference$rna)
 #' dim(example_soybean_root$reference$atac)
 #' names(example_soybean_root$simulated)
+#' example_soybean_root$scalability_benchmarks
 #' \donttest{
-#' evaluate_multiomics_accuracy(
-#'   ref_multi = list(RNA = example_soybean_root$reference$rna, ATAC = example_soybean_root$reference$atac),
-#'   sim_multi = list(RNA = example_soybean_root$simulated$scMultiSim$rna, ATAC = example_soybean_root$simulated$scMultiSim$atac),
-#'   pairing = "unpaired"
+#' res <- evaluate_multiomics_accuracy(
+#'   ref_multi = list(RNA = example_soybean_root$reference$rna,
+#'                    ATAC = example_soybean_root$reference$atac),
+#'   sim_multi = list(RNA = example_soybean_root$simulated$scMultiSim$rna,
+#'                    ATAC = example_soybean_root$simulated$scMultiSim$atac),
+#'   pairing = "unpaired",
+#'   verbose = FALSE
 #' )
+#' head(res$benchmark_summary_table, 8)
 #' }
 "example_soybean_root"

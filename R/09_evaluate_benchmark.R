@@ -524,8 +524,11 @@
 #' }
 #' @examples
 #' data(example_scrna, package = "scSimEval")
-#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim,
-#'                                     include_trajectory = FALSE, verbose = FALSE)
+#' res <- evaluate_simulation_accuracy(
+#'   example_scrna$ref, example_scrna$sim,
+#'   include_trajectory = FALSE, verbose = FALSE
+#' )
+#' head(res$metrics_summary_table, 10)
 #' @export
 evaluate_simulation_accuracy <- function(
   ref_sce,
@@ -944,6 +947,7 @@ evaluate_simulation_accuracy <- function(
 #'   example_multiomics$sim_multi,
 #'   verbose = FALSE
 #' )
+#' head(res$benchmark_summary_table, 10)
 #' @export
 evaluate_multiomics_accuracy <- function(
   ref_multi,
@@ -1284,6 +1288,7 @@ evaluate_multiomics_accuracy <- function(
 #' data(example_scrna, package = "scSimEval")
 #' ds <- list("DemoCohort" = list(ref = example_scrna$ref, sim = example_scrna$sim))
 #' res <- evaluate_multiple_datasets(ds, verbose = FALSE)
+#' res$dataset_overview
 #' @export
 evaluate_multiple_datasets <- function(
   datasets,
@@ -1493,13 +1498,12 @@ print.scSimEval_consolidated <- function(x, ...) {
 #' }
 #' @export
 #' @examples
-#' \donttest{
 #' data(example_scrna, package = "scSimEval")
 #' refs <- list("CohortA" = example_scrna$ref)
 #' sims <- list("Splatter" = list("CohortA" = example_scrna$sim))
 #' res <- benchmark_simulation_suite(refs, sims, verbose = FALSE)
 #' print(res)
-#' }
+#' head(res$benchmark_summary_table, 8)
 benchmark_simulation_suite <- function(
   datasets,
   simulators,

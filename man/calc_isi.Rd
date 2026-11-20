@@ -42,3 +42,4 @@ coords <- matrix(stats::rnorm(100), 50, 2)
 batch <- factor(rep(c("B1", "B2"), length.out = 50))
 calc_isi(coords, batch)
 }
+\keyword{internal}

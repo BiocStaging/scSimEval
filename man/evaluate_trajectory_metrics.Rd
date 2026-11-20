@@ -67,7 +67,7 @@ Evaluates trajectory and lineage preservation using the standardized \emph{dynve
 benchmarking framework (\emph{Saelens et al., Nature Biotechnology, 2019}):
 \enumerate{
   \item Standardized cell outlier QC (3 MADs), low-expression gene filtering
-        (\eqn{\ge 5\%} cells, mean \eqn{> 0.02}), and HVG selection (empirical mean-variance decomposition).
+        (\eqn{\ge 5\%}{>= 5\%} cells, mean \eqn{> 0.02}{> 0.02}), and HVG selection (empirical mean-variance decomposition).
   \item Shared HVG PCA projection and Docker-free Minimum Spanning Tree (MST) milestone
         trajectory inference with continuous cell-to-milestone geodesic distances.
   \item Five complementary trajectory metrics: \code{him} (Hamming-Ipsen-Mikhailov similarity),
@@ -78,10 +78,12 @@ benchmarking framework (\emph{Saelens et al., Nature Biotechnology, 2019}):
 }
 \examples{
 data(example_scrna, package = "scSimEval")
-evaluate_trajectory_metrics(
+res <- evaluate_trajectory_metrics(
   example_scrna$ref, example_scrna$sim,
   cell_types_ref = example_scrna$cell_types,
   cell_types_sim = example_scrna$cell_types,
-  num_trees = 500L
+  num_trees = 200L
 )
+unlist(res[c("him", "edge_flip", "geodesic_correlation",
+             "F1_branches", "wcor_features", "n_hvgs")])
 }

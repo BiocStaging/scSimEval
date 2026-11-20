@@ -91,3 +91,16 @@ If \code{batch_ref} or \code{batch_sim} is NULL, the analysis is gracefully skip
 adhering to the strict rule that single-cell biological signal evaluation requires
 genuine biological replicates to prevent false positive inflation and pseudoreplication bias.
 }
+\examples{
+data(example_scrna, package = "scSimEval")
+rep_id <- factor(rep(c("Rep1", "Rep2"), length.out = ncol(example_scrna$ref)))
+res <- evaluate_deg_fidelity(
+  ref_data = example_scrna$ref,
+  sim_data = example_scrna$sim,
+  ref_celltypes = example_scrna$cell_types,
+  sim_celltypes = example_scrna$cell_types,
+  batch_ref = rep_id,
+  batch_sim = rep_id
+)
+res$deg_summary_table
+}

@@ -398,6 +398,7 @@ utils::globalVariables(c(
 #' @return Cleaned data.frame containing the curated evaluation measures.
 #' @examples
 #' data(example_scrna, package = "scSimEval")
+#' @keywords internal
 #' @export
 filter_gold_standard_metrics <- function(df) {
   if (is.null(df)) return(NULL)
@@ -893,6 +894,7 @@ filter_gold_standard_metrics <- function(df) {
 #' @examples
 #' df <- data.frame(Category = "Distribution", Metric = "KS", Value = 0.1)
 #' standardize_benchmark_categories(df)
+#' @keywords internal
 #' @export
 standardize_benchmark_categories <- function(df) {
   if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) return(df)
@@ -1053,9 +1055,15 @@ standardize_benchmark_categories <- function(df) {
         sub_d <- sub_d[top_i, , drop = FALSE]
       }
       keep_c <- colSums(sub_d) > 0
-      if (sum(keep_c) >= 2L) {
-        dge <- edgeR::DGEList(counts = as.matrix(sub_d[, keep_c, drop = FALSE]))
-        dge <- edgeR::calcNormFactors(dge, method = "TMM")
+      keep_r <- if (sum(keep_c) >= 2L) rowSums(sub_d[, keep_c, drop = FALSE]) > 0 else logical(0)
+      if (sum(keep_c) >= 2L && sum(keep_r) >= 2L) {
+        dge <- edgeR::DGEList(counts = as.matrix(sub_d[keep_r, keep_c, drop = FALSE]))
+        norm_fn <- if (exists("normLibSizes", envir = asNamespace("edgeR"), inherits = FALSE)) {
+          edgeR::normLibSizes
+        } else {
+          edgeR::calcNormFactors
+        }
+        dge <- norm_fn(dge, method = "TMMwsp")
         nf_sub <- as.numeric(dge$samples$norm.factors)
         if (length(nf_sub) == sum(keep_c) && !any(is.na(nf_sub)) && !all(nf_sub == 1)) {
           tmm_factors[keep_c] <- nf_sub
@@ -1546,12 +1554,9 @@ standardize_benchmark_categories <- function(df) {
 #' @return A \code{ggplot} or \code{patchwork} composite object containing the comparative panels.
 #' @examples
 #' data(example_scrna, package = "scSimEval")
-#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+#' p <- plot_distribution_qc(example_scrna$ref, example_scrna$sim, base_size = 8.5)
+#' print(p)
 #' @export
-#' @examples
-#' data(example_scrna)
-#' p <- plot_distribution_qc(example_scrna$ref, example_scrna$sim)
-#' if (requireNamespace("ggplot2", quietly = TRUE)) print(p)
 plot_distribution_qc <- function(
   ref_data,
   sim_data,
@@ -1673,7 +1678,6 @@ plot_distribution_qc <- function(
 # 2. plot_metric_boxplots()
 # ============================================================================
 
-#' Plot Comparison Boxplots Across Simulators
 #' Plot Benchmark Metric Score Distributions Across Simulators
 #'
 #' Generates 600 DPI boxplots with jittered points showing the distribution
@@ -1701,8 +1705,26 @@ plot_distribution_qc <- function(
 #'
 #' @return A \code{ggplot} object.
 #' @examples
-#' data(example_scrna, package = "scSimEval")
-#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+#' bm_df <- data.frame(
+#'   Method = rep(c("scDesign3", "scMultiSim", "Splatter", "SymSim"), each = 6),
+#'   Category = rep(c(
+#'     "(I) Distributional Properties", "(I) Distributional Properties",
+#'     "(I) Distributional Properties",
+#'     "(III) Cellular Manifold & Clustering Concordance",
+#'     "(III) Cellular Manifold & Clustering Concordance",
+#'     "(IV) Technical Variation & Batch Mixing Dynamics"
+#'   ), 4),
+#'   Metric = rep(c("KS", "Wasserstein", "RMSE", "ARI", "Silhouette_ASW", "CMS"), 4),
+#'   Value = c(
+#'     0.10, 0.16, 0.19, 0.85, 0.81, 0.88,
+#'     0.15, 0.22, 0.25, 0.78, 0.75, 0.82,
+#'     0.23, 0.34, 0.36, 0.67, 0.64, 0.72,
+#'     0.31, 0.44, 0.47, 0.56, 0.54, 0.63
+#'   ),
+#'   stringsAsFactors = FALSE
+#' )
+#' p <- plot_metric_boxplots(bm_df, ncol = 3, base_size = 9.5)
+#' print(p)
 #' @export
 plot_metric_boxplots <- function(
   benchmark_data,
@@ -1837,8 +1859,15 @@ plot_metric_boxplots <- function(
 #'
 #' @return A \code{ggplot} object.
 #' @examples
-#' data(example_scrna, package = "scSimEval")
-#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+#' bm_df <- data.frame(
+#'   Method   = c("scDesign3", "scMultiSim", "MOSim", "Splatter", "SymSim"),
+#'   Category = "(I) Distributional Properties",
+#'   Metric   = "KS",
+#'   Value    = c(0.10, 0.14, 0.18, 0.23, 0.31),
+#'   stringsAsFactors = FALSE
+#' )
+#' p <- plot_individual_metric_bar(bm_df, metric = "KS", base_size = 10)
+#' print(p)
 #' @export
 plot_individual_metric_bar <- function(
   benchmark_data,
@@ -2020,8 +2049,24 @@ plot_individual_metric_bar <- function(
 #'
 #' @return A \code{ggplot} object.
 #' @examples
-#' data(example_scrna, package = "scSimEval")
-#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+#' bm_df <- data.frame(
+#'   Method   = rep(c("scDesign3", "scMultiSim", "Splatter", "SymSim"), each = 4),
+#'   Category = "(I) Distributional Properties",
+#'   Metric   = rep(c("KS", "Wasserstein", "MAD", "RMSE"), 4),
+#'   Value    = c(
+#'     0.10, 0.16, 0.12, 0.19,
+#'     0.15, 0.22, 0.16, 0.25,
+#'     0.23, 0.34, 0.26, 0.36,
+#'     0.31, 0.44, 0.35, 0.47
+#'   ),
+#'   stringsAsFactors = FALSE
+#' )
+#' p <- plot_category_metric_bars(
+#'   bm_df,
+#'   category = "(I) Distributional Properties",
+#'   base_size = 9.5
+#' )
+#' print(p)
 #' @export
 plot_category_metric_bars <- function(
   benchmark_data,
@@ -2384,9 +2429,9 @@ plot_category_metric_bars <- function(
 #' Plot Multi-Dimensional Computational Scalability Benchmark
 #'
 #' Evaluates computational resource efficiency across single-cell simulators using
-#' core-normalized Category VIII benchmarks: \strong{Core-Seconds} (\eqn{\text{Elapsed Time (s)} \times N_{\text{cores}}};
+#' core-normalized Category VIII benchmarks: \strong{Core-Seconds} (\eqn{\text{Elapsed Time (s)} \times N_{\text{cores}}}{Elapsed Time (s) * N_cores};
 #' Lannelongue et al., 2021; Wratten et al., 2021; Grealey et al., 2022) and \strong{Peak RAM per Core}
-#' (\eqn{\text{Peak RAM} / N_{\text{cores}}}; Holtgrewe et al., 2015; Boisvert et al., 2012; Chen et al., 2022),
+#' (\eqn{\text{Peak RAM} / N_{\text{cores}}}{Peak RAM / N_cores}; Holtgrewe et al., 2015; Boisvert et al., 2012; Chen et al., 2022),
 #' alongside resource tradeoff frontiers, cost footprints, and simulation throughput.
 #'
 #' \if{html}{\figure{scalability_benchmark.png}{options: width="800" alt="Computational Scalability and Resource Footprint"}}
@@ -2418,8 +2463,28 @@ plot_category_metric_bars <- function(
 #'
 #' Chen, W., et al. (2022). STEPS 4.0: Fast and memory-efficient simulations. \emph{Frontiers in Neuroinformatics}, 16, 883742.
 #' @examples
-#' data(example_scrna, package = "scSimEval")
-#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+#' data(example_rice_bud, package = "scSimEval")
+#' sb <- example_rice_bud$scalability_benchmarks
+#' scal_df <- rbind(
+#'   data.frame(
+#'     Method    = sb$Method,
+#'     Category  = "(VIII) Computational Scalability & Efficiency",
+#'     Metric    = "Core_Seconds",
+#'     Value     = mapply(compute_core_seconds, sb$Runtime_Seconds, sim_cores = sb$Sim_Cores),
+#'     Sim_Cores = sb$Sim_Cores,
+#'     stringsAsFactors = FALSE
+#'   ),
+#'   data.frame(
+#'     Method    = sb$Method,
+#'     Category  = "(VIII) Computational Scalability & Efficiency",
+#'     Metric    = "Memory_Per_Core_MiB",
+#'     Value     = mapply(compute_memory_per_core, sb$PeakRAM_MiB, sim_cores = sb$Sim_Cores),
+#'     Sim_Cores = sb$Sim_Cores,
+#'     stringsAsFactors = FALSE
+#'   )
+#' )
+#' p <- plot_scalability_benchmark(scal_df, type = "composite", layout = "4panel", base_size = 9.5)
+#' print(p)
 #' @export
 plot_scalability_benchmark <- function(
   benchmark_data,
@@ -2444,7 +2509,7 @@ plot_scalability_benchmark <- function(
 
   p_rt <- .scalability_bar_panel(w, "display_time", "time_label", pal, "A. Execution Time", sprintf("Execution Time (%s)", prep$t_label), y_lab = "Simulator", base_size = base_size)
   if (type == "runtime") return(p_rt)
-  p_mm <- .scalability_bar_panel(w, "display_mem", "mem_label", pal, "B. Peak Memory per Core", sprintf("Peak Memory (%s)", prep$m_abbr), base_size = base_size)
+  p_mm <- .scalability_bar_panel(w, "display_mem", "mem_label", pal, "B. Peak Memory per Core", sprintf("Peak Memory (%s)", prep$m_abbr), exp_hi = 0.34, base_size = base_size)
   if (type == "memory") return(p_mm)
 
   med_x <- stats::median(w$display_time, na.rm = TRUE); med_y <- stats::median(w$display_mem, na.rm = TRUE)
@@ -2452,7 +2517,11 @@ plot_scalability_benchmark <- function(
     ggplot2::geom_vline(xintercept = med_x, linetype = "dashed", color = "#CBD5E1", linewidth = 0.5) +
     ggplot2::geom_hline(yintercept = med_y, linetype = "dashed", color = "#CBD5E1", linewidth = 0.5) +
     ggplot2::geom_point(size = 4.5, alpha = 0.9) +
-    ggplot2::geom_text(ggplot2::aes(label = .data$Method), vjust = -1.1, fontface = "bold", size = base_size * 0.30, show.legend = FALSE) +
+    (if (requireNamespace("ggrepel", quietly = TRUE)) {
+      ggrepel::geom_text_repel(ggplot2::aes(label = .data$Method), fontface = "bold", size = base_size * 0.30, show.legend = FALSE, max.overlaps = 20, box.padding = 0.35, point.padding = 0.25)
+    } else {
+      ggplot2::geom_text(ggplot2::aes(label = .data$Method), vjust = -1.1, fontface = "bold", size = base_size * 0.30, show.legend = FALSE)
+    }) +
     ggplot2::scale_color_manual(values = pal, guide = "none") +
     ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0.12, 0.18))) +
     ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0.12, 0.18))) +
@@ -2616,8 +2685,27 @@ plot_benchmark_summary <- function(
 #'
 #' @return A \code{ggplot} object.
 #' @examples
-#' data(example_scrna, package = "scSimEval")
-#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+#' bm_df <- data.frame(
+#'   Method = rep(c("scDesign3", "scMultiSim", "MOSim", "Splatter", "SymSim"), each = 6),
+#'   Category = rep(c(
+#'     "(I) Distributional Properties", "(I) Distributional Properties",
+#'     "(II) Sparsity & Zero-Inflation Dynamics",
+#'     "(III) Cellular Manifold & Clustering Concordance",
+#'     "(IV) Technical Variation & Batch Mixing Dynamics",
+#'     "(V) Biological Signal & Differential Fidelity"
+#'   ), 5),
+#'   Metric = rep(c("KS", "Wasserstein", "Zero_Prob_RMSE", "ARI", "CMS", "DE_F1"), 5),
+#'   Value = c(
+#'     0.10, 0.16, 0.07, 0.85, 0.88, 0.82,
+#'     0.14, 0.21, 0.11, 0.79, 0.83, 0.77,
+#'     0.18, 0.27, 0.13, 0.74, 0.78, 0.72,
+#'     0.23, 0.34, 0.17, 0.67, 0.72, 0.66,
+#'     0.31, 0.44, 0.24, 0.56, 0.62, 0.55
+#'   ),
+#'   stringsAsFactors = FALSE
+#' )
+#' p <- plot_metric_heatmap(bm_df, base_size = 9.5)
+#' print(p)
 #' @export
 plot_metric_heatmap <- function(
   benchmark_data,
@@ -2961,8 +3049,30 @@ plot_metric_heatmap <- function(
 #'
 #' @return A \code{ggplot} or \code{patchwork} object.
 #' @examples
-#' data(example_scrna, package = "scSimEval")
-#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+#' bm_df <- data.frame(
+#'   Method = rep(c("scDesign3", "scMultiSim", "Splatter", "SymSim", "MOSim"), each = 8),
+#'   Category = rep(c(
+#'     "(I) Distributional Properties", "(I) Distributional Properties",
+#'     "(I) Distributional Properties",
+#'     "(II) Sparsity & Zero-Inflation Dynamics",
+#'     "(III) Cellular Manifold & Clustering Concordance",
+#'     "(III) Cellular Manifold & Clustering Concordance",
+#'     "(IV) Technical Variation & Batch Mixing Dynamics",
+#'     "(V) Biological Signal & Differential Fidelity"
+#'   ), 5),
+#'   Metric = rep(c("KS", "Wasserstein", "RMSE", "Zero_Prob_RMSE",
+#'                  "ARI", "Silhouette_ASW", "CMS", "DE_F1"), 5),
+#'   Value = c(
+#'     0.10, 0.16, 0.22, 0.07, 0.85, 0.74, 0.88, 0.84,
+#'     0.18, 0.20, 0.24, 0.15, 0.82, 0.81, 0.76, 0.79,
+#'     0.21, 0.35, 0.31, 0.12, 0.64, 0.70, 0.80, 0.61,
+#'     0.34, 0.42, 0.48, 0.26, 0.59, 0.52, 0.61, 0.68,
+#'     0.15, 0.29, 0.26, 0.19, 0.75, 0.66, 0.70, 0.77
+#'   ),
+#'   stringsAsFactors = FALSE
+#' )
+#' p <- plot_metric_mds(bm_df, base_size = 9.5)
+#' print(p)
 #' @export
 plot_metric_mds <- function(
   benchmark_data,
@@ -3214,8 +3324,30 @@ plot_metric_mds <- function(
 #'
 #' @return A \code{ggplot} or \code{patchwork} object representing the ordination figure.
 #' @examples
-#' data(example_scrna, package = "scSimEval")
-#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+#' bm_df <- data.frame(
+#'   Method = rep(c("scDesign3", "scMultiSim", "Splatter", "SymSim", "MOSim"), each = 8),
+#'   Category = rep(c(
+#'     "(I) Distributional Properties", "(I) Distributional Properties",
+#'     "(I) Distributional Properties",
+#'     "(II) Sparsity & Zero-Inflation Dynamics",
+#'     "(III) Cellular Manifold & Clustering Concordance",
+#'     "(III) Cellular Manifold & Clustering Concordance",
+#'     "(IV) Technical Variation & Batch Mixing Dynamics",
+#'     "(V) Biological Signal & Differential Fidelity"
+#'   ), 5),
+#'   Metric = rep(c("KS", "Wasserstein", "RMSE", "Zero_Prob_RMSE",
+#'                  "ARI", "Silhouette_ASW", "CMS", "DE_F1"), 5),
+#'   Value = c(
+#'     0.10, 0.16, 0.22, 0.07, 0.85, 0.74, 0.88, 0.84,
+#'     0.18, 0.20, 0.24, 0.15, 0.82, 0.81, 0.76, 0.79,
+#'     0.21, 0.35, 0.31, 0.12, 0.64, 0.70, 0.80, 0.61,
+#'     0.34, 0.42, 0.48, 0.26, 0.59, 0.52, 0.61, 0.68,
+#'     0.15, 0.29, 0.26, 0.19, 0.75, 0.66, 0.70, 0.77
+#'   ),
+#'   stringsAsFactors = FALSE
+#' )
+#' p <- plot_metric_pca(bm_df, base_size = 9.5)
+#' print(p)
 #' @export
 plot_metric_pca <- function(
   benchmark_data,
@@ -3755,13 +3887,27 @@ plot_metric_pca <- function(
 #' @export
 #' @examples
 #' bm_df <- data.frame(
-#'   Method   = rep(c("Splat", "scDesign3", "SymSim", "dyngen"), each = 4),
-#'   Category = rep(c("Accuracy", "Accuracy", "Cellular Structure", "Scalability"), 4),
-#'   Metric   = rep(c("KS Distance", "Wasserstein", "Silhouette ASW", "CPU Time"), 4),
-#'   Score    = c(0.8, 0.7, 0.9, 0.6, 0.5, 0.8, 0.6, 0.5, 0.8, 0.7, 0.6, 0.5, 0.7, 0.6, 0.9, 0.5)
+#'   Method = rep(c("scDesign3", "scMultiSim", "Splatter", "SymSim"), each = 6),
+#'   Category = rep(c(
+#'     "(I) Distributional Properties", "(I) Distributional Properties",
+#'     "(II) Sparsity & Zero-Inflation Dynamics",
+#'     "(III) Cellular Manifold & Clustering Concordance",
+#'     "(IV) Technical Variation & Batch Mixing Dynamics",
+#'     "(VIII) Computational Scalability & Efficiency"
+#'   ), 4),
+#'   Metric = rep(c("KS", "Wasserstein", "Zero_Prob_RMSE",
+#'                  "Silhouette_ASW", "CMS", "Core_Seconds"), 4),
+#'   Value = c(
+#'     0.11, 0.18, 0.08, 0.82, 0.86, 42,
+#'     0.15, 0.22, 0.11, 0.78, 0.81, 68,
+#'     0.23, 0.34, 0.17, 0.65, 0.72, 18,
+#'     0.31, 0.45, 0.24, 0.56, 0.64, 95
+#'   ),
+#'   stringsAsFactors = FALSE
 #' )
-#' p <- plot_benchmark_bubble_matrix(bm_df)
-#' p
+#' p <- plot_benchmark_bubble_matrix(bm_df, base_size = 9.5) +
+#'   ggplot2::theme(legend.box = "vertical")
+#' print(p)
 plot_benchmark_bubble_matrix <- function(
   data,
   assay_modality     = NULL,
@@ -3922,6 +4068,15 @@ plot_bubble_matrix <- plot_benchmark_bubble_matrix
 #'
 #' @param df A data frame of benchmark results containing at least \code{Metric} and \code{Score_Raw} (or \code{Score}).
 #' @return The input data frame with \code{Score_Norm} populated in \code{[0, 1]} (higher is always better).
+#' @examples
+#' df <- data.frame(
+#'   Method = rep(c("scDesign3", "Splatter", "SymSim"), each = 2),
+#'   Metric = rep(c("KS", "ARI"), 3),
+#'   Value  = c(0.12, 0.85, 0.28, 0.68, 0.41, 0.52),
+#'   stringsAsFactors = FALSE
+#' )
+#' norm_df <- normalize_bubble_scores(df)
+#' print(norm_df)
 #' @export
 normalize_bubble_scores <- function(df) {
   if (is.null(df) || nrow(df) == 0) {
@@ -4135,9 +4290,26 @@ normalize_bubble_scores <- function(df) {
 #'
 #' @return A \code{ggplot} object representing the multi-panel evaluation summary.
 #' @examples
-#' data(example_scrna, package = "scSimEval")
-#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
-#' p <- plot_evaluation_summary(res)
+#' bm_df <- data.frame(
+#'   Method = rep(c("scDesign3", "scMultiSim", "Splatter", "SymSim"), each = 6),
+#'   Category = rep(c(
+#'     "(I) Distributional Properties", "(I) Distributional Properties",
+#'     "(II) Sparsity & Zero-Inflation Dynamics",
+#'     "(III) Cellular Manifold & Clustering Concordance",
+#'     "(IV) Technical Variation & Batch Mixing Dynamics",
+#'     "(V) Biological Signal & Differential Fidelity"
+#'   ), 4),
+#'   Metric = rep(c("KS", "Wasserstein", "Zero_Prob_RMSE",
+#'                  "ARI", "CMS", "DE_F1"), 4),
+#'   Value = c(
+#'     0.10, 0.16, 0.07, 0.85, 0.88, 0.82,
+#'     0.14, 0.21, 0.11, 0.79, 0.83, 0.77,
+#'     0.23, 0.34, 0.17, 0.67, 0.72, 0.66,
+#'     0.31, 0.44, 0.24, 0.56, 0.62, 0.55
+#'   ),
+#'   stringsAsFactors = FALSE
+#' )
+#' p <- plot_evaluation_summary(bm_df, base_size = 9.5)
 #' print(p)
 #' @export
 #' @aliases plot_benchmark_summary_bars plot_summary_bars
@@ -4707,9 +4879,24 @@ compute_embedding_quality_metrics <- function(embedding_data, metric_coords = c(
 #'   \item \code{Fidelity_Score}: Numeric composite fidelity score in [0, 1] rounded to 4 decimals.
 #' }
 #' @examples
-#' data(example_scrna, package = "scSimEval")
-#' res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
-#' lb <- compute_method_leaderboard(res)
+#' bm_df <- data.frame(
+#'   Method = rep(c("scDesign3", "scMultiSim", "Splatter", "SymSim"), each = 4),
+#'   Category = rep(c(
+#'     "(I) Distributional Properties", "(I) Distributional Properties",
+#'     "(III) Cellular Manifold & Clustering Concordance",
+#'     "(IV) Technical Variation & Batch Mixing Dynamics"
+#'   ), 4),
+#'   Metric = rep(c("KS", "Wasserstein", "ARI", "CMS"), 4),
+#'   Value = c(
+#'     0.10, 0.16, 0.85, 0.88,
+#'     0.14, 0.21, 0.79, 0.83,
+#'     0.23, 0.34, 0.67, 0.72,
+#'     0.31, 0.44, 0.56, 0.62
+#'   ),
+#'   stringsAsFactors = FALSE
+#' )
+#' lb <- compute_method_leaderboard(bm_df)
+#' print(lb)
 #' @export
 compute_method_leaderboard <- function(benchmark_data) {
   df <- .ingest_bubble_data(benchmark_data)
@@ -4954,6 +5141,7 @@ append_benchmark_results <- combine_benchmark_results
 #' p <- plot_evaluation_summary(res)
 #' p_zoom_in <- zoom_plot(p, step = 1)
 #' p_zoom_out <- zoom_plot(p, step = -1)
+#' @keywords internal
 #' @export
 zoom_plot <- function(p, zoom = 1.0, step = 0, xlim = NULL, ylim = NULL, center = NULL) {
   if (!inherits(p, "ggplot") && !inherits(p, "patchwork")) {

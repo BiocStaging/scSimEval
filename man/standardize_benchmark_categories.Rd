@@ -20,3 +20,4 @@ canonical 8 scSimEval categories across benchmark data frames.
 df <- data.frame(Category = "Distribution", Metric = "KS", Value = 0.1)
 standardize_benchmark_categories(df)
 }
+\keyword{internal}

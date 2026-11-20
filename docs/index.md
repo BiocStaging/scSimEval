@@ -29,21 +29,19 @@ categories**.
 
 Install the package from Bioconductor:
 
-``` r
-if (!requireNamespace("BiocManager", quietly = TRUE)) {
-    install.packages("BiocManager")
-}
-BiocManager::install("scSimEval")
-```
+\
+`if`` ``(``!`[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"BiocManager"``, quietly ``=`` ``TRUE``)``)`` ``{`\
+`    `[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(``"BiocManager"``)`\
+`}`\
+`BiocManager``::`[`install`](https://bioconductor.github.io/BiocManager/reference/install.html)`(``"scSimEval"``)`
 
 To install the development version from GitHub:
 
-``` r
-if (!requireNamespace("remotes", quietly = TRUE)) {
-    install.packages("remotes")
-}
-remotes::install_github("kabilanbio/scSimEval")
-```
+\
+`if`` ``(``!`[`requireNamespace`](https://rdrr.io/r/base/ns-load.html)`(``"remotes"``, quietly ``=`` ``TRUE``)``)`` ``{`\
+`    `[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(``"remotes"``)`\
+`}`\
+`remotes``::`[`install_github`](https://remotes.r-lib.org/reference/install_github.html)`(``"kabilanbio/scSimEval"``)`
 
 ------------------------------------------------------------------------
 
@@ -54,41 +52,39 @@ remotes::install_github("kabilanbio/scSimEval")
 Run benchmarking directly on `SingleCellExperiment` objects with
 cell-type and batch annotations stored in `colData`:
 
-``` r
-library(scSimEval)
-
-# Users starting from Seurat objects should convert first:
-# ref_sce <- Seurat::as.SingleCellExperiment(ref_seurat)
-
-# Run benchmark evaluation (cell_type & batch read from colData)
-benchmark_results <- evaluate_simulation_accuracy(
-  ref_sce       = ref_sce,
-  sim_sce       = sim_sce,
-  cell_type_col = "cell_type",
-  batch_col     = "batch",
-  threads       = 4
-)
-
-# Visualize summary
-plot_evaluation_summary(benchmark_results)
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`scSimEval`](https://kabilanbio.github.io/scSimEval/)`)`\
+\
+`# Users starting from Seurat objects should convert first:`\
+`# ref_sce <- Seurat::as.SingleCellExperiment(ref_seurat)`\
+\
+`# Run benchmark evaluation (cell_type & batch read from colData)`\
+`benchmark_results`` ``<-`` `[`evaluate_simulation_accuracy`](https://kabilanbio.github.io/scSimEval/reference/evaluate_simulation_accuracy.md)`(`\
+`  ref_sce       ``=`` ``ref_sce``,`\
+`  sim_sce       ``=`` ``sim_sce``,`\
+`  cell_type_col ``=`` ``"cell_type"``,`\
+`  batch_col     ``=`` ``"batch"``,`\
+`  threads       ``=`` ``4`\
+`)`\
+\
+`# Visualize summary`\
+[`plot_evaluation_summary`](https://kabilanbio.github.io/scSimEval/reference/plot_evaluation_summary.md)`(``benchmark_results``)`
 
 ### 2. Interactive Shiny Studio
 
 Interactive exploration, point-and-click benchmarking, and report export
 are available through the companion **`scSimEvalStudio`** package:
 
-``` r
-library(scSimEvalStudio)
-launch_scSimEval_app()
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`scSimEvalStudio`](https://kabilanbio.github.io/scSimEvalStudio/)`)`\
+[`launch_scSimEval_app`](https://kabilanbio.github.io/scSimEvalStudio/reference/launch_scSimEval_app.html)`(``)`
 
 ------------------------------------------------------------------------
 
 ## Documentation
 
 Full documentation, tutorials, and demonstration workflows are available
-at:  
+at:\
 👉 **<https://kabilanbio.github.io/scSimEval/>**
 
 ------------------------------------------------------------------------

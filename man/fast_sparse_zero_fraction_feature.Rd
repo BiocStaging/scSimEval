@@ -15,3 +15,4 @@ Numeric vector of zero fraction per feature.
 \description{
 Fast Zero Fraction per Feature (Row-wise)
 }
+\keyword{internal}

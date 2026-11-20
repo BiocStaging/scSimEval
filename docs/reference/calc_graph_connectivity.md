@@ -4,8 +4,8 @@ Evaluates whether cells of the same cell type form a connected component
 in the k-nearest neighbor (k-NN) graph across modalities/batches,
 following `scCross`, `scMultiSim`, and `scib`. For each cell type, the
 relative size of the largest connected component (LCC) in the induced
-subgraph is calculated: \$\|LCC\| / \|V_c\|\$. The overall score is the
-mean across all cell types.
+subgraph is calculated: \\\|\mathrm{LCC}\| / \|V_c\|\\. The overall
+score is the mean across all cell types.
 
 ## Usage
 

@@ -7,6 +7,7 @@
 #' cl <- factor(rep(c("A", "B"), each = 10))
 #' dist_mat <- stats::dist(data)
 #' calc_silhouette(dist_mat, cl)
+#' @keywords internal
 #' @export
 calc_silhouette <- function(dist_mat, cluster_labels) {
   if (is.null(dist_mat) || is.null(cluster_labels)) return(NA_real_)
@@ -43,6 +44,7 @@ calc_silhouette <- function(dist_mat, cluster_labels) {
 #' cl <- factor(rep(c("A", "B"), each = 5))
 #' dist_mat <- stats::dist(data)
 #' calc_davies_bouldin(data, cl)
+#' @keywords internal
 #' @export
 calc_davies_bouldin <- function(data, cluster_labels) {
   if (is.null(data) || is.null(cluster_labels)) return(NA_real_)
@@ -99,6 +101,7 @@ calc_davies_bouldin <- function(data, cluster_labels) {
 #' pred <- factor(rep(c("A", "B"), each = 20))
 #' truth <- factor(rep(c("A", "B"), each = 20))
 #' calc_ari(pred, truth)
+#' @keywords internal
 #' @export
 calc_ari <- function(pred, truth) {
   if (requireNamespace("mclust", quietly = TRUE)) {
@@ -124,6 +127,7 @@ calc_ari <- function(pred, truth) {
 #' pred <- factor(rep(c("A", "B"), each = 20))
 #' truth <- factor(rep(c("A", "B"), each = 20))
 #' calc_nmi(pred, truth)
+#' @keywords internal
 #' @export
 calc_nmi <- function(pred, truth) {
   tab <- table(pred, truth)
@@ -168,6 +172,7 @@ calc_nmi <- function(pred, truth) {
 #' cl <- factor(rep(c("A", "B"), each = 10))
 #' dist_mat <- stats::dist(data)
 #' calc_neighborhood_purity(data, cl)
+#' @keywords internal
 #' @export
 calc_neighborhood_purity <- function(data, cluster_labels, k = NULL, is_distance = FALSE, threads = 1L) {
   cluster_labels <- as.character(cluster_labels)
@@ -290,6 +295,7 @@ calc_neighborhood_purity <- function(data, cluster_labels, k = NULL, is_distance
 #' counts <- matrix(stats::rpois(1200, lambda = 3), nrow = 30, ncol = 40)
 #' cl <- factor(rep(c("TypeA", "TypeB"), each = 20))
 #' calc_cdi(counts, cl)
+#' @keywords internal
 #' @export
 calc_cdi <- function(
   counts,
@@ -875,6 +881,7 @@ evaluate_clustering_metrics <- function(
 #' ref <- matrix(stats::rnorm(200), 20, 10)
 #' sim <- matrix(stats::rnorm(200), 20, 10)
 #' calc_generative_precision_recall(ref, sim)
+#' @keywords internal
 #' @export
 calc_generative_precision_recall <- function(
   ref_mat,
@@ -1014,6 +1021,7 @@ calc_generative_precision_recall <- function(
 #' ref <- matrix(stats::rnorm(400), 20, 20)
 #' sim <- matrix(stats::rnorm(400), 20, 20)
 #' calc_mmd(ref, sim)
+#' @keywords internal
 #' @export
 calc_mmd <- function(
   ref_mat,

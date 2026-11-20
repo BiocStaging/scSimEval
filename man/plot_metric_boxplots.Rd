@@ -2,8 +2,7 @@
 % Please edit documentation in R/10_visualizations.R
 \name{plot_metric_boxplots}
 \alias{plot_metric_boxplots}
-\title{Plot Comparison Boxplots Across Simulators
-Plot Benchmark Metric Score Distributions Across Simulators}
+\title{Plot Benchmark Metric Score Distributions Across Simulators}
 \usage{
 plot_metric_boxplots(
   benchmark_data,
@@ -55,6 +54,24 @@ or original unnormalized raw values with optional direction separation or per-me
 \if{html}{\figure{metric_boxplots.png}{options: width="800" alt="Multi-Metric Distribution Boxplots"}}
 }
 \examples{
-data(example_scrna, package = "scSimEval")
-res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+bm_df <- data.frame(
+  Method = rep(c("scDesign3", "scMultiSim", "Splatter", "SymSim"), each = 6),
+  Category = rep(c(
+    "(I) Distributional Properties", "(I) Distributional Properties",
+    "(I) Distributional Properties",
+    "(III) Cellular Manifold & Clustering Concordance",
+    "(III) Cellular Manifold & Clustering Concordance",
+    "(IV) Technical Variation & Batch Mixing Dynamics"
+  ), 4),
+  Metric = rep(c("KS", "Wasserstein", "RMSE", "ARI", "Silhouette_ASW", "CMS"), 4),
+  Value = c(
+    0.10, 0.16, 0.19, 0.85, 0.81, 0.88,
+    0.15, 0.22, 0.25, 0.78, 0.75, 0.82,
+    0.23, 0.34, 0.36, 0.67, 0.64, 0.72,
+    0.31, 0.44, 0.47, 0.56, 0.54, 0.63
+  ),
+  stringsAsFactors = FALSE
+)
+p <- plot_metric_boxplots(bm_df, ncol = 3, base_size = 9.5)
+print(p)
 }

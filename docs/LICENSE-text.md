@@ -1,4 +1,4 @@
 # License
 
-    YEAR: 2026
-    COPYRIGHT HOLDER: scSimEval contributors
+YEAR: 2026\
+COPYRIGHT HOLDER: scSimEval contributors\

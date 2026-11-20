@@ -27,3 +27,4 @@ ref <- stats::rnorm(50)
 sim <- stats::rnorm(50)
 calc_kde_ise(ref, sim)
 }
+\keyword{internal}

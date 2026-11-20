@@ -17,3 +17,4 @@ Subsampled numeric vector if length(x) > max_n, else x.
 \description{
 Subsample Large Vectors for Accelerated Distributional Distance Estimation
 }
+\keyword{internal}

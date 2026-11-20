@@ -1,3 +1,11 @@
+# scSimEval 0.99.13
+
+* **Curated User-Focused Reference Documentation**: Streamlined the `pkgdown` Reference tab from 14 sprawling sections (~120 topics) down to 5 clear sections featuring the 36 essential user-facing workflows, scoring/embedding functions, publication visualizations, category evaluation suites, and bundled datasets (low-level kernels and individual `calc_*` helpers remain exported in `NAMESPACE` and documented via `@keywords internal`).
+* **Complete, Uncropped Reference Examples & Figures**: Completed all truncated visualization examples (`plot_scalability_benchmark`, `plot_metric_heatmap`, `plot_metric_boxplots`, `plot_category_metric_bars`, `plot_individual_metric_bar`, `plot_metric_pca`, `plot_metric_mds`), added concise printed outputs across workflow/dataset examples, widened the `pkgdown` figure canvas (`11 in` at `150 DPI`), expanded Panel B label margins and added `ggrepel` label separation in `plot_scalability_benchmark()`, and stacked bottom legends in `plot_benchmark_bubble_matrix()` examples so zero text or legends are cropped.
+* **Modern `edgeR` Normalization (`normLibSizes` + `TMMwsp`)**: Replaced deprecated `edgeR::calcNormFactors()` calls with `edgeR::normLibSizes(..., method = "TMMwsp")` for sparse single-cell count matrices, eliminating all deprecation messages and sparse-cell `max()` warnings without using `suppressWarnings()`.
+* **Proper Mathematical Notation Rendering (KaTeX)**: Enabled `math-rendering: katex` in `_pkgdown.yml` and converted remaining raw `$...$` roxygen strings to valid `\eqn{}` / `\deqn{}` notation so all formulas render cleanly as typeset mathematics across the documentation website.
+
+
 # scSimEval 0.99.12
 
 * **Bioconductor Installation Documentation**: Added standard `BiocManager::install("scSimEval")` installation instructions across `README.md`, package vignettes, and `pkgdown` documentation.

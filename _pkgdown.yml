@@ -7,6 +7,7 @@ template:
   bootstrap: 5
   bootswatch: flatly
   light-switch: true
+  math-rendering: katex
   includes:
     in_header: |
       <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -441,8 +442,38 @@ template:
           });
         }
         initDocPlotZoom();
+
+        /* Click-to-zoom lightbox for Reference example plots (without mutating <pre><code> DOM) */
+        document.querySelectorAll("#main pre .r-plt img, #main .r-plt.img img").forEach(function(img) {
+          img.title = "Click to inspect full-size plot";
+          img.addEventListener("click", function() {
+            window.scOpenLightbox(img.src);
+          });
+        });
+
+        /* Ensure KaTeX renders all Reference Rd \\(...\\) and $$...$$ equations reliably */
+        function renderScSimEvalMath() {
+          if (typeof renderMathInElement === "function") {
+            renderMathInElement(document.body, {
+              delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "\\[", right: "\\]", display: true },
+                { left: "\\(", right: "\\)", display: false }
+              ],
+              ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code", "option"],
+              throwOnError: false
+            });
+          }
+        }
+        renderScSimEvalMath();
+        window.addEventListener("load", renderScSimEvalMath);
       });
       </script>
+
+figures:
+  fig.width: 11
+  fig.asp: 0.65
+  dpi: 150
 
 home:
   title: "scSimEval: Unified Benchmarking for Single-Cell Multiomics Simulations"
@@ -499,7 +530,7 @@ navbar:
 
 reference:
   - title: "Master Benchmarking Workflows"
-    desc: "Unified end-to-end evaluation pipelines executing the 56 curated evaluation metrics across unimodal and multiomics simulations."
+    desc: "Core end-to-end evaluation pipelines executing the 56 curated evaluation metrics across unimodal (scRNA-seq, scATAC-seq) and multiomics (paired, unpaired, mosaic) simulations."
     contents:
       - evaluate_simulation_accuracy
       - evaluate_multiomics_accuracy
@@ -507,163 +538,52 @@ reference:
       - benchmark_simulation_suite
       - combine_benchmark_results
 
-  - title: "High-Resolution Visualization Suite (600 DPI)"
-    desc: "Publication-grade visualization functions designed for multi-metric and cross-simulator benchmarking."
+  - title: "Scoring, Ranking & Cell Embeddings"
+    desc: "Direction-aware score normalization, overall simulator leaderboards, and low-dimensional cell embedding projections (UMAP, t-SNE, PCA) with quantitative fidelity metrics."
+    contents:
+      - compute_method_leaderboard
+      - normalize_bubble_scores
+      - compute_dataset_embeddings
+      - compute_embedding_quality_metrics
+      - plot_dataset_embeddings
+
+  - title: "Publication Visualizations"
+    desc: "High-resolution comparative figures for multi-metric, multi-simulator, distribution QC, ordination, and computational scalability benchmarking."
     contents:
       - plot_benchmark_bubble_matrix
       - plot_evaluation_summary
       - plot_distribution_qc
-      - plot_scalability_benchmark
+      - plot_metric_heatmap
       - plot_metric_boxplots
       - plot_category_metric_bars
-      - plot_metric_heatmap
+      - plot_individual_metric_bar
       - plot_metric_pca
       - plot_metric_mds
-      - plot_individual_metric_bar
-      - compute_dataset_embeddings
-      - plot_dataset_embeddings
-      - compute_embedding_quality_metrics
-      - compute_method_leaderboard
-      - zoom_plot
-      - normalize_bubble_scores
+      - plot_scalability_benchmark
 
   - title: "Category-Specific Evaluation Suites"
-    desc: "Targeted evaluation functions executing specialized metric pipelines."
+    desc: "Focused entry points to run individual evaluation categories directly (for metric formulas and conceptual definitions across all 56 measures, see the Metric Catalog tab)."
     contents:
-      - evaluate_batch_metrics
-      - evaluate_clustering_metrics
-      - evaluate_trajectory_metrics
-      - evaluate_cross_batch_prediction
-      - evaluate_multiomics_integration
-      - evaluate_deg_fidelity
-      - evaluate_predictive_de_model
       - evaluate_zero_probability_curve
       - evaluate_accessibility_sparsity_curve
+      - evaluate_clustering_metrics
+      - evaluate_batch_metrics
+      - evaluate_deg_fidelity
+      - evaluate_atac_da_fidelity
+      - evaluate_multiomics_integration
+      - evaluate_trajectory_metrics
       - benchmark_resource_usage
+      - compute_core_seconds
+      - compute_memory_per_core
 
-  - title: "Data Extraction & Empirical Properties"
-    desc: "Extraction of feature-level and cell-level empirical properties."
-    contents:
-      - extract_cell_properties
-      - extract_feature_properties
-      - extract_dataset_summary
-
-  - title: "Example Multiomics Datasets & Metadata"
-    desc: "Pre-packaged synthetic and empirical single-cell multiomics benchmark datasets and metadata annotation templates."
+  - title: "Bundled Example Datasets"
+    desc: "Pre-packaged synthetic and empirical single-cell and multiomics SingleCellExperiment benchmark datasets for immediate experimentation."
     contents:
       - example_scrna
       - example_scatac
       - example_multiomics
       - example_rice_bud
       - example_soybean_root
-      - example_cell_types
-      - example_batch_info
-
-  - title: "Computational Utilities & Fast Kernels"
-    desc: "High-performance matrix calculation helpers, input validation, and internal dimension-reduction utilities."
-    contents:
-      - standardize_benchmark_categories
-      - filter_gold_standard_metrics
-      - validate_sc_object
-      - validate_multiomics_input
-      - calc_outlier_proportion
-      - fast_row_vars
-      - fast_col_vars
-      - fast_sparse_zero_fraction_cell
-      - fast_sparse_zero_fraction_feature
-      - fast_cross_distance_sq
-      - fast_pca
-      - normalize_counts
-      - tfidf_transform
-      - subsample_dist_vector
-
-  - title: "Category 1: Global & Marginal Distributions"
-    desc: "Evaluation functions assessing univariate and bivariate distribution divergence across single-cell feature spaces."
-    contents:
-      - calc_ks
-      - calc_overlap
-      - calc_wasserstein_1d
-      - calc_mad
-      - calc_mae
-      - calc_rmse
-      - calc_bhattacharyya
-      - calc_runs_test
-      - calc_nn_mismatch
-      - calc_between_dataset_silhouette
-      - calc_kde_ise
-      - calc_fasano_franceschini
-      - calc_kde_test
-      - calc_emd_2d
-      - calc_all_univariate_metrics
-      - calc_all_bivariate_metrics
-
-  - title: "Category 2: Sparsity & Zero-Inflation Dynamics"
-    desc: "Assessment of zero-inflation dynamics, dropout probability curves, and chromatin accessibility sparsity."
-    contents:
-      - calc_zero_probability_curve
-      - calc_excess_zero_weights
-      - calc_accessibility_sparsity_curve
-
-  - title: "Category 3: Cellular Manifold & Clustering Concordance"
-    desc: "Concordance of unsupervised cluster definitions, cluster separation, and latent manifold recovery."
-    contents:
-      - calc_ari
-      - calc_nmi
-      - calc_silhouette
-      - calc_davies_bouldin
-      - calc_cdi
-      - calc_neighborhood_purity
-      - calc_mmd
-      - calc_generative_precision_recall
-
-  - title: "Category 4: Technical Variation & Batch Mixing Dynamics"
-    desc: "Quantification of technical variation, batch mixing, and local neighborhood confounder integration."
-    contents:
-      - calc_cms
-      - calc_isi
-
-  - title: "Category 5: Biological Signal & Differential Fidelity"
-    desc: "Evaluation of differentially expressed genes (Simpipe framework; Duo et al., Genome Biology 2024) and differentially accessible regions via pseudobulk edgeR-QLF (Libra framework; Squair et al., Nature Communications 2021; Teo et al., Nature Communications 2024)."
-    contents:
-      - run_edger_qlf_detrate
-      - calc_simpipe_deg_ratio
-      - calc_simpipe_distribution_score
-      - evaluate_predictive_de_model
-      - evaluate_deg_fidelity
-      - evaluate_rna_de_fidelity
-      - binarize_matrix
-      - to_pseudobulk
-      - run_edger_qlf_da
-      - evaluate_atac_da_fidelity
-
-  - title: "Category 6: Multiomics Integration & Alignment"
-    desc: "Gold-standard multiomics integration, batch mixing, and biological conservation metrics (scib, scMultiSim, scCross, Matilda, scMoMtF)."
-    contents:
-      - calc_batch_asw
-      - calc_cell_type_asw
-      - calc_graph_connectivity
-      - calc_integration_ari
-      - calc_integration_nmi
-      - evaluate_multiomics_integration
-
-  - title: "Category 7: Trajectory & Lineage Topology"
-    desc: "HVG-filtered dynverse trajectory inference benchmarking (Saelens et al., Nature Biotechnology 2019) across milestone networks, geodesic distances, branch assignments, and Random Forest feature importances."
-    contents:
-      - preprocess_trajectory_hvgs
-      - infer_dynverse_trajectory
-      - calc_dynverse_him
-      - calc_dynverse_edge_flip
-      - calc_dynverse_geodesic_correlation
-      - calc_dynverse_f1_branches
-      - calc_wcor_features
-      - evaluate_trajectory_metrics
-
-  - title: "Category 8: Computational Scalability & Efficiency"
-    desc: "Core-normalized benchmarking of CPU execution work (Core-Seconds) and per-core peak RAM footprint (MiB/core and GiB/core)."
-    contents:
-      - benchmark_resource_usage
-      - compute_core_seconds
-      - compute_memory_per_core
 
 articles:
   - title: "Workflow Guides"

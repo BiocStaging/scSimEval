@@ -15,3 +15,4 @@ Numeric vector of row variances.
 \description{
 Fast Row-Wise Variances for Dense or Sparse Single-Cell Matrices
 }
+\keyword{internal}

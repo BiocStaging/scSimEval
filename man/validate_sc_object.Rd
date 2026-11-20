@@ -43,3 +43,4 @@ extracting underlying count matrices, cell annotations, batch labels, and
 dimensional reductions. Users starting from \code{Seurat} objects should first
 convert via \code{Seurat::as.SingleCellExperiment()}.
 }
+\keyword{internal}

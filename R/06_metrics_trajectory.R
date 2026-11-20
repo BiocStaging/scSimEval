@@ -210,6 +210,7 @@
 #' prep <- preprocess_trajectory_hvgs(example_scrna$ref, example_scrna$sim,
 #'   cell_types_ref = example_scrna$cell_types, cell_types_sim = example_scrna$cell_types)
 #' length(prep$hvgs)
+#' @keywords internal
 #' @export
 preprocess_trajectory_hvgs <- function(
   ref_data,
@@ -524,6 +525,7 @@ preprocess_trajectory_hvgs <- function(
 #' data(example_scrna, package = "scSimEval")
 #' prep <- preprocess_trajectory_hvgs(example_scrna$ref, cell_types_ref = example_scrna$cell_types)
 #' traj <- infer_dynverse_trajectory(prep$ref_expr, prep$cell_types_ref)
+#' @keywords internal
 #' @export
 infer_dynverse_trajectory <- function(
   expr_mat,
@@ -718,6 +720,7 @@ infer_dynverse_trajectory <- function(
 #' @param ref_traj Reference trajectory list returned by \code{\link{infer_dynverse_trajectory}}.
 #' @param sim_traj Simulated trajectory list returned by \code{\link{infer_dynverse_trajectory}}.
 #' @return Numeric HIM similarity in \code{[0, 1]} (higher is better).
+#' @keywords internal
 #' @export
 calc_dynverse_him <- function(ref_traj, sim_traj) {
   net1 <- ref_traj$milestone_network
@@ -734,6 +737,7 @@ calc_dynverse_him <- function(ref_traj, sim_traj) {
 #' @param ref_traj Reference trajectory list returned by \code{\link{infer_dynverse_trajectory}}.
 #' @param sim_traj Simulated trajectory list returned by \code{\link{infer_dynverse_trajectory}}.
 #' @return Numeric edge-flip similarity in \code{[0, 1]} (higher is better).
+#' @keywords internal
 #' @export
 calc_dynverse_edge_flip <- function(ref_traj, sim_traj) {
   net1 <- ref_traj$milestone_network
@@ -776,6 +780,7 @@ calc_dynverse_edge_flip <- function(ref_traj, sim_traj) {
 #' @param sim_traj Simulated trajectory list.
 #' @param nn_map Precomputed nearest-neighbor index map between reference and simulated cells.
 #' @return Numeric geodesic distance correlation in \code{[0, 1]} (higher is better).
+#' @keywords internal
 #' @export
 calc_dynverse_geodesic_correlation <- function(ref_traj, sim_traj, nn_map = NULL) {
   D_ref <- ref_traj$cell_milestone_geodesic
@@ -814,6 +819,7 @@ calc_dynverse_geodesic_correlation <- function(ref_traj, sim_traj, nn_map = NULL
 #' @param sim_traj Simulated trajectory list.
 #' @param nn_map Precomputed nearest-neighbor index map between reference and simulated cells.
 #' @return Numeric \code{F1_branches} score in \code{[0, 1]} (higher is better).
+#' @keywords internal
 #' @export
 calc_dynverse_f1_branches <- function(ref_traj, sim_traj, nn_map = NULL) {
   b_ref <- as.character(ref_traj$branch_assignment)
@@ -865,6 +871,7 @@ calc_dynverse_f1_branches <- function(ref_traj, sim_traj, nn_map = NULL) {
 #'     \item{\code{ref_importance}}{Named numeric vector of mean reference feature importance scores.}
 #'     \item{\code{sim_importance}}{Named numeric vector of mean simulated feature importance scores.}
 #'   }
+#' @keywords internal
 #' @export
 calc_wcor_features <- function(
   ref_traj,
@@ -957,7 +964,7 @@ calc_wcor_features <- function(
 #' benchmarking framework (\emph{Saelens et al., Nature Biotechnology, 2019}):
 #' \enumerate{
 #'   \item Standardized cell outlier QC (3 MADs), low-expression gene filtering
-#'         (\eqn{\ge 5\%} cells, mean \eqn{> 0.02}), and HVG selection (empirical mean-variance decomposition).
+#'         (\eqn{\ge 5\%}{>= 5\%} cells, mean \eqn{> 0.02}{> 0.02}), and HVG selection (empirical mean-variance decomposition).
 #'   \item Shared HVG PCA projection and Docker-free Minimum Spanning Tree (MST) milestone
 #'         trajectory inference with continuous cell-to-milestone geodesic distances.
 #'   \item Five complementary trajectory metrics: \code{him} (Hamming-Ipsen-Mikhailov similarity),
@@ -995,12 +1002,14 @@ calc_wcor_features <- function(
 #'   }
 #' @examples
 #' data(example_scrna, package = "scSimEval")
-#' evaluate_trajectory_metrics(
+#' res <- evaluate_trajectory_metrics(
 #'   example_scrna$ref, example_scrna$sim,
 #'   cell_types_ref = example_scrna$cell_types,
 #'   cell_types_sim = example_scrna$cell_types,
-#'   num_trees = 500L
+#'   num_trees = 200L
 #' )
+#' unlist(res[c("him", "edge_flip", "geodesic_correlation",
+#'              "F1_branches", "wcor_features", "n_hvgs")])
 #' @export
 evaluate_trajectory_metrics <- function(
   ref_data,

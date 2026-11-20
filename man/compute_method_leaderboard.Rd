@@ -26,7 +26,22 @@ standardized into fidelity scores in [0, 1] (where 1.0 represents best observed 
 Simulators are then rank-ordered by mean overall fidelity score.
 }
 \examples{
-data(example_scrna, package = "scSimEval")
-res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
-lb <- compute_method_leaderboard(res)
+bm_df <- data.frame(
+  Method = rep(c("scDesign3", "scMultiSim", "Splatter", "SymSim"), each = 4),
+  Category = rep(c(
+    "(I) Distributional Properties", "(I) Distributional Properties",
+    "(III) Cellular Manifold & Clustering Concordance",
+    "(IV) Technical Variation & Batch Mixing Dynamics"
+  ), 4),
+  Metric = rep(c("KS", "Wasserstein", "ARI", "CMS"), 4),
+  Value = c(
+    0.10, 0.16, 0.85, 0.88,
+    0.14, 0.21, 0.79, 0.83,
+    0.23, 0.34, 0.67, 0.72,
+    0.31, 0.44, 0.56, 0.62
+  ),
+  stringsAsFactors = FALSE
+)
+lb <- compute_method_leaderboard(bm_df)
+print(lb)
 }

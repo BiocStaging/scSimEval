@@ -3,7 +3,8 @@
 Evaluates biological conservation and cell-type cluster separation in
 integrated or joint multiomics space, following `scCross` and `scib`.
 The silhouette width of cells with respect to ground-truth cell-type
-labels is computed and scaled to \$\[0, 1\]\$ via \$(ASW + 1) / 2\$.
+labels is computed and scaled to \\\[0, 1\]\\ via \\(\mathrm{ASW} + 1) /
+2\\.
 
 ## Usage
 

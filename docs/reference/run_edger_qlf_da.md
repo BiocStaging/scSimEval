@@ -90,13 +90,12 @@ rownames(mat) <- paste0("Peak_", 1:100)
 colnames(mat) <- c("Rep1:A", "Rep2:A", "Rep1:B", "Rep2:B")
 groups <- c("A", "A", "B", "B")
 res <- run_edger_qlf_da(mat, groups)
-#> calcNormFactors has been renamed to normLibSizes
 head(res)
-#>        feature      logFC   logCPM     F_stat    PValue       FDR is_da
-#> Peak_1  Peak_1 -0.3019143 13.54416 0.46741686 0.4949693 0.8971892 FALSE
-#> Peak_2  Peak_2  0.1974071 13.45300 0.18414511 0.6682968 0.8971892 FALSE
-#> Peak_3  Peak_3 -0.2887477 13.32175 0.37540544 0.5407685 0.8971892 FALSE
-#> Peak_4  Peak_4  0.1137972 13.60187 0.07144893 0.7895141 0.8971892 FALSE
-#> Peak_5  Peak_5  0.4949255 13.65736 1.42380272 0.2341921 0.7888139 FALSE
-#> Peak_6  Peak_6 -0.1030907 13.95182 0.08846914 0.7664411 0.8971892 FALSE
+#>        feature       logFC   logCPM     F_stat     PValue       FDR is_da
+#> Peak_1  Peak_1 -0.52521548 13.44073 1.70629059 0.20481123 0.7877355 FALSE
+#> Peak_2  Peak_2 -0.45566084 13.40757 1.48344550 0.23599625 0.8045628 FALSE
+#> Peak_3  Peak_3 -0.04654233 13.37361 0.01598865 0.90051450 0.9533289 FALSE
+#> Peak_4  Peak_4  0.62257932 13.53588 2.31600593 0.14213449 0.7480762 FALSE
+#> Peak_5  Peak_5 -0.81359193 13.50486 4.29695497 0.04996232 0.5481957 FALSE
+#> Peak_6  Peak_6  0.87111367 13.30321 5.23073527 0.03206503 0.5481957 FALSE
 ```

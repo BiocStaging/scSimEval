@@ -52,3 +52,4 @@ batch counts, median library size, median detected features per cell, and mean e
 data(example_scrna, package = "scSimEval")
 extract_dataset_summary(example_scrna$ref, role = "Reference", method_name = "Empirical")
 }
+\keyword{internal}

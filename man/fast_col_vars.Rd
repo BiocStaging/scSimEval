@@ -15,3 +15,4 @@ Numeric vector of column variances.
 \description{
 Fast Column-Wise Variances for Dense or Sparse Single-Cell Matrices
 }
+\keyword{internal}

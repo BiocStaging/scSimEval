@@ -43,3 +43,4 @@ ref <- matrix(stats::rnorm(200), 20, 10)
 sim <- matrix(stats::rnorm(200), 20, 10)
 calc_generative_precision_recall(ref, sim)
 }
+\keyword{internal}

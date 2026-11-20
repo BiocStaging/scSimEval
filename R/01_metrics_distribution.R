@@ -32,6 +32,7 @@
 #' @examples
 #' data(example_scrna, package = "scSimEval")
 #' extract_cell_properties(example_scrna$ref)
+#' @keywords internal
 #' @export
 extract_cell_properties <- function(data, max_cells_cor = 1000, n_top_hvgs = 500,
                                     modality = NULL, verbose = FALSE) {
@@ -109,9 +110,15 @@ extract_cell_properties <- function(data, max_cells_cor = 1000, n_top_hvgs = 500
       }
       cs_sub <- as.numeric(Matrix::colSums(sub_data))
       pos_cells <- which(cs_sub > 0)
-      if (length(pos_cells) >= 2L) {
-        dge <- edgeR::DGEList(counts = as.matrix(sub_data[, pos_cells, drop = FALSE]))
-        dge <- edgeR::calcNormFactors(dge, method = "TMM")
+      pos_rows <- which(as.numeric(Matrix::rowSums(sub_data[, pos_cells, drop = FALSE])) > 0)
+      if (length(pos_cells) >= 2L && length(pos_rows) >= 2L) {
+        dge <- edgeR::DGEList(counts = as.matrix(sub_data[pos_rows, pos_cells, drop = FALSE]))
+        norm_fn <- if (exists("normLibSizes", envir = asNamespace("edgeR"), inherits = FALSE)) {
+          edgeR::normLibSizes
+        } else {
+          edgeR::calcNormFactors
+        }
+        dge <- norm_fn(dge, method = "TMMwsp")
         norm_f <- as.numeric(dge$samples$norm.factors)
         if (length(norm_f) == length(pos_cells) && !any(is.na(norm_f)) && !all(norm_f == 1)) {
           tmm_factors[pos_cells] <- norm_f
@@ -171,6 +178,7 @@ extract_cell_properties <- function(data, max_cells_cor = 1000, n_top_hvgs = 500
 #' @examples
 #' data(example_scrna, package = "scSimEval")
 #' extract_feature_properties(example_scrna$ref)
+#' @keywords internal
 #' @export
 extract_feature_properties <- function(data, n_top_cor = 500, modality = NULL, verbose = FALSE) {
   is_atac <- .is_atac_modality(data, modality)
@@ -262,6 +270,7 @@ extract_feature_properties <- function(data, n_top_cor = 500, modality = NULL, v
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
 #' calc_bhattacharyya(ref, sim)
+#' @keywords internal
 #' @export
 calc_bhattacharyya <- function(ref, sim, align = TRUE) {
   if (align) {
@@ -299,6 +308,7 @@ calc_bhattacharyya <- function(ref, sim, align = TRUE) {
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
 #' calc_ks(ref, sim)
+#' @keywords internal
 #' @export
 calc_ks <- function(ref, sim) {
   ref <- stats::na.omit(as.numeric(ref))
@@ -320,6 +330,7 @@ calc_ks <- function(ref, sim) {
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
 #' calc_wasserstein_1d(ref, sim)
+#' @keywords internal
 #' @export
 calc_wasserstein_1d <- function(ref, sim, p = 1) {
   ref <- stats::na.omit(as.numeric(ref))
@@ -342,6 +353,7 @@ calc_wasserstein_1d <- function(ref, sim, p = 1) {
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
 #' calc_mad(ref, sim)
+#' @keywords internal
 #' @export
 calc_mad <- function(ref, sim, align = TRUE) {
   if (align) {
@@ -361,6 +373,7 @@ calc_mad <- function(ref, sim, align = TRUE) {
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
 #' calc_mae(ref, sim)
+#' @keywords internal
 #' @export
 calc_mae <- function(ref, sim, align = TRUE) {
   if (align) {
@@ -380,6 +393,7 @@ calc_mae <- function(ref, sim, align = TRUE) {
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
 #' calc_rmse(ref, sim)
+#' @keywords internal
 #' @export
 calc_rmse <- function(ref, sim, align = TRUE) {
   if (align) {
@@ -405,6 +419,7 @@ calc_rmse <- function(ref, sim, align = TRUE) {
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
 #' calc_kde_ise(ref, sim)
+#' @keywords internal
 #' @export
 calc_kde_ise <- function(ref, sim, n_points = 512) {
   ref <- stats::na.omit(as.numeric(ref))
@@ -443,6 +458,7 @@ calc_kde_ise <- function(ref, sim, n_points = 512) {
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
 #' calc_overlap(ref, sim)
+#' @keywords internal
 #' @export
 calc_overlap <- function(ref, sim, nbins = 1024) {
   ref <- stats::na.omit(as.numeric(ref))
@@ -496,6 +512,7 @@ calc_overlap <- function(ref, sim, nbins = 1024) {
 #' ref <- matrix(stats::rnorm(100), 50, 2)
 #' sim <- matrix(stats::rnorm(100), 50, 2)
 #' calc_fasano_franceschini(ref, sim)
+#' @keywords internal
 #' @export
 calc_fasano_franceschini <- function(ref_mat, sim_mat, threads = 1) {
   ref_mat <- as.matrix(stats::na.omit(ref_mat))
@@ -526,6 +543,7 @@ calc_fasano_franceschini <- function(ref_mat, sim_mat, threads = 1) {
 #' ref <- matrix(stats::rnorm(100), 50, 2)
 #' sim <- matrix(stats::rnorm(100), 50, 2)
 #' calc_kde_test(ref, sim)
+#' @keywords internal
 #' @export
 calc_kde_test <- function(ref_mat, sim_mat) {
   ref_mat <- as.matrix(stats::na.omit(ref_mat))
@@ -556,6 +574,7 @@ calc_kde_test <- function(ref_mat, sim_mat) {
 #' ref <- matrix(stats::rnorm(100), 50, 2)
 #' sim <- matrix(stats::rnorm(100), 50, 2)
 #' calc_emd_2d(ref, sim)
+#' @keywords internal
 #' @export
 calc_emd_2d <- function(ref_mat, sim_mat, n = 25) {
   ref_mat <- as.matrix(stats::na.omit(ref_mat))
@@ -601,6 +620,7 @@ calc_emd_2d <- function(ref_mat, sim_mat, n = 25) {
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
 #' calc_runs_test(ref, sim)
+#' @keywords internal
 #' @export
 calc_runs_test <- function(ref, sim, alternative = c("left.sided", "two.sided")) {
   alternative <- match.arg(alternative)
@@ -655,6 +675,7 @@ calc_runs_test <- function(ref, sim, alternative = c("left.sided", "two.sided"))
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
 #' calc_nn_mismatch(ref, sim)
+#' @keywords internal
 #' @export
 calc_nn_mismatch <- function(ref, sim, k = NULL, subsample_size = 300) {
   is_2d <- is.matrix(ref) || is.data.frame(ref)
@@ -741,6 +762,7 @@ calc_nn_mismatch <- function(ref, sim, k = NULL, subsample_size = 300) {
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
 #' calc_between_dataset_silhouette(ref, sim)
+#' @keywords internal
 #' @export
 calc_between_dataset_silhouette <- function(ref, sim, subsample_size = 300) {
   is_2d <- is.matrix(ref) || is.data.frame(ref)
@@ -845,6 +867,7 @@ calc_between_dataset_silhouette <- function(ref, sim, subsample_size = 300) {
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
 #' calc_all_univariate_metrics(ref, sim)
+#' @keywords internal
 #' @export
 calc_all_univariate_metrics <- function(ref, sim, metric_prefix = "") {
   prefix <- if (nchar(metric_prefix) > 0) paste0(metric_prefix, "_") else ""
@@ -897,6 +920,7 @@ calc_all_univariate_metrics <- function(ref, sim, metric_prefix = "") {
 #' ref <- matrix(stats::rnorm(100), 50, 2)
 #' sim <- matrix(stats::rnorm(100), 50, 2)
 #' calc_all_bivariate_metrics(ref, sim)
+#' @keywords internal
 #' @export
 calc_all_bivariate_metrics <- function(ref_mat, sim_mat, metric_prefix = "", threads = 1) {
   prefix <- if (nchar(metric_prefix) > 0) paste0(metric_prefix, "_") else ""

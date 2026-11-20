@@ -51,3 +51,4 @@ groups <- c("A", "A", "B", "B")
 res <- run_edger_qlf_da(mat, groups)
 head(res)
 }
+\keyword{internal}

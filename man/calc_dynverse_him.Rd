@@ -18,3 +18,4 @@ Numeric HIM similarity in \code{[0, 1]} (higher is better).
 Quantifies both local edge correspondence (Hamming) and global Laplacian spectral similarity
 (Ipsen-Mikhailov) between reference and simulated trajectory milestone networks.
 }
+\keyword{internal}

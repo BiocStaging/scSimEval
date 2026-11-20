@@ -25,4 +25,4 @@ data(example_cell_types)
 head(example_cell_types)
 table(example_cell_types)
 }
-\keyword{datasets}
+\keyword{internal}

@@ -156,6 +156,7 @@
 #' coords <- matrix(stats::rnorm(100), 50, 2)
 #' batch <- factor(rep(c("B1", "B2"), length.out = 50))
 #' calc_cms(coords, batch)
+#' @keywords internal
 #' @export
 calc_cms <- function(
   data = NULL,
@@ -300,6 +301,7 @@ calc_cms <- function(
 #' coords <- matrix(stats::rnorm(100), 50, 2)
 #' batch <- factor(rep(c("B1", "B2"), length.out = 50))
 #' calc_isi(coords, batch)
+#' @keywords internal
 #' @export
 calc_isi <- function(coords, batch_info, k = 30, weighted = TRUE, threads = 1, knn_res = NULL) {
   batch_info <- as.factor(batch_info)
@@ -519,6 +521,7 @@ evaluate_batch_metrics <- function(
 #' batch <- factor(rep(c("B1", "B2"), length.out = 50))
 #' ct <- factor(rep(c("TypeA", "TypeB"), length.out = 50))
 #' evaluate_cross_batch_prediction(coords, ct, batch)
+#' @keywords internal
 #' @export
 evaluate_cross_batch_prediction <- function(coords, cell_types, batch_info, k = 5, threads = 1) {
   cell_types <- as.factor(cell_types)

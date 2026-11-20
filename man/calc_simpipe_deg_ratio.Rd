@@ -70,3 +70,4 @@ res <- calc_simpipe_deg_ratio(
 res$P
 res$deg_ratio
 }
+\keyword{internal}

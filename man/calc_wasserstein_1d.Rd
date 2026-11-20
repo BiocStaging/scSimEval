@@ -24,3 +24,4 @@ ref <- stats::rnorm(50)
 sim <- stats::rnorm(50)
 calc_wasserstein_1d(ref, sim)
 }
+\keyword{internal}

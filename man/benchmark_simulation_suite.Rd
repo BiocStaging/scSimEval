@@ -55,11 +55,10 @@ parallel metric computation, and produces both granular and cross-dataset
 aggregated summary tables ready for visualization.
 }
 \examples{
-\donttest{
 data(example_scrna, package = "scSimEval")
 refs <- list("CohortA" = example_scrna$ref)
 sims <- list("Splatter" = list("CohortA" = example_scrna$sim))
 res <- benchmark_simulation_suite(refs, sims, verbose = FALSE)
 print(res)
-}
+head(res$benchmark_summary_table, 8)
 }

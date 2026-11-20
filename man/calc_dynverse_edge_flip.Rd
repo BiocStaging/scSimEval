@@ -18,3 +18,4 @@ Numeric edge-flip similarity in \code{[0, 1]} (higher is better).
 Quantifies topological similarity between reference and simulated milestone graphs via
 normalized edge agreement.
 }
+\keyword{internal}

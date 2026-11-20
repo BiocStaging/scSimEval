@@ -60,5 +60,9 @@ key single-cell benchmarking suites (\code{scib}, \code{scMultiSim}, \code{scCro
 \examples{
 data(example_multiomics, package = "scSimEval")
 ct <- rep(c("A", "B"), each = 50)
-res <- evaluate_multiomics_integration(sim_multi = example_multiomics$sim_multi, cell_types = ct)
+res <- evaluate_multiomics_integration(
+  sim_multi = example_multiomics$sim_multi,
+  cell_types = ct
+)
+unlist(res[vapply(res, function(x) is.numeric(x) && length(x) == 1L, logical(1))])
 }

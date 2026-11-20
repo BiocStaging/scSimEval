@@ -49,3 +49,4 @@ and outlier proportions.
 data(example_scrna, package = "scSimEval")
 extract_cell_properties(example_scrna$ref)
 }
+\keyword{internal}

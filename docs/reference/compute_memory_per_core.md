@@ -52,3 +52,13 @@ Boisvert, S., Raymond, F., Godzaridis, E., Laviolette, F., & Corbeil, J.
 Chen, W., et al. (2022). STEPS 4.0: Fast and memory-efficient molecular
 simulations of neurons at the nanoscale. *Frontiers in
 Neuroinformatics*, 16, 883742.
+
+## Examples
+
+``` r
+# 4096 MiB peak RAM across 4 CPU cores (reported in MiB/core and GiB/core)
+compute_memory_per_core(4096, memory_unit = "MiB", sim_cores = 4L, target_unit = "MiB")
+#> [1] 1024
+compute_memory_per_core(4096, memory_unit = "MiB", sim_cores = 4L, target_unit = "GiB")
+#> [1] 1
+```

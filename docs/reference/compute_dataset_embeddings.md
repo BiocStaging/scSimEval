@@ -89,13 +89,13 @@ emb <- compute_dataset_embeddings(
   cell_types = example_scrna$cell_types
 )
 head(emb)
-#>              Cell_ID       Dim1       Dim2   Dataset      Role Dataset_Type
-#> 1 AAACCGGCAAGTGTTT-1  1.5914843  1.4215237 Reference Reference    Reference
-#> 2 AAACGGATCGATCAGT-1  1.4820130  0.1709445 Reference Reference    Reference
-#> 3 AACAGCAAGGTTAGAG-1  0.4982631 -1.8602255 Reference Reference    Reference
-#> 4 AACCTAATCAAGTGAG-1 -2.4570603 -0.5679842 Reference Reference    Reference
-#> 5 AAGGTGCAGGGTCCAC-1 -0.7598619  3.5520495 Reference Reference    Reference
-#> 6 AAGTTTGTCCACCTGT-1  0.1700575 -1.1177501 Reference Reference    Reference
+#>              Cell_ID        Dim1       Dim2   Dataset      Role Dataset_Type
+#> 1 AAACCGGCAAGTGTTT-1 -0.49065503  0.3989727 Reference Reference    Reference
+#> 2 AAACGGATCGATCAGT-1  1.10728518  1.1790269 Reference Reference    Reference
+#> 3 AACAGCAAGGTTAGAG-1 -1.10536298  2.2994250 Reference Reference    Reference
+#> 4 AACCTAATCAAGTGAG-1 -0.04908856 -3.0515676 Reference Reference    Reference
+#> 5 AAGGTGCAGGGTCCAC-1 -2.96960934 -0.3985537 Reference Reference    Reference
+#> 6 AAGTTTGTCCACCTGT-1 -0.91385993  1.4372928 Reference Reference    Reference
 #>           Cell_Type   Cluster Library_Size Detected_Features   Batch
 #> 1   Parenchyma_cell Cluster_3            6                 5 Batch 1
 #> 2   Parenchyma_cell Cluster_4            2                 2 Batch 1

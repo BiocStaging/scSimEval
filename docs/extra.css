@@ -1331,3 +1331,63 @@ p.caption {
   height: 6px;
 }
 
+/* ==========================================================================
+   Reference Examples Visibility, Responsive Example Plots & KaTeX Math
+   ========================================================================== */
+.template-reference-topic pre,
+#ref-examples ~ .sourceCode pre {
+  max-height: none !important;
+  overflow-y: visible !important;
+  overflow-x: auto !important;
+  white-space: pre !important;
+}
+
+pre .r-plt.img,
+span.r-plt.img {
+  display: block !important;
+  margin: 0.9rem 0 !important;
+  text-align: center !important;
+  white-space: normal !important;
+}
+
+pre .r-plt.img img,
+span.r-plt.img img {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 auto !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  padding: 4px !important;
+  background-color: #ffffff !important;
+  box-sizing: border-box !important;
+  cursor: zoom-in !important;
+}
+
+[data-bs-theme="dark"] pre .r-plt.img img,
+[data-bs-theme="dark"] span.r-plt.img img {
+  background-color: #ffffff !important;
+  border-color: #475569 !important;
+  filter: none !important;
+}
+
+/* KaTeX mathematical notation rendering */
+.katex {
+  font-size: 1.04em !important;
+  color: inherit !important;
+}
+
+.katex-display {
+  margin: 1rem 0 !important;
+  padding: 0.35rem 0.5rem !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+[data-bs-theme="dark"] .katex,
+[data-bs-theme="dark"] .katex-display {
+  color: #f1f5f9 !important;
+}
+
+

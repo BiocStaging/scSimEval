@@ -39,12 +39,17 @@ example_rice_bud$reference$combined
 dim(example_rice_bud$reference$rna)
 dim(example_rice_bud$reference$atac)
 names(example_rice_bud$simulated)
+example_rice_bud$scalability_benchmarks
 \donttest{
-evaluate_multiomics_accuracy(
-  ref_multi = list(RNA = example_rice_bud$reference$rna, ATAC = example_rice_bud$reference$atac),
-  sim_multi = list(RNA = example_rice_bud$simulated$scDesign3$rna, ATAC = example_rice_bud$simulated$scDesign3$atac),
-  pairing = "paired"
+res <- evaluate_multiomics_accuracy(
+  ref_multi = list(RNA = example_rice_bud$reference$rna,
+                   ATAC = example_rice_bud$reference$atac),
+  sim_multi = list(RNA = example_rice_bud$simulated$scDesign3$rna,
+                   ATAC = example_rice_bud$simulated$scDesign3$atac),
+  pairing = "paired",
+  verbose = FALSE
 )
+head(res$benchmark_summary_table, 8)
 }
 }
 \keyword{datasets}

@@ -17,3 +17,4 @@ Matrix of squared Euclidean distances (m x n).
 \description{
 Computes ||X_i - Y_j||^2 using BLAS matrix product: ||x||^2 + ||y||^2 - 2 <x, y>.
 }
+\keyword{internal}

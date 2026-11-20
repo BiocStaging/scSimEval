@@ -15,3 +15,4 @@ Numeric vector of zero fraction per cell.
 \description{
 Fast Zero Fraction per Cell (Column-wise)
 }
+\keyword{internal}

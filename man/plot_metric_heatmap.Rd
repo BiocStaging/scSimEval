@@ -54,6 +54,25 @@ across all 48 curated evaluation measures without scale distortion from high-mag
 \if{html}{\figure{metric_heatmap.png}{options: width="800" alt="Cross-Metric Z-Scored Heatmap"}}
 }
 \examples{
-data(example_scrna, package = "scSimEval")
-res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
+bm_df <- data.frame(
+  Method = rep(c("scDesign3", "scMultiSim", "MOSim", "Splatter", "SymSim"), each = 6),
+  Category = rep(c(
+    "(I) Distributional Properties", "(I) Distributional Properties",
+    "(II) Sparsity & Zero-Inflation Dynamics",
+    "(III) Cellular Manifold & Clustering Concordance",
+    "(IV) Technical Variation & Batch Mixing Dynamics",
+    "(V) Biological Signal & Differential Fidelity"
+  ), 5),
+  Metric = rep(c("KS", "Wasserstein", "Zero_Prob_RMSE", "ARI", "CMS", "DE_F1"), 5),
+  Value = c(
+    0.10, 0.16, 0.07, 0.85, 0.88, 0.82,
+    0.14, 0.21, 0.11, 0.79, 0.83, 0.77,
+    0.18, 0.27, 0.13, 0.74, 0.78, 0.72,
+    0.23, 0.34, 0.17, 0.67, 0.72, 0.66,
+    0.31, 0.44, 0.24, 0.56, 0.62, 0.55
+  ),
+  stringsAsFactors = FALSE
+)
+p <- plot_metric_heatmap(bm_df, base_size = 9.5)
+print(p)
 }

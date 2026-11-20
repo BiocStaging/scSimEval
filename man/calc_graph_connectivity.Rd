@@ -21,7 +21,7 @@ Evaluates whether cells of the same cell type form a connected component in
 the k-nearest neighbor (k-NN) graph across modalities/batches, following
 \code{scCross}, \code{scMultiSim}, and \code{scib}.
 For each cell type, the relative size of the largest connected component
-(LCC) in the induced subgraph is calculated: $|LCC| / |V_c|$. The overall score
+(LCC) in the induced subgraph is calculated: \eqn{|\mathrm{LCC}| / |V_c|}{|LCC| / |V_c|}. The overall score
 is the mean across all cell types.
 }
 \examples{
@@ -35,3 +35,4 @@ Ding et al. (2023) scCross: deep generative modeling for single-cell cross-modal
 Li et al. (2023) scMultiSim: simulation of multi-modality single cell data. Cell Systems.
 Luecken et al. (2022) Benchmarking atlas-level data integration. Nature Methods.
 }
+\keyword{internal}

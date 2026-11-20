@@ -20,3 +20,4 @@ Numeric \code{F1_branches} score in \code{[0, 1]} (higher is better).
 Evaluates recovery and relevance of cellular MST branch assignments between reference
 and simulated trajectories via bidirectional Jaccard overlap and harmonic mean F1.
 }
+\keyword{internal}

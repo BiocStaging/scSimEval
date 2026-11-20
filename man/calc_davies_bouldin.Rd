@@ -23,3 +23,4 @@ cl <- factor(rep(c("A", "B"), each = 5))
 dist_mat <- stats::dist(data)
 calc_davies_bouldin(data, cl)
 }
+\keyword{internal}

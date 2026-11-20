@@ -47,3 +47,4 @@ ref <- matrix(stats::rnorm(400), 20, 20)
 sim <- matrix(stats::rnorm(400), 20, 20)
 calc_mmd(ref, sim)
 }
+\keyword{internal}

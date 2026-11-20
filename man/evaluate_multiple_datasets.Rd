@@ -43,4 +43,5 @@ and unimodal scRNA-seq or scATAC-seq experiments.
 data(example_scrna, package = "scSimEval")
 ds <- list("DemoCohort" = list(ref = example_scrna$ref, sim = example_scrna$sim))
 res <- evaluate_multiple_datasets(ds, verbose = FALSE)
+res$dataset_overview
 }

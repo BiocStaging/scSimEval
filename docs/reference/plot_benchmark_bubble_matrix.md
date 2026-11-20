@@ -165,11 +165,25 @@ concordance/correlation metrics are used directly (higher = better).
 
 ``` r
 bm_df <- data.frame(
-  Method   = rep(c("Splat", "scDesign3", "SymSim", "dyngen"), each = 4),
-  Category = rep(c("Accuracy", "Accuracy", "Cellular Structure", "Scalability"), 4),
-  Metric   = rep(c("KS Distance", "Wasserstein", "Silhouette ASW", "CPU Time"), 4),
-  Score    = c(0.8, 0.7, 0.9, 0.6, 0.5, 0.8, 0.6, 0.5, 0.8, 0.7, 0.6, 0.5, 0.7, 0.6, 0.9, 0.5)
+  Method = rep(c("scDesign3", "scMultiSim", "Splatter", "SymSim"), each = 6),
+  Category = rep(c(
+    "(I) Distributional Properties", "(I) Distributional Properties",
+    "(II) Sparsity & Zero-Inflation Dynamics",
+    "(III) Cellular Manifold & Clustering Concordance",
+    "(IV) Technical Variation & Batch Mixing Dynamics",
+    "(VIII) Computational Scalability & Efficiency"
+  ), 4),
+  Metric = rep(c("KS", "Wasserstein", "Zero_Prob_RMSE",
+                 "Silhouette_ASW", "CMS", "Core_Seconds"), 4),
+  Value = c(
+    0.11, 0.18, 0.08, 0.82, 0.86, 42,
+    0.15, 0.22, 0.11, 0.78, 0.81, 68,
+    0.23, 0.34, 0.17, 0.65, 0.72, 18,
+    0.31, 0.45, 0.24, 0.56, 0.64, 95
+  ),
+  stringsAsFactors = FALSE
 )
-p <- plot_benchmark_bubble_matrix(bm_df)
-p
+p <- plot_benchmark_bubble_matrix(bm_df, base_size = 9.5) +
+  ggplot2::theme(legend.box = "vertical")
+print(p)
 ```

@@ -79,8 +79,8 @@ emb <- compute_dataset_embeddings(
 )
 compute_embedding_quality_metrics(emb)
 #>     Dataset      Role Cells (N) Mean Silhouette ARI (Cluster Fidelity)
-#> 1 Reference Reference       100         -0.0391                 0.1203
-#> 2  Splatter Simulated       100         -0.0191                 0.0725
+#> 1 Reference Reference       100         -0.0096                 0.1203
+#> 2  Splatter Simulated       100         -0.0193                 0.0725
 #>   Mean Library Size Mean Detected Features Library Size Diff (%)
 #> 1              37.6                    7.9                  0.00
 #> 2              59.7                    7.1                 58.78

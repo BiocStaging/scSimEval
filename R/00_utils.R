@@ -59,6 +59,7 @@ align_distributions <- function(ref, sim, method = c("quantile", "resample"), n_
 #' ref <- stats::rnorm(50)
 #' sim <- stats::rnorm(50)
 #' calc_outlier_proportion(ref)
+#' @keywords internal
 #' @export
 calc_outlier_proportion <- function(x) {
   x <- stats::na.omit(as.numeric(x))
@@ -177,6 +178,7 @@ hungarian_match <- function(pred, truth) {
 #' Fast Row-Wise Variances for Dense or Sparse Single-Cell Matrices
 #' @param mat Matrix or dgCMatrix (features x cells).
 #' @return Numeric vector of row variances.
+#' @keywords internal
 #' @export
 fast_row_vars <- function(mat) {
   n_cols <- ncol(mat)
@@ -194,6 +196,7 @@ fast_row_vars <- function(mat) {
 #' Fast Column-Wise Variances for Dense or Sparse Single-Cell Matrices
 #' @param mat Matrix or dgCMatrix (features x cells).
 #' @return Numeric vector of column variances.
+#' @keywords internal
 #' @export
 fast_col_vars <- function(mat) {
   n_rows <- nrow(mat)
@@ -211,6 +214,7 @@ fast_col_vars <- function(mat) {
 #' Fast Zero Fraction per Cell (Column-wise)
 #' @param mat Matrix or dgCMatrix (features x cells).
 #' @return Numeric vector of zero fraction per cell.
+#' @keywords internal
 #' @export
 fast_sparse_zero_fraction_cell <- function(mat) {
   if (inherits(mat, "Matrix")) {
@@ -223,6 +227,7 @@ fast_sparse_zero_fraction_cell <- function(mat) {
 #' Fast Zero Fraction per Feature (Row-wise)
 #' @param mat Matrix or dgCMatrix (features x cells).
 #' @return Numeric vector of zero fraction per feature.
+#' @keywords internal
 #' @export
 fast_sparse_zero_fraction_feature <- function(mat) {
   if (inherits(mat, "Matrix")) {
@@ -238,6 +243,7 @@ fast_sparse_zero_fraction_feature <- function(mat) {
 #' @param X Matrix (m x p).
 #' @param Y Matrix (n x p).
 #' @return Matrix of squared Euclidean distances (m x n).
+#' @keywords internal
 #' @export
 fast_cross_distance_sq <- function(X, Y) {
   X <- as.matrix(X)
@@ -266,6 +272,7 @@ fast_cross_distance_sq <- function(X, Y) {
 #' @param scale Logical, whether to scale features. Default FALSE.
 #' @param normalize Logical, whether to apply library-size log-normalization if raw counts. Default FALSE.
 #' @return Matrix of cell principal component embeddings (cells x n_pcs).
+#' @keywords internal
 #' @export
 fast_pca <- function(mat, n_pcs = 20, n_hvg = 2000, scale = FALSE, normalize = FALSE) {
   if (inherits(mat, "Matrix")) {
@@ -296,6 +303,7 @@ fast_pca <- function(mat, n_pcs = 20, n_hvg = 2000, scale = FALSE, normalize = F
 #' @param x Numeric vector.
 #' @param max_n Maximum sample size (default 10000, matching SimBench framework).
 #' @return Subsampled numeric vector if length(x) > max_n, else x.
+#' @keywords internal
 #' @export
 subsample_dist_vector <- function(x, max_n = 10000) {
   x <- stats::na.omit(as.numeric(x))
@@ -355,6 +363,7 @@ subsample_dist_vector <- function(x, max_n = 10000) {
 #' set.seed(42)
 #' m <- matrix(rpois(100, 0.5), nrow = 10)
 #' tfidf_mat <- tfidf_transform(m)
+#' @keywords internal
 #' @export
 tfidf_transform <- function(mat, scale_factor = 1e4) {
   if (is.null(mat)) return(NULL)
@@ -400,6 +409,7 @@ tfidf_transform <- function(mat, scale_factor = 1e4) {
 #' @examples
 #' data(example_scrna, package = "scSimEval")
 #' norm_mat <- normalize_counts(example_scrna$ref)
+#' @keywords internal
 #' @export
 normalize_counts <- function(mat, scale_factor = 1e6, log_base = 2, pseudo_count = 1,
                              method = c("lognorm", "tfidf")) {
@@ -478,6 +488,7 @@ normalize_counts <- function(mat, scale_factor = 1e6, log_base = 2, pseudo_count
 #' @examples
 #' data(example_scrna, package = "scSimEval")
 #' extract_dataset_summary(example_scrna$ref, role = "Reference", method_name = "Empirical")
+#' @keywords internal
 #' @export
 extract_dataset_summary <- function(mat, role = "Reference", method_name = "Dataset",
                                      modality = "scRNA-seq", cell_types = NULL, batch_info = NULL) {
@@ -584,6 +595,7 @@ extract_dataset_summary <- function(mat, role = "Reference", method_name = "Data
 #'   \item{embedding}{Extracted dimensional reduction numeric matrix (cells x dims), or \code{NULL}.}
 #' }
 #'
+#' @keywords internal
 #' @export
 validate_sc_object <- function(obj,
                                arg_name = "data",
@@ -705,6 +717,7 @@ validate_sc_object <- function(obj,
 #'   \item{batch_info}{Character vector (paired) or named list (unpaired) of batch labels, or \code{NULL}.}
 #'   \item{embedding}{Extracted dimensional reduction matrix (cells x dims), or \code{NULL}.}
 #' }
+#' @keywords internal
 #' @export
 validate_multiomics_input <- function(obj,
                                       arg_name = "multi_data",

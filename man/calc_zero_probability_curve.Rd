@@ -26,3 +26,4 @@ to model the scRNA-seq dropout relationship with mean expression.
 data(example_scrna, package = "scSimEval")
 calc_zero_probability_curve(example_scrna$ref)
 }
+\keyword{internal}

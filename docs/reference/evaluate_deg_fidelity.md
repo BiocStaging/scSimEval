@@ -145,3 +145,40 @@ If `batch_ref` or `batch_sim` is NULL, the analysis is gracefully
 skipped, adhering to the strict rule that single-cell biological signal
 evaluation requires genuine biological replicates to prevent false
 positive inflation and pseudoreplication bias.
+
+## Examples
+
+``` r
+data(example_scrna, package = "scSimEval")
+rep_id <- factor(rep(c("Rep1", "Rep2"), length.out = ncol(example_scrna$ref)))
+res <- evaluate_deg_fidelity(
+  ref_data = example_scrna$ref,
+  sim_data = example_scrna$sim,
+  ref_celltypes = example_scrna$cell_types,
+  sim_celltypes = example_scrna$cell_types,
+  batch_ref = rep_id,
+  batch_sim = rep_id
+)
+res$deg_summary_table
+#>                         SubCategory          Metric     Value
+#> 1 scRNA-seq Differential Expression pval_dist_score 0.4968177
+#> 2 scRNA-seq Differential Expression        accuracy 0.9575000
+#> 3 scRNA-seq Differential Expression       precision 0.3774637
+#> 4 scRNA-seq Differential Expression          recall 0.2700747
+#> 5 scRNA-seq Differential Expression        f1_score 0.2800467
+#> 6 scRNA-seq Differential Expression             auc 0.9345132
+#>                                                         Direction
+#> 1    Higher is better (1.0 = uniform null p-values, no inflation)
+#> 2             Higher is better (1.0 = perfect DEG classification)
+#> 3                 Higher is better (1.0 = zero false discoveries)
+#> 4                 Higher is better (1.0 = 100% true DEG recovery)
+#> 5 Higher is better (1.0 = harmonic balance of precision & recall)
+#> 6         Higher is better (1.0 = perfect ranking discrimination)
+#>                                            Framework
+#> 1 Libra Pseudobulk edgeR-QLF (Squair 2021; Duo 2024)
+#> 2 Libra Pseudobulk edgeR-QLF (Squair 2021; Duo 2024)
+#> 3 Libra Pseudobulk edgeR-QLF (Squair 2021; Duo 2024)
+#> 4 Libra Pseudobulk edgeR-QLF (Squair 2021; Duo 2024)
+#> 5 Libra Pseudobulk edgeR-QLF (Squair 2021; Duo 2024)
+#> 6 Libra Pseudobulk edgeR-QLF (Squair 2021; Duo 2024)
+```

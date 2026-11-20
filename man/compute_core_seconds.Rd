@@ -14,12 +14,19 @@ compute_core_seconds(elapsed_time, time_unit = "seconds", sim_cores = 1L)
 \item{sim_cores}{Positive integer specifying the number of CPU cores allocated (default \code{1L}).}
 }
 \value{
-Numeric Core-Seconds (\eqn{\text{core}\cdot\text{s}}).
+Numeric Core-Seconds (\eqn{\text{core}\cdot\text{s}}{core*s}).
 }
 \description{
 Quantifies cumulative CPU work across all allocated processing cores
-(\eqn{\text{Elapsed Time (s)} \times N_{\text{cores}}}; Lannelongue et al., 2021;
-Wratten et al., 2021; Grealey et al., 2022).
+(\eqn{\text{Elapsed Time (s)} \times N_{\text{cores}}}{Elapsed Time (s) * N_cores};
+Lannelongue et al., 2021; Wratten et al., 2021; Grealey et al., 2022).
+}
+\examples{
+# Single-core run taking 45 seconds
+compute_core_seconds(elapsed_time = 45, time_unit = "seconds", sim_cores = 1L)
+
+# 8-core parallel run taking 2.5 minutes
+compute_core_seconds(elapsed_time = 2.5, time_unit = "minutes", sim_cores = 8L)
 }
 \references{
 Lannelongue, L., Grealey, J., & Inouye, M. (2021). Green Algorithms: Quantifying the carbon footprint

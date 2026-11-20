@@ -70,3 +70,4 @@ prep <- preprocess_trajectory_hvgs(example_scrna$ref, example_scrna$sim,
   cell_types_ref = example_scrna$cell_types, cell_types_sim = example_scrna$cell_types)
 length(prep$hvgs)
 }
+\keyword{internal}

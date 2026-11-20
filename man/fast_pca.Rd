@@ -23,3 +23,4 @@ Matrix of cell principal component embeddings (cells x n_pcs).
 \description{
 Fast Truncated PCA on Top Highly Variable Features
 }
+\keyword{internal}

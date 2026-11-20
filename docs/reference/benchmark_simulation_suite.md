@@ -108,77 +108,10 @@ containing:
 ## Examples
 
 ``` r
-# \donttest{
 data(example_scrna, package = "scSimEval")
 refs <- list("CohortA" = example_scrna$ref)
 sims <- list("Splatter" = list("CohortA" = example_scrna$sim))
 res <- benchmark_simulation_suite(refs, sims, verbose = FALSE)
-#> calcNormFactors has been renamed to normLibSizes
-#> Warning: no non-missing arguments to max; returning -Inf
-#> Warning: no non-missing arguments to max; returning -Inf
-#> Warning: no non-missing arguments to max; returning -Inf
-#> calcNormFactors has been renamed to normLibSizes
-#> Warning: no non-missing arguments to max; returning -Inf
-#> Warning: no non-missing arguments to max; returning -Inf
-#> Warning: no non-missing arguments to max; returning -Inf
-#> Warning: no non-missing arguments to max; returning -Inf
-#> Warning: no non-missing arguments to max; returning -Inf
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
-#> calcNormFactors has been renamed to normLibSizes
 print(res)
 #> =====================================================================
 #>   scSimEval Multi-Dataset Benchmark Results
@@ -188,5 +121,23 @@ print(res)
 #> Total Evaluated Scores : 168 across all datasets & metrics
 #> Cross-Dataset Average  : 38 averaged metric entries in summary table
 #> =====================================================================
-# }
+head(res$benchmark_summary_table, 8)
+#>     Method                      Category                      Metric Score_Norm
+#> 1 Splatter (I) Distributional Properties Between_Dataset_Silh_Global     0.9872
+#> 2 Splatter (I) Distributional Properties               Bhattacharyya     0.9907
+#> 3 Splatter (I) Distributional Properties                     KDE_ISE     0.8996
+#> 4 Splatter (I) Distributional Properties                          KS     0.8768
+#> 5 Splatter (I) Distributional Properties                         MAD     0.6454
+#> 6 Splatter (I) Distributional Properties                         MAE     0.6194
+#> 7 Splatter (I) Distributional Properties                 NN_Mismatch     0.7832
+#> 8 Splatter (I) Distributional Properties                        RMSE     0.5627
+#>   Score_Raw  Score Simulator
+#> 1    0.0069 0.9872  Splatter
+#> 2    0.0093 0.9907  Splatter
+#> 3    0.1004 0.8996  Splatter
+#> 4    0.1232 0.8768  Splatter
+#> 5    1.8449 0.6454  Splatter
+#> 6    3.7466 0.6194  Splatter
+#> 7    0.2168 0.7832  Splatter
+#> 8    7.2937 0.5627  Splatter
 ```

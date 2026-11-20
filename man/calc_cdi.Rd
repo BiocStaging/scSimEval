@@ -89,3 +89,4 @@ counts <- matrix(stats::rpois(1200, lambda = 3), nrow = 30, ncol = 40)
 cl <- factor(rep(c("TypeA", "TypeB"), each = 20))
 calc_cdi(counts, cl)
 }
+\keyword{internal}

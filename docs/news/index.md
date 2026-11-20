@@ -1,5 +1,40 @@
 # Changelog
 
+## scSimEval 0.99.13
+
+- **Curated User-Focused Reference Documentation**: Streamlined the
+  `pkgdown` Reference tab from 14 sprawling sections (~120 topics) down
+  to 5 clear sections featuring the 36 essential user-facing workflows,
+  scoring/embedding functions, publication visualizations, category
+  evaluation suites, and bundled datasets (low-level kernels and
+  individual `calc_*` helpers remain exported in `NAMESPACE` and
+  documented via `@keywords internal`).
+- **Complete, Uncropped Reference Examples & Figures**: Completed all
+  truncated visualization examples (`plot_scalability_benchmark`,
+  `plot_metric_heatmap`, `plot_metric_boxplots`,
+  `plot_category_metric_bars`, `plot_individual_metric_bar`,
+  `plot_metric_pca`, `plot_metric_mds`), added concise printed outputs
+  across workflow/dataset examples, widened the `pkgdown` figure canvas
+  (`11 in` at `150 DPI`), expanded Panel B label margins and added
+  `ggrepel` label separation in
+  [`plot_scalability_benchmark()`](https://kabilanbio.github.io/scSimEval/reference/plot_scalability_benchmark.md),
+  and stacked bottom legends in
+  [`plot_benchmark_bubble_matrix()`](https://kabilanbio.github.io/scSimEval/reference/plot_benchmark_bubble_matrix.md)
+  examples so zero text or legends are cropped.
+- **Modern `edgeR` Normalization (`normLibSizes` + `TMMwsp`)**: Replaced
+  deprecated
+  [`edgeR::calcNormFactors()`](https://rdrr.io/pkg/edgeR/man/calcNormFactors.html)
+  calls with `edgeR::normLibSizes(..., method = "TMMwsp")` for sparse
+  single-cell count matrices, eliminating all deprecation messages and
+  sparse-cell [`max()`](https://rdrr.io/r/base/Extremes.html) warnings
+  without using
+  [`suppressWarnings()`](https://rdrr.io/r/base/warning.html).
+- **Proper Mathematical Notation Rendering (KaTeX)**: Enabled
+  `math-rendering: katex` in `_pkgdown.yml` and converted remaining raw
+  `$...$` roxygen strings to valid `\eqn{}` / `\deqn{}` notation so all
+  formulas render cleanly as typeset mathematics across the
+  documentation website.
+
 ## scSimEval 0.99.12
 
 - **Bioconductor Installation Documentation**: Added standard
@@ -8,13 +43,55 @@
 
 ## scSimEval 0.99.11
 
-- Updated the data input option which align with Seurat and Single cell
-  experiment objects.
-- **Fasano-Franceschini 2D KS Min-Max Normalization**: Corrected
-  direction-aware score normalization in `.normalize_bubble_scores()` so
-  that `Fasano_Franceschini_2D_KS` (and other bounded
-  distance/divergence metrics) properly scale to `[0, 1]` across
-  benchmarked simulators rather than bypassing min-max scaling.
+- **Package Tarball Size Reduction**: Excluded web-only `pkgdown`
+  demonstration articles (`vignettes/demo-*.Rmd`), pre-rendered figure
+  assets (`vignettes/figures/`), and pre-saved benchmark `.rds` archives
+  (`vignettes/*.rds`) via `.Rbuildignore`, reducing the built
+  Bioconductor source tarball size to `< 1 MB`.
+
+## scSimEval 0.99.10
+
+- **Standalone Interactive GUI (`scSimEvalStudio`)**: Decoupled the
+  Shiny application into a dedicated companion package
+  (`scSimEvalStudio`), maintaining `scSimEval` as a focused, lightweight
+  computational benchmarking engine per Bioconductor design principles.
+- **Standardized SingleCellExperiment API**: Core evaluation workflows
+  (`evaluate_simulation_accuracy`, `evaluate_multiomics_accuracy`,
+  `extract_dataset_summary`) now natively require and operate directly
+  on standard Bioconductor `SingleCellExperiment` objects with
+  standardized `colData` annotations.
+- **Bioconductor Multiomics via `altExp`**: Upgraded multiomics
+  evaluation pipelines to represent paired multimodal data (scRNA-seq +
+  scATAC-seq) using Bioconductor’s standard `altExp()` assay
+  representation.
+- **Streamlined Dependencies**: Replaced direct dependencies on heavy
+  external single-cell ecosystems (`Seurat`, `Signac`) by moving
+  optional adapters to `Suggests`, drastically reducing dependency
+  overhead.
+- **Accessor Method Compliance**: Eliminated all direct S4 `@` slot
+  accesses across metric computation, trajectories, and dimension
+  reductions in favor of formal accessor methods (`assay()`, `assays()`,
+  `colData()`, `reducedDim()`, `altExp()`).
+- **Clean Condition & Error Handling**: Removed all instances of
+  [`suppressWarnings()`](https://rdrr.io/r/base/warning.html),
+  [`suppressMessages()`](https://rdrr.io/r/base/message.html),
+  [`unlockBinding()`](https://rdrr.io/r/base/bindenv.html), and global
+  variable assignments (`<<-`) to adhere to strict Bioconductor code
+  hygiene standards.
+- **Modular Function Architecture**: Refactored monolithic visualization
+  and benchmarking functions into cohesive, single-purpose helper
+  functions for improved maintainability and extensibility.
+- **Comprehensive Return Documentation**: Upgraded `@return`
+  documentation across all exported functions to explicit `\describe{}`
+  format detailing output slots, dimensions, and object structures.
+- **Fully Evaluated & Reproducible Vignettes**: Reworked vignettes
+  (`scSimEval-workflow.Rmd` and `metrics-catalog.Rmd`) into fully
+  executable, reproducible workflows incorporating sample datasets and
+  concluding with
+  [`sessionInfo()`](https://rdrr.io/r/utils/sessionInfo.html).
+- **High-DPI Visual Assets**: Upgraded workflow architecture diagrams
+  (`workflow_diagram.png`) to crisp 350 DPI high-resolution figures
+  across documentation, vignettes, and web resources.
 
 ## scSimEval 0.99.9
 
@@ -62,8 +139,7 @@
 - **Cross-Dataset Averaging**: Seamless toggling between cross-dataset
   averages and individual datasets across all visualization panels.
 - **Memory Standardization**: Standardized computational memory
-  reporting to binary MiB RAM
-  ($1{\mspace{6mu}\text{MiB}} = 1,048,576{\mspace{6mu}\text{bytes}}$).
+  reporting to binary MiB RAM (1\text{ MiB} = 1,048,576\text{ bytes}).
 
 ## scSimEval 0.99.5
 

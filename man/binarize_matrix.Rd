@@ -22,3 +22,4 @@ or single-cell modeling (Squair et al., 2021; Teo et al., 2024 / Libra).
 m <- matrix(c(0, 2, 1, 0, 5, 0), nrow = 2)
 binarize_matrix(m)
 }
+\keyword{internal}

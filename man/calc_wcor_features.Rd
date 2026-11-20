@@ -48,3 +48,4 @@ distances from HVG expression values (\code{num.trees = 10000}, \code{mtry_prop 
 for both reference and simulated trajectories, and computes the reference-weighted Pearson
 correlation (\code{wcor_features}) clipped to \code{[0, 1]}.
 }
+\keyword{internal}

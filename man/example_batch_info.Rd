@@ -23,4 +23,4 @@ data(example_batch_info)
 head(example_batch_info)
 table(example_batch_info)
 }
-\keyword{datasets}
+\keyword{internal}

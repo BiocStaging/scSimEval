@@ -60,8 +60,6 @@ density overlays or as quantile-quantile (Q-Q) concordance plots.
 }
 \examples{
 data(example_scrna, package = "scSimEval")
-res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
-data(example_scrna)
-p <- plot_distribution_qc(example_scrna$ref, example_scrna$sim)
-if (requireNamespace("ggplot2", quietly = TRUE)) print(p)
+p <- plot_distribution_qc(example_scrna$ref, example_scrna$sim, base_size = 8.5)
+print(p)
 }

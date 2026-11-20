@@ -47,3 +47,4 @@ Biological Coefficient of Variation (BCV), gene-gene correlations, and outlier p
 data(example_scrna, package = "scSimEval")
 extract_feature_properties(example_scrna$ref)
 }
+\keyword{internal}

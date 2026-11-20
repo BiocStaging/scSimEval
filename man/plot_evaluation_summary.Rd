@@ -75,8 +75,25 @@ across the 8 canonical evaluation categories and overall composite performance.
 \if{html}{\figure{evaluation_summary_bars.png}{options: width="800" alt="Single-Cell Simulator Evaluation Summary"}}
 }
 \examples{
-data(example_scrna, package = "scSimEval")
-res <- evaluate_simulation_accuracy(example_scrna$ref, example_scrna$sim)
-p <- plot_evaluation_summary(res)
+bm_df <- data.frame(
+  Method = rep(c("scDesign3", "scMultiSim", "Splatter", "SymSim"), each = 6),
+  Category = rep(c(
+    "(I) Distributional Properties", "(I) Distributional Properties",
+    "(II) Sparsity & Zero-Inflation Dynamics",
+    "(III) Cellular Manifold & Clustering Concordance",
+    "(IV) Technical Variation & Batch Mixing Dynamics",
+    "(V) Biological Signal & Differential Fidelity"
+  ), 4),
+  Metric = rep(c("KS", "Wasserstein", "Zero_Prob_RMSE",
+                 "ARI", "CMS", "DE_F1"), 4),
+  Value = c(
+    0.10, 0.16, 0.07, 0.85, 0.88, 0.82,
+    0.14, 0.21, 0.11, 0.79, 0.83, 0.77,
+    0.23, 0.34, 0.17, 0.67, 0.72, 0.66,
+    0.31, 0.44, 0.24, 0.56, 0.62, 0.55
+  ),
+  stringsAsFactors = FALSE
+)
+p <- plot_evaluation_summary(bm_df, base_size = 9.5)
 print(p)
 }

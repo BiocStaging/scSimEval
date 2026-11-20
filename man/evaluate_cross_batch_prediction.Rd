@@ -39,3 +39,4 @@ batch <- factor(rep(c("B1", "B2"), length.out = 50))
 ct <- factor(rep(c("TypeA", "TypeB"), length.out = 50))
 evaluate_cross_batch_prediction(coords, ct, batch)
 }
+\keyword{internal}

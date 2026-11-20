@@ -48,3 +48,4 @@ ct_id <- factor(rep(c("TypeA", "TypeB"), each = ncol(example_scatac$ref) / 2))
 pb <- to_pseudobulk(example_scatac$ref, cell_types = ct_id, replicates = rep_id)
 length(pb)
 }
+\keyword{internal}

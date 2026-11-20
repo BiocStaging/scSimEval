@@ -61,3 +61,4 @@ res <- calc_simpipe_distribution_score(
 )
 res$distribution_score
 }
+\keyword{internal}

@@ -36,3 +36,4 @@ calc_batch_asw(emb, bt, ct)
 Luecken et al. (2022) Benchmarking atlas-level data integration in single-cell genomics. Nature Methods.
 Li et al. (2023) scMultiSim: simulation of multi-modality single cell data guided by gene regulatory networks. Cell Systems.
 }
+\keyword{internal}

@@ -21,3 +21,4 @@ simulator fidelity leaderboards.
 \examples{
 data(example_scrna, package = "scSimEval")
 }
+\keyword{internal}

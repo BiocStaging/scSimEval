@@ -41,3 +41,15 @@ shareable analysis pipelines with bioinformatics workflow managers.
 
 Grealey, J., et al. (2022). The Carbon Footprint of Bioinformatics.
 *Molecular Biology and Evolution*, 39(3), msac034.
+
+## Examples
+
+``` r
+# Single-core run taking 45 seconds
+compute_core_seconds(elapsed_time = 45, time_unit = "seconds", sim_cores = 1L)
+#> [1] 45
+
+# 8-core parallel run taking 2.5 minutes
+compute_core_seconds(elapsed_time = 2.5, time_unit = "minutes", sim_cores = 8L)
+#> [1] 1200
+```
