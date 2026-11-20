@@ -48,6 +48,19 @@ statistical infrastructure:
 
 ------------------------------------------------------------------------
 
+## Installation
+
+Install the package from Bioconductor with:
+
+``` r
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+BiocManager::install("scSimEval")
+```
+
+------------------------------------------------------------------------
+
 ## Input Data Format
 
 All top-level `scSimEval` evaluation entry points center on
@@ -269,7 +282,7 @@ sessionInfo()
 #>  [5] Seqinfo_1.2.0               IRanges_2.46.0             
 #>  [7] S4Vectors_0.50.3            BiocGenerics_0.58.1        
 #>  [9] generics_0.1.4              MatrixGenerics_1.24.0      
-#> [11] matrixStats_1.5.0           scSimEval_0.99.11          
+#> [11] matrixStats_1.5.0           scSimEval_0.99.12          
 #> 
 #> loaded via a namespace (and not attached):
 #>   [1] RColorBrewer_1.1-3  jsonlite_2.0.0      magrittr_2.0.5     

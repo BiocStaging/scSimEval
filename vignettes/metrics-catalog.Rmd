@@ -27,6 +27,17 @@ Single-cell and multiomics simulation algorithms are central to computational bi
 
 Every measure is calculated by directly comparing an in silico simulated dataset against an empirical biological reference dataset across single-cell RNA sequencing (**scRNA-seq**), single-cell ATAC sequencing (**scATAC-seq**), or joint **multiomics** (paired and unpaired RNA + ATAC) modalities.
 
+# Installation
+
+Install the package from Bioconductor with:
+
+```{r install, eval=FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+BiocManager::install("scSimEval")
+```
+
 ---
 
 # Summary of the 8 Canonical Categories

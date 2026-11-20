@@ -1,3 +1,8 @@
+# scSimEval 0.99.12
+
+* **Bioconductor Installation Documentation**: Added standard `BiocManager::install("scSimEval")` installation instructions across `README.md`, package vignettes, and `pkgdown` documentation.
+
+
 # scSimEval 0.99.11
 
 * **Package Tarball Size Reduction**: Excluded web-only `pkgdown` demonstration articles (`vignettes/demo-*.Rmd`), pre-rendered figure assets (`vignettes/figures/`), and pre-saved benchmark `.rds` archives (`vignettes/*.rds`) via `.Rbuildignore`, reducing the built Bioconductor source tarball size to `< 1 MB`.

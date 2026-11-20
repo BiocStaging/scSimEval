@@ -19,10 +19,21 @@
 
 ## Installation
 
-Install the development version of **`scSimEval`** directly from GitHub:
+Install the package from Bioconductor:
 
-```R
-if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
+```r
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+BiocManager::install("scSimEval")
+```
+
+To install the development version from GitHub:
+
+```r
+if (!requireNamespace("remotes", quietly = TRUE)) {
+    install.packages("remotes")
+}
 remotes::install_github("kabilanbio/scSimEval")
 ```
 

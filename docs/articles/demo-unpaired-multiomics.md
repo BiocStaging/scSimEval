@@ -514,7 +514,7 @@ sessionInfo()
 #> 
 #> loaded via a namespace (and not attached):
 #>   [1] pbapply_1.7-5               gridExtra_2.3.1            
-#>   [3] scSimEval_0.99.11           rlang_1.3.0                
+#>   [3] scSimEval_0.99.12           rlang_1.3.0                
 #>   [5] magrittr_2.0.5              RcppAnnoy_0.0.23           
 #>   [7] otel_0.3.0                  matrixStats_1.5.0          
 #>   [9] ggridges_0.5.7              compiler_4.6.2             

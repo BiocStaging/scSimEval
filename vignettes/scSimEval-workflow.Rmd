@@ -42,6 +42,19 @@ knitr::opts_chunk$set(
 
 ---
 
+# Installation
+
+Install the package from Bioconductor with:
+
+```{r install, eval=FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+BiocManager::install("scSimEval")
+```
+
+---
+
 # Input Data Format
 
 All top-level `scSimEval` evaluation entry points center on **`SingleCellExperiment`** objects containing raw counts (`assays(sce)$counts`) and cell metadata columns (`cell_type` and `batch` in `colData(sce)`):

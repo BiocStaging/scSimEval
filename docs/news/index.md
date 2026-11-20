@@ -1,5 +1,11 @@
 # Changelog
 
+## scSimEval 0.99.12
+
+- **Bioconductor Installation Documentation**: Added standard
+  `BiocManager::install("scSimEval")` installation instructions across
+  `README.md`, package vignettes, and `pkgdown` documentation.
+
 ## scSimEval 0.99.11
 
 - Updated the data input option which align with Seurat and Single cell
